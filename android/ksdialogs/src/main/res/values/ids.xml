@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- View にメタ属性を添付するための鍵。View.setTag の鍵はリソース id でなければならない -->
+<resources>
+    <item name="ksdialogs_dialog_options" type="id" />
+    <item name="ksdialogs_dialog_placement" type="id" />
+    <item name="ksdialogs_dialog_transition" type="id" />
+</resources>

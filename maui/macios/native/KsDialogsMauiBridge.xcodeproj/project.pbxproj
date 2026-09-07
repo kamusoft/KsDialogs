@@ -1,0 +1,498 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		KSDM0001000000000000001 /* KsDialogs in Frameworks */ = {isa = PBXBuildFile; productRef = KSDM0002000000000000001 /* KsDialogs */; };
+		KSDM0023000000000000001 /* KsDialogsMauiBridge.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = KSDM0005000000000000001 /* KsDialogsMauiBridge.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		KSDM0027000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = KSDM000D000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = KSDM0017000000000000001;
+			remoteInfo = KsDialogsMauiBridgeTestHost;
+		};
+		KSDM0029000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = KSDM000D000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = KSDM000A000000000000001;
+			remoteInfo = KsDialogsMauiBridge;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		KSDM0005000000000000001 /* KsDialogsMauiBridge.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = KsDialogsMauiBridge.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		KSDM0014000000000000001 /* KsDialogsMauiBridgeTestHost.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KsDialogsMauiBridgeTestHost.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		KSDM001B000000000000001 /* KsDialogsMauiBridgeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KsDialogsMauiBridgeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		KSDM0006000000000000001 /* KsDialogsMauiBridge */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KsDialogsMauiBridge;
+			sourceTree = "<group>";
+		};
+		KSDM0015000000000000001 /* KsDialogsMauiBridgeTestHost */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KsDialogsMauiBridgeTestHost;
+			sourceTree = "<group>";
+		};
+		KSDM001C000000000000001 /* KsDialogsMauiBridgeTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KsDialogsMauiBridgeTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		KSDM0007000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				KSDM0001000000000000001 /* KsDialogs in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		KSDM001E000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				KSDM0023000000000000001 /* KsDialogsMauiBridge.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		KSDM0008000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				KSDM0006000000000000001 /* KsDialogsMauiBridge */,
+				KSDM0015000000000000001 /* KsDialogsMauiBridgeTestHost */,
+				KSDM001C000000000000001 /* KsDialogsMauiBridgeTests */,
+				KSDM0009000000000000001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		KSDM0009000000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				KSDM0005000000000000001 /* KsDialogsMauiBridge.framework */,
+				KSDM0014000000000000001 /* KsDialogsMauiBridgeTestHost.app */,
+				KSDM001B000000000000001 /* KsDialogsMauiBridgeTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		KSDM000A000000000000001 /* KsDialogsMauiBridge */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = KSDM000B000000000000001 /* Build configuration list for PBXNativeTarget "KsDialogsMauiBridge" */;
+			buildPhases = (
+				KSDM000C000000000000001 /* Sources */,
+				KSDM0007000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				KSDM0006000000000000001 /* KsDialogsMauiBridge */,
+			);
+			name = KsDialogsMauiBridge;
+			packageProductDependencies = (
+				KSDM0002000000000000001 /* KsDialogs */,
+			);
+			productName = KsDialogsMauiBridge;
+			productReference = KSDM0005000000000000001 /* KsDialogsMauiBridge.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		KSDM0017000000000000001 /* KsDialogsMauiBridgeTestHost */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = KSDM001A000000000000001 /* Build configuration list for PBXNativeTarget "KsDialogsMauiBridgeTestHost" */;
+			buildPhases = (
+				KSDM0016000000000000001 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				KSDM0015000000000000001 /* KsDialogsMauiBridgeTestHost */,
+			);
+			name = KsDialogsMauiBridgeTestHost;
+			productName = KsDialogsMauiBridgeTestHost;
+			productReference = KSDM0014000000000000001 /* KsDialogsMauiBridgeTestHost.app */;
+			productType = "com.apple.product-type.application";
+		};
+		KSDM001F000000000000001 /* KsDialogsMauiBridgeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = KSDM0022000000000000001 /* Build configuration list for PBXNativeTarget "KsDialogsMauiBridgeTests" */;
+			buildPhases = (
+				KSDM001D000000000000001 /* Sources */,
+				KSDM001E000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				KSDM0026000000000000001 /* PBXTargetDependency */,
+				KSDM0028000000000000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				KSDM001C000000000000001 /* KsDialogsMauiBridgeTests */,
+			);
+			name = KsDialogsMauiBridgeTests;
+			packageProductDependencies = (
+				KSDM0025000000000000001 /* KsDialogs */,
+			);
+			productName = KsDialogsMauiBridgeTests;
+			productReference = KSDM001B000000000000001 /* KsDialogsMauiBridgeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		KSDM000D000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					KSDM000A000000000000001 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					KSDM0017000000000000001 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					KSDM001F000000000000001 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = KSDM0017000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = KSDM000E000000000000001 /* Build configuration list for PBXProject "KsDialogsMauiBridge" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = KSDM0008000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				KSDM000F000000000000001 /* XCLocalSwiftPackageReference "../../../ios" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = KSDM0009000000000000001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				KSDM000A000000000000001 /* KsDialogsMauiBridge */,
+				KSDM0017000000000000001 /* KsDialogsMauiBridgeTestHost */,
+				KSDM001F000000000000001 /* KsDialogsMauiBridgeTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		KSDM000C000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		KSDM0016000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		KSDM001D000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		KSDM0026000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = KSDM0017000000000000001 /* KsDialogsMauiBridgeTestHost */;
+			targetProxy = KSDM0027000000000000001 /* PBXContainerItemProxy */;
+		};
+		KSDM0028000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = KSDM000A000000000000001 /* KsDialogsMauiBridge */;
+			targetProxy = KSDM0029000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		KSDM0010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				ONLY_ACTIVE_ARCH = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		KSDM0011000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				ONLY_ACTIVE_ARCH = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		KSDM0012000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				ENABLE_MODULE_VERIFIER = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACH_O_TYPE = staticlib;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = jp.kamusoft.ksdialogs.maui.bridge;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = auto;
+				SKIP_INSTALL = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_INSTALL_OBJC_HEADER = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		KSDM0013000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				ENABLE_MODULE_VERIFIER = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACH_O_TYPE = staticlib;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = jp.kamusoft.ksdialogs.maui.bridge;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = auto;
+				SKIP_INSTALL = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_INSTALL_OBJC_HEADER = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		KSDM0018000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOL_FRAMEWORKS = UIKit;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.kamusoft.ksdialogs.maui.bridge.testhost;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		KSDM0019000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOL_FRAMEWORKS = UIKit;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.kamusoft.ksdialogs.maui.bridge.testhost;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		KSDM0020000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.kamusoft.ksdialogs.maui.bridge.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KsDialogsMauiBridgeTestHost.app/KsDialogsMauiBridgeTestHost";
+			};
+			name = Debug;
+		};
+		KSDM0021000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.kamusoft.ksdialogs.maui.bridge.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KsDialogsMauiBridgeTestHost.app/KsDialogsMauiBridgeTestHost";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		KSDM000E000000000000001 /* Build configuration list for PBXProject "KsDialogsMauiBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				KSDM0010000000000000001 /* Debug */,
+				KSDM0011000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		KSDM000B000000000000001 /* Build configuration list for PBXNativeTarget "KsDialogsMauiBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				KSDM0012000000000000001 /* Debug */,
+				KSDM0013000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		KSDM001A000000000000001 /* Build configuration list for PBXNativeTarget "KsDialogsMauiBridgeTestHost" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				KSDM0018000000000000001 /* Debug */,
+				KSDM0019000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		KSDM0022000000000000001 /* Build configuration list for PBXNativeTarget "KsDialogsMauiBridgeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				KSDM0020000000000000001 /* Debug */,
+				KSDM0021000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		KSDM000F000000000000001 /* XCLocalSwiftPackageReference "../../../ios" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../../ios;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		KSDM0002000000000000001 /* KsDialogs */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KsDialogs;
+		};
+		KSDM0025000000000000001 /* KsDialogs */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KsDialogs;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = KSDM000D000000000000001 /* Project object */;
+}

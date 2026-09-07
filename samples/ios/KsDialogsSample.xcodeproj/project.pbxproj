@@ -1,0 +1,530 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 70;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B1000001000000000000A001 /* KsDialogsSampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A001 /* KsDialogsSampleApp.swift */; };
+		B1000001000000000000A002 /* SampleTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A002 /* SampleTheme.swift */; };
+		B1000001000000000000A003 /* SampleText.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A003 /* SampleText.swift */; };
+		B1000001000000000000A004 /* SampleMenuScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A004 /* SampleMenuScreen.swift */; };
+		B1000001000000000000A005 /* SampleMenuHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A005 /* SampleMenuHeader.swift */; };
+		B1000001000000000000A006 /* SampleMenuItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A006 /* SampleMenuItemRow.swift */; };
+		B1000001000000000000A007 /* SampleResultArea.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A007 /* SampleResultArea.swift */; };
+		B1000001000000000000A008 /* SampleDivider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A008 /* SampleDivider.swift */; };
+		B1000001000000000000A009 /* SampleMenuModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A009 /* SampleMenuModel.swift */; };
+		B1000001000000000000A00A /* SampleDialogRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A00A /* SampleDialogRegistration.swift */; };
+		B1000001000000000000A00B /* BasicDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A00B /* BasicDialogViewModel.swift */; };
+		B1000001000000000000A00C /* BasicDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A00C /* BasicDialogCard.swift */; };
+		B1000001000000000000A00D /* BasicDialogCardHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A00D /* BasicDialogCardHostView.swift */; };
+		B1000003000000000000B001 /* KsDialogs in Frameworks */ = {isa = PBXBuildFile; productRef = B1000004000000000000B001 /* KsDialogs */; };
+		B1000001000000000000A00E /* LayoutDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A00E /* LayoutDialogViewModel.swift */; };
+		B1000001000000000000A00F /* LayoutDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A00F /* LayoutDialogCard.swift */; };
+		B1000001000000000000A010 /* LayoutDialogCardHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A010 /* LayoutDialogCardHostView.swift */; };
+		B1000001000000000000A011 /* SampleAlignmentChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A011 /* SampleAlignmentChoice.swift */; };
+		B1000001000000000000A012 /* SampleAlignmentSegments.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A012 /* SampleAlignmentSegments.swift */; };
+		B1000001000000000000A013 /* SampleSettingRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A013 /* SampleSettingRow.swift */; };
+		B1000001000000000000A014 /* SampleOffsetField.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A014 /* SampleOffsetField.swift */; };
+		B1000001000000000000A015 /* SampleLayoutPanelHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A015 /* SampleLayoutPanelHeader.swift */; };
+		B1000001000000000000A016 /* SampleLayoutPanelModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A016 /* SampleLayoutPanelModel.swift */; };
+		B1000001000000000000A017 /* SampleLayoutPanelScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A017 /* SampleLayoutPanelScreen.swift */; };
+		B1000001000000000000A018 /* DeclarativeDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A018 /* DeclarativeDialogViewModel.swift */; };
+		B1000001000000000000A019 /* DeclarativeDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A019 /* DeclarativeDialogCard.swift */; };
+		B1000001000000000000A01A /* TextInputDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A01A /* TextInputDialogViewModel.swift */; };
+		B1000001000000000000A01B /* TextInputDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A01B /* TextInputDialogCard.swift */; };
+		B1000001000000000000A01C /* TextInputDialogCardHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A01C /* TextInputDialogCardHostView.swift */; };
+		B1000001000000000000A01D /* InlineDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A01D /* InlineDialogViewModel.swift */; };
+		B1000001000000000000A01E /* InlineDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A01E /* InlineDialogCard.swift */; };
+		B1000001000000000000A01F /* InlineDialogCardHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A01F /* InlineDialogCardHostView.swift */; };
+		B1000001000000000000A020 /* SampleTransitionChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A020 /* SampleTransitionChoice.swift */; };
+		B1000001000000000000A021 /* SampleEasingChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A021 /* SampleEasingChoice.swift */; };
+		B1000001000000000000A022 /* SampleCustomTransition.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A022 /* SampleCustomTransition.swift */; };
+		B1000001000000000000A023 /* SampleChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A023 /* SampleChip.swift */; };
+		B1000001000000000000A024 /* SampleSectionCaption.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A024 /* SampleSectionCaption.swift */; };
+		B1000001000000000000A025 /* SampleTransitionPanelHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A025 /* SampleTransitionPanelHeader.swift */; };
+		B1000001000000000000A026 /* SampleTransitionPanelModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A026 /* SampleTransitionPanelModel.swift */; };
+		B1000001000000000000A027 /* SampleTransitionPanelScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A027 /* SampleTransitionPanelScreen.swift */; };
+		B1000001000000000000A028 /* TransitionDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A028 /* TransitionDialogViewModel.swift */; };
+		B1000001000000000000A029 /* TransitionDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A029 /* TransitionDialogCard.swift */; };
+		B1000001000000000000A02A /* TransitionDialogCardHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A02A /* TransitionDialogCardHostView.swift */; };
+		B1000001000000000000A02B /* ModelDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A02B /* ModelDialogViewModel.swift */; };
+		B1000001000000000000A02C /* ModelDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A02C /* ModelDialogCard.swift */; };
+		B1000001000000000000A02D /* ModelDialogCardHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A02D /* ModelDialogCardHostView.swift */; };
+		B1000001000000000000A02E /* SampleLoadingRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A02E /* SampleLoadingRegistration.swift */; };
+		B1000001000000000000A031 /* SampleDemoId.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A031 /* SampleDemoId.swift */; };
+		B1000001000000000000A032 /* SampleCaptureOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A032 /* SampleCaptureOptions.swift */; };
+		B1000001000000000000A033 /* SampleCaptureAutoPlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A033 /* SampleCaptureAutoPlay.swift */; };
+		B1000001000000000000A02F /* CustomLoadingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A02F /* CustomLoadingViewModel.swift */; };
+		B1000001000000000000A030 /* CustomLoadingCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A030 /* CustomLoadingCard.swift */; };
+		B1000001000000000000A034 /* CustomToastViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A034 /* CustomToastViewModel.swift */; };
+		B1000001000000000000A035 /* CustomToastCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A035 /* CustomToastCard.swift */; };
+		B1000001000000000000A036 /* InlineToastViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A036 /* InlineToastViewModel.swift */; };
+		B1000001000000000000A037 /* InlineToastCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A037 /* InlineToastCard.swift */; };
+		B1000001000000000000A038 /* SampleToastRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A038 /* SampleToastRegistration.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B1000002000000000000A001 /* KsDialogsSampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KsDialogsSampleApp.swift; sourceTree = "<group>"; };
+		B1000002000000000000A002 /* SampleTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleTheme.swift; sourceTree = "<group>"; };
+		B1000002000000000000A003 /* SampleText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleText.swift; sourceTree = "<group>"; };
+		B1000002000000000000A004 /* SampleMenuScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleMenuScreen.swift; sourceTree = "<group>"; };
+		B1000002000000000000A005 /* SampleMenuHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleMenuHeader.swift; sourceTree = "<group>"; };
+		B1000002000000000000A006 /* SampleMenuItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleMenuItemRow.swift; sourceTree = "<group>"; };
+		B1000002000000000000A007 /* SampleResultArea.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleResultArea.swift; sourceTree = "<group>"; };
+		B1000002000000000000A008 /* SampleDivider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleDivider.swift; sourceTree = "<group>"; };
+		B1000002000000000000A009 /* SampleMenuModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleMenuModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A00A /* SampleDialogRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleDialogRegistration.swift; sourceTree = "<group>"; };
+		B1000002000000000000A00B /* BasicDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicDialogViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A00C /* BasicDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicDialogCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A00D /* BasicDialogCardHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicDialogCardHostView.swift; sourceTree = "<group>"; };
+		B1000005000000000000C001 /* KsDialogsSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KsDialogsSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1000002000000000000A00E /* LayoutDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutDialogViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A00F /* LayoutDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutDialogCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A010 /* LayoutDialogCardHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutDialogCardHostView.swift; sourceTree = "<group>"; };
+		B1000002000000000000A011 /* SampleAlignmentChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleAlignmentChoice.swift; sourceTree = "<group>"; };
+		B1000002000000000000A012 /* SampleAlignmentSegments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleAlignmentSegments.swift; sourceTree = "<group>"; };
+		B1000002000000000000A013 /* SampleSettingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleSettingRow.swift; sourceTree = "<group>"; };
+		B1000002000000000000A014 /* SampleOffsetField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleOffsetField.swift; sourceTree = "<group>"; };
+		B1000002000000000000A015 /* SampleLayoutPanelHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelHeader.swift; sourceTree = "<group>"; };
+		B1000002000000000000A016 /* SampleLayoutPanelModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A017 /* SampleLayoutPanelScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelScreen.swift; sourceTree = "<group>"; };
+		B1000002000000000000A018 /* DeclarativeDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeclarativeDialogViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A019 /* DeclarativeDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeclarativeDialogCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A01A /* TextInputDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputDialogViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A01B /* TextInputDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputDialogCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A01C /* TextInputDialogCardHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputDialogCardHostView.swift; sourceTree = "<group>"; };
+		B1000002000000000000A01D /* InlineDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineDialogViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A01E /* InlineDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineDialogCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A01F /* InlineDialogCardHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineDialogCardHostView.swift; sourceTree = "<group>"; };
+		B1000002000000000000A020 /* SampleTransitionChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleTransitionChoice.swift; sourceTree = "<group>"; };
+		B1000002000000000000A021 /* SampleEasingChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleEasingChoice.swift; sourceTree = "<group>"; };
+		B1000002000000000000A022 /* SampleCustomTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleCustomTransition.swift; sourceTree = "<group>"; };
+		B1000002000000000000A023 /* SampleChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleChip.swift; sourceTree = "<group>"; };
+		B1000002000000000000A024 /* SampleSectionCaption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleSectionCaption.swift; sourceTree = "<group>"; };
+		B1000002000000000000A025 /* SampleTransitionPanelHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleTransitionPanelHeader.swift; sourceTree = "<group>"; };
+		B1000002000000000000A026 /* SampleTransitionPanelModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleTransitionPanelModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A027 /* SampleTransitionPanelScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleTransitionPanelScreen.swift; sourceTree = "<group>"; };
+		B1000002000000000000A028 /* TransitionDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionDialogViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A029 /* TransitionDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionDialogCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A02A /* TransitionDialogCardHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionDialogCardHostView.swift; sourceTree = "<group>"; };
+		B1000002000000000000A02B /* ModelDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDialogViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A02C /* ModelDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDialogCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A02D /* ModelDialogCardHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDialogCardHostView.swift; sourceTree = "<group>"; };
+		B1000002000000000000A02E /* SampleLoadingRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLoadingRegistration.swift; sourceTree = "<group>"; };
+		B1000002000000000000A031 /* SampleDemoId.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleDemoId.swift; sourceTree = "<group>"; };
+		B1000002000000000000A032 /* SampleCaptureOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleCaptureOptions.swift; sourceTree = "<group>"; };
+		B1000002000000000000A033 /* SampleCaptureAutoPlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleCaptureAutoPlay.swift; sourceTree = "<group>"; };
+		B1000002000000000000A02F /* CustomLoadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomLoadingViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A030 /* CustomLoadingCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomLoadingCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A034 /* CustomToastViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomToastViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A035 /* CustomToastCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomToastCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A036 /* InlineToastViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineToastViewModel.swift; sourceTree = "<group>"; };
+		B1000002000000000000A037 /* InlineToastCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineToastCard.swift; sourceTree = "<group>"; };
+		B1000002000000000000A038 /* SampleToastRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleToastRegistration.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B1000006000000000000D001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1000003000000000000B001 /* KsDialogs in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B1000007000000000000E001 = {
+			isa = PBXGroup;
+			children = (
+				B1000007000000000000E002 /* KsDialogsSample */,
+				B1000007000000000000E003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B1000007000000000000E002 /* KsDialogsSample */ = {
+			isa = PBXGroup;
+			children = (
+				B1000002000000000000A001 /* KsDialogsSampleApp.swift */,
+				B1000002000000000000A002 /* SampleTheme.swift */,
+				B1000002000000000000A003 /* SampleText.swift */,
+				B1000002000000000000A004 /* SampleMenuScreen.swift */,
+				B1000002000000000000A005 /* SampleMenuHeader.swift */,
+				B1000002000000000000A006 /* SampleMenuItemRow.swift */,
+				B1000002000000000000A007 /* SampleResultArea.swift */,
+				B1000002000000000000A008 /* SampleDivider.swift */,
+				B1000002000000000000A009 /* SampleMenuModel.swift */,
+				B1000002000000000000A00A /* SampleDialogRegistration.swift */,
+				B1000002000000000000A00B /* BasicDialogViewModel.swift */,
+				B1000002000000000000A00C /* BasicDialogCard.swift */,
+				B1000002000000000000A00D /* BasicDialogCardHostView.swift */,
+				B1000002000000000000A00E /* LayoutDialogViewModel.swift */,
+				B1000002000000000000A00F /* LayoutDialogCard.swift */,
+				B1000002000000000000A010 /* LayoutDialogCardHostView.swift */,
+				B1000002000000000000A011 /* SampleAlignmentChoice.swift */,
+				B1000002000000000000A012 /* SampleAlignmentSegments.swift */,
+				B1000002000000000000A013 /* SampleSettingRow.swift */,
+				B1000002000000000000A014 /* SampleOffsetField.swift */,
+				B1000002000000000000A015 /* SampleLayoutPanelHeader.swift */,
+				B1000002000000000000A016 /* SampleLayoutPanelModel.swift */,
+				B1000002000000000000A017 /* SampleLayoutPanelScreen.swift */,
+				B1000002000000000000A018 /* DeclarativeDialogViewModel.swift */,
+				B1000002000000000000A019 /* DeclarativeDialogCard.swift */,
+				B1000002000000000000A01A /* TextInputDialogViewModel.swift */,
+				B1000002000000000000A01B /* TextInputDialogCard.swift */,
+				B1000002000000000000A01C /* TextInputDialogCardHostView.swift */,
+				B1000002000000000000A01D /* InlineDialogViewModel.swift */,
+				B1000002000000000000A01E /* InlineDialogCard.swift */,
+				B1000002000000000000A01F /* InlineDialogCardHostView.swift */,
+				B1000002000000000000A020 /* SampleTransitionChoice.swift */,
+				B1000002000000000000A021 /* SampleEasingChoice.swift */,
+				B1000002000000000000A022 /* SampleCustomTransition.swift */,
+				B1000002000000000000A023 /* SampleChip.swift */,
+				B1000002000000000000A024 /* SampleSectionCaption.swift */,
+				B1000002000000000000A025 /* SampleTransitionPanelHeader.swift */,
+				B1000002000000000000A026 /* SampleTransitionPanelModel.swift */,
+				B1000002000000000000A027 /* SampleTransitionPanelScreen.swift */,
+				B1000002000000000000A028 /* TransitionDialogViewModel.swift */,
+				B1000002000000000000A029 /* TransitionDialogCard.swift */,
+				B1000002000000000000A02A /* TransitionDialogCardHostView.swift */,
+				B1000002000000000000A02B /* ModelDialogViewModel.swift */,
+				B1000002000000000000A02C /* ModelDialogCard.swift */,
+				B1000002000000000000A02D /* ModelDialogCardHostView.swift */,
+				B1000002000000000000A02E /* SampleLoadingRegistration.swift */,
+				B1000002000000000000A02F /* CustomLoadingViewModel.swift */,
+				B1000002000000000000A030 /* CustomLoadingCard.swift */,
+				B1000002000000000000A031 /* SampleDemoId.swift */,
+				B1000002000000000000A032 /* SampleCaptureOptions.swift */,
+				B1000002000000000000A033 /* SampleCaptureAutoPlay.swift */,
+				B1000002000000000000A034 /* CustomToastViewModel.swift */,
+				B1000002000000000000A035 /* CustomToastCard.swift */,
+				B1000002000000000000A036 /* InlineToastViewModel.swift */,
+				B1000002000000000000A037 /* InlineToastCard.swift */,
+				B1000002000000000000A038 /* SampleToastRegistration.swift */,
+			);
+			path = KsDialogsSample;
+			sourceTree = "<group>";
+		};
+		B1000007000000000000E003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B1000005000000000000C001 /* KsDialogsSample.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B1000008000000000000F001 /* KsDialogsSample */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B1000009000000000000F002 /* Build configuration list for PBXNativeTarget "KsDialogsSample" */;
+			buildPhases = (
+				B100000A000000000000F003 /* Sources */,
+				B1000006000000000000D001 /* Frameworks */,
+				B100000B000000000000F004 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KsDialogsSample;
+			packageProductDependencies = (
+				B1000004000000000000B001 /* KsDialogs */,
+			);
+			productName = KsDialogsSample;
+			productReference = B1000005000000000000C001 /* KsDialogsSample.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B100000C000000000000F005 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1610;
+				LastUpgradeCheck = 1610;
+				TargetAttributes = {
+					B1000008000000000000F001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = B100000D000000000000F006 /* Build configuration list for PBXProject "KsDialogsSample" */;
+			compatibilityVersion = "Xcode 16.0.Superseded.1";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B1000007000000000000E001;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B100000E000000000000F007 /* XCLocalSwiftPackageReference "../../ios" */,
+			);
+			productRefGroup = B1000007000000000000E003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B1000008000000000000F001 /* KsDialogsSample */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B100000B000000000000F004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B100000A000000000000F003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1000001000000000000A001 /* KsDialogsSampleApp.swift in Sources */,
+				B1000001000000000000A002 /* SampleTheme.swift in Sources */,
+				B1000001000000000000A003 /* SampleText.swift in Sources */,
+				B1000001000000000000A004 /* SampleMenuScreen.swift in Sources */,
+				B1000001000000000000A005 /* SampleMenuHeader.swift in Sources */,
+				B1000001000000000000A006 /* SampleMenuItemRow.swift in Sources */,
+				B1000001000000000000A007 /* SampleResultArea.swift in Sources */,
+				B1000001000000000000A008 /* SampleDivider.swift in Sources */,
+				B1000001000000000000A009 /* SampleMenuModel.swift in Sources */,
+				B1000001000000000000A00A /* SampleDialogRegistration.swift in Sources */,
+				B1000001000000000000A00B /* BasicDialogViewModel.swift in Sources */,
+				B1000001000000000000A00C /* BasicDialogCard.swift in Sources */,
+				B1000001000000000000A00D /* BasicDialogCardHostView.swift in Sources */,
+				B1000001000000000000A00E /* LayoutDialogViewModel.swift in Sources */,
+				B1000001000000000000A00F /* LayoutDialogCard.swift in Sources */,
+				B1000001000000000000A010 /* LayoutDialogCardHostView.swift in Sources */,
+				B1000001000000000000A011 /* SampleAlignmentChoice.swift in Sources */,
+				B1000001000000000000A012 /* SampleAlignmentSegments.swift in Sources */,
+				B1000001000000000000A013 /* SampleSettingRow.swift in Sources */,
+				B1000001000000000000A014 /* SampleOffsetField.swift in Sources */,
+				B1000001000000000000A015 /* SampleLayoutPanelHeader.swift in Sources */,
+				B1000001000000000000A016 /* SampleLayoutPanelModel.swift in Sources */,
+				B1000001000000000000A017 /* SampleLayoutPanelScreen.swift in Sources */,
+				B1000001000000000000A018 /* DeclarativeDialogViewModel.swift in Sources */,
+				B1000001000000000000A019 /* DeclarativeDialogCard.swift in Sources */,
+				B1000001000000000000A01A /* TextInputDialogViewModel.swift in Sources */,
+				B1000001000000000000A01B /* TextInputDialogCard.swift in Sources */,
+				B1000001000000000000A01C /* TextInputDialogCardHostView.swift in Sources */,
+				B1000001000000000000A01D /* InlineDialogViewModel.swift in Sources */,
+				B1000001000000000000A01E /* InlineDialogCard.swift in Sources */,
+				B1000001000000000000A01F /* InlineDialogCardHostView.swift in Sources */,
+				B1000001000000000000A020 /* SampleTransitionChoice.swift in Sources */,
+				B1000001000000000000A021 /* SampleEasingChoice.swift in Sources */,
+				B1000001000000000000A022 /* SampleCustomTransition.swift in Sources */,
+				B1000001000000000000A023 /* SampleChip.swift in Sources */,
+				B1000001000000000000A024 /* SampleSectionCaption.swift in Sources */,
+				B1000001000000000000A025 /* SampleTransitionPanelHeader.swift in Sources */,
+				B1000001000000000000A026 /* SampleTransitionPanelModel.swift in Sources */,
+				B1000001000000000000A027 /* SampleTransitionPanelScreen.swift in Sources */,
+				B1000001000000000000A028 /* TransitionDialogViewModel.swift in Sources */,
+				B1000001000000000000A029 /* TransitionDialogCard.swift in Sources */,
+				B1000001000000000000A02A /* TransitionDialogCardHostView.swift in Sources */,
+				B1000001000000000000A02B /* ModelDialogViewModel.swift in Sources */,
+				B1000001000000000000A02C /* ModelDialogCard.swift in Sources */,
+				B1000001000000000000A02D /* ModelDialogCardHostView.swift in Sources */,
+				B1000001000000000000A02E /* SampleLoadingRegistration.swift in Sources */,
+				B1000001000000000000A02F /* CustomLoadingViewModel.swift in Sources */,
+				B1000001000000000000A030 /* CustomLoadingCard.swift in Sources */,
+				B1000001000000000000A031 /* SampleDemoId.swift in Sources */,
+				B1000001000000000000A032 /* SampleCaptureOptions.swift in Sources */,
+				B1000001000000000000A033 /* SampleCaptureAutoPlay.swift in Sources */,
+				B1000001000000000000A034 /* CustomToastViewModel.swift in Sources */,
+				B1000001000000000000A035 /* CustomToastCard.swift in Sources */,
+				B1000001000000000000A036 /* InlineToastViewModel.swift in Sources */,
+				B1000001000000000000A037 /* InlineToastCard.swift in Sources */,
+				B1000001000000000000A038 /* SampleToastRegistration.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B100000F000000000000F008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B100000F000000000000F009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B1000010000000000000F00A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "KsDialogs Sample";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.kamusoft.ksdialogs.samples.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B1000010000000000000F00B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "KsDialogs Sample";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.kamusoft.ksdialogs.samples.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B1000009000000000000F002 /* Build configuration list for PBXNativeTarget "KsDialogsSample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1000010000000000000F00A /* Debug */,
+				B1000010000000000000F00B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B100000D000000000000F006 /* Build configuration list for PBXProject "KsDialogsSample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B100000F000000000000F008 /* Debug */,
+				B100000F000000000000F009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		B100000E000000000000F007 /* XCLocalSwiftPackageReference "../../ios" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../ios;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B1000004000000000000B001 /* KsDialogs */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KsDialogs;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B100000C000000000000F005 /* Project object */;
+}

@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Sample のメニュー画面。デモ項目の一覧と直近の結果を表示する。 -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+             xmlns:local="clr-namespace:KsDialogs.Sample.Maui"
+             x:Class="KsDialogs.Sample.Maui.SampleMenuPage"
+             ios:Page.UseSafeArea="True"
+             BackgroundColor="{StaticResource SampleSurface}">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+        <Label Text="{x:Static local:SampleText.MenuTitle}"
+               FontSize="17"
+               FontAttributes="Bold"
+               TextColor="{StaticResource SampleOnSurface}"
+               Padding="16,20,16,12" />
+
+        <BoxView Grid.Row="1" HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+        <!-- デモ項目が画面の高さを超える端末でも結果表示エリアまで到達できるよう、
+             見出しから下をスクロールできる容器に入れる (トランジションのデモ画面と同じ構成) -->
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout>
+                <!-- 一覧の行も押しやすさの下限を満たす高さを確保する -->
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.BasicDialogItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBasicDialogSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.LayoutDialogItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnLayoutDialogSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.DeclarativeDialogItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnDeclarativeDialogSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.TextInputDialogItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnTextInputDialogSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.InlineDialogItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnInlineDialogSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.TransitionDialogItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnTransitionDialogSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.ModelDialogItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnModelDialogSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.DefaultLoadingItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnDefaultLoadingSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.CustomLoadingItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnCustomLoadingSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.DefaultToastItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnDefaultToastSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.CustomToastItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnCustomToastSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.ToastStackItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnToastStackSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.ToastPlacementItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnToastPlacementSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <Grid ColumnDefinitions="*,Auto" Padding="16,14" MinimumHeightRequest="48">
+                    <Label Text="{x:Static local:SampleText.ToastOverlapItem}"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                    <Label Grid.Column="1"
+                           Text="›"
+                           FontSize="15"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnToastOverlapSelected" />
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+                <!-- 一度もダイアログを閉じていない間は表示するものがない -->
+                <VerticalStackLayout x:Name="ResultArea"
+                                     IsVisible="False"
+                                     Padding="16,14"
+                                     Spacing="4">
+                    <Label Text="{x:Static local:SampleText.ResultCaption}"
+                           FontSize="12"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Label x:Name="ResultValueLabel"
+                           FontSize="14"
+                           FontFamily="{OnPlatform iOS=Menlo, Android=monospace}"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

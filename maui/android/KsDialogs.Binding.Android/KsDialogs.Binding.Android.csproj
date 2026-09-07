@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MAUI 形態のための互換面 (`jp.kamusoft.ksdialogs.maui`) を .NET から呼び出すための binding。
+    android/native の Gradle ビルドが互換面の aar を作り、本プロジェクトがそれを束縛して
+    輸送層 assembly を生成する。互換面が実行時に必要とする Android Native ライブラリの aar は
+    束縛せず同梱する (公開面に型が現れるのは互換面の型だけなので束縛対象は1つで足りる)。
+
+    この assembly は interop の輸送層であり、利用者向けの公開契約ではない (maui/ADR-0001)。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <!-- 最低対象 OS は Android 7.0 (API 24) (cross/ADR-0002) -->
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsTrimmable>true</IsTrimmable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>KsDialogs.Bridge</RootNamespace>
+    <AssemblyName>KsDialogs.Binding.Android</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- 互換面の Gradle ビルドルートと、それが composite build で取り込む Android 本体のビルドルート -->
+    <KsBridgeGradleDir>$(MSBuildThisFileDirectory)../native/</KsBridgeGradleDir>
+    <KsAndroidRoot>$(MSBuildThisFileDirectory)../../../android/</KsAndroidRoot>
+  </PropertyGroup>
+
+  <!--
+    束縛対象は互換面のモジュールだけにする。Android Native ライブラリは互換面の実行時依存であり、
+    公開面に型が現れないため同梱するだけで束縛しない。
+
+    同梱するだけの aar は Java 型の解決に使われないため、互換面の内部実装が参照している
+    Native ライブラリの型について BG8605 / BG8606 の警告が出る。束縛対象の公開面
+    (提示・閉鎖・通知) には Native ライブラリの型が現れないため、生成される binding に欠落はない。
+  -->
+  <ItemGroup>
+    <AndroidLibrary Include="$(KsBridgeGradleDir)ksdialogs-maui-bridge/build/outputs/aar/ksdialogs-maui-bridge-release.aar" Bind="true" />
+    <AndroidLibrary Include="$(KsAndroidRoot)ksdialogs/build/outputs/aar/ksdialogs-release.aar" Bind="false" />
+  </ItemGroup>
+
+  <!-- 互換面と Android Native ライブラリが Gradle 側で宣言している依存。aar には同梱されない -->
+  <ItemGroup>
+    <PackageReference Include="Xamarin.Kotlin.StdLib" Version="2.4.0.1" />
+    <PackageReference Include="Xamarin.KotlinX.Coroutines.Android" Version="1.11.0.1" />
+  </ItemGroup>
+
+  <!-- Java パッケージ名から .NET namespace への変換など、生成コードの調整 -->
+  <ItemGroup>
+    <TransformFile Include="Transforms/Metadata.xml" />
+  </ItemGroup>
+
+  <!-- 束縛対象と同梱対象の aar を再生成するかの判定に使う入力 -->
+  <ItemGroup>
+    <KsAndroidModuleSource Include="$(KsBridgeGradleDir)ksdialogs-maui-bridge/src/main/**/*" />
+    <KsAndroidModuleSource Include="$(KsBridgeGradleDir)*.kts" />
+    <KsAndroidModuleSource Include="$(KsBridgeGradleDir)ksdialogs-maui-bridge/build.gradle.kts" />
+    <KsAndroidModuleSource Include="$(KsAndroidRoot)ksdialogs/src/main/**/*" />
+    <KsAndroidModuleSource Include="$(KsAndroidRoot)*.kts" />
+    <KsAndroidModuleSource Include="$(KsAndroidRoot)ksdialogs/build.gradle.kts" />
+  </ItemGroup>
+
+  <!--
+    aar は Gradle ビルドをそのまま呼んで生成する。
+    SDK の AndroidGradleProject アイテムは、出力ディレクトリを差し替える init script が
+    Gradle 9 系の Kotlin DSL でコンパイルできず使えない (maui/ADR-0003)。
+  -->
+  <Target Name="_BuildKsDialogsMauiBridgeAars"
+      DependsOnTargets="AndroidPrepareForBuild"
+      BeforeTargets="_CategorizeAndroidLibraries;_ResolveLibraryProjectImports"
+      Inputs="@(KsAndroidModuleSource)"
+      Outputs="@(AndroidLibrary)">
+    <Exec Command="./gradlew --console=plain :ksdialogs:assembleRelease"
+        WorkingDirectory="$(KsAndroidRoot)"
+        EnvironmentVariables="JAVA_HOME=$(JavaSdkDirectory);ANDROID_HOME=$(AndroidSdkDirectory)" />
+    <Exec Command="./gradlew --console=plain :ksdialogs-maui-bridge:assembleRelease"
+        WorkingDirectory="$(KsBridgeGradleDir)"
+        EnvironmentVariables="JAVA_HOME=$(JavaSdkDirectory);ANDROID_HOME=$(AndroidSdkDirectory)" />
+  </Target>
+
+</Project>

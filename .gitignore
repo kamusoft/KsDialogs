@@ -1,0 +1,106 @@
+# ===============================
+# KsDialogs monorepo .gitignore
+# ===============================
+
+# ----- 一般 -----
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# ----- IDE / エディタ -----
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.iml
+*.ipr
+*.iws
+
+# ----- .NET / MAUI (maui/) -----
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.binlog
+*.nupkg
+*.snupkg
+.vs/
+TestResults/
+
+# ----- Android / Gradle (android/, kmp/) -----
+build/
+.gradle/
+# Kotlin 2.x のビルドセッション作業ディレクトリ
+.kotlin/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.aar
+*.dex
+*.class
+
+# ----- iOS / Swift / Xcode (ios/) -----
+.build/
+.swiftpm/
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+xcuserdata/
+*.xcuserstate
+Package.resolved
+*.ipa
+*.dSYM.zip
+*.dSYM
+# Xcode が xcodebuild 実行時に生成するビルドログ（拡張子なし、サフィックスはランダム）
+.derived-data-log-*
+
+# ----- Node / 補助ツール -----
+node_modules/
+
+# scripts/ の Python 補助ツール (開発ハーネス) が生成するバイトコードキャッシュ
+__pycache__/
+*.pyc
+
+# ----- AI 関連 -----
+# settings.json はプロジェクト共有設定 (hooks 登録等) のため追跡する。個人設定は settings.local.json へ
+.claude/settings.local.json
+.claude/plans/
+
+# ----- 機密情報 / 署名鍵 -----
+# 誤コミット防止。追跡中の該当ファイルは無い (2026-09-04 確認)
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.mobileprovision
+google-services.json
+keystore.properties
+secrets.*
+.env.*
+# JVM のクラッシュダンプ (上の *.log にも該当するが明示する)
+hs_err_pid*.log
+
+# ----- OS / その他 -----
+*.orig
+.env
+
+# ----- Kasane 証跡 -----
+# change / roadmap 配下の動作証跡ログは、上の *.log 除外の例外として追跡する。evidence/ は
+# sanitize 済み抜粋を置く場所 (lint を通す)。verification/ の生ログは追跡しない (2026-09-07、
+# 公開リポジトリでは未走査の生ログが漏れ口になるため。必要な抜粋は log-sanitize.py を通して evidence/ へ)
+!kasane/**/evidence/**/*.log
+# 証跡ディレクトリ内でも機密・生クラッシュログは救済しない (gitignore は後勝ちのため、上の例外の後ろで再適用する)
+secrets.*
+.env.*
+hs_err_pid*.log

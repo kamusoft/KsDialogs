@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mock-a: Basic Dialog (標準カード案)</title>
+<style>
+  :root {
+    --primary: #2563EB;
+    --on-primary: #FFFFFF;
+    --surface: #FFFFFF;
+    --on-surface: #1F2937;
+    --on-surface-muted: #6B7280;
+    --scrim: rgba(0, 0, 0, 0.4);
+    --divider: #E5E7EB;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { background: #F3F4F6; display: flex; gap: 32px; justify-content: center; padding: 32px; }
+  .phone {
+    width: 320px; height: 640px; background: var(--surface); border-radius: 24px;
+    border: 1px solid var(--divider); overflow: hidden; position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .phone-label { text-align: center; font-size: 12px; color: var(--on-surface-muted); margin-top: 8px; }
+  .appbar { padding: 20px 16px 12px; border-bottom: 1px solid var(--divider); }
+  .appbar h1 { font-size: 17px; font-weight: 600; color: var(--on-surface); }
+  .menu-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; border-bottom: 1px solid var(--divider); cursor: pointer;
+  }
+  .menu-item span { font-size: 15px; color: var(--on-surface); }
+  .menu-item .chev { color: var(--on-surface-muted); }
+  .result-area { padding: 14px 16px; }
+  .result-area .caption { font-size: 12px; color: var(--on-surface-muted); margin-bottom: 4px; }
+  .result-area .value { font-size: 14px; color: var(--on-surface); font-family: ui-monospace, monospace; }
+  .scrim { position: absolute; inset: 0; background: var(--scrim); display: flex; align-items: center; justify-content: center; }
+  .dialog {
+    width: 260px; background: var(--surface); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.24);
+  }
+  .dialog .message { padding: 24px 20px; font-size: 15px; color: var(--on-surface); text-align: center; }
+  .dialog .buttons { display: flex; border-top: 1px solid var(--divider); }
+  .dialog .buttons button {
+    flex: 1; padding: 12px 0; font-size: 15px; border: none; background: none; cursor: pointer;
+  }
+  .dialog .buttons button + button { border-left: 1px solid var(--divider); }
+  .btn-cancel { color: var(--on-surface-muted); }
+  .btn-ok { color: var(--primary); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>KsDialogs Sample</h1></div>
+      <div class="menu-item"><span>Basic Dialog</span><span class="chev">›</span></div>
+      <div class="result-area">
+        <div class="caption">直近の結果</div>
+        <div class="value">結果: completed(true)</div>
+      </div>
+    </div>
+    <div class="phone-label">メニュー画面 (閉じた後の結果表示)</div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>KsDialogs Sample</h1></div>
+      <div class="menu-item"><span>Basic Dialog</span><span class="chev">›</span></div>
+      <div class="scrim">
+        <div class="dialog">
+          <div class="message">こんにちは、KsDialogs!</div>
+          <div class="buttons">
+            <button class="btn-cancel">キャンセル</button>
+            <button class="btn-ok">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">ダイアログ表示中 (標準カード: 水平ボタン列・区切り線スタイル)</div>
+  </div>
+</body>
+</html>

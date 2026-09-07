@@ -1,0 +1,25 @@
+# 提示先待ちの実測 (2026-09-02、iPhone 17 Pro Simulator / iOS 26.5)
+# 形式: <条件>: host ready after <N> waits  (N = .task 開始から提示先が出来るまで待った回数。1 回 = 50ms)
+normal: host ready after 1 waits
+normal: host ready after 1 waits
+normal: host ready after 1 waits
+normal: host ready after 1 waits
+normal: host ready after 1 waits
+normal: host ready after 1 waits
+normal: host ready after 1 waits
+normal: host ready after 1 waits
+normal: host ready after 1 waits
+normal: host ready after 1 waits
+loaded: host ready after 1 waits
+loaded: host ready after 1 waits
+loaded: host ready after 1 waits
+loaded: host ready after 1 waits
+loaded: host ready after 1 waits
+loaded: host ready after 1 waits
+loaded: host ready after 1 waits
+loaded: host ready after 1 waits
+loaded: host ready after 1 waits
+loaded: host ready after 1 waits
+boot-cycle: host ready after 1 waits
+boot-cycle: host ready after 1 waits
+boot-cycle: host ready after 1 waits

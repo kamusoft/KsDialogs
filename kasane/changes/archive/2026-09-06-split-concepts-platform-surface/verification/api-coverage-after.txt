@@ -1,0 +1,118 @@
+# task 6.1: 再生成後の API 名網羅検査と禁止トークンの負の検査
+
+対象: グループ 5 完了時点の `skills/{en,ja}/` (5 Skill × en/ja、検査対象 66 ファイル — 再生成で内容が変わったのは 62 ファイル、残り 4 ファイルも走査対象) と `skills/.manifest.json`。
+禁止集合の正: `verification/forbidden-tokens.json`。突き合わせ単位は `verification/baseline.md` 末尾
+「Skill 側の負の検査 (task 6.1) の突き合わせ単位」に従う。
+
+## 実行コマンド
+
+```
+python3 .agents/skills/docs-refresh/scripts/api-coverage-check.py
+python3 kasane/changes/split-concepts-platform-surface/verification/skill-forbidden-tokens.py
+```
+
+後者は前者を内部で呼び、[1] Skill 本文への負の検査 と [2] 検査候補への負の検査 を続けて行う。
+出所欄の `span` は本文のバッククォート span、`code` は fenced code block からの検出を表す。
+
+## 出力
+
+```
+$ python3 .agents/skills/docs-refresh/scripts/api-coverage-check.py
+  ksdialogs-aiforms-migration <- maui/api/di-registration.md: ActivatorUtilities.CreateInstance, IMauiInitializeService, IServiceCollection, IServiceProvider, IServiceProvider.GetService
+  ksdialogs-aiforms-migration <- maui/api/dialog-surface.md: CancellationToken
+  ksdialogs-aiforms-migration <- maui/api/layout-surface.md: Center, Fill
+  ksdialogs-aiforms-migration <- maui/api/toast-surface.md: ToastStyle.BuiltinBackgroundColor
+  ksdialogs-aiforms-migration <- maui/api/transition-surface.md: Easing, Easing.CubicInOut, TimeSpan, TimeSpan.MaxValue, Top
+  ksdialogs-android <- android/api/dialog-surface.md: LazyColumn
+  ksdialogs-android <- android/api/layout-surface.md: LayoutParams, LazyColumn
+  ksdialogs-android <- android/api/loading-surface.md: LoadingCoordinator
+  ksdialogs-android <- android/api/transition-surface.md: AbstractComposeView, AccelerateDecelerateInterpolator, LazyColumn
+  ksdialogs-ios <- ios/api/dialog-surface.md: AnyObject, UIHostingController
+  ksdialogs-ios <- ios/api/loading-surface.md: AnyObject, LoadingCoordinator
+  ksdialogs-ios <- ios/api/toast-surface.md: AnyObject
+  ksdialogs-ios <- ios/api/transition-surface.md: TimeInterval, UITimingCurveProvider
+  ksdialogs-kmp <- android/api/layout-surface.md: LayoutParams
+  ksdialogs-kmp <- android/api/loading-surface.md: LoadingCoordinator
+  ksdialogs-kmp <- android/api/transition-surface.md: AbstractComposeView, suspendCancellableCoroutine
+  ksdialogs-kmp <- ios/api/layout-surface.md: UIView
+  ksdialogs-kmp <- ios/api/transition-surface.md: UIView
+  ksdialogs-kmp <- kmp/api/ios-host-integration.md: ConfirmContent, SharedConfirmViewModel, UIView, localSwiftPackage
+  ksdialogs-maui <- maui/api/di-registration.md: IMauiInitializeService, IServiceProvider.GetService, SetIocConfig
+  ksdialogs-maui <- maui/api/dialog-surface.md: ShowResultAsync
+  ksdialogs-maui <- maui/api/layout-surface.md: UseCurrentPageLocation
+  ksdialogs-maui <- maui/api/transition-surface.md: TimeSpan.MaxValue
+  (報告 23 行)
+
+[1] Skill 本文への負の検査 (skills/{en,ja}/<skill>/** の全ファイル)
+  ksdialogs-aiforms-migration: 0 件 (0 件)
+  ksdialogs-android: 0 件 (0 件)
+  ksdialogs-ios: 0 件 (0 件)
+  ksdialogs-kmp: 0 件 (0 件)
+  ksdialogs-maui: 0 件 (0 件)
+  合計: 0 件
+
+[2] 検査候補への負の検査 (api-coverage-check.py の候補トークン)
+  ksdialogs-aiforms-migration: 0 件 (0 件)
+  ksdialogs-android: 0 件 (0 件)
+  ksdialogs-ios: 0 件 (0 件)
+  ksdialogs-kmp: 0 件 (0 件)
+  ksdialogs-maui: 0 件 (0 件)
+  合計: 0 件
+
+負の検査: 一致 0 件
+```
+
+exit code 0。
+
+## 前回実行 (是正前) との差
+
+初回実行では 検査 [1] が 44 件 (ios 22 / android 10 / maui 8 / aiforms-migration 4 / kmp 0)、
+検査 [2] が 3 件 (maui) 一致していた。全件を実装と源泉 concept で照合した結果、Skill 側に他 platform 名が
+写り込んだものは 1 件も無く、すべて **禁止集合側の誤り (task 4.3 の混入) に由来する偽陽性**だった。
+禁止集合を是正した後の再実行が上の出力である。原因・適用した規則・外したトークンの一覧と出典は
+`verification/baseline.md`「追記: ios / android / maui / aiforms-migration 禁止集合の是正 (task 6.1)」に記録した。
+
+集合の件数: ios 200 → 192 / android 178 → 171 / maui 154 → 142 / aiforms-migration 151 → 144 /
+kmp 142 (変更なし)。`maui` の `concept-exempt` 3 件は、対象トークンを集合から外したため空になった。
+
+## 検査 [2] の候補 23 行について
+
+`api-coverage-check.py` の 23 行は「源泉 concept に出る名前のうち Skill に載っていないもの」の報告であり、
+禁止集合との一致が 0 件になった今も残る (掲載除外の判断済み候補)。仕分けは task 6.2 の除外リストが引き取る。
+`SetIocConfig` / `ShowResultAsync` / `UseCurrentPageLocation` (maui) は `maui/api/` の「移植元との対応」節が
+旧 AiForms の名前として言及しているものを拾った候補で、**MAUI Skill に載っていないこと自体が正しい**
+(閉世界性)。他 platform 名の混入検出という禁止集合の目的の外なので maui 集合から外し、
+書き直し後の除外リストでは「非 API token」として仕分けた。
+
+## 追記: オーナー判断による掲載 (2026-09-06)
+
+暫定確定していた除外 4 名 (`Center` / `Fill` / `Top` / `ToastStyle.BuiltinBackgroundColor`) をオーナー判断で
+掲載に倒し、移行 Skill (`skills/{en,ja}/ksdialogs-aiforms-migration/references/api-mapping.md`) の散文へ
+en / ja 同一構成で追記した。あわせて `kasane/handbook/cross/user-skill-api-listing.md` の
+「現行の除外リスト」から該当 2 行を落とした (22 行 → 20 行)。
+
+### 再実行コマンド
+
+```
+python3 .agents/skills/docs-refresh/scripts/api-coverage-check.py
+python3 kasane/changes/split-concepts-platform-surface/verification/skill-forbidden-tokens.py
+```
+
+### 結果
+
+`api-coverage-check.py` の候補は **21 行** (掲載前 23 行)。減ったのは次の 2 行で、
+`Top` は `maui/api/transition-surface.md` 行の名前から落ちた。
+
+```
+- ksdialogs-aiforms-migration <- maui/api/layout-surface.md: Center, Fill
+- ksdialogs-aiforms-migration <- maui/api/toast-surface.md: ToastStyle.BuiltinBackgroundColor
+  ksdialogs-aiforms-migration <- maui/api/transition-surface.md: Easing, Easing.CubicInOut, TimeSpan, TimeSpan.MaxValue (掲載前は末尾に Top)
+```
+
+他の行は掲載前と同一である。`skill-forbidden-tokens.py` は exit code 0 で、
+[1] Skill 本文への負の検査・[2] 検査候補への負の検査とも 5 Skill 範囲すべて 0 件 (合計 0 件、負の検査: 一致 0 件) のままだった。
+
+### 除外リストと候補の突き合わせ
+
+除外リスト 20 行が持つ API 名と、候補 21 行が挙げる名前を platform 単位で突き合わせた結果は 1:1 である
+(未分類 0・余剰 0)。内訳は iOS 5 / Android 5 / MAUI 6 / KMP 8 / AiForms migration 10 の名前。

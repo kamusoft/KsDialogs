@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>add-toast mock: Sample カスタムトースト View</title>
+<style>
+  body { margin:0; font-family:-apple-system,"Hiragino Sans",sans-serif; background:#e9ebee; display:flex; gap:32px; align-items:flex-start; justify-content:center; padding:24px; }
+  .caption { max-width:260px; font-size:13px; color:#374151; line-height:1.7; }
+  .caption h1 { font-size:15px; margin:0 0 8px; }
+  .phone { width:390px; height:420px; background:#fff; border-radius:32px; box-shadow:0 8px 32px rgba(0,0,0,.18); overflow:hidden; position:relative; border:1px solid #d1d5db; }
+  .bg { position:absolute; inset:0; background:#F9FAFB; }
+  /* ===== Sample: 登録経路のカスタムトースト (SampleTheme) ===== */
+  .custom-toast {
+    position:absolute; left:50%; transform:translateX(-50%); bottom:180px;
+    display:flex; align-items:center; gap:10px;
+    background:#2563EB; /* SampleTheme primary */
+    color:#FFFFFF;      /* on-primary */
+    font-size:14px; font-weight:600;
+    padding:12px 18px; border-radius:12px;
+    box-shadow:0 4px 14px rgba(37,99,235,.35);
+  }
+  .custom-toast .badge { width:20px; height:20px; border-radius:50%; background:#FFFFFF; color:#2563EB; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; }
+  /* ===== Sample: インライン経路のカスタムトースト ===== */
+  .inline-toast {
+    position:absolute; left:50%; transform:translateX(-50%); bottom:110px;
+    background:#F3F4F6;  /* surface-variant */
+    color:#1F2937;       /* on-surface */
+    border:1px solid #E5E7EB; /* divider */
+    font-size:14px;
+    padding:11px 18px; border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,.10);
+  }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="bg"></div>
+    <div class="custom-toast"><span class="badge">✓</span>カスタムトースト</div>
+    <div class="inline-toast">インライントースト</div>
+  </div>
+  <div class="caption">
+    <h1>Sample: Custom Toast デモの View</h1>
+    <p>登録経路 (上): SampleTheme primary 地 + on-primary 文字 + バッジ。</p>
+    <p>インライン経路 (下): surface-variant 地 + on-surface 文字 + divider 枠。</p>
+    <p>2枚が重なって出ることで、多重起動とカスタム View の両経路を1デモで見せる。</p>
+  </div>
+</body>
+</html>

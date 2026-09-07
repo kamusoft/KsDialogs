@@ -1,0 +1,9 @@
+# 修正後の解消確認 (Pixel 6a / API 36、2026-09-06。修正前と同一コマンド)
+# コマンド: ANDROID_SERIAL=<android-serial> ./gradlew :ksdialogs:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=jp.kamusoft.ksdialogs.ToastSystemInputTests,jp.kamusoft.ksdialogs.LoadingCoalescingTests
+
+Pixel 6a - 16 Tests 17/17 completed. (0 skipped) (0 failed)
+BUILD SUCCESSFUL in 51s
+exit=0
+
+結果 XML (TEST-Pixel 6a - 16-_ksdialogs-.xml):
+name="jp.kamusoft.ksdialogs.ToastSystemInputTests" tests="2" failures="0" skipped="0" name="jp.kamusoft.ksdialogs.LoadingCoalescingTests" tests="15" failures="0" skipped="0" 

@@ -1,0 +1,22 @@
+# 修正後の全件実行 (android/ instrumented、2026-09-06)
+# コマンド: cd android && ANDROID_SERIAL=<android-serial> ./gradlew connectedDebugAndroidTest (端末ごとに逐次)
+# 件数は ksdialogs/ と ksdialogs-compose/ の build/outputs/androidTest-results/connected/debug/TEST-*.xml の合算
+
+## api29
+BUILD SUCCESSFUL in 8m 31s exit=0 
+  TEST-ksn_api29(AVD) - 10-_ksdialogs-.xml: tests=268 failures=0 errors=0 skipped=6
+  TEST-ksn_api29(AVD) - 10-_ksdialogs-compose-.xml: tests=37 failures=0 errors=0 skipped=0
+  合計: tests=305 failures=0 errors=0 skipped=6
+
+## pixel6a-api36
+BUILD SUCCESSFUL in 9m 10s exit=0 
+  TEST-Pixel 6a - 16-_ksdialogs-.xml: tests=268 failures=0 errors=0 skipped=1
+  TEST-Pixel 6a - 16-_ksdialogs-compose-.xml: tests=37 failures=0 errors=0 skipped=0
+  合計: tests=305 failures=0 errors=0 skipped=1
+
+## pixel4a-api33
+BUILD SUCCESSFUL in 8m 59s exit=0 
+  TEST-Pixel 4a - 13-_ksdialogs-.xml: tests=268 failures=0 errors=0 skipped=1
+  TEST-Pixel 4a - 13-_ksdialogs-compose-.xml: tests=37 failures=0 errors=0 skipped=0
+  合計: tests=305 failures=0 errors=0 skipped=1
+

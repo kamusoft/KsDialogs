@@ -1,0 +1,17 @@
+# 実 framework の ObjC 公開面 (iosSimulatorArm64 / debug)
+
+## 共有ライブラリ KsDialogsKmp.framework の Headers 抜粋
+ * 登録キーになるのは共有コードで定義した ViewModel クラスの ObjC クラスそのもの (kmp/ADR-0002)。
+ */
+__attribute__((swift_name("DialogViewModel")))
+@protocol KDKDialogViewModel
+@required
+@end
+
+## Sample の共有モジュール SampleShared.framework の Headers 抜粋 (共有 VM の実例)
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("BasicDialogViewModel")))
+@interface SampleSharedBasicDialogViewModel : SampleSharedBase <SampleSharedKsdialogs_kmpDialogViewModel>
+- (instancetype)initWithMessage:(NSString *)message __attribute__((swift_name("init(message:)"))) __attribute__((objc_designated_initializer));
+@property (readonly) NSString *message __attribute__((swift_name("message")));
+@end

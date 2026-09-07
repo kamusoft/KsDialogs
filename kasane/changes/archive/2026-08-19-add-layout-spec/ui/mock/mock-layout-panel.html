@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mock-layout-panel: Layout Dialog 属性調整パネル (コンパクト版)</title>
+<style>
+  :root {
+    --primary: #2563EB;
+    --on-primary: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-variant: #F3F4F6;
+    --on-surface: #1F2937;
+    --on-surface-muted: #6B7280;
+    --scrim: rgba(0, 0, 0, 0.4);
+    --divider: #E5E7EB;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { background: #E9EAEE; display: flex; gap: 32px; justify-content: center; padding: 32px; flex-wrap: wrap; }
+  .phone {
+    width: 320px; height: 640px; background: var(--surface); border-radius: 24px;
+    border: 1px solid var(--divider); overflow: hidden; position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .phone-label { text-align: center; font-size: 12px; color: var(--on-surface-muted); margin-top: 8px; }
+  .appbar {
+    padding: 20px 16px 12px; border-bottom: 1px solid var(--divider);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .appbar h1 { font-size: 17px; font-weight: 600; color: var(--on-surface); }
+  .appbar .show-btn {
+    min-height: 44px; padding: 0 18px; font-size: 14px; font-weight: 600;
+    border: none; border-radius: 10px; background: var(--primary); color: var(--on-primary); cursor: pointer;
+  }
+  .row {
+    min-height: 48px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 6px 16px; border-bottom: 1px solid var(--divider);
+  }
+  .row .label { font-size: 14px; color: var(--on-surface); white-space: nowrap; }
+  .seg { display: flex; background: var(--surface-variant); border-radius: 10px; padding: 3px; }
+  .seg button {
+    min-height: 34px; padding: 0 12px; font-size: 13px; border: none; border-radius: 8px;
+    background: transparent; color: var(--on-surface-muted); cursor: pointer;
+  }
+  .seg button.on { background: var(--primary); color: var(--on-primary); font-weight: 600; }
+  .num-field {
+    width: 64px; min-height: 36px; text-align: right; padding: 0 10px;
+    border: 1px solid var(--divider); border-radius: 8px;
+    font-family: ui-monospace, monospace; font-size: 14px; color: var(--on-surface);
+  }
+  .toggle { width: 46px; height: 28px; border-radius: 14px; background: var(--primary); position: relative; flex: none; }
+  .toggle::after {
+    content: ""; position: absolute; top: 2px; right: 2px; width: 24px; height: 24px;
+    border-radius: 12px; background: var(--surface);
+  }
+  .scrim { position: absolute; inset: 0; background: var(--scrim); }
+  .dialog {
+    position: absolute; background: var(--surface); border-radius: 20px;
+    width: 240px; padding: 24px 20px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.24);
+  }
+  .dialog.demo-pos { right: 8px; bottom: 40px; }  /* End/End + Offset の表示例 */
+  .dialog .message { font-size: 15px; color: var(--on-surface); text-align: center; margin-bottom: 16px; }
+  .dialog .buttons { display: flex; gap: 10px; }
+  .dialog .buttons button {
+    flex: 1; min-height: 44px; font-size: 14px; border: none; border-radius: 10px; cursor: pointer;
+  }
+  .btn-cancel { background: var(--surface-variant); color: var(--on-surface); }
+  .btn-ok { background: var(--primary); color: var(--on-primary); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>Layout Dialog</h1><button class="show-btn">Show</button></div>
+      <div class="row">
+        <span class="label">Horizontal</span>
+        <div class="seg"><button>Start</button><button class="on">Center</button><button>End</button></div>
+      </div>
+      <div class="row">
+        <span class="label">Vertical</span>
+        <div class="seg"><button>Start</button><button class="on">Center</button><button>End</button></div>
+      </div>
+      <div class="row"><span class="label">OffsetX</span><input class="num-field" value="0"></div>
+      <div class="row"><span class="label">OffsetY</span><input class="num-field" value="0"></div>
+      <div class="row"><span class="label">Use visible area</span><div class="toggle"></div></div>
+    </div>
+    <div class="phone-label">属性調整パネル・コンパクト版 (初期値 = 既定値)</div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>Layout Dialog</h1><button class="show-btn">Show</button></div>
+      <div class="row">
+        <span class="label">Horizontal</span>
+        <div class="seg"><button>Start</button><button>Center</button><button class="on">End</button></div>
+      </div>
+      <div class="row">
+        <span class="label">Vertical</span>
+        <div class="seg"><button>Start</button><button>Center</button><button class="on">End</button></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="dialog demo-pos">
+        <div class="message">レイアウト確認</div>
+        <div class="buttons">
+          <button class="btn-cancel">キャンセル</button>
+          <button class="btn-ok">OK</button>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">Show 後 (End/End + Offset の表示例)</div>
+  </div>
+</body>
+</html>

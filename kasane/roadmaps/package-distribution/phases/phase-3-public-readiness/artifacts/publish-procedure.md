@@ -1,0 +1,101 @@
+# public 化の実施手順書 (2026-09-07 ドラフト)
+
+phase-3 の決定事項 (agenda.md) を実行順に並べたチェックリスト。翻案元は KsSettingsView の同名手順書 (`../KsSettingsView/kasane/roadmaps/package-distribution/phases/phase-2-public-readiness/artifacts/publish-procedure.md`)。実施時はチェックを埋め、完了後に「実施記録」節へ結果 (日付・新 repo URL・検査結果) を書く。
+
+前提:
+
+- 着手条件は充足済み: 利用者向け文書 (phase-1・2) は完了、README はルート英日 2 枚、`skills/` は生成済み。public 化は CI 構築 (phase-4) より前に行う
+- 点検の実測 (2026-09-07): gitleaks 8.30.1 は全履歴 119 commit で no leaks、ローカルパス lint 0 件、識別子 lint はソース 5 ルート 1025 ファイルを含めて 0 件、`DEVELOPMENT_TEAM` 0 件、author (`user.email`) は local / global とも noreply 済み
+- 履歴は引き継がない (cross/ADR-0021 踏襲)。remote が無いため旧リポジトリの rename は不要で、保管先は private リポジトリを新規に作る
+- ブランチは `develop` / `main` の 2 本 (cross/ADR-0016 proposed)。公開ツリーの initial commit は `develop` に置き、`main` は初回リリースの PR で作る
+- エージェントの実行分類器が `gh repo create` 等を止める場合はオーナーが手で実行する (KsSettingsView では `gh repo rename` だけが止まった)
+
+## 1. 現クローン上での下ごしらえ (commit して記録を残す)
+
+- [x] README 2 枚の画像 URL を `.../kamusoft/KsDialogs/main/assets/...` → `.../develop/...` へ置換 (6 行 × 2 枚)。README は docs-refresh の管轄だが、この置換は決定事項に基づく識別子の差し替えなので手順書内で直接行い、AGENTS.md の運用宣言には触れない
+- [x] `kasane/config.yaml` の `lint.identity.scope` に `samples` / `ios` / `android` / `maui` / `kmp` を追加し、「ソース・テストは含めない」のコメントを「正当な UUID 定数が入ったら `allow` に足す」へ書き換える
+- [x] `.gitignore` の救済行 `!kasane/**/verification/**/*.log` とその説明コメントを削り、`!kasane/**/evidence/**/*.log` は残す
+- [x] 追跡中の `.log` 23 件はこの時点では `git rm` しない (履歴保管先にはそのまま残り、公開ツリーは 2 節で除外する)
+- [x] `lint.exclude` の `kasane/**/verification/**/*.log` はここでは外さない。追跡中の `.log` 3 件が識別子 lint に掛かるため、公開ツリーで除外した後 (4 節の新クローン上) で外す
+- [x] 再走査 4 種を実行して 0 件を確認する
+
+```bash
+python3 scripts/local-path-lint.py
+python3 scripts/identity-lint.py
+gitleaks git --redact --no-banner .
+grep -rn DEVELOPMENT_TEAM samples/ maui/macios/native/ --include=project.pbxproj
+```
+- [x] 上記を `main` に commit する
+
+## 2. 公開ツリーの作成 (単一 initial commit)
+
+- [x] `git ls-files` の一覧から次を除いて `../KsDialogs-public-tree` へコピーする
+  - `kasane/changes/archive/**` の媒体 (png 340 件 / 43 MB)
+  - `kasane/changes/archive/**/verification/**/*.log` (23 件 / 136 KB)
+  - 試算: 追跡 2150 件のうち公開ツリーに残るのは 1787 件 / 約 15 MB
+- [x] symlink 2 件 (`CLAUDE.md` → `AGENTS.md`、`.claude/skills/docs-refresh` → `../../.agents/skills/docs-refresh`) はリンクのままコピーし、リンク先が追跡下にあることを確認
+- [x] 新ディレクトリで `git init -b develop` → `git add -A` → 無視されたファイルが 0 件であることを `git status` で確認 → 単一 commit (author は noreply、メッセージ `Initial public snapshot`)
+- [x] 新ディレクトリで再走査 4 種 (1 節と同じ) を実行し、すべて 0 件。`git config core.hooksPath .githooks` を設定
+- [x] 画像リンクが壊れる `.md` の件数を記録する (archive 媒体を外した既知の帰結。KsSettingsView は 5 ファイル・10 件)
+
+## 3. GitHub: 履歴の保管・新 repo の公開・配信リポジトリ
+
+### 3a. 履歴の保管先 (private)
+
+- [ ] `gh repo create kamusoft/KsDialogs-private-archive --private` (description は「KsDialogs の public 化前の履歴保管 (読み取り専用)」相当)
+- [ ] 現クローンに remote `origin` を追加し、`main` と `spike/phase-10-packaging-poc` を push する
+- [ ] push 後に `gh repo archive kamusoft/KsDialogs-private-archive` で読み取り専用にする
+
+### 3b. 新 repo `kamusoft/KsDialogs` (public)
+
+- [ ] `gh repo create kamusoft/KsDialogs --private` で作成し、2 節のツリーを `develop` として push。default branch を `develop` にする
+- [ ] GitHub 上で中身を目視 (README の画像表示・ツリー・ファイル数・容量) → visibility を **public** に切り替え
+- [ ] description は README の Overview 1 文目を短縮した英文。website は空 (配布先が未確定)
+- [ ] topics は次から 10 個: ios / android / dotnet-maui / kotlin-multiplatform / swift / kotlin / jetpack-compose / dialog / toast / ui-library / cross-platform
+- [ ] 設定 (gh api): Issues ON / Wiki OFF / Discussions OFF / Projects OFF (作成時の既定が ON なら public 切替の前に OFF)、Actions 有効 (既定)、Secret scanning + Push protection ON、Dependabot alerts ON
+- [ ] **Pull requests を collaborators only** にする (`pull_request_creation_policy` = `collaborators_only`。cross/ADR-0013、phase-2 からの申し送り)
+- [ ] `develop` の branch protection = force-push 禁止 + 削除禁止 (必須 status check は phase-4 の CI 後)。`main` の保護は初回リリース PR の前 (phase-9) に完全な payload で PUT する
+- [ ] ラベル `bug` / `enhancement` / `question` の存在を確認 (Issue Forms の `labels:` は存在しないラベルを自動生成しない)
+
+### 3c. 配信リポジトリ `kamusoft/KsDialogs-SPM` (public)
+
+- [ ] `gh repo create kamusoft/KsDialogs-SPM --public` (description: `SwiftPM distribution snapshot of KsDialogs (source: kamusoft/KsDialogs)`、homepage: monorepo の URL)
+- [ ] 初回 commit は誘導 README と monorepo ルート `LICENSE` のコピーの 2 点。default branch は `main`
+  - 誘導 README は KsSettingsView-SPM の `scripts/spm-snapshot/README.template.md` を名前だけ差し替える
+  - `Package.swift` / `Sources` / `Tests` は phase-5 の生成スクリプトが初回 push する
+- [ ] 設定: Issues / Wiki / Projects / Discussions すべて OFF、PR は collaborators only、workflow と branch protection は置かない、GitHub Release は作らない (tag のみ)
+
+## 4. ローカルの切り替え
+
+- [ ] 現クローンを `../KsDialogs-private-archive` へ改名する (remote は 3a で設定済み)
+- [ ] `../KsDialogs-public-tree` を `../KsDialogs` へ移し、remote `origin` を新 repo に設定する (`../<リポジトリ名>/` 規約と Claude Code のパス紐づけを保つ)
+- [ ] 未追跡の開発ファイルを旧ディレクトリから複製する: `local.properties` 5 件 (`android/` `kmp/` `maui/android/native/` `samples/android/` `samples/kmp/`) と `.claude/settings.local.json`。ビルド生成物は再生成
+- [ ] 新クローンで `git config core.hooksPath .githooks` を設定し、両 lint の `--selftest` が通ることを確認
+- [ ] `kasane/config.yaml` の `lint.exclude` から `kasane/**/verification/**/*.log` を外し (`exclude: []`)、識別子 lint が exit 0 のままであることを確認して commit
+- [ ] 4 ルートのビルドが通ることを確認 (iOS: `ios/` で `swift build` / Android: `android/` で `./gradlew assemble` / KMP: `kmp/` で `./gradlew assemble` / MAUI: `maui/` で `dotnet build`)
+- [ ] Claude Code のメモリ・セッションが同じパスで引き継がれていることを確認
+
+## 5. 後続 (この手順書の外、別フローで)
+
+- [ ] phase-4 (検証 CI) へ: ブランチモデル `develop` / `main`、`develop` の必須 status check、識別子 lint の 5 ルート検査の CI 化
+- [ ] phase-5 (native packaging) へ: `KsDialogs-SPM` への初回スナップショット push
+- [ ] cross/ADR-0016 のオーナー確認 (proposed → accepted は phase-4 / 9 の蒸留時)
+- [ ] agenda の「調査結果のまとめ」を書き、ksn-roadmap で research 完了をマーク
+
+## 実施記録
+
+### 2026-09-07: 1 節 下ごしらえ (完了)
+
+- README 2 枚の画像 URL 6 行 × 2 を `develop` へ置換。docs-refresh の manifest は README の URL を持たないため追従作業なし
+- `lint.identity.scope` に 5 ルートを追加しコメントを書き換え。`--selftest` 全件 OK
+- `.gitignore` の verification 救済行を削除 (追跡中の 23 件は追跡のまま)。`lint.exclude` は 4 節まで残す
+- 再走査 4 種すべて 0 件 (ローカルパス lint / 識別子 lint / gitleaks 全履歴 no leaks / `DEVELOPMENT_TEAM` 0)
+
+### 2026-09-07: 2 節 公開ツリーの作成 (完了)
+
+- 除外は決定どおり: archive の png 340 件 / 43 MB と `.log` 23 件 / 136 KB。追跡 2150 件のうち**公開ツリーに残るのは 1788 件 / 15 MB** (`.git` は 12 MB)。残る媒体は `assets/` の README 画像 6 枚のみ
+- 作成先は `../KsDialogs-public-tree`。symlink 2 件はリンクのままコピーし、リンク先が追跡下にあることを確認
+- `git init -b develop` → `git add -A` で 1788 件すべてが追跡され、無視されたファイルは 0 件。単一 commit `Initial public snapshot` (author は noreply)。`core.hooksPath` を設定
+- 公開ツリー上で再走査 4 種すべて 0 件
+- 既知の帰結: archive の `.md` から png を指す Markdown リンク 5 件 / 1 ファイルが壊れる (想定内)
+

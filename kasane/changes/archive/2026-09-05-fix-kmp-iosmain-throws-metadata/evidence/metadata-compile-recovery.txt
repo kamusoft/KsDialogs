@@ -1,0 +1,49 @@
+# iosMain metadata compile の回復証跡 (2026-09-05、Kotlin 2.4.10 / Gradle 9.7.0)
+
+## 修正前 (再現)
+
+kmp/ で `./gradlew :ksdialogs-kmp:compileIosMainKotlinMetadata --rerun-tasks`:
+
+e: .../kmp/ksdialogs-kmp/src/iosMain/kotlin/jp/kamusoft/ksdialogs/kmp/IosLoadingGateway.kt:34:5 Member overrides different '@Throws' filter from 'interface KsLoading : Any'.
+e: .../kmp/ksdialogs-kmp/src/iosMain/kotlin/jp/kamusoft/ksdialogs/kmp/IosLoadingGateway.kt:57:5 Member overrides different '@Throws' filter from 'interface KsLoading : Any'.
+e: .../kmp/ksdialogs-kmp/src/iosMain/kotlin/jp/kamusoft/ksdialogs/kmp/IosToastGateway.kt:30:5 Member overrides different '@Throws' filter from 'interface KsToast : Any'.
+Execution failed for task ':ksdialogs-kmp:compileIosMainKotlinMetadata'
+BUILD FAILED in 44s
+
+切り分け (iosMain の一時ファイルで実施、終了後に削除):
+- iosMain 内で閉じた interface + 同じ @Throws の override → 通る
+- commonMain の KsToast を iosMain で override し @Throws を書かない → 通る
+- commonMain の interface を iosMain で override し同じ @Throws を書く (修正前) → 失敗
+根本原因: https://youtrack.jetbrains.com/issue/KT-88548 (affected 2.4.10、fixed 2.5.0-Beta1)
+
+## 修正後 (iosMain の override 3 箇所から @Throws を削除)
+
+すべて `--console=plain -q` で実行し、`e:` 行なし・BUILD FAILED なし (Gradle は -q のため成功時は無言。"BUILD SUCCEEDED" は SwiftPM 依存の xcodebuild の出力):
+
+1. kmp/ `./gradlew :ksdialogs-kmp:compileIosMainKotlinMetadata --rerun-tasks` → 成功
+2. kmp/ `./gradlew :ksdialogs-kmp:compileKotlinIosSimulatorArm64 --rerun-tasks` → 成功
+3. kmp/ `./gradlew :ksdialogs-kmp:linkDebugFrameworkIosSimulatorArm64` → 成功
+4. samples/kmp/ `./gradlew :shared:compileCommonMainKotlinMetadata --rerun-tasks` → 成功 (included build の :kmp:ksdialogs-kmp:compileIosMainKotlinMetadata を含む)
+
+## kmp 全テスト (kmp/ `./gradlew allTests --rerun-tasks`)
+
+> Task :ksdialogs-kmp:iosSimulatorArm64Test
+> Task :ksdialogs-kmp:allTests
+BUILD SUCCESSFUL in 43s
+test-results: iosSimulatorArm64Test tests=49 failures=0 / testAndroidHostTest tests=47 failures=0 (計 96 件)
+
+## 生成 ObjC ヘッダの公開契約 (build/bin/iosSimulatorArm64/debugFramework/KsDialogsKmp.framework/Headers/KsDialogsKmp.h)
+
+KsLoading protocol の VM 経路:
+ * @note This method converts instances of DialogException, CancellationException to errors.
+- (void)showViewModel:(id<KDKLoadingViewModel>)viewModel placement:(KDKDialogPlacement * _Nullable)placement completionHandler_:(void (^)(NSError * _Nullable))completionHandler ...
+
+KsToast protocol の VM 経路:
+ * @note This method converts instances of DialogException to errors.
+- (BOOL)showViewModel:(id<KDKToastViewModel>)viewModel durationMs:(KDKInt * _Nullable)durationMs placement:(KDKDialogPlacement * _Nullable)placement error:(NSError * _Nullable * _Nullable)error ...
+
+→ interface (commonMain) の @Throws 宣言がそのまま公開面に出ており、override から外しても Swift の throws 契約は不変。
+
+## comment-policy lint
+
+`python3 scripts/comment-policy-lint.py --summary` → 禁止 0 件 (検査対象 919 ファイル)

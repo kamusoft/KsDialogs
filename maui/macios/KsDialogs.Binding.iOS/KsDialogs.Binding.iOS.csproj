@@ -1,0 +1,120 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MAUI 形態のための ObjC 互換面 (`KSDMauiDialogBridge`) を .NET から呼び出すための binding。
+    macios/native の Xcode project が iOS Native の Swift パッケージと互換面をひとつの静的
+    framework へまとめ、本プロジェクトがその xcframework を binding して輸送層 assembly を生成する。
+
+    この assembly は interop の輸送層であり、利用者向けの公開契約ではない (maui/ADR-0001)。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <!-- 最低対象 OS は iOS 17 (cross/ADR-0002) -->
+    <SupportedOSPlatformVersion>17.0</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>true</ImplicitUsings>
+    <IsBindingProject>true</IsBindingProject>
+    <IsTrimmable>true</IsTrimmable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>KsDialogs.Bridge</RootNamespace>
+    <AssemblyName>KsDialogs.Binding.iOS</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ObjcBindingApiDefinition Include="ApiDefinition.cs" />
+    <ObjcBindingCoreSource Include="StructsAndEnums.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- 互換面の Xcode project と、その target が取り込む Swift ソースのルート -->
+    <KsBridgeXcodeDir>$(MSBuildThisFileDirectory)../native/</KsBridgeXcodeDir>
+    <KsNativeSwiftRoot>$(MSBuildThisFileDirectory)../../../ios/</KsNativeSwiftRoot>
+  </PropertyGroup>
+
+  <!--
+    Xcode プロジェクトの自動ビルド (xcframework 生成)。
+    CreateNativeReference=false は MSBuild 18 のメタデータ自己参照バグ (MSB4120) の回避で、
+    SDK 側の NativeReference 自動登録が壊れているため下のカスタムターゲットで登録する。
+    参考: https://github.com/CommunityToolkit/Maui.NativeLibraryInterop/issues/107
+  -->
+  <ItemGroup>
+    <XcodeProject Include="$(KsBridgeXcodeDir)KsDialogsMauiBridge.xcodeproj">
+      <SchemeName>KsDialogsMauiBridge</SchemeName>
+      <CreateNativeReference>false</CreateNativeReference>
+    </XcodeProject>
+  </ItemGroup>
+
+  <!--
+    _BuildXcodeProjects が生成した xcframework を、修飾メタデータ参照で NativeReference に登録する。
+    _CreateBindingResourcePackage より前に走らせるため _SanitizeNativeReferences を基準にする。
+  -->
+  <Target Name="_RegisterXcodeProjectNativeReference"
+      DependsOnTargets="_BuildXcodeProjects"
+      BeforeTargets="_SanitizeNativeReferences"
+      Condition=" '@(XcodeProject->Count())' != '0' ">
+    <ItemGroup>
+      <NativeReference
+          Include="%(XcodeProject.OutputPath)xcframeworks/%(XcodeProject.SchemeName)$(TargetPlatformIdentifier).xcframework"
+          Kind="Framework"
+          ForceLoad="False"
+          SmartLink="False"
+          LinkWithSwiftSystemLibraries="True"
+          Visible="False" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    xcframework の再ビルド判定に使う入力の補正。
+
+    SDK の既定は xcodeproj のあるディレクトリ配下しか走査しないが、Xcode target が取り込む
+    Swift の実体には iOS Native の Swift パッケージも含まれるため、そのままでは Native 側を
+    直しても再ビルドされない。
+    逆に、xcframework をスクリプトから単体生成したときの出力が残っていると、生成物が入力として
+    拾われて無意味な再ビルドを招くので除外する。
+    テスト標的とテスト用ホストアプリのソースも除外する — どちらも scheme のビルド対象 (静的
+    framework) に入らないため、直しても xcframework は変わらない。
+
+    SDK 側の item は正規化済みの絶対パスなので、Remove / Include とも
+    NormalizeDirectory で表記を揃える (`..` を含んだままでは Remove が一致しない)。
+  -->
+  <Target Name="_AdjustKsBridgeXcodeProjectInputs"
+      AfterTargets="_GetBuildXcodeProjectsInputs">
+    <ItemGroup>
+      <_XcbInputs Remove="$([MSBuild]::NormalizeDirectory('$(KsBridgeXcodeDir)build'))**/*" />
+      <_XcbInputs Remove="$([MSBuild]::NormalizeDirectory('$(KsBridgeXcodeDir)DerivedData'))**/*" />
+      <_XcbInputs Remove="$([MSBuild]::NormalizeDirectory('$(KsBridgeXcodeDir)KsDialogsMauiBridgeTests'))**/*" />
+      <_XcbInputs Remove="$([MSBuild]::NormalizeDirectory('$(KsBridgeXcodeDir)KsDialogsMauiBridgeTestHost'))**/*" />
+      <_XcbInputs Include="$([MSBuild]::NormalizeDirectory('$(KsNativeSwiftRoot)Sources/KsDialogs'))**/*.swift" />
+      <_XcbInputs Include="$([MSBuild]::NormalizePath('$(KsNativeSwiftRoot)Package.swift'))" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    資源パッケージ (`$(AssemblyName).resources`) 再生成の判定に使う入力の補正。
+
+    SDK の `_CreateBindingResourcePackage` は Inputs に xcframework を含めない (xcframework は
+    ディレクトリであり Inputs に使えない、と SDK 自身がコメントで説明している)。binding
+    プロジェクトでは `ResolveNativeReferences` も走らないため、xcframework は実バイナリへ展開
+    されない。結果として互換面の Swift だけを直して xcframework が作り直されても資源パッケージは
+    再生成されず、モノレポで ProjectReference する消費者 (Sample) には古いネイティブ成果物が
+    残り続ける。
+
+    そこで、ディレクトリではなく xcframework の中の実バイナリ (Mach-O) を Inputs に載る item
+    `_FileNativeReference` へ足し、「中身が変わったときだけ」再生成させる。実バイナリは
+    `CreateBindingResourcePackage` の入力 (`@(NativeReference)`) ではないため、
+    資源パッケージの中身は変わらない。
+
+    依存する SDK の内部要素 (maui/ADR-0003 の「SDK 内部ターゲットへの依存」の増分):
+      target `_ExpandNativeReferences` (`_CreateBindingResourcePackage` の DependsOnTargets)
+      item   `_FileNativeReference` (`_CreateBindingResourcePackage` の Inputs)
+  -->
+  <Target Name="_AddKsBridgeBinaryToBindingResourceInputs"
+      AfterTargets="_ExpandNativeReferences"
+      Condition=" '@(XcodeProject->Count())' != '0' ">
+    <ItemGroup>
+      <_FileNativeReference
+          Include="%(XcodeProject.OutputPath)xcframeworks/%(XcodeProject.SchemeName)$(TargetPlatformIdentifier).xcframework/*/*.framework/%(XcodeProject.SchemeName)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

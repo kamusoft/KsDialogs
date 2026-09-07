@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- アプリのプロセス生成時に自動で生成され、Activity の追跡を始める。データの入出力は行わない -->
+        <provider
+            android:name="jp.kamusoft.ksdialogs.KsDialogsInstaller"
+            android:authorities="${applicationId}.ksdialogs-installer"
+            android:enabled="true"
+            android:exported="false" />
+    </application>
+
+</manifest>

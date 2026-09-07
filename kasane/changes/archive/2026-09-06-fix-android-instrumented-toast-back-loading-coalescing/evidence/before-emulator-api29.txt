@@ -1,0 +1,17 @@
+# 修正前の再現 (ksn_api29 エミュレータ / API 29、2026-09-06)
+# コマンド: ANDROID_SERIAL=<android-serial> ./gradlew :ksdialogs:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=jp.kamusoft.ksdialogs.ToastSystemInputTests,jp.kamusoft.ksdialogs.LoadingCoalescingTests
+# 全文は手元保管 (抜粋のみ)。ToastSystemInputTests は API 29 では失敗なし (予測型バックが有効でない環境では戻るは onBackPressed の従来経路で届く。IME のテストは API 30 未満で skip)
+
+	java.lang.AssertionError
+> Task :ksdialogs:connectedDebugAndroidTest FAILED
+BUILD FAILED in 40s
+Execute jp.kamusoft.ksdialogs.LoadingCoalescingTests.LD_CO_13_出の途中の新しい開始は出の完了後に新世代として表示される: FAILED
+Tests on ksn_api29(AVD) - 10 failed: There was 1 failure(s).
+at jp.kamusoft.ksdialogs.LoadingCoalescingTests$LD_CO_13_出の途中の新しい開始は出の完了後に新世代として表示される$1$1.invokeSuspend(LoadingCoalescingTests.kt:338)
+at jp.kamusoft.ksdialogs.LoadingCoalescingTests.LD_CO_13_出の途中の新しい開始は出の完了後に新世代として表示される(LoadingCoalescingTests.kt:329)
+at org.junit.Assert.fail(Assert.java: java.lang.AssertionError
+java.lang.AssertionError
+jp.kamusoft.ksdialogs.LoadingCoalescingTests > LD_CO_13_出の途中の新しい開始は出の完了後に新世代として表示される[ksn_api29(AVD) - 10] FAILED 
+
+結果 XML (TEST-ksn_api29(AVD) - 10-_ksdialogs-.xml):
+name="jp.kamusoft.ksdialogs.ToastSystemInputTests" tests="2" failures="0" skipped="1" name="localhost" name="jp.kamusoft.ksdialogs.LoadingCoalescingTests" tests="15" failures="1" skipped="0" name="localhost" 

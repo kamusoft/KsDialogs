@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mock-revised: Sample 改訂 (タップ領域44 + surface-variant + 初期非表示 + レイアウトデモ)</title>
+<style>
+  :root {
+    --primary: #2563EB;
+    --on-primary: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-variant: #F3F4F6;   /* 昇格: 無彩色ボタン・強調背景に使う中間トーン */
+    --on-surface: #1F2937;
+    --on-surface-muted: #6B7280;
+    --scrim: rgba(0, 0, 0, 0.4);
+    --divider: #E5E7EB;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { background: #E9EAEE; display: flex; gap: 32px; justify-content: center; padding: 32px; flex-wrap: wrap; }
+  .phone {
+    width: 320px; height: 640px; background: var(--surface); border-radius: 24px;
+    border: 1px solid var(--divider); overflow: hidden; position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .phone-label { text-align: center; font-size: 12px; color: var(--on-surface-muted); margin-top: 8px; }
+  .appbar { padding: 20px 16px 12px; border-bottom: 1px solid var(--divider); }
+  .appbar h1 { font-size: 17px; font-weight: 600; color: var(--on-surface); }
+  .menu-item {
+    display: flex; justify-content: space-between; align-items: center;
+    min-height: 48px;                       /* 改訂: 一覧行も 48dp 以上のタップ領域 */
+    padding: 0 16px; border-bottom: 1px solid var(--divider); cursor: pointer;
+  }
+  .menu-item span { font-size: 15px; color: var(--on-surface); }
+  .menu-item .chev { color: var(--on-surface-muted); }
+  .result-area { padding: 14px 16px; }
+  .result-area .caption { font-size: 12px; color: var(--on-surface-muted); margin-bottom: 4px; }
+  .result-area .value { font-size: 14px; color: var(--on-surface); font-family: ui-monospace, monospace; }
+  .scrim { position: absolute; inset: 0; background: var(--scrim); }
+  .scrim.center { display: flex; align-items: center; justify-content: center; }
+  .dialog {
+    width: 272px; background: var(--surface); border-radius: 20px;
+    padding: 24px 20px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.24);
+  }
+  .dialog .message { font-size: 15px; color: var(--on-surface); text-align: center; margin-bottom: 20px; }
+  .dialog .buttons { display: flex; gap: 10px; }
+  .dialog .buttons button {
+    flex: 1; min-height: 44px;              /* 改訂: 38 → 44pt (HIG) / Android 実装は 48dp */
+    font-size: 14px; border: none; border-radius: 10px; cursor: pointer;
+  }
+  .btn-cancel { background: var(--surface-variant); color: var(--on-surface); }
+  .btn-ok { background: var(--primary); color: var(--on-primary); font-weight: 600; }
+  /* レイアウトデモ: 下端寄せ + マージンの例 */
+  .dialog.bottom {
+    position: absolute; left: 16px; right: 16px; bottom: 16px; width: auto;
+  }
+</style>
+</head>
+<body>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>KsDialogs Sample</h1></div>
+      <div class="menu-item"><span>Basic Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Layout Dialog</span><span class="chev">›</span></div>
+      <!-- 改訂: 初期状態は結果エリアなし -->
+    </div>
+    <div class="phone-label">起動直後 (結果エリア非表示・行48)</div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>KsDialogs Sample</h1></div>
+      <div class="menu-item"><span>Basic Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Layout Dialog</span><span class="chev">›</span></div>
+      <div class="scrim center">
+        <div class="dialog">
+          <div class="message">こんにちは、KsDialogs!</div>
+          <div class="buttons">
+            <button class="btn-cancel">キャンセル</button>
+            <button class="btn-ok">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">Basic Dialog (ボタン44・トークン反映)</div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>KsDialogs Sample</h1></div>
+      <div class="menu-item"><span>Basic Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Layout Dialog</span><span class="chev">›</span></div>
+      <div class="scrim">
+        <div class="dialog bottom">
+          <div class="message">下端寄せ + マージン 16 の例</div>
+          <div class="buttons">
+            <button class="btn-cancel">キャンセル</button>
+            <button class="btn-ok">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">Layout Dialog (End 配置 + DialogMargin)</div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>KsDialogs Sample</h1></div>
+      <div class="menu-item"><span>Basic Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Layout Dialog</span><span class="chev">›</span></div>
+      <div class="result-area">
+        <div class="caption">直近の結果</div>
+        <div class="value">結果: completed(true)</div>
+      </div>
+    </div>
+    <div class="phone-label">結果確定後 (結果エリア表示)</div>
+  </div>
+</body>
+</html>

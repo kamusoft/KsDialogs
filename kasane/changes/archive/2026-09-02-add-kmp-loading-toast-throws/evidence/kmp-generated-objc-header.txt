@@ -1,0 +1,32 @@
+生成 ObjC ヘッダ (SampleShared.framework/Headers/SampleShared.h) の抜粋。
+取得: samples/kmp で ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64 --rerun-tasks (2026-09-02)
+Kotlin/Native は @Throws に列挙したクラスを "@note This method converts instances of ... to errors." として
+関数ごとにヘッダへ書き出す。@Throws が無い関数にはこの行が出ない (suspend は CancellationException のみ)。
+
+# KsToast (非 suspend) — VM 経路だけが throws 化
+
+ * @note This method converts instances of DialogException to errors.
+- (BOOL)showViewModel:(id<SampleSharedKsdialogs_kmpToastViewModel>)viewModel durationMs:(SampleSharedInt * _Nullable)durationMs placement:(SampleSharedKsdialogs_kmpDialogPlacement * _Nullable)placement error:(NSError * _Nullable * _Nullable)error __attribute__((swift_name("show(viewModel:durationMs:placement:)")));
+
+(message 経路は @note 行なし)
+- (void)showMessage:(NSString *)message durationMs:(SampleSharedInt * _Nullable)durationMs placement:(SampleSharedKsdialogs_kmpDialogPlacement * _Nullable)placement __attribute__((swift_name("show(message:durationMs:placement:)")));
+
+# KsLoading (suspend 5 本) — ObjC シグネチャは全て同形、@note 行だけが VM 経路で異なる
+
+ * @note This method converts instances of DialogException, CancellationException to errors.
+- (void)showViewModel:(id<SampleSharedKsdialogs_kmpLoadingViewModel>)viewModel placement:(SampleSharedKsdialogs_kmpDialogPlacement * _Nullable)placement completionHandler_:(void (^)(NSError * _Nullable))completionHandler __attribute__((swift_name("show(viewModel:placement:completionHandler_:)")));
+
+ * @note This method converts instances of DialogException, CancellationException to errors.
+- (void)startViewModel:(id<SampleSharedKsdialogs_kmpLoadingViewModel>)viewModel placement:(SampleSharedKsdialogs_kmpDialogPlacement * _Nullable)placement action:(id<SampleSharedKotlinSuspendFunction1>)action completionHandler:(void (^)(id _Nullable_result, NSError * _Nullable))completionHandler __attribute__((swift_name("start(viewModel:placement:action:completionHandler:)")));
+
+ * @note This method converts instances of CancellationException to errors.
+- (void)showMessage:(NSString * _Nullable)message placement:(SampleSharedKsdialogs_kmpDialogPlacement * _Nullable)placement completionHandler:(void (^)(NSError * _Nullable))completionHandler __attribute__((swift_name("show(message:placement:completionHandler:)")));
+
+ * @note This method converts instances of CancellationException to errors.
+- (void)startMessage:(NSString * _Nullable)message placement:(SampleSharedKsdialogs_kmpDialogPlacement * _Nullable)placement action:(id<SampleSharedKotlinSuspendFunction1>)action completionHandler:(void (^)(id _Nullable_result, NSError * _Nullable))completionHandler __attribute__((swift_name("start(message:placement:action:completionHandler:)")));
+
+ * @note This method converts instances of CancellationException to errors.
+- (void)hideWithCompletionHandler:(void (^)(NSError * _Nullable))completionHandler __attribute__((swift_name("hide(completionHandler:)")));
+
+ * @note This method converts instances of CancellationException to errors.
+- (void)setMessageMessage:(NSString * _Nullable)message completionHandler:(void (^)(NSError * _Nullable))completionHandler __attribute__((swift_name("setMessage(message:completionHandler:)")));

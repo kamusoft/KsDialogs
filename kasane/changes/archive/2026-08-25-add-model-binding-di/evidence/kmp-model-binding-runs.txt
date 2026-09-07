@@ -1,0 +1,19 @@
+# KMP 経路のテストと成果物ビルドの実行結果 (2026-08-25)
+
+## kmp/ 全件 (cd kmp && ./gradlew allTests --rerun-tasks)
+BUILD SUCCESSFUL in 1m 10s
+iosSimulatorArm64Test: 31 tests / 0 failures / 0 errors
+testAndroidHostTest:   26 tests / 0 failures / 0 errors
+
+## ios/ 全件 (cd ios && xcodebuild test -scheme KsDialogs -destination 'platform=iOS Simulator,name=iPhone 17')
+Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.004) seconds
+✔ Test run with 156 tests in 28 suites passed after 12.814 seconds.
+
+## 実 framework のリンク (cd kmp && ./gradlew :ksdialogs-kmp:linkDebugFrameworkIosSimulatorArm64)
+BUILD SUCCESSFUL in 6s
+
+## Sample (KMP) の iOS アプリのビルド (実 framework + Swift パッケージのリンク)
+** BUILD SUCCEEDED **
+
+## Sample (KMP) の Android アプリのインストール
+BUILD SUCCESSFUL in 22s

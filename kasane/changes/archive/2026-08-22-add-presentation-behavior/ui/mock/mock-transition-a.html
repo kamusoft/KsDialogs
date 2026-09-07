@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mock-transition-a: Transition デモ (案A: リスト選択型)</title>
+<style>
+  :root {
+    --primary: #2563EB;
+    --on-primary: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-variant: #F3F4F6;
+    --on-surface: #1F2937;
+    --on-surface-muted: #6B7280;
+    --scrim: rgba(0, 0, 0, 0.4);
+    --divider: #E5E7EB;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { background: #E9EAEE; display: flex; gap: 32px; justify-content: center; padding: 32px; flex-wrap: wrap; }
+  .phone {
+    width: 320px; height: 640px; background: var(--surface); border-radius: 24px;
+    border: 1px solid var(--divider); overflow: hidden; position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .phone-label { text-align: center; font-size: 12px; color: var(--on-surface-muted); margin-top: 8px; }
+  .appbar { padding: 20px 16px 12px; border-bottom: 1px solid var(--divider); }
+  .appbar h1 { font-size: 17px; font-weight: 600; color: var(--on-surface); }
+  .menu-item {
+    display: flex; justify-content: space-between; align-items: center;
+    min-height: 48px; padding: 0 16px; border-bottom: 1px solid var(--divider); cursor: pointer;
+  }
+  .menu-item span { font-size: 15px; color: var(--on-surface); }
+  .menu-item .chev { color: var(--on-surface-muted); }
+  .result-area { padding: 14px 16px; }
+  .result-area .caption { font-size: 12px; color: var(--on-surface-muted); margin-bottom: 4px; }
+  .result-area .value { font-size: 14px; color: var(--on-surface); font-family: ui-monospace, monospace; }
+
+  /* 案A: プリセットは選択リスト行 (単一選択)、下部に調整と表示ボタン */
+  .section-caption { font-size: 12px; color: var(--on-surface-muted); padding: 12px 16px 4px; }
+  .option-row {
+    display: flex; justify-content: space-between; align-items: center;
+    min-height: 44px; padding: 0 16px; cursor: pointer;
+  }
+  .option-row span { font-size: 15px; color: var(--on-surface); }
+  .option-row .check { color: var(--primary); font-weight: 700; visibility: hidden; }
+  .option-row.selected { background: var(--surface-variant); }
+  .option-row.selected .check { visibility: visible; }
+  .adjust-row {
+    display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px;
+  }
+  .adjust-row label { font-size: 14px; color: var(--on-surface); width: 72px; }
+  .adjust-row .field {
+    flex: 1; min-height: 36px; border: 1px solid var(--divider); border-radius: 10px;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+    font-size: 14px; color: var(--on-surface);
+  }
+  .adjust-row .field .chev { color: var(--on-surface-muted); font-size: 12px; }
+  .footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px 16px 16px; border-top: 1px solid var(--divider); background: var(--surface); }
+  .btn-show {
+    width: 100%; min-height: 44px; font-size: 14px; border: none; border-radius: 10px;
+    background: var(--primary); color: var(--on-primary); font-weight: 600; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>KsDialogs Sample</h1></div>
+      <div class="menu-item"><span>Basic Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Layout Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Declarative Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Text Input Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Inline Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Transition Dialog</span><span class="chev">›</span></div>
+      <div class="result-area">
+        <div class="caption">直近の結果</div>
+        <div class="value">結果: completed(true)</div>
+      </div>
+    </div>
+    <div class="phone-label">メニュー6項目 (Transition Dialog 追加)</div>
+  </div>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>Transition Dialog</h1></div>
+      <div class="section-caption">プリセット</div>
+      <div class="option-row"><span>Fade</span><span class="check">✓</span></div>
+      <div class="option-row selected"><span>Slide Up</span><span class="check">✓</span></div>
+      <div class="option-row"><span>Slide Down</span><span class="check">✓</span></div>
+      <div class="option-row"><span>Slide Start</span><span class="check">✓</span></div>
+      <div class="option-row"><span>Slide End</span><span class="check">✓</span></div>
+      <div class="option-row"><span>Zoom</span><span class="check">✓</span></div>
+      <div class="option-row"><span>None</span><span class="check">✓</span></div>
+      <div class="option-row"><span>Custom Hook</span><span class="check">✓</span></div>
+      <div class="section-caption">調整</div>
+      <div class="adjust-row">
+        <label>時間</label>
+        <div class="field"><span>250 ms</span><span class="chev">▾</span></div>
+      </div>
+      <div class="adjust-row">
+        <label>イージング</label>
+        <div class="field"><span>Standard</span><span class="chev">▾</span></div>
+      </div>
+      <div class="footer"><button class="btn-show">表示</button></div>
+    </div>
+    <div class="phone-label">案A: リスト選択型 (単一選択 + 調整 + 表示)</div>
+  </div>
+</body>
+</html>

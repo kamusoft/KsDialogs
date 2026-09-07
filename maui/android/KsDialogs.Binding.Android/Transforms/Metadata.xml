@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <!--
+    互換面の Java パッケージを .NET namespace へ写す。
+    iOS 側 binding と同じ namespace に揃えることで、facade の platform 実装が同じ形で書ける。
+  -->
+  <attr path="/api/package[@name='jp.kamusoft.ksdialogs.maui']" name="managedName">KsDialogs.Bridge</attr>
+
+  <!--
+    Java Beans 規約により is 接頭辞が落ちる真偽値の属性名を、契約上の名前に戻す。
+    iOS 側 binding と同じ綴りに揃うため、facade の platform 実装が同じ形で書ける。
+  -->
+  <attr path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiDialogOptions']/method[@name='isCanceledOnTouchOutside']"
+      name="propertyName">IsCanceledOnTouchOutside</attr>
+  <attr path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiDialogOptions']/method[@name='setCanceledOnTouchOutside']"
+      name="propertyName">IsCanceledOnTouchOutside</attr>
+</metadata>

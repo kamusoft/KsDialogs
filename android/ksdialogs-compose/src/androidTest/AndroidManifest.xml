@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- 宣言的 UI の中身を実際に提示するための提示先。テストからのみ起動する -->
+        <activity
+            android:name="jp.kamusoft.ksdialogs.compose.support.ComposeDialogTestActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+    </application>
+
+</manifest>

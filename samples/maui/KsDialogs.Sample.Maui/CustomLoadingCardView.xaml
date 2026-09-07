@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+	Custom Loading の中身。
+	覆い (scrim) と中央配置はライブラリの器が受け持つため、このカード自体だけを描く。
+	進捗は ViewModel の受け口へ転送された値を binding で読むだけで、報告口を直接受け取ることはない。
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:KsDialogs.Sample.Maui"
+             x:Class="KsDialogs.Sample.Maui.CustomLoadingCardView">
+
+    <Border WidthRequest="210"
+            BackgroundColor="{StaticResource SampleSurface}"
+            StrokeThickness="0"
+            Padding="20">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="14" />
+        </Border.StrokeShape>
+
+        <VerticalStackLayout Spacing="12">
+            <Label Text="{x:Static local:SampleText.CustomLoadingTitle}"
+                   FontSize="14"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource SampleOnSurface}"
+                   HorizontalTextAlignment="Center" />
+
+            <!-- 進捗の帯。地を敷いたうえに、報告された割合だけ強調色で塗る -->
+            <Border x:Name="ProgressTrack"
+                    HeightRequest="8"
+                    BackgroundColor="{StaticResource SampleSurfaceVariant}"
+                    StrokeThickness="0"
+                    Padding="0"
+                    SizeChanged="OnProgressTrackSizeChanged">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="4" />
+                </Border.StrokeShape>
+                <BoxView x:Name="ProgressFill"
+                         Color="{StaticResource SamplePrimary}"
+                         WidthRequest="0"
+                         HorizontalOptions="Start" />
+            </Border>
+
+            <!-- 表示対象の ViewModel は 1 行登録が BindingContext に設定する -->
+            <Label Text="{Binding ProgressText}"
+                   FontSize="12"
+                   TextColor="{StaticResource SampleOnSurfaceMuted}"
+                   HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+    </Border>
+
+</ContentView>

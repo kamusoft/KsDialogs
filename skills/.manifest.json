@@ -1,0 +1,301 @@
+{
+  "version": 3,
+  "generatedAt": "2026-09-07T10:10:28Z",
+  "concepts": {
+    "android/api/dialog-surface.md": "821a74fd435fac0c7f620725323a510a62b3aef8e75da29b5c34f8619125cc9d",
+    "android/api/layout-surface.md": "41d4ef6af19b99b23e836978d1928fb090b01cdb4d738cc87645c3fcfefcc442",
+    "android/api/loading-surface.md": "810b999af02ecb0491d2db3b35531b7ecf0d4b58de12cf9267ed519db783efe7",
+    "android/api/toast-surface.md": "544b9c529df00f7ae65b232bc880303109d02af22087fab25c48bebf2c812d28",
+    "android/api/transition-surface.md": "3b5aa45eab5fbdce0203ae2da6d181e25fd2d13aa3569d1a9333e4b66640e22b",
+    "core/api/layout-semantics.md": "e5869d2d07533ae4dc44591215348ac59d48ecdc8dda5322cd2f449414033055",
+    "core/api/loading-semantics.md": "123e7691c58ad580ea4c753ddac65fe80647e677f188ffe1212b25159e074af0",
+    "core/api/model-binding-semantics.md": "1e41906b6089c3229fcb8dcb38e1f3cd5143590cb86d410a72011acd8f1c2aea",
+    "core/api/multi-display-semantics.md": "08f9436ff0d0a838145b3322acd14def4163311d062cef372dce927d5754ccf8",
+    "core/api/registration-show-semantics.md": "680034950697b975d856ff1c8123eca7b9ae665de5845a417df96d0d1fca19cf",
+    "core/api/result-notification-semantics.md": "0aa46c29f23e028cd7fe23294ea08228558b987f754190e6a815b9ec92f78a44",
+    "core/api/toast-semantics.md": "cd63ff3948cdd0eb42ab2c0f796ac8e668d50f1e3feb2521398a720f42a51848",
+    "core/api/transition-semantics.md": "d67cbe7c711bb9b22e77aa6a7eaff349b4ba3752e3b7673034806b3f291f1d62",
+    "core/architecture/layout-case-table.md": "e76601f145961a3d7c8dfb66f5bdb600ad6ea50dc700990c9d322ea8328cf436",
+    "cross/reference/reference-repositories.md": "81d87fe0d80b31ccffa3cb3bb00a60363750f4b71eadd8cd8ce4bfe539b88811",
+    "ios/api/dialog-surface.md": "73bbaa6a73e49428336c842306d77c7b5b44349f24a9551454413a84aabf12b7",
+    "ios/api/layout-surface.md": "1d7580233a8d8b28057aa76d4aa62e91491511cc64b580addff484265a3fe59a",
+    "ios/api/loading-surface.md": "9c8829b6b3f7c4ac695f5918d1570fb4560fc8c3733177076255f0cd3c306d1a",
+    "ios/api/toast-surface.md": "e9fea2c3bc31da5f266c61d1bfb14f670e1b68032f95bd66748ab179df12457e",
+    "ios/api/transition-surface.md": "32b84f4f799ff17828f667a2fc7dfeaf731146a189441b22c6bdace77101efbb",
+    "kmp/api/dialog-surface.md": "4c2530ab0bcb9ce43b8cf6d375cd5171ba4c260e96a3b68ddaf4e27d7a15b235",
+    "kmp/api/ios-host-integration.md": "5332190890eaef7f4b19380cd6d797aef945c645548dc84e4bb06e79aeb6004a",
+    "kmp/api/loading-surface.md": "f45d55894bd2c5f6074c6552b886735dc1ab82cd0bd36b0de82f40806abcb185",
+    "kmp/api/toast-surface.md": "8326b59579ac09157a8e663c6863dd4ed144c91178430d33067ada19aa871bca",
+    "maui/api/di-registration.md": "38da9d5685c0ccfb8bdfeaf357d1c06b3e5b0b0a11383005f74568e1a6418d19",
+    "maui/api/dialog-surface.md": "fc994b3517337baecbc92c609f31140c2c8882bc37c0b844c69d38b5f527c84f",
+    "maui/api/layout-surface.md": "5818b2ff4b2b9bd01591a799ce8222b5467cd47d5b18bd596d54df3df92e04bd",
+    "maui/api/loading-surface.md": "98ca096cfe485717ee710274c3f7664b13545d179a1ffc551eb9ee1a6df2f7d3",
+    "maui/api/toast-surface.md": "acaf12d240fe68dbd3e2507c11817ffcdb761a816a638dd60f4c833faff3c88a",
+    "maui/api/transition-surface.md": "49c46c45dda0d77821a643bdd426ef2688740c81f5d3c11f7259b3cd4434dafe"
+  },
+  "targets": {
+    "ksdialogs-ios/SKILL.md": [
+      "core/api/layout-semantics.md",
+      "core/api/loading-semantics.md",
+      "core/api/model-binding-semantics.md",
+      "core/api/multi-display-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "core/api/toast-semantics.md",
+      "core/api/transition-semantics.md",
+      "ios/api/dialog-surface.md",
+      "ios/api/layout-surface.md",
+      "ios/api/loading-surface.md",
+      "ios/api/toast-surface.md",
+      "ios/api/transition-surface.md"
+    ],
+    "ksdialogs-ios/references/dialogs.md": [
+      "core/api/multi-display-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "ios/api/dialog-surface.md"
+    ],
+    "ksdialogs-ios/references/view-models.md": [
+      "core/api/model-binding-semantics.md",
+      "ios/api/dialog-surface.md"
+    ],
+    "ksdialogs-ios/references/layout.md": [
+      "core/api/layout-semantics.md",
+      "ios/api/layout-surface.md"
+    ],
+    "ksdialogs-ios/references/transitions.md": [
+      "core/api/transition-semantics.md",
+      "ios/api/transition-surface.md"
+    ],
+    "ksdialogs-ios/references/loading.md": [
+      "core/api/loading-semantics.md",
+      "ios/api/loading-surface.md"
+    ],
+    "ksdialogs-ios/references/toast.md": [
+      "core/api/toast-semantics.md",
+      "ios/api/toast-surface.md"
+    ],
+    "ksdialogs-android/SKILL.md": [
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "core/api/multi-display-semantics.md",
+      "core/api/model-binding-semantics.md",
+      "core/api/layout-semantics.md",
+      "core/api/transition-semantics.md",
+      "core/api/loading-semantics.md",
+      "core/api/toast-semantics.md",
+      "android/api/dialog-surface.md",
+      "android/api/layout-surface.md",
+      "android/api/loading-surface.md",
+      "android/api/toast-surface.md",
+      "android/api/transition-surface.md"
+    ],
+    "ksdialogs-android/references/dialogs.md": [
+      "core/api/multi-display-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "android/api/dialog-surface.md"
+    ],
+    "ksdialogs-android/references/view-models.md": [
+      "core/api/model-binding-semantics.md",
+      "android/api/dialog-surface.md"
+    ],
+    "ksdialogs-android/references/layout.md": [
+      "core/api/layout-semantics.md",
+      "android/api/layout-surface.md"
+    ],
+    "ksdialogs-android/references/transitions.md": [
+      "core/api/transition-semantics.md",
+      "android/api/transition-surface.md"
+    ],
+    "ksdialogs-android/references/loading.md": [
+      "core/api/loading-semantics.md",
+      "android/api/loading-surface.md"
+    ],
+    "ksdialogs-android/references/toast.md": [
+      "core/api/toast-semantics.md",
+      "android/api/toast-surface.md"
+    ],
+    "ksdialogs-maui/SKILL.md": [
+      "core/api/layout-semantics.md",
+      "core/api/loading-semantics.md",
+      "core/api/model-binding-semantics.md",
+      "core/api/multi-display-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "core/api/toast-semantics.md",
+      "core/api/transition-semantics.md",
+      "maui/api/di-registration.md",
+      "maui/api/dialog-surface.md",
+      "maui/api/layout-surface.md",
+      "maui/api/loading-surface.md",
+      "maui/api/toast-surface.md",
+      "maui/api/transition-surface.md"
+    ],
+    "ksdialogs-maui/references/dialogs.md": [
+      "core/api/multi-display-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "maui/api/dialog-surface.md"
+    ],
+    "ksdialogs-maui/references/view-models.md": [
+      "core/api/model-binding-semantics.md",
+      "maui/api/dialog-surface.md"
+    ],
+    "ksdialogs-maui/references/layout.md": [
+      "core/api/layout-semantics.md",
+      "maui/api/layout-surface.md"
+    ],
+    "ksdialogs-maui/references/transitions.md": [
+      "core/api/transition-semantics.md",
+      "maui/api/transition-surface.md"
+    ],
+    "ksdialogs-maui/references/loading.md": [
+      "core/api/loading-semantics.md",
+      "maui/api/loading-surface.md"
+    ],
+    "ksdialogs-maui/references/toast.md": [
+      "core/api/toast-semantics.md",
+      "maui/api/toast-surface.md"
+    ],
+    "ksdialogs-maui/references/di-registration.md": [
+      "maui/api/di-registration.md"
+    ],
+    "ksdialogs-kmp/SKILL.md": [
+      "core/api/layout-semantics.md",
+      "core/api/loading-semantics.md",
+      "core/api/model-binding-semantics.md",
+      "core/api/multi-display-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "core/api/toast-semantics.md",
+      "core/api/transition-semantics.md",
+      "kmp/api/dialog-surface.md",
+      "kmp/api/ios-host-integration.md",
+      "kmp/api/loading-surface.md",
+      "kmp/api/toast-surface.md"
+    ],
+    "ksdialogs-kmp/references/dialogs.md": [
+      "core/api/multi-display-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "kmp/api/dialog-surface.md"
+    ],
+    "ksdialogs-kmp/references/view-models.md": [
+      "core/api/model-binding-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/loading-semantics.md",
+      "core/api/toast-semantics.md",
+      "kmp/api/dialog-surface.md",
+      "kmp/api/loading-surface.md",
+      "kmp/api/toast-surface.md"
+    ],
+    "ksdialogs-kmp/references/layout.md": [
+      "core/api/layout-semantics.md",
+      "android/api/layout-surface.md",
+      "ios/api/layout-surface.md",
+      "kmp/api/dialog-surface.md"
+    ],
+    "ksdialogs-kmp/references/transitions.md": [
+      "core/api/transition-semantics.md",
+      "android/api/transition-surface.md",
+      "ios/api/transition-surface.md",
+      "kmp/api/dialog-surface.md"
+    ],
+    "ksdialogs-kmp/references/loading.md": [
+      "core/api/loading-semantics.md",
+      "kmp/api/loading-surface.md"
+    ],
+    "ksdialogs-kmp/references/toast.md": [
+      "core/api/toast-semantics.md",
+      "kmp/api/toast-surface.md"
+    ],
+    "ksdialogs-kmp/references/android-host.md": [
+      "core/api/layout-semantics.md",
+      "core/api/loading-semantics.md",
+      "core/api/model-binding-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "core/api/toast-semantics.md",
+      "core/api/transition-semantics.md",
+      "android/api/dialog-surface.md",
+      "android/api/layout-surface.md",
+      "android/api/loading-surface.md",
+      "android/api/toast-surface.md",
+      "android/api/transition-surface.md"
+    ],
+    "ksdialogs-kmp/references/ios-host.md": [
+      "core/api/layout-semantics.md",
+      "core/api/loading-semantics.md",
+      "core/api/model-binding-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "core/api/toast-semantics.md",
+      "core/api/transition-semantics.md",
+      "kmp/api/ios-host-integration.md"
+    ],
+    "ksdialogs-aiforms-migration/SKILL.md": [
+      "core/api/layout-semantics.md",
+      "core/api/loading-semantics.md",
+      "core/api/model-binding-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "core/api/toast-semantics.md",
+      "core/api/transition-semantics.md",
+      "maui/api/di-registration.md",
+      "maui/api/dialog-surface.md",
+      "maui/api/layout-surface.md",
+      "maui/api/loading-surface.md",
+      "maui/api/toast-surface.md",
+      "maui/api/transition-surface.md"
+    ],
+    "ksdialogs-aiforms-migration/references/api-mapping.md": [
+      "core/api/layout-semantics.md",
+      "core/api/loading-semantics.md",
+      "core/api/model-binding-semantics.md",
+      "core/api/multi-display-semantics.md",
+      "core/api/registration-show-semantics.md",
+      "core/api/result-notification-semantics.md",
+      "core/api/toast-semantics.md",
+      "core/api/transition-semantics.md",
+      "maui/api/di-registration.md",
+      "maui/api/dialog-surface.md",
+      "maui/api/layout-surface.md",
+      "maui/api/loading-surface.md",
+      "maui/api/toast-surface.md",
+      "maui/api/transition-surface.md"
+    ]
+  },
+  "excluded": {
+    "cross/reference/reference-repositories.md": "開発環境のローカルパス対応表であり、利用者向け Skill の対象外",
+    "core/architecture/layout-case-table.md": "Native 2 実装のレイアウト検証機構 (共通ケース表と OS 差の統制) の記述であり、利用者が使う契約ではない"
+  },
+  "readmes": [
+    "skills/README.md",
+    "skills/README_ja.md",
+    "README.md",
+    "README_ja.md"
+  ],
+  "lastUpdatedFiles": [
+    "skills/en/ksdialogs-ios/references/loading.md",
+    "skills/en/ksdialogs-ios/references/toast.md",
+    "skills/en/ksdialogs-ios/references/view-models.md",
+    "skills/en/ksdialogs-kmp/SKILL.md",
+    "skills/en/ksdialogs-kmp/references/android-host.md",
+    "skills/en/ksdialogs-kmp/references/dialogs.md",
+    "skills/en/ksdialogs-kmp/references/ios-host.md",
+    "skills/en/ksdialogs-kmp/references/loading.md",
+    "skills/en/ksdialogs-kmp/references/toast.md",
+    "skills/en/ksdialogs-kmp/references/view-models.md",
+    "skills/ja/ksdialogs-ios/references/loading.md",
+    "skills/ja/ksdialogs-ios/references/toast.md",
+    "skills/ja/ksdialogs-ios/references/view-models.md",
+    "skills/ja/ksdialogs-kmp/SKILL.md",
+    "skills/ja/ksdialogs-kmp/references/android-host.md",
+    "skills/ja/ksdialogs-kmp/references/dialogs.md",
+    "skills/ja/ksdialogs-kmp/references/ios-host.md",
+    "skills/ja/ksdialogs-kmp/references/loading.md",
+    "skills/ja/ksdialogs-kmp/references/toast.md",
+    "skills/ja/ksdialogs-kmp/references/view-models.md"
+  ]
+}

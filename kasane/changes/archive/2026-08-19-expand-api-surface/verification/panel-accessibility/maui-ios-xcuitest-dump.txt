@@ -1,0 +1,227 @@
+===== INITIAL =====
+t =     8.13s Requesting snapshot of accessibility hierarchy for app with pid 73015
+    t =     8.22s Requesting snapshot of accessibility hierarchy for app with pid 73015
+Attributes: Application, 0x104415b20, pid: 73015, label: 'KsDialogs Sample'
+Element subtree:
+ →Application, 0x104415b20, pid: 73015, label: 'KsDialogs Sample'
+    Window (Main), 0x104414c20, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x104416120, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x104416240, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x104415e80, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x104415fa0, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x104416360, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x104416480, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x1044165a0, {{0.0, 62.0}, {402.0, 778.0}}
+                Other, 0x1044166c0, {{0.0, 62.0}, {402.0, 76.0}}
+                  Button, 0x10441b290, {{16.0, 82.0}, {44.0, 44.0}}, label: '戻る'
+                  Other, 0x10441b3b0, {{313.0, 82.0}, {73.0, 44.0}}
+                    Button, 0x10441b4d0, {{313.0, 82.0}, {73.0, 44.0}}, label: 'Show'
+                      StaticText, 0x10441b5f0, {{331.0, 95.7}, {37.0, 17.0}}, label: 'Show'
+                  StaticText, 0x10441b710, {{68.0, 93.8}, {237.0, 20.3}}, label: 'Layout Dialog'
+                Other, 0x10441b830, {{0.0, 138.0}, {402.0, 1.0}}
+                Other, 0x10441b950, {{0.0, 139.0}, {402.0, 52.0}}
+                  Other, 0x10441ba70, {{211.0, 145.0}, {175.0, 40.0}}
+                    Other, 0x10441bb90, {{211.0, 145.0}, {175.0, 40.0}}
+                      Other, 0x10441bcb0, {{214.0, 148.0}, {169.0, 34.0}}
+                        Other, 0x10441bdd0, {{214.0, 148.0}, {54.0, 34.0}}
+                          Button, 0x10441bef0, {{214.0, 148.0}, {54.0, 34.0}}, label: 'Horizontal Start'
+                            StaticText, 0x10441c010, {{226.0, 157.0}, {30.0, 16.0}}, label: 'Start'
+                        Other, 0x10441c130, {{268.0, 148.0}, {67.0, 34.0}}
+                          Button, 0x10441c250, {{268.0, 148.0}, {67.0, 34.0}}, label: 'Horizontal Center', Selected
+                            StaticText, 0x10441c370, {{280.0, 157.0}, {43.0, 16.0}}, label: 'Center'
+                        Other, 0x10441c490, {{335.0, 148.0}, {48.0, 34.0}}
+                          Button, 0x10441c5b0, {{335.0, 148.0}, {48.0, 34.0}}, label: 'Horizontal End'
+                            StaticText, 0x10441c6d0, {{347.0, 157.0}, {24.0, 16.0}}, label: 'End'
+                  StaticText, 0x10441c7f0, {{16.0, 156.5}, {187.0, 17.0}}, label: 'Horizontal'
+                Other, 0x10441c910, {{0.0, 191.0}, {402.0, 1.0}}
+                Other, 0x10441ca30, {{0.0, 192.0}, {402.0, 52.0}}
+                  Other, 0x10441cb50, {{211.0, 198.0}, {175.0, 40.0}}
+                    Other, 0x10441ccf0, {{211.0, 198.0}, {175.0, 40.0}}
+                      Other, 0x10441ce10, {{214.0, 201.0}, {169.0, 34.0}}
+                        Other, 0x10441cf30, {{214.0, 201.0}, {54.0, 34.0}}
+                          Button, 0x10441d050, {{214.0, 201.0}, {54.0, 34.0}}, label: 'Vertical Start'
+                            StaticText, 0x10441d170, {{226.0, 210.0}, {30.0, 16.0}}, label: 'Start'
+                        Other, 0x10441d290, {{268.0, 201.0}, {67.0, 34.0}}
+                          Button, 0x10441d3b0, {{268.0, 201.0}, {67.0, 34.0}}, label: 'Vertical Center', Selected
+                            StaticText, 0x10441d4d0, {{280.0, 210.0}, {43.0, 16.0}}, label: 'Center'
+                        Other, 0x10441d5f0, {{335.0, 201.0}, {48.0, 34.0}}
+                          Button, 0x10441d710, {{335.0, 201.0}, {48.0, 34.0}}, label: 'Vertical End'
+                            StaticText, 0x10441d830, {{347.0, 210.0}, {24.0, 16.0}}, label: 'End'
+                  StaticText, 0x10441d950, {{16.0, 209.5}, {187.0, 17.0}}, label: 'Vertical'
+                Other, 0x10441da70, {{0.0, 244.0}, {402.0, 1.0}}
+                Other, 0x10441db90, {{0.0, 245.0}, {402.0, 48.0}}
+                  Other, 0x10441dcb0, {{322.0, 251.0}, {64.0, 36.0}}
+                    TextField, 0x10441ddd0, {{333.0, 252.0}, {42.0, 34.0}}, label: 'OffsetX', value: 0
+                  StaticText, 0x10441def0, {{16.0, 260.5}, {298.0, 17.0}}, label: 'OffsetX'
+                Other, 0x10441e010, {{0.0, 293.0}, {402.0, 1.0}}
+                Other, 0x10441e130, {{0.0, 294.0}, {402.0, 48.0}}
+                  Other, 0x10441e250, {{322.0, 300.0}, {64.0, 36.0}}
+                    TextField, 0x10441e370, {{333.0, 301.0}, {42.0, 34.0}}, label: 'OffsetY', value: 0
+                  StaticText, 0x10441e490, {{16.0, 309.5}, {298.0, 17.0}}, label: 'OffsetY'
+                Other, 0x10441e5b0, {{0.0, 342.0}, {402.0, 1.0}}
+                Other, 0x10441e6d0, {{0.0, 343.0}, {402.0, 48.0}}
+                  StaticText, 0x10441e7f0, {{16.0, 358.5}, {299.0, 17.0}}, label: 'Use visible area'
+                  Other, 0x10441e910, {{323.0, 353.0}, {63.0, 28.0}}
+                    Switch, 0x10441ea30, {{323.0, 353.0}, {63.0, 28.0}}, label: 'Use visible area', value: 1
+                Other, 0x10441eb50, {{0.0, 391.0}, {402.0, 1.0}}
+Path to element:
+ →Application, 0x104415b20, pid: 73015, label: 'KsDialogs Sample'
+Query chain:
+ →Find: Application 'jp.kamusoft.ksdialogs.samples.maui'
+  Output: {
+    Application, 0x10441ee90, pid: 73015, label: 'KsDialogs Sample'
+  }
+
+===== CHANGED =====
+t =    12.51s Requesting snapshot of accessibility hierarchy for app with pid 73015
+    t =    12.70s Requesting snapshot of accessibility hierarchy for app with pid 73015
+Attributes: Application, 0x103c2ccd0, pid: 73015, label: 'KsDialogs Sample'
+Element subtree:
+ →Application, 0x103c2ccd0, pid: 73015, label: 'KsDialogs Sample'
+    Window (Main), 0x103c5cce0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x103c1b5b0, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x103c21910, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x103c2a730, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x103c2ee20, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x103c2e720, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x103c49a30, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x103c2b7b0, {{0.0, 62.0}, {402.0, 778.0}}
+                Other, 0x103c3e4d0, {{0.0, 62.0}, {402.0, 76.0}}
+                  Button, 0x103c28240, {{16.0, 82.0}, {44.0, 44.0}}, label: '戻る'
+                  Other, 0x103c358b0, {{313.0, 82.0}, {73.0, 44.0}}
+                    Button, 0x103c1d790, {{313.0, 82.0}, {73.0, 44.0}}, label: 'Show'
+                      StaticText, 0x103c43870, {{331.0, 95.7}, {37.0, 17.0}}, label: 'Show'
+                  StaticText, 0x103c1d240, {{68.0, 93.8}, {237.0, 20.3}}, label: 'Layout Dialog'
+                Other, 0x103c45540, {{0.0, 138.0}, {402.0, 1.0}}
+                Other, 0x103c48690, {{0.0, 139.0}, {402.0, 52.0}}
+                  Other, 0x103c1c030, {{213.0, 145.0}, {173.0, 40.0}}
+                    Other, 0x103c2acc0, {{213.0, 145.0}, {173.0, 40.0}}
+                      Other, 0x103c35180, {{216.0, 148.0}, {167.0, 34.0}}
+                        Other, 0x103c50330, {{216.0, 148.0}, {54.0, 34.0}}
+                          Button, 0x103c27af0, {{216.0, 148.0}, {54.0, 34.0}}, label: 'Horizontal Start'
+                            StaticText, 0x103c40500, {{228.0, 157.0}, {30.0, 16.0}}, label: 'Start'
+                        Other, 0x103c44900, {{270.0, 148.0}, {65.0, 34.0}}
+                          Button, 0x103c46860, {{270.0, 148.0}, {65.0, 34.0}}, label: 'Horizontal Center'
+                            StaticText, 0x103c1c920, {{282.0, 157.0}, {41.0, 16.0}}, label: 'Center'
+                        Other, 0x103c0d390, {{335.0, 148.0}, {48.0, 34.0}}
+                          Button, 0x103c126c0, {{335.0, 148.0}, {48.0, 34.0}}, label: 'Horizontal End', Selected
+                            StaticText, 0x103c12a20, {{347.0, 157.0}, {24.0, 16.0}}, label: 'End'
+                  StaticText, 0x103c12d80, {{16.0, 156.5}, {189.0, 17.0}}, label: 'Horizontal'
+                Other, 0x103c130e0, {{0.0, 191.0}, {402.0, 1.0}}
+                Other, 0x103c13440, {{0.0, 192.0}, {402.0, 52.0}}
+                  Other, 0x103c1dd00, {{211.0, 198.0}, {175.0, 40.0}}
+                    Other, 0x103c20610, {{211.0, 198.0}, {175.0, 40.0}}
+                      Other, 0x103c21290, {{214.0, 201.0}, {169.0, 34.0}}
+                        Other, 0x103c25ca0, {{214.0, 201.0}, {56.0, 34.0}}
+                          Button, 0x103c2d5c0, {{214.0, 201.0}, {56.0, 34.0}}, label: 'Vertical Start', Selected
+                            StaticText, 0x103c30140, {{226.0, 210.0}, {32.0, 16.0}}, label: 'Start'
+                        Other, 0x103c30f80, {{270.0, 201.0}, {65.0, 34.0}}
+                          Button, 0x103c312f0, {{270.0, 201.0}, {65.0, 34.0}}, label: 'Vertical Center'
+                            StaticText, 0x103c318e0, {{282.0, 210.0}, {41.0, 16.0}}, label: 'Center'
+                        Other, 0x103c3d000, {{335.0, 201.0}, {48.0, 34.0}}
+                          Button, 0x103c42a60, {{335.0, 201.0}, {48.0, 34.0}}, label: 'Vertical End'
+                            StaticText, 0x103c4b3a0, {{347.0, 210.0}, {24.0, 16.0}}, label: 'End'
+                  StaticText, 0x103c4efd0, {{16.0, 209.5}, {187.0, 17.0}}, label: 'Vertical'
+                Other, 0x103c4fa40, {{0.0, 244.0}, {402.0, 1.0}}
+                Other, 0x103c50900, {{0.0, 245.0}, {402.0, 48.0}}
+                  Other, 0x103c50c70, {{322.0, 251.0}, {64.0, 36.0}}
+                    TextField, 0x103c51680, {{333.0, 252.0}, {42.0, 34.0}}, label: 'OffsetX', value: 240, Keyboard Focused
+                  StaticText, 0x103c51a10, {{16.0, 260.5}, {298.0, 17.0}}, label: 'OffsetX'
+                Other, 0x103c51d80, {{0.0, 293.0}, {402.0, 1.0}}
+                Other, 0x103c520d0, {{0.0, 294.0}, {402.0, 48.0}}
+                  Other, 0x103c52460, {{322.0, 300.0}, {64.0, 36.0}}
+                    TextField, 0x103c527c0, {{333.0, 301.0}, {42.0, 34.0}}, label: 'OffsetY', value: 0
+                  StaticText, 0x103c52b60, {{16.0, 309.5}, {298.0, 17.0}}, label: 'OffsetY'
+                Other, 0x103c52ed0, {{0.0, 342.0}, {402.0, 1.0}}
+                Other, 0x103c53230, {{0.0, 343.0}, {402.0, 48.0}}
+                  StaticText, 0x103c535c0, {{16.0, 358.5}, {299.0, 17.0}}, label: 'Use visible area'
+                  Other, 0x103c53930, {{323.0, 353.0}, {63.0, 28.0}}
+                    Switch, 0x103c55760, {{323.0, 353.0}, {63.0, 28.0}}, label: 'Use visible area', value: 0
+                Other, 0x103c53ec0, {{0.0, 391.0}, {402.0, 1.0}}
+    Window, 0x103c0c7e0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x103c570b0, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x103c0b360, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x103c45c80, {{0.0, 485.0}, {402.0, 389.0}}
+          Toolbar, 0x103c49190, {{0.0, 485.0}, {402.0, 44.0}}, identifier: 'Toolbar', label: 'Toolbar'
+            Button, 0x103c31c60, {{344.0, 499.3}, {36.0, 16.3}}, label: 'selected', Disabled
+          Other, 0x103c25780, {{4.7, 529.0}, {393.0, 345.0}}, identifier: 'inputView'
+    Window, 0x103c44e90, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x103c06d30, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x103c1a7e0, {{0.0, 485.0}, {402.0, 389.0}}
+          Other, 0x103c15f60, {{0.0, 485.0}, {402.0, 44.0}}
+          Other, 0x103c189c0, {{0.0, 529.0}, {402.0, 345.0}}
+            Other, 0x103c190c0, {{0.0, 529.0}, {402.0, 345.0}}
+              Other, 0x103c1b080, {{0.0, 529.0}, {402.0, 345.0}}
+                Other, 0x103c22920, {{0.0, 529.0}, {402.0, 345.0}}
+                  Other, 0x103c2fa60, {{0.0, 529.0}, {402.0, 345.0}}
+                    Other, 0x103c2fdd0, {{0.0, 529.0}, {402.0, 345.0}}
+                      Other, 0x103c30a20, {{0.0, 529.0}, {402.0, 345.0}}
+                        Other, 0x103c3d730, {{0.0, 529.0}, {402.0, 345.0}}
+                      Other, 0x103c40c10, {{0.0, 529.0}, {402.0, 345.0}}
+          Other, 0x103c48bf0, {{4.7, 529.0}, {393.0, 44.0}}, identifier: 'SystemInputAssistantView'
+            Other, 0x103c4a680, {{4.7, 529.0}, {393.0, 44.0}}
+              Other, 0x103c4ea70, {{4.7, 529.0}, {393.0, 44.0}}, identifier: 'CenterPageView'
+                Other, 0x103c4f510, {{4.7, -71.0}, {393.0, 1244.0}}
+                  ScrollView, 0x103c42df0, {{4.7, 529.0}, {393.0, 44.0}}
+                Other, 0x103c15be0, {{4.7, 529.0}, {393.0, 44.0}}
+                  Other, 0x103c17800, {{4.7, 529.0}, {393.0, 44.0}}, label: 'Typing Predictions'
+                    Other, 0x103c17b80, {{4.7, 529.0}, {393.0, 44.0}}
+                      Other, 0x103c18640, {{4.7, 529.0}, {393.0, 44.0}}
+                        Other, 0x103c1ab50, {{4.7, 529.0}, {131.0, 44.0}}
+                        Other, 0x103c263d0, {{135.7, 529.0}, {131.0, 44.0}}
+                        Other, 0x103c2dae0, {{266.7, 529.0}, {131.0, 44.0}}
+          Other, 0x103c33290, {{0.0, 573.0}, {402.0, 301.0}}
+            Button, 0x103c0e7a0, {{8.5, 805.7}, {68.1, 68.7}}, label: 'Next keyboard', value: 日本語かな
+              StaticText, 0x103c3b8e0, {{8.5, 805.7}, {0.0, 0.0}}
+            Button, 0x103c3cc80, {{325.4, 805.4}, {68.1, 68.7}}, identifier: 'dictation', label: 'Dictate'
+              StaticText, 0x103c41650, {{325.4, 805.4}, {0.0, 0.0}}
+            Button, 0x103c43170, {{325.4, 805.4}, {68.1, 68.7}}, identifier: 'dictation', label: 'Dictate'
+              StaticText, 0x103c47340, {{325.4, 805.4}, {0.0, 0.0}}
+          Other, 0x103c496a0, {{4.7, 573.0}, {393.0, 243.0}}
+            Keyboard, 0x103c19de0, {{4.7, 573.0}, {393.0, 243.0}}
+              Other, 0x103c23bb0, {{4.7, 573.0}, {393.0, 243.0}}
+                Other, 0x103c26aa0, {{4.7, 573.0}, {393.0, 243.0}}, identifier: 'UIKeyboardLayoutStar Preview'
+                  Key, 0x103c2f370, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Left'
+                  Key, 0x103c32d50, {{6.7, 580.0}, {39.0, 56.0}}, label: '1'
+                  Key, 0x103c33d60, {{45.7, 580.0}, {39.0, 56.0}}, label: '2'
+                  Key, 0x103c38270, {{84.7, 580.0}, {39.0, 56.0}}, label: '3'
+                  Key, 0x103c3a830, {{123.7, 580.0}, {39.3, 56.0}}, label: '4'
+                  Key, 0x103c3ade0, {{163.0, 580.0}, {39.0, 56.0}}, label: '5'
+                  Key, 0x103c3ea20, {{202.0, 580.0}, {39.0, 56.0}}, label: '6'
+                  Key, 0x103c441c0, {{241.0, 580.0}, {39.3, 56.0}}, label: '7'
+                  Key, 0x103c44550, {{280.3, 580.0}, {39.0, 56.0}}, label: '8'
+                  Key, 0x103c46e00, {{319.3, 580.0}, {39.0, 56.0}}, label: '9'
+                  Key, 0x103c4c800, {{358.3, 580.0}, {39.3, 56.0}}, label: '0'
+                  Key, 0x103c3d380, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Right'
+                  Key, 0x103c4ae00, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Left'
+                  Key, 0x103c304c0, {{6.7, 636.0}, {39.0, 56.0}}, label: '-'
+                  Key, 0x103c0a520, {{45.7, 636.0}, {39.0, 56.0}}, label: '/'
+                  Key, 0x103c198f0, {{84.7, 636.0}, {39.0, 56.0}}, label: ':'
+                  Key, 0x103c22c80, {{123.7, 636.0}, {39.3, 56.0}}, label: ';'
+                  Key, 0x103c4fdc0, {{163.0, 636.0}, {39.0, 56.0}}, label: '('
+                  Key, 0x103c28d70, {{202.0, 636.0}, {39.0, 56.0}}, label: ')'
+                  Key, 0x103c28970, {{241.0, 636.0}, {39.3, 56.0}}, label: '¥'
+                  Key, 0x103c54920, {{280.3, 636.0}, {39.0, 56.0}}, label: 'ampersand'
+                  Key, 0x103c26000, {{319.3, 636.0}, {39.0, 56.0}}, label: '@'
+                  Key, 0x103c337c0, {{358.3, 636.0}, {39.3, 56.0}}, label: '"'
+                  Key, 0x103c13a30, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Right'
+                  Button, 0x103c107b0, {{6.7, 692.0}, {50.7, 56.0}}, identifier: 'shift', label: 'symbols'
+                  Key, 0x103c5ef30, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Left'
+                  Key, 0x103c5f050, {{65.0, 692.0}, {55.0, 56.0}}, label: '.'
+                  Key, 0x103c5f2c0, {{120.0, 692.0}, {54.7, 56.0}}, label: ','
+                  Key, 0x103c5f3e0, {{174.7, 692.0}, {54.7, 56.0}}, label: '?'
+                  Key, 0x103c5f500, {{229.3, 692.0}, {54.7, 56.0}}, label: '!'
+                  Key, 0x103c5f620, {{284.0, 692.0}, {55.0, 56.0}}, label: '''
+                  Key, 0x103c5f740, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Right'
+                  Key, 0x103c5f860, {{346.7, 692.0}, {51.0, 56.0}}, identifier: 'delete', label: 'delete'
+                  Key, 0x103c5f980, {{6.7, 748.0}, {97.7, 56.0}}, identifier: 'more', label: 'letters'
+                  Key, 0x103c5faa0, {{104.3, 748.0}, {195.3, 56.0}}, identifier: 'space', label: ' '
+                  Button, 0x103c5fbc0, {{299.7, 748.0}, {98.0, 56.0}}, identifier: 'Return', label: 'return'
+Path to element:
+ →Application, 0x103c2ccd0, pid: 73015, label: 'KsDialogs Sample'
+Query chain:
+ →Find: Application 'jp.kamusoft.ksdialogs.samples.maui'
+  Output: {
+    Application, 0x103c5fee0, pid: 73015, label: 'KsDialogs Sample'
+  }
+

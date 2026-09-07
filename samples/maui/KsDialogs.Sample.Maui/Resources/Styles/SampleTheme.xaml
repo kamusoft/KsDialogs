@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+	4ルートの Sample が共有する配色。
+	OS 固有の semantic color は使わず、全ルートで同一の RGBA を宣言する (cross/ADR-0007)。
+	覆い (scrim) はライブラリの器が描くため、ここには持たない。
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- 強調色。完了操作のボタンの塗り -->
+    <Color x:Key="SamplePrimary">#2563EB</Color>
+    <!-- primary の上に載る文字色 -->
+    <Color x:Key="SampleOnPrimary">#FFFFFF</Color>
+    <!-- 画面・ダイアログの地の色 -->
+    <Color x:Key="SampleSurface">#FFFFFF</Color>
+    <!-- surface の上に載る文字色 -->
+    <Color x:Key="SampleOnSurface">#1F2937</Color>
+    <!-- surface の上に載る補助的な文字色 -->
+    <Color x:Key="SampleOnSurfaceMuted">#6B7280</Color>
+    <!-- 区切り線の色 -->
+    <Color x:Key="SampleDivider">#E5E7EB</Color>
+    <!-- 無彩色のボタンの塗り -->
+    <Color x:Key="SampleSurfaceVariant">#F3F4F6</Color>
+
+</ResourceDictionary>

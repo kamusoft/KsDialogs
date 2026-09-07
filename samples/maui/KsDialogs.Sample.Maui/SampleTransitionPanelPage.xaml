@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- 出入りの演出を選んでからダイアログを表示する画面。 -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+             xmlns:local="clr-namespace:KsDialogs.Sample.Maui"
+             x:Class="KsDialogs.Sample.Maui.SampleTransitionPanelPage"
+             ios:Page.UseSafeArea="True"
+             BackgroundColor="{StaticResource SampleSurface}">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="16,20,16,12">
+            <!-- 記号1文字でも押しやすさの下限を満たす領域を確保する。
+                 記号のままでは読み上げが操作の意味を伝えないため、名前と役割も与える -->
+            <Label Text="‹"
+                   FontSize="20"
+                   WidthRequest="44"
+                   HeightRequest="44"
+                   VerticalTextAlignment="Center"
+                   SemanticProperties.Description="戻る"
+                   Loaded="OnBackLoaded"
+                   TextColor="{StaticResource SampleOnSurface}">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackSelected" />
+                </Label.GestureRecognizers>
+            </Label>
+
+            <Label Grid.Column="1"
+                   Text="{x:Static local:SampleText.TransitionDialogItem}"
+                   FontSize="17"
+                   FontAttributes="Bold"
+                   VerticalOptions="Center"
+                   TextColor="{StaticResource SampleOnSurface}" />
+        </Grid>
+
+        <BoxView Grid.Row="1" HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout>
+                <Label Text="{x:Static local:SampleText.PresetCaption}"
+                       FontSize="12"
+                       Padding="16,12,16,8"
+                       TextColor="{StaticResource SampleOnSurfaceMuted}" />
+
+                <ContentView x:Name="PresetChipsHost" Margin="16,0" />
+
+                <Label Text="{x:Static local:SampleText.AdjustCaption}"
+                       FontSize="12"
+                       Padding="16,12,16,8"
+                       TextColor="{StaticResource SampleOnSurfaceMuted}" />
+
+                <!-- 無演出と自作フックは調整値を使わないため、値は保ったまま操作できなくする -->
+                <VerticalStackLayout x:Name="AdjustBlock" Margin="16,0">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Padding="0,0,0,6">
+                        <Label Text="{x:Static local:SampleText.DurationLabel}"
+                               FontSize="14"
+                               VerticalOptions="Center"
+                               TextColor="{StaticResource SampleOnSurface}" />
+                        <Label x:Name="DurationValueLabel"
+                               Grid.Column="1"
+                               FontSize="14"
+                               FontFamily="{OnPlatform iOS=Menlo, Android=monospace}"
+                               VerticalOptions="Center"
+                               TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    </Grid>
+
+                    <Slider x:Name="DurationSlider"
+                            Minimum="100"
+                            Maximum="600"
+                            SemanticProperties.Description="{x:Static local:SampleText.DurationLabel}"
+                            MinimumTrackColor="{StaticResource SamplePrimary}"
+                            MaximumTrackColor="{StaticResource SampleDivider}"
+                            ThumbColor="{StaticResource SampleSurface}"
+                            HandlerChanged="OnDurationSliderHandlerChanged"
+                            ValueChanged="OnDurationChanged" />
+
+                    <Label Text="{x:Static local:SampleText.EasingLabel}"
+                           FontSize="14"
+                           Margin="0,14,0,6"
+                           TextColor="{StaticResource SampleOnSurface}" />
+
+                    <ContentView x:Name="EasingChipsHost" />
+                </VerticalStackLayout>
+
+                <!-- 一度もダイアログを閉じていない間は表示するものがない -->
+                <VerticalStackLayout x:Name="ResultArea"
+                                     IsVisible="False"
+                                     Margin="0,16,0,0"
+                                     BackgroundColor="{StaticResource SampleSurfaceVariant}"
+                                     Padding="16,14"
+                                     Spacing="4">
+                    <Label Text="{x:Static local:SampleText.ResultCaption}"
+                           FontSize="12"
+                           TextColor="{StaticResource SampleOnSurfaceMuted}" />
+                    <Label x:Name="ResultValueLabel"
+                           FontSize="14"
+                           FontFamily="{OnPlatform iOS=Menlo, Android=monospace}"
+                           TextColor="{StaticResource SampleOnSurface}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <BoxView Grid.Row="3" HeightRequest="1" Color="{StaticResource SampleDivider}" />
+
+        <Button Grid.Row="4"
+                Text="{x:Static local:SampleText.DisplayAction}"
+                FontSize="14"
+                FontAttributes="Bold"
+                HeightRequest="{OnPlatform iOS=44, Android=48}"
+                MinimumHeightRequest="0"
+                Margin="16,12,16,16"
+                Padding="0"
+                CornerRadius="10"
+                BorderWidth="0"
+                BackgroundColor="{StaticResource SamplePrimary}"
+                TextColor="{StaticResource SampleOnPrimary}"
+                Clicked="OnShowSelected" />
+    </Grid>
+
+</ContentPage>

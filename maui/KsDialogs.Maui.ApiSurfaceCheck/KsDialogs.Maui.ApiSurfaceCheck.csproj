@@ -1,0 +1,109 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    公開 API 形状の検証だけを持つプロジェクト。
+
+    ライブラリを利用者と同じ側から参照する。テストプロジェクトは InternalsVisibleTo を通るため、
+    公開すべき型が誤って internal になっても気づけない。この境界を別プロジェクトとして分けている。
+
+    正の検証は既定のビルドに含まれ、負の検証は禁止形状ごとにビルドプロパティで加える
+    (そのビルドが失敗することが期待結果。1 回のビルドに 1 つの誤りしか入らないので個別に示せる)。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KsDialogs.Maui\KsDialogs.Maui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="NegativeChecks\**" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckVmAttribute)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsLayoutAttributeOnViewModel.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckShowOptions)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsOptionsArgumentOnShow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckResultType)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsMismatchedResultType.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckNotifierValue)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsMismatchedNotifierValue.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckNotifierType)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsMismatchedNotifierType.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckSimpleRegister)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsCustomResultViewModelOnSimpleRegister.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckShowTransition)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsTransitionArgumentOnShow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckOptionsTransition)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsTransitionOnDialogOptions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckNoneArguments)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsArgumentsOnNonePreset.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckTypedShowContract)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsNonContractTypedShow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckNotifierResultType)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsMismatchedNotifierResultType.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckValueTypeViewModel)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsValueTypeViewModel.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckLoadingShowStyle)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsStyleArgumentOnLoadingShow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckLoadingShowOptions)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsOptionsArgumentOnLoadingShow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckToastHide)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsHideOnToast.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckToastShowAwait)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsAwaitOnToastShow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckToastShowReturn)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsReturnValueOnToastShow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckToastShowStyle)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsStyleArgumentOnToastShow.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KsDialogsNegativeCheckLegacyContractName)' == 'true'">
+    <Compile Include="NegativeChecks\RejectsLegacyContractName.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.1" />
+  </ItemGroup>
+
+</Project>

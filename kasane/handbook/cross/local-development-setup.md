@@ -1,0 +1,156 @@
+---
+kind: guide
+applies-when:
+  always: false
+  tasks: [環境構築, worktree での作業開始, Gradle ルートのビルド・テスト, Sample のビルドと実行, MAUI iOS の Sample ビルド]
+title: ローカル開発環境の準備
+description: Android SDK と Xcode のローカル環境を整え、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド
+timestamp: 2026-09-05
+---
+
+# ローカル開発環境の準備
+
+この文書は、clone 直後や git worktree を切った直後に Gradle ルートを動かすまでの準備と、MAUI iOS のビルドを 1 つの Xcode で通すための条件をまとめる。読むと、Android SDK の場所をどこに置けば 5 つの build root すべてが解決できるか、worktree で `SDK location not found` が出たとき何を複製すればよいか、`Swift tools version` の不一致でパッケージ解決が止まったとき何を指定すればよいかが分かる。テストの実行方法と完了判定は [テスト実行規約](test-execution.md) が正であり、本書は準備だけを扱う。先例 KsSettingsView の同名 guide を下敷きにし、このリポジトリで実測した範囲に絞っている。
+
+## Android SDK ロケーション
+
+MAUI の `dotnet build` は Android SDK を自身で解決するため、本節は Gradle を使うルートが対象である。このリポジトリの Gradle build root は 5 つあり、`includeBuild` で互いを巻き込む (`android/` は他の 4 つすべてから included build として使われる)。Android Gradle Plugin は build root ごとに `local.properties` を独立して解決するため、SDK は root ごとに見える状態にする。
+
+| build root | 巻き込む included build |
+|---|---|
+| `android/` | なし |
+| `kmp/` | `android/` |
+| `maui/android/native/` | `android/` |
+| `samples/android/` | `android/` |
+| `samples/kmp/` | `kmp/` と `android/` |
+
+### ANDROID_HOME を使う
+
+`ANDROID_HOME` を設定すると全 build root を一度に解決できる。SDK の場所は環境に合わせて変える。
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+```
+
+### local.properties を使う
+
+環境変数を使わない場合は、動かす build root と、それが巻き込む included build のそれぞれに同じ `sdk.dir` を置く。
+
+```properties
+sdk.dir=<Android SDK の絶対パス>
+```
+
+Android Studio が自動生成するのは開いた root 側だけで、included build 側は生成しない。`SDK location not found` のエラーは不足している root のパスを指すので、そのディレクトリへ置く。
+
+## git worktree で作業するとき
+
+`local.properties` は VCS 管理外 (`.gitignore`) のため、**worktree には引き継がれない**。`ANDROID_HOME` を使っていない環境では、worktree で Gradle ルートを動かす前に、動かす root と included build の `local.properties` を元の checkout から複製する。
+
+```bash
+cp <元の checkout>/android/local.properties android/
+cp <元の checkout>/maui/android/native/local.properties maui/android/native/
+```
+
+- 複製先は動かす root による。`maui/android/native/` のテストなら上の 2 つ、`kmp/` なら `kmp/` と `android/`
+- 複製した `local.properties` は worktree 側でも VCS 管理外のまま。`git status` には現れず、worktree を削除すれば消える
+- 症状の見え方: `dotnet test` (maui/) は Native 側の Gradle ビルドを巻き込むため、この不足が「テストの失敗」として現れる。切り分けは [テスト実行規約](test-execution.md) の maui/ 節を参照する
+
+2026-09-02 の実測: worktree で `maui/android/native/` のテストを回したところ `android/` と `maui/android/native/` の両方で `SDK location not found` になり、元の checkout から 2 ファイルを複製して解消した。
+
+## MAUI iOS ビルドの Xcode 版数
+
+MAUI ワークロードが解決する .NET for iOS SDK が要求する Xcode と、iOS Native の Swift パッケージ (`ios/Package.swift` の swift-tools 版数) が要求する Xcode は独立に決まり、食い違うことがある。2026-09-02 の実測では、.NET for iOS 26.1 は Xcode 26.1 を要求する一方、`ios/` は swift-tools 6.3 を宣言しており、Xcode 26.1 の Swift 6.2.1 では次のエラーでパッケージ解決に失敗した。
+
+```
+package 'ios' is using Swift tools version 6.3.0 but the installed version is 6.2.1
+```
+
+この場合は Xcode を新しい側 (26.5) に揃え、SDK が用意している Xcode 版数検査の opt-out (`ValidateXcodeVersion=false`) を付けて 1 つのツールチェインで通す。Simulator 向けのビルドとテストでは、この opt-out による他への影響は出ていない。
+
+```bash
+dotnet build samples/maui/KsDialogs.Sample.Maui/KsDialogs.Sample.Maui.csproj \
+  -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 -p:ValidateXcodeVersion=false
+```
+
+## Sample のビルドと実行
+
+4 つの Sample は配布済み package ではなく、同じリポジトリの公開 product を利用者側から参照する。参照方式と実行できる OS は次のとおり。
+
+| Sample | 本体の参照方式 | 実行 OS |
+|---|---|---|
+| `samples/ios` | `ios/` を Local Swift Package として参照 | iOS |
+| `samples/android` | `android/` を Gradle composite build として参照 | Android |
+| `samples/maui` | `maui/KsDialogs.Maui` への ProjectReference 1 本 | iOS / Android |
+| `samples/kmp` | `kmp/` と `android/` を Gradle composite build として参照 | iOS / Android |
+
+撮影支援の起動引数と安定デモ ID は [Sample パリティ規約](sample-parity.md#撮影支援の起動引数) を参照する。
+
+### iOS Native
+
+Xcode project は `ios/` を Local Swift Package として参照し、公開 product `KsDialogs` だけをリンクする。
+
+```bash
+cd samples/ios
+xcodebuild -project KsDialogsSample.xcodeproj -scheme KsDialogsSample \
+  -destination 'platform=iOS Simulator,name=<機種名>' \
+  -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+xcrun simctl install <UDID> DerivedData/Build/Products/Debug-iphonesimulator/KsDialogsSample.app
+xcrun simctl launch <UDID> jp.kamusoft.ksdialogs.samples.ios
+```
+
+`<機種名>` と `<UDID>` は `xcrun simctl list devices available` から選ぶ。
+
+### Android Native
+
+`samples/android/settings.gradle.kts` は `includeBuild("../../android")` と `dependencySubstitution` を使い、Maven 座標 `jp.kamusoft:ksdialogs` を included build の `:ksdialogs` へ置き換える。Android Gradle Plugin の library module は Maven publication を自動生成しないため、GAV の自動置換に頼らず利用側で明示する。version catalog は `android/gradle/libs.versions.toml` を共有し、Sample だけ依存版がずれないようにする。
+
+```bash
+cd samples/android
+./gradlew :app:assembleDebug
+adb -s <device> install -r app/build/outputs/apk/debug/app-debug.apk
+adb -s <device> shell am start -n jp.kamusoft.ksdialogs.samples.android/.MainActivity
+```
+
+### .NET MAUI
+
+MAUI Sample は facade project `maui/KsDialogs.Maui` への ProjectReference 1 本だけを持ち、Native binding は推移参照で受け取る。target framework は `net10.0-ios` と `net10.0-android` の platform target だけで、テスト用の素の `net10.0` は含めない。
+
+```bash
+cd samples/maui/KsDialogs.Sample.Maui
+
+dotnet build -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64
+xcrun simctl install <UDID> bin/Debug/net10.0-ios/iossimulator-arm64/KsDialogs.Sample.Maui.app
+xcrun simctl launch <UDID> jp.kamusoft.ksdialogs.samples.maui
+
+dotnet build -f net10.0-android -p:EmbedAssembliesIntoApk=true
+adb -s <device> install -r bin/Debug/net10.0-android/jp.kamusoft.ksdialogs.samples.maui-Signed.apk
+adb -s <device> shell am start -n "$(adb -s <device> shell cmd package resolve-activity --brief jp.kamusoft.ksdialogs.samples.maui | tr -d '\r')"
+```
+
+手動で APK を install する場合は `EmbedAssembliesIntoApk=true` を付ける。Fast Deployment の古い override assembly が端末に残っている場合は、再 install の前に対象 package を uninstall する。MAUI iOS が要求する Xcode と Swift tools の版が食い違うときは前節の `ValidateXcodeVersion=false` を使う。
+
+### Kotlin Multiplatform
+
+`samples/kmp` は KMP facade を composite build で参照し、`shared` が共通の ViewModel と show 呼び出しを持つ。`androidApp` と `iosApp` は各 Native API を使って View だけを登録する。ルート `build.gradle.kts` の plugin 宣言は `apply false` のままにし、本体の included build と同じ classloader で Kotlin/Native の build service を解決させる。
+
+```bash
+cd samples/kmp
+./gradlew :androidApp:assembleDebug
+adb -s <device> install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
+adb -s <device> shell am start -n jp.kamusoft.ksdialogs.samples.kmp.android/.MainActivity
+
+cd iosApp
+xcodebuild -project KsDialogsSampleKmp.xcodeproj -scheme KsDialogsSampleKmp \
+  -destination 'platform=iOS Simulator,name=<機種名>' \
+  -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+xcrun simctl install <UDID> DerivedData/Build/Products/Debug-iphonesimulator/KsDialogsSampleKmp.app
+xcrun simctl launch <UDID> jp.kamusoft.ksdialogs.samples.kmp.ios
+```
+
+KMP iOS アプリがリンクする 3 点と `KotlinMultiplatformLinkedPackage` の再生成手順は [KMP 利用者の iOS ホスト統合](../../concepts/kmp/api/ios-host-integration.md#sample-で合成-package-を再生成する) を参照する。
+
+## 関連
+
+- [テスト実行規約](test-execution.md) — 各 build root の全件実行コマンドと件数の確認
+- [Sample パリティ規約](sample-parity.md) — 4 ルートで一致させるデモと撮影支援の外部契約
+- [KMP 利用者の iOS ホスト統合](../../concepts/kmp/api/ios-host-integration.md) — KMP iOS の依存経路と合成 package

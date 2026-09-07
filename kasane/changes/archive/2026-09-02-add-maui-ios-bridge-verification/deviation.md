@@ -1,0 +1,4 @@
+# Deviation: add-maui-ios-bridge-verification
+
+- [付随修正] maui/macios/KsDialogs.Binding.iOS/KsDialogs.Binding.iOS.csproj (`_AdjustKsBridgeXcodeProjectInputs`): xcframework の再ビルド判定の入力から、新設したテスト標的 `KsDialogsMauiBridgeTests/` とテスト用ホストアプリ `KsDialogsMauiBridgeTestHost/` のソースを除外した。理由: どちらも scheme のビルド対象 (静的 framework) に入らないため、直しても xcframework は変わらないのに再ビルドの契機になっていた (2026-09-02)
+- Scenario BV-MA-05 (bridge 未変更のインクリメンタルビルドは再リンクしない): spec では「資源パッケージ再生成とネイティブリンクは実行されず (up-to-date でスキップ)」→ 指示により資源パッケージ再生成のスキップは求めない (ネイティブリンクのスキップのみ成立を要件とする)。理由: .NET for iOS SDK の既定挙動で、スキップしたビルドでは出力 `…resources.stamp` が `FileWrites` に載らず IncrementalClean に消されるため、手当ての有無によらず 1 ビルドおきに再実行される (実測: verification/incremental-build.md)。再実行は同じ内容の資源パッケージを作り直すだけで、症状に直結する再リンクのスキップと Sample のビルド時間には影響しない。SDK 内部への依存を増やしてまで守らない (2026-09-02)

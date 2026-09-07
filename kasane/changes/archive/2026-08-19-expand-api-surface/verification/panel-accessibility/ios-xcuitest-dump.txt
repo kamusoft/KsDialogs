@@ -1,0 +1,188 @@
+===== INITIAL =====
+t =     5.62s Requesting snapshot of accessibility hierarchy for app with pid 62231
+    t =     5.70s Requesting snapshot of accessibility hierarchy for app with pid 62231
+Attributes: Application, 0x10382c070, pid: 62231, label: 'KsDialogs Sample'
+Element subtree:
+ →Application, 0x10382c070, pid: 62231, label: 'KsDialogs Sample'
+    Window (Main), 0x10382aa90, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10382d160, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10382dcc0, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x10382c390, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x10382b4f0, {{0.0, 0.0}, {402.0, 874.0}}
+              StaticText, 0x10382e050, {{16.0, 82.0}, {142.7, 20.3}}, label: 'KsDialogs Sample'
+              Button, 0x10382e3b0, {{0.0, 115.3}, {402.0, 48.0}}, label: 'Basic Dialog, ›'
+                StaticText, 0x10382e710, {{16.0, 130.3}, {84.3, 18.0}}, label: 'Basic Dialog'
+                StaticText, 0x10382ea70, {{379.3, 130.3}, {6.7, 18.0}}, label: '›'
+              Button, 0x10382edd0, {{0.0, 164.3}, {402.0, 48.0}}, label: 'Layout Dialog, ›'
+                StaticText, 0x10382f140, {{16.0, 179.3}, {93.3, 18.0}}, label: 'Layout Dialog'
+                StaticText, 0x10382f4a0, {{379.3, 179.3}, {6.7, 18.0}}, label: '›'
+              Button, 0x10382f810, {{0.0, 213.3}, {402.0, 48.0}}, label: 'Declarative Dialog, ›'
+                StaticText, 0x10382fbb0, {{16.0, 228.3}, {124.3, 18.0}}, label: 'Declarative Dialog'
+                StaticText, 0x10382ff10, {{379.3, 228.3}, {6.7, 18.0}}, label: '›'
+              Button, 0x1038302b0, {{0.0, 262.3}, {402.0, 48.0}}, label: 'Text Input Dialog, ›'
+                StaticText, 0x103830610, {{16.0, 277.3}, {115.0, 18.0}}, label: 'Text Input Dialog'
+                StaticText, 0x103830990, {{379.3, 277.3}, {6.7, 18.0}}, label: '›'
+              Button, 0x103830d10, {{0.0, 311.3}, {402.0, 48.0}}, label: 'Inline Dialog, ›'
+                StaticText, 0x103831830, {{16.0, 326.3}, {83.7, 18.0}}, label: 'Inline Dialog'
+                StaticText, 0x103831b90, {{379.3, 326.3}, {6.7, 18.0}}, label: '›'
+      Other, 0x103831f10, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x103832270, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x1038325e0, {{0.0, 0.0}, {402.0, 874.0}}
+            Button, 0x103832940, {{16.0, 82.0}, {44.0, 44.0}}, label: '戻る'
+            StaticText, 0x103832cc0, {{68.0, 93.8}, {108.3, 20.3}}, label: 'Layout Dialog'
+            Button, 0x103833030, {{313.0, 82.0}, {73.0, 44.0}}, label: 'Show'
+            StaticText, 0x1038333a0, {{16.0, 156.5}, {66.3, 17.0}}, label: 'Horizontal'
+            Button, 0x103833700, {{215.0, 148.0}, {53.7, 34.0}}, label: 'Horizontal Start'
+            Button, 0x103834140, {{268.7, 148.0}, {67.0, 34.0}}, label: 'Horizontal Center', Selected
+            Button, 0x1038344d0, {{335.7, 148.0}, {47.3, 34.0}}, label: 'Horizontal End'
+            StaticText, 0x103834870, {{16.0, 209.5}, {48.7, 17.0}}, label: 'Vertical'
+            Button, 0x103834c00, {{215.0, 201.0}, {53.7, 34.0}}, label: 'Vertical Start'
+            Button, 0x103834f80, {{268.7, 201.0}, {67.0, 34.0}}, label: 'Vertical Center', Selected
+            Button, 0x106b053a0, {{335.7, 201.0}, {47.3, 34.0}}, label: 'Vertical End'
+            StaticText, 0x106b05fe0, {{16.0, 260.5}, {49.7, 17.0}}, label: 'OffsetX'
+            TextField, 0x106b09f50, {{332.0, 259.7}, {44.0, 18.7}}, label: 'OffsetX', value: 0
+            StaticText, 0x106b08000, {{16.0, 309.5}, {49.0, 17.0}}, label: 'OffsetY'
+            TextField, 0x106b0ae20, {{332.0, 308.7}, {44.0, 18.7}}, label: 'OffsetY', value: 0
+            StaticText, 0x106b06400, {{16.0, 358.5}, {101.7, 17.0}}, label: 'Use visible area'
+            Switch, 0x106b069c0, {{325.0, 353.0}, {61.0, 28.0}}, label: 'Use visible area', value: 1
+              Switch, 0x106b04280, {{325.0, 353.0}, {63.0, 28.0}}, value: 1
+Path to element:
+ →Application, 0x10382c070, pid: 62231, label: 'KsDialogs Sample'
+Query chain:
+ →Find: Application 'jp.kamusoft.ksdialogs.samples.ios'
+  Output: {
+    Application, 0x106c186c0, pid: 62231, label: 'KsDialogs Sample'
+  }
+
+===== CHANGED =====
+t =     9.15s Requesting snapshot of accessibility hierarchy for app with pid 62231
+    t =     9.32s Requesting snapshot of accessibility hierarchy for app with pid 62231
+Attributes: Application, 0x1038364b0, pid: 62231, label: 'KsDialogs Sample'
+Element subtree:
+ →Application, 0x1038364b0, pid: 62231, label: 'KsDialogs Sample'
+    Window (Main), 0x103835690, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x103835300, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x103837c90, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x103835a20, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x103838390, {{0.0, 0.0}, {402.0, 874.0}}
+              StaticText, 0x103836b70, {{16.0, 82.0}, {142.7, 20.3}}, label: 'KsDialogs Sample'
+              Button, 0x103837280, {{0.0, 115.3}, {402.0, 48.0}}, label: 'Basic Dialog, ›'
+                StaticText, 0x103836f10, {{16.0, 130.3}, {84.3, 18.0}}, label: 'Basic Dialog'
+                StaticText, 0x1038367f0, {{379.3, 130.3}, {6.7, 18.0}}, label: '›'
+              Button, 0x103838a70, {{0.0, 164.3}, {402.0, 48.0}}, label: 'Layout Dialog, ›'
+                StaticText, 0x103838020, {{16.0, 179.3}, {93.3, 18.0}}, label: 'Layout Dialog'
+                StaticText, 0x103838dd0, {{379.3, 179.3}, {6.7, 18.0}}, label: '›'
+              Button, 0x1038386e0, {{0.0, 213.3}, {402.0, 48.0}}, label: 'Declarative Dialog, ›'
+                StaticText, 0x103839170, {{16.0, 228.3}, {124.3, 18.0}}, label: 'Declarative Dialog'
+                StaticText, 0x1038394e0, {{379.3, 228.3}, {6.7, 18.0}}, label: '›'
+              Button, 0x103839840, {{0.0, 262.3}, {402.0, 48.0}}, label: 'Text Input Dialog, ›'
+                StaticText, 0x103839bd0, {{16.0, 277.3}, {115.0, 18.0}}, label: 'Text Input Dialog'
+                StaticText, 0x103839f40, {{379.3, 277.3}, {6.7, 18.0}}, label: '›'
+              Button, 0x10381d020, {{0.0, 311.3}, {402.0, 48.0}}, label: 'Inline Dialog, ›'
+                StaticText, 0x10380ceb0, {{16.0, 326.3}, {83.7, 18.0}}, label: 'Inline Dialog'
+                StaticText, 0x10380e070, {{379.3, 326.3}, {6.7, 18.0}}, label: '›'
+      Other, 0x103810ae0, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x103810e50, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x103813730, {{0.0, 0.0}, {402.0, 874.0}}
+            Button, 0x106b043a0, {{16.0, 82.0}, {44.0, 44.0}}, label: '戻る'
+            StaticText, 0x106b06730, {{68.0, 93.8}, {108.3, 20.3}}, label: 'Layout Dialog'
+            Button, 0x106b06850, {{313.0, 82.0}, {73.0, 44.0}}, label: 'Show'
+            StaticText, 0x106b0b220, {{16.0, 156.5}, {66.3, 17.0}}, label: 'Horizontal'
+            Button, 0x106b0b340, {{216.3, 148.0}, {53.7, 34.0}}, label: 'Horizontal Start'
+            Button, 0x106b0b460, {{270.0, 148.0}, {65.0, 34.0}}, label: 'Horizontal Center'
+            Button, 0x106b0b580, {{335.0, 148.0}, {48.0, 34.0}}, label: 'Horizontal End', Selected
+            StaticText, 0x106b0b6a0, {{16.0, 209.5}, {48.7, 17.0}}, label: 'Vertical'
+            Button, 0x106b0a350, {{215.0, 201.0}, {55.7, 34.0}}, label: 'Vertical Start', Selected
+            Button, 0x106b0a470, {{270.7, 201.0}, {65.0, 34.0}}, label: 'Vertical Center'
+            Button, 0x106b0a590, {{335.7, 201.0}, {47.3, 34.0}}, label: 'Vertical End'
+            StaticText, 0x106b0a860, {{16.0, 260.5}, {49.7, 17.0}}, label: 'OffsetX'
+            TextField, 0x106b0a980, {{332.0, 259.7}, {44.0, 18.7}}, label: 'OffsetX', value: 20, Keyboard Focused
+            StaticText, 0x106b0aaa0, {{16.0, 309.5}, {49.0, 17.0}}, label: 'OffsetY'
+            TextField, 0x106b0c2c0, {{332.0, 308.7}, {44.0, 18.7}}, label: 'OffsetY', value: 0
+            StaticText, 0x106b0c3e0, {{16.0, 358.5}, {101.7, 17.0}}, label: 'Use visible area'
+            Switch, 0x106b0c500, {{325.0, 353.0}, {61.0, 28.0}}, label: 'Use visible area', value: 0
+              Switch, 0x106b0c620, {{325.0, 353.0}, {63.0, 28.0}}, value: 0
+    Window, 0x106b0c740, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x106b0c860, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x106b0c980, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x106b0caa0, {{0.0, 529.0}, {402.0, 345.0}}
+          Other, 0x106b0cbc0, {{4.7, 529.0}, {393.0, 345.0}}, identifier: 'inputView'
+    Window, 0x106b0cdd0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x106b0cef0, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x106b0d010, {{0.0, 529.0}, {402.0, 345.0}}
+          Other, 0x106b0d130, {{0.0, 529.0}, {402.0, 345.0}}
+            Other, 0x106b0d250, {{0.0, 529.0}, {402.0, 345.0}}
+              Other, 0x106b0d370, {{0.0, 529.0}, {402.0, 345.0}}
+                Other, 0x106b0d490, {{0.0, 529.0}, {402.0, 345.0}}
+                  Other, 0x106b0d5b0, {{0.0, 529.0}, {402.0, 345.0}}
+                    Other, 0x106b0d6d0, {{0.0, 529.0}, {402.0, 345.0}}
+                      Other, 0x106b0d7f0, {{0.0, 529.0}, {402.0, 345.0}}
+                        Other, 0x106b0d910, {{0.0, 529.0}, {402.0, 345.0}}
+                      Other, 0x106b0da30, {{0.0, 529.0}, {402.0, 345.0}}
+          Other, 0x106b0db50, {{4.7, 529.0}, {393.0, 44.0}}, identifier: 'SystemInputAssistantView'
+            Other, 0x106b0dc70, {{4.7, 529.0}, {393.0, 44.0}}
+              Other, 0x106b0dd90, {{4.7, 529.0}, {393.0, 44.0}}, identifier: 'CenterPageView'
+                Other, 0x106b0deb0, {{4.7, -71.0}, {393.0, 1244.0}}
+                  ScrollView, 0x106b0dfd0, {{4.7, 529.0}, {393.0, 44.0}}
+                Other, 0x106b0e0f0, {{4.7, 529.0}, {393.0, 44.0}}
+                  Other, 0x106b0e210, {{4.7, 529.0}, {393.0, 44.0}}, label: 'Typing Predictions'
+                    Other, 0x106b0e330, {{4.7, 529.0}, {393.0, 44.0}}
+                      Other, 0x106b0e450, {{4.7, 529.0}, {393.0, 44.0}}
+                        Other, 0x106b0e570, {{4.7, 529.0}, {131.0, 44.0}}
+                        Other, 0x106b0e690, {{135.7, 529.0}, {131.0, 44.0}}
+                        Other, 0x106b0e7b0, {{266.7, 529.0}, {131.0, 44.0}}
+          Other, 0x106b0e8d0, {{0.0, 573.0}, {402.0, 301.0}}
+            Button, 0x106b0e9f0, {{8.5, 805.7}, {68.1, 68.7}}, label: 'Next keyboard', value: 日本語かな
+              StaticText, 0x106b0eb10, {{8.5, 805.7}, {0.0, 0.0}}
+            Button, 0x106b0ec30, {{325.4, 805.4}, {68.1, 68.7}}, identifier: 'dictation', label: 'Dictate'
+              StaticText, 0x106b0ed50, {{325.4, 805.4}, {0.0, 0.0}}
+            Button, 0x106b0ee70, {{325.4, 805.4}, {68.1, 68.7}}, identifier: 'dictation', label: 'Dictate'
+              StaticText, 0x106b0ef90, {{325.4, 805.4}, {0.0, 0.0}}
+          Other, 0x106b0f0b0, {{4.7, 573.0}, {393.0, 243.0}}
+            Keyboard, 0x106b0f1d0, {{4.7, 573.0}, {393.0, 243.0}}
+              Other, 0x106b0f2f0, {{4.7, 573.0}, {393.0, 243.0}}
+                Other, 0x106b0f410, {{4.7, 573.0}, {393.0, 243.0}}, identifier: 'UIKeyboardLayoutStar Preview'
+                  Key, 0x106b0f530, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Left'
+                  Key, 0x106b0f650, {{6.7, 580.0}, {39.0, 56.0}}, label: '1'
+                  Key, 0x106b0f770, {{45.7, 580.0}, {39.0, 56.0}}, label: '2'
+                  Key, 0x106b0f890, {{84.7, 580.0}, {39.0, 56.0}}, label: '3'
+                  Key, 0x106b0f9b0, {{123.7, 580.0}, {39.3, 56.0}}, label: '4'
+                  Key, 0x106b0fad0, {{163.0, 580.0}, {39.0, 56.0}}, label: '5'
+                  Key, 0x106b0fbf0, {{202.0, 580.0}, {39.0, 56.0}}, label: '6'
+                  Key, 0x106b0fd10, {{241.0, 580.0}, {39.3, 56.0}}, label: '7'
+                  Key, 0x106b0fe30, {{280.3, 580.0}, {39.0, 56.0}}, label: '8'
+                  Key, 0x106b0ff50, {{319.3, 580.0}, {39.0, 56.0}}, label: '9'
+                  Key, 0x106b10070, {{358.3, 580.0}, {39.3, 56.0}}, label: '0'
+                  Key, 0x106b10190, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Right'
+                  Key, 0x106b102b0, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Left'
+                  Key, 0x106b103d0, {{6.7, 636.0}, {39.0, 56.0}}, label: '-'
+                  Key, 0x106b104f0, {{45.7, 636.0}, {39.0, 56.0}}, label: '/'
+                  Key, 0x106b10610, {{84.7, 636.0}, {39.0, 56.0}}, label: ':'
+                  Key, 0x106b10730, {{123.7, 636.0}, {39.3, 56.0}}, label: ';'
+                  Key, 0x106b10850, {{163.0, 636.0}, {39.0, 56.0}}, label: '('
+                  Key, 0x106b10970, {{202.0, 636.0}, {39.0, 56.0}}, label: ')'
+                  Key, 0x106b10a90, {{241.0, 636.0}, {39.3, 56.0}}, label: '¥'
+                  Key, 0x106b10bb0, {{280.3, 636.0}, {39.0, 56.0}}, label: 'ampersand'
+                  Key, 0x106b10cd0, {{319.3, 636.0}, {39.0, 56.0}}, label: '@'
+                  Key, 0x106b10df0, {{358.3, 636.0}, {39.3, 56.0}}, label: '"'
+                  Key, 0x106b10f10, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Right'
+                  Button, 0x106b11030, {{6.7, 692.0}, {50.7, 56.0}}, identifier: 'shift', label: 'symbols'
+                  Key, 0x106b11150, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Left'
+                  Key, 0x106b11270, {{65.0, 692.0}, {55.0, 56.0}}, label: '.'
+                  Key, 0x106b114e0, {{120.0, 692.0}, {54.7, 56.0}}, label: ','
+                  Key, 0x106b11600, {{174.7, 692.0}, {54.7, 56.0}}, label: '?'
+                  Key, 0x106b11720, {{229.3, 692.0}, {54.7, 56.0}}, label: '!'
+                  Key, 0x106b11840, {{284.0, 692.0}, {55.0, 56.0}}, label: '''
+                  Key, 0x106b11960, {{4.7, 573.0}, {0.0, 0.0}}, label: 'Padding-Right'
+                  Key, 0x106b11a80, {{346.7, 692.0}, {51.0, 56.0}}, identifier: 'delete', label: 'delete'
+                  Key, 0x106b11ba0, {{6.7, 748.0}, {97.7, 56.0}}, identifier: 'more', label: 'letters'
+                  Key, 0x106b11cc0, {{104.3, 748.0}, {195.3, 56.0}}, identifier: 'space', label: ' '
+                  Button, 0x106b11de0, {{299.7, 748.0}, {98.0, 56.0}}, identifier: 'Return', label: 'return'
+Path to element:
+ →Application, 0x1038364b0, pid: 62231, label: 'KsDialogs Sample'
+Query chain:
+ →Find: Application 'jp.kamusoft.ksdialogs.samples.ios'
+  Output: {
+    Application, 0x10361e5e0, pid: 62231, label: 'KsDialogs Sample'
+  }
+

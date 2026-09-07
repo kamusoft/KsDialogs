@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mock-preset-motion: プリセット動作イメージ (動的モック)</title>
+<style>
+  :root {
+    --primary: #2563EB;
+    --on-primary: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-variant: #F3F4F6;
+    --on-surface: #1F2937;
+    --on-surface-muted: #6B7280;
+    --scrim: rgba(0, 0, 0, 0.4);
+    --divider: #E5E7EB;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { background: #E9EAEE; display: flex; gap: 32px; justify-content: center; padding: 32px; flex-wrap: wrap; }
+
+  .phone {
+    width: 320px; height: 640px; background: var(--surface); border-radius: 24px;
+    border: 1px solid var(--divider); overflow: hidden; position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .appbar { padding: 20px 16px 12px; border-bottom: 1px solid var(--divider); }
+  .appbar h1 { font-size: 17px; font-weight: 600; color: var(--on-surface); }
+  .menu-item {
+    display: flex; justify-content: space-between; align-items: center;
+    min-height: 48px; padding: 0 16px; border-bottom: 1px solid var(--divider);
+  }
+  .menu-item span { font-size: 15px; color: var(--on-surface); }
+  .menu-item .chev { color: var(--on-surface-muted); }
+
+  /* 覆い (scrim) とコンテンツ層は兄弟レイヤ — 覆いのフェードがコンテンツの演出を巻き込まないようにする (design Decision 2) */
+  .scrim {
+    position: absolute; inset: 0; background: var(--scrim);
+    opacity: 0; visibility: hidden;
+  }
+  .content-layer {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    visibility: hidden; pointer-events: none;
+  }
+  .dialog {
+    width: 272px; background: var(--surface); border-radius: 20px;
+    padding: 24px 20px 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.24);
+  }
+  .dialog .message { font-size: 15px; color: var(--on-surface); text-align: center; margin-bottom: 16px; }
+  .dialog .buttons { display: flex; gap: 10px; }
+  .dialog .buttons button {
+    flex: 1; min-height: 44px; font-size: 14px; border: none; border-radius: 10px; cursor: default;
+  }
+  .btn-cancel { background: var(--surface-variant); color: var(--on-surface); }
+  .btn-ok { background: var(--primary); color: var(--on-primary); font-weight: 600; }
+
+  .panel { width: 320px; }
+  .panel h2 { font-size: 15px; color: var(--on-surface); margin-bottom: 12px; }
+  .panel .caption { font-size: 12px; color: var(--on-surface-muted); margin: 14px 0 6px; }
+  .chip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .chip {
+    min-height: 44px; border: 1px solid var(--divider); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--on-surface); cursor: pointer; background: var(--surface);
+  }
+  .chip:hover { background: var(--surface-variant); }
+  .chip.selected { background: var(--primary); color: var(--on-primary); font-weight: 600; border-color: var(--primary); }
+  .easing-chips { display: flex; gap: 8px; }
+  .easing-chips .chip { flex: 1; min-height: 36px; font-size: 12px; }
+  .duration-label { display: flex; justify-content: space-between; font-size: 14px; color: var(--on-surface); }
+  .duration-label .val { color: var(--on-surface-muted); font-family: ui-monospace, monospace; }
+  input[type="range"] { width: 100%; accent-color: var(--primary); }
+  .note {
+    margin-top: 16px; padding: 12px; border-radius: 10px; background: var(--surface-variant);
+    font-size: 12px; color: var(--on-surface-muted); line-height: 1.6;
+  }
+  .status { margin-top: 10px; font-size: 12px; color: var(--on-surface-muted); font-family: ui-monospace, monospace; min-height: 1.4em; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>KsDialogs Sample</h1></div>
+      <div class="menu-item"><span>Basic Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Layout Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Declarative Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Text Input Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Inline Dialog</span><span class="chev">›</span></div>
+      <div class="menu-item"><span>Transition Dialog</span><span class="chev">›</span></div>
+      <div class="scrim" id="scrim"></div>
+      <div class="content-layer" id="contentLayer">
+        <div class="dialog" id="dialog">
+          <div class="message">トランジションのデモです</div>
+          <div class="buttons">
+            <button class="btn-cancel">キャンセル</button>
+            <button class="btn-ok">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>プリセット動作イメージ</h2>
+    <div class="caption">プリセット (クリックで入場 → 退場を再生)</div>
+    <div class="chip-grid" id="presets">
+      <div class="chip" data-preset="fade">Fade</div>
+      <div class="chip" data-preset="slideUp">Slide Up</div>
+      <div class="chip" data-preset="slideDown">Slide Down</div>
+      <div class="chip" data-preset="slideStart">Slide Start</div>
+      <div class="chip" data-preset="slideEnd">Slide End</div>
+      <div class="chip" data-preset="zoom">Zoom</div>
+      <div class="chip" data-preset="none">None</div>
+    </div>
+    <div class="caption">時間</div>
+    <div class="duration-label"><span></span><span class="val" id="durationValue">250 ms</span></div>
+    <input type="range" id="duration" min="100" max="600" step="10" value="250">
+    <div class="caption">イージング</div>
+    <div class="easing-chips" id="easings">
+      <div class="chip selected" data-easing="cubic-bezier(0.4, 0, 0.2, 1)">Standard</div>
+      <div class="chip" data-easing="linear">Linear</div>
+      <div class="chip" data-easing="cubic-bezier(0.4, 0, 1, 1)">Accelerate</div>
+      <div class="chip" data-easing="cubic-bezier(0, 0, 0.2, 1)">Decelerate</div>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="note">
+      オーバーレイ (背景の覆い) のフェードはプリセットによらず<b>常にライブラリが駆動</b>します (design Decision 2)。
+      時間は本体のトランジションに揃い (プリセットなら同じ duration、none / カスタムフックは既定 250ms)、
+      イージングは覆いには標準を使います。プリセットが動かすのはダイアログ本体 (コンテンツのホスト View) だけです。<br>
+      この動的モックは動作イメージの事前確認用で、最終検証は実機確認 + 証跡記録です。
+    </div>
+  </div>
+
+<script>
+(() => {
+  const scrim = document.getElementById("scrim");
+  const contentLayer = document.getElementById("contentLayer");
+  const dialog = document.getElementById("dialog");
+  const status = document.getElementById("status");
+  const durationInput = document.getElementById("duration");
+  const durationValue = document.getElementById("durationValue");
+
+  // オーバーレイは常にライブラリ駆動。時間は本体のトランジションに揃える (プリセットなら同じ duration、
+  // none / カスタムフックは既定 250ms)。イージングは覆いには標準を使う
+  const OVERLAY_DEFAULT_MS = 250;
+  const OVERLAY_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+  const overlayOptions = (presetKey, duration) => ({
+    duration: presetKey === "none" ? OVERLAY_DEFAULT_MS : duration,
+    easing: OVERLAY_EASING,
+  });
+  const HOLD_MS = 800;
+
+  // 各プリセットの presentation 側 keyframes (dismissal は逆再生)
+  const PRESETS = {
+    fade:       [{ opacity: 0 }, { opacity: 1 }],
+    slideUp:    [{ transform: "translateY(360px)" }, { transform: "translateY(0)" }],
+    slideDown:  [{ transform: "translateY(-360px)" }, { transform: "translateY(0)" }],
+    slideStart: [{ transform: "translateX(-336px)" }, { transform: "translateX(0)" }],
+    slideEnd:   [{ transform: "translateX(336px)" }, { transform: "translateX(0)" }],
+    zoom:       [{ transform: "scale(0.8)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }],
+    none:       null,
+  };
+
+  let selectedEasing = "cubic-bezier(0.4, 0, 0.2, 1)";
+  let playing = false;
+
+  durationInput.addEventListener("input", () => {
+    durationValue.textContent = `${durationInput.value} ms`;
+  });
+
+  document.getElementById("easings").addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    document.querySelectorAll("#easings .chip").forEach((c) => c.classList.remove("selected"));
+    chip.classList.add("selected");
+    selectedEasing = chip.dataset.easing;
+  });
+
+  document.getElementById("presets").addEventListener("click", async (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip || playing) return;
+    playing = true;
+    document.querySelectorAll("#presets .chip").forEach((c) => c.classList.remove("selected"));
+    chip.classList.add("selected");
+    await playCycle(chip.dataset.preset);
+    playing = false;
+  });
+
+  function animate(el, keyframes, options) {
+    if (!keyframes) return Promise.resolve();
+    const anim = el.animate(keyframes, { fill: "both", ...options });
+    return anim.finished;
+  }
+
+  // 前回サイクルの fill (最終状態の保持) を消して基準状態 (opacity 1 / transform none) に戻す。
+  // これを怠ると、スライド退場後のオフスクリーン位置やフェード退場後の opacity 0 が残り、
+  // 別プロパティだけを動かす次のプリセットが見えないままになる
+  function resetAnimations() {
+    [scrim, dialog].forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+  }
+
+  async function playCycle(presetKey) {
+    const frames = PRESETS[presetKey];
+    const duration = Number(durationInput.value);
+    const contentOpts = { duration, easing: selectedEasing };
+    const OVERLAY = overlayOptions(presetKey, duration);
+
+    // --- presentation: オーバーレイ (固定) とコンテンツ (プリセット) を並行駆動 ---
+    resetAnimations();
+    status.textContent = "presentation…";
+    scrim.style.visibility = "visible";
+    contentLayer.style.visibility = "visible";
+    await Promise.all([
+      animate(scrim, [{ opacity: 0 }, { opacity: 1 }], OVERLAY),
+      animate(dialog, frames, contentOpts),
+    ]);
+
+    status.textContent = "表示中 (結果待ち)";
+    await new Promise((r) => setTimeout(r, HOLD_MS));
+
+    // --- dismissal: フック完了を待ってから器を撤去する (逆再生) ---
+    status.textContent = "dismissal… (フック完了待ち)";
+    await Promise.all([
+      animate(scrim, [{ opacity: 1 }, { opacity: 0 }], OVERLAY),
+      animate(dialog, frames ? [...frames].reverse() : null, contentOpts),
+    ]);
+    scrim.style.visibility = "hidden";
+    contentLayer.style.visibility = "hidden";
+    resetAnimations();
+    status.textContent = "撤去完了 → show が返る";
+  }
+})();
+</script>
+</body>
+</html>

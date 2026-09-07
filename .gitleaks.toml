@@ -1,0 +1,30 @@
+# gitleaks 設定 (汎用 secret scanner)
+#
+# Kasane 標準 lint との役割分担:
+#   local-path-lint.py  ローカル絶対パス
+#   identity-lint.py    個体・個人・秘密を特定する値 (UDID・署名アイデンティティ・メール等)
+#   gitleaks (本設定)   汎用の API key・トークン・秘密鍵
+# 三者は判定を二重実装しない (ksn-core references/evidence.md)。
+#
+# 実行: scripts/secret-scan.sh (履歴 + 作業ツリー)
+#       .githooks/pre-commit    (staged 差分。git config core.hooksPath .githooks で有効化)
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """\
+ビルド生成物 (gitignore 済み)。MAUI/Android の JNI マッピング XML が持つ managed-key / java-key 属性を \
+generic-api-key が誤検出するため、パスごと除外する。追跡対象ではないので commit 経路には影響しない。\
+"""
+paths = [
+  '''(^|/)obj/''',
+  '''(^|/)bin/''',
+  '''(^|/)build/''',
+  '''(^|/)\.build/''',
+  '''(^|/)\.gradle/''',
+  '''(^|/)\.kotlin/''',
+  '''(^|/)DerivedData/''',
+  '''(^|/)\.vs/''',
+  '''(^|/)\.idea/''',
+]

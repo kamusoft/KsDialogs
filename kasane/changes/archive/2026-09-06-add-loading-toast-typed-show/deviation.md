@@ -1,0 +1,4 @@
+# Deviation: add-loading-toast-typed-show
+
+- 「破壊的変更なし」(proposal.md の Impact): スペックは「公開 API の追加のみ」→ 実際は型指定 show / start が 3 形態とも契約 (`KsLoading` / `KsToast` / `IKsLoading` / `IKsToast`) の**抽象メンバー**として増えており、契約を自前で実装する型 (利用者のテストダブル・adapter。本 change でも kmp の androidHostTest の test double に stub を追加した) は再コンパイル時に実装の追加を要求される。非破壊が指すのは**呼ぶ側のソース互換** (既存のインスタンス渡し show / インライン factory 版の呼び出しがそのまま通ること) に限る。理由: Dialog の型指定 show (core/ADR-0019〜0021) が同じ形で契約に抽象メンバーを足した先例にそろえる。既定実装 (protocol extension / default interface method) で吸収する案はオーナーが不採用 (second-opinion-code-001 のオーナー確認、2026-09-06)。この意味は core/api/model-binding-semantics.md に明文化した
+- [付随修正] `LoadingViewRegistry` / `ToastViewRegistry` の class doc (ios / android / maui): 本 change が書き換えた公開 doc コメントから ADR ID (`core/ADR-0025` / `0029` / `0035`) を除去した。理由: comment-policy「公開メンバーの doc コメントには内部用語 (ADR ID を含む) を使わない」に、触った行だけをそろえる (review-001 Suggestion / second-opinion-code-001 Minor。iOS 分は review-002 の指摘で追随) (2026-09-06)

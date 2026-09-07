@@ -1,0 +1,3 @@
+# Deviation: rename-dialog-contract-singular
+
+- Scenario「4 形態のライブラリテストが通る」(specs/dialog-contract/spec.md): spec では handbook の手順による 4 ルートのテストが「すべて成功する」→ 指示により android/ (instrumented) ルートの既存 2 件の失敗 (`ToastSystemInputTests.Toast_表示中でも戻るとホームが通る` — Pixel 6a API 36 で 3/3 失敗、`LoadingCoalescingTests.LD_CO_13` — API 29 で 2/2・API 36 で間欠) を抱えたまま完了扱いとする。理由: 両テストは Toast / Loading のもので Dialog 契約に触れず、androidTest に本 change の差分はなく、同ビルドの Pixel 4a (API 33) では 0 failures — 改名起因の退行ではない既存の端末 / API レベル依存の失敗と切り分けた (verify-002.md)。2 件は別 change `fix-android-instrumented-toast-back-loading-coalescing` として簡易起票し、handbook の実測値 (305 tests / 0 failures) の drift 所見もそちらへ (2026-09-06)

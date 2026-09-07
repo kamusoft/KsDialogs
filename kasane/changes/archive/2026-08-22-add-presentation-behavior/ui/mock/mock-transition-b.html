@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mock-transition-b: Transition デモ (案B: チップ選択型)</title>
+<style>
+  :root {
+    --primary: #2563EB;
+    --on-primary: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-variant: #F3F4F6;
+    --on-surface: #1F2937;
+    --on-surface-muted: #6B7280;
+    --scrim: rgba(0, 0, 0, 0.4);
+    --divider: #E5E7EB;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  body { background: #E9EAEE; display: flex; gap: 32px; justify-content: center; padding: 32px; flex-wrap: wrap; }
+  .phone {
+    width: 320px; height: 640px; background: var(--surface); border-radius: 24px;
+    border: 1px solid var(--divider); overflow: hidden; position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .phone-label { text-align: center; font-size: 12px; color: var(--on-surface-muted); margin-top: 8px; }
+  .appbar { padding: 20px 16px 12px; border-bottom: 1px solid var(--divider); }
+  .appbar h1 { font-size: 17px; font-weight: 600; color: var(--on-surface); }
+  .section-caption { font-size: 12px; color: var(--on-surface-muted); padding: 12px 16px 8px; }
+
+  /* 案B: プリセットは2列チップ (単一選択)、調整はスライダ + チップ */
+  .chip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 16px; }
+  .chip {
+    min-height: 44px; border: 1px solid var(--divider); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--on-surface); cursor: pointer; background: var(--surface);
+  }
+  .chip.selected { background: var(--primary); color: var(--on-primary); font-weight: 600; border-color: var(--primary); }
+  .adjust-block { padding: 0 16px; }
+  .adjust-label { display: flex; justify-content: space-between; font-size: 14px; color: var(--on-surface); margin: 10px 0 6px; }
+  .adjust-label .val { color: var(--on-surface-muted); font-family: ui-monospace, monospace; }
+  .slider { width: 100%; height: 4px; background: var(--divider); border-radius: 2px; position: relative; }
+  .slider .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 40%; background: var(--primary); border-radius: 2px; }
+  .slider .knob {
+    position: absolute; left: 40%; top: 50%; transform: translate(-50%, -50%);
+    width: 20px; height: 20px; border-radius: 50%; background: var(--surface);
+    border: 1px solid var(--divider); box-shadow: 0 1px 4px rgba(0,0,0,0.16);
+  }
+  .easing-chips { display: flex; gap: 8px; margin-top: 6px; }
+  .easing-chips .chip { flex: 1; min-height: 36px; font-size: 12px; }
+  .footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px 16px 16px; border-top: 1px solid var(--divider); background: var(--surface); }
+  .btn-show {
+    width: 100%; min-height: 44px; font-size: 14px; border: none; border-radius: 10px;
+    background: var(--primary); color: var(--on-primary); font-weight: 600; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div>
+    <div class="phone">
+      <div class="appbar"><h1>Transition Dialog</h1></div>
+      <div class="section-caption">プリセット</div>
+      <div class="chip-grid">
+        <div class="chip">Fade</div>
+        <div class="chip selected">Slide Up</div>
+        <div class="chip">Slide Down</div>
+        <div class="chip">Slide Start</div>
+        <div class="chip">Slide End</div>
+        <div class="chip">Zoom</div>
+        <div class="chip">None</div>
+        <div class="chip">Custom Hook</div>
+      </div>
+      <div class="section-caption">調整</div>
+      <div class="adjust-block">
+        <div class="adjust-label"><span>時間</span><span class="val">250 ms</span></div>
+        <div class="slider"><div class="fill"></div><div class="knob"></div></div>
+        <div class="adjust-label" style="margin-top:14px"><span>イージング</span></div>
+        <div class="easing-chips">
+          <div class="chip selected">Standard</div>
+          <div class="chip">Linear</div>
+          <div class="chip">Accelerate</div>
+          <div class="chip">Decelerate</div>
+        </div>
+      </div>
+      <div class="footer"><button class="btn-show">表示</button></div>
+    </div>
+    <div class="phone-label">案B: チップ選択型 (2列チップ + スライダ調整)</div>
+  </div>
+</body>
+</html>

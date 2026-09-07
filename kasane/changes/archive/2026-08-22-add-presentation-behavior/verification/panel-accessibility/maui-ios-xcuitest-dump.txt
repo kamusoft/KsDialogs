@@ -1,0 +1,182 @@
+===== KSN-DUMP-BEGIN initial =====
+    t =    10.22s Requesting snapshot of accessibility hierarchy for app with pid 63873
+    t =    10.35s Requesting snapshot of accessibility hierarchy for app with pid 63873
+Attributes: Application, 0x10ae51b80, pid: 63873, label: 'KsDialogs Sample'
+Element subtree:
+ →Application, 0x10ae51b80, pid: 63873, label: 'KsDialogs Sample'
+    Window (Main), 0x10ae51cc0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10ae51e00, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10ae51f40, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10ae52080, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10ae521c0, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x10ae52300, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x10ae52440, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x10ae52580, {{0.0, 62.0}, {402.0, 778.0}}
+                Other, 0x10ae526c0, {{0.0, 62.0}, {402.0, 76.0}}
+                  Button, 0x10ae52800, {{16.0, 82.0}, {44.0, 44.0}}, label: '戻る'
+                  StaticText, 0x10ae52940, {{68.0, 93.8}, {318.0, 20.3}}, label: 'Transition Dialog'
+                Other, 0x10ae52a80, {{0.0, 138.0}, {402.0, 1.0}}
+                ScrollView, 0x10ae52bc0, {{0.0, 139.0}, {402.0, 628.0}}
+                  Other, 0x10ae52d00, {{0.0, 139.0}, {402.0, 628.0}}
+                    StaticText, 0x10ae52e40, {{0.0, 139.0}, {402.0, 34.3}}, label: 'プリセット'
+                    Other, 0x10ae52f80, {{16.0, 173.3}, {370.0, 200.0}}
+                      Other, 0x10ae530c0, {{16.0, 173.3}, {370.0, 200.0}}
+                        Other, 0x10ae53200, {{16.0, 173.3}, {370.0, 200.0}}
+                          Other, 0x10ae53340, {{16.0, 173.3}, {181.0, 44.0}}
+                            Button, 0x10ae53480, {{16.0, 173.3}, {181.0, 44.0}}, label: 'Fade', Selected
+                              StaticText, 0x10ae535c0, {{90.0, 187.0}, {33.0, 17.0}}, label: 'Fade'
+                          Other, 0x10ae53700, {{205.0, 173.3}, {181.0, 44.0}}
+                            Button, 0x10ae53840, {{205.0, 173.3}, {181.0, 44.0}}, label: 'Slide Up'
+                              StaticText, 0x10ae53980, {{268.0, 187.0}, {55.0, 17.0}}, label: 'Slide Up'
+                          Other, 0x10ae53ac0, {{16.0, 225.3}, {181.0, 44.0}}
+                            Button, 0x10ae53c00, {{16.0, 225.3}, {181.0, 44.0}}, label: 'Slide Down'
+                              StaticText, 0x10ae53d40, {{70.0, 239.0}, {73.0, 17.0}}, label: 'Slide Down'
+                          Other, 0x10ae53e80, {{205.0, 225.3}, {181.0, 44.0}}
+                            Button, 0x107643200, {{205.0, 225.3}, {181.0, 44.0}}, label: 'Slide Start'
+                              StaticText, 0x107643340, {{261.7, 239.0}, {68.0, 17.0}}, label: 'Slide Start'
+                          Other, 0x107643480, {{16.0, 277.3}, {181.0, 44.0}}
+                            Button, 0x1076435c0, {{16.0, 277.3}, {181.0, 44.0}}, label: 'Slide End'
+                              StaticText, 0x107643700, {{76.0, 291.0}, {61.0, 17.0}}, label: 'Slide End'
+                          Other, 0x107643840, {{205.0, 277.3}, {181.0, 44.0}}
+                            Button, 0x107643980, {{205.0, 277.3}, {181.0, 44.0}}, label: 'Zoom'
+                              StaticText, 0x107643ac0, {{276.7, 291.0}, {38.0, 17.0}}, label: 'Zoom'
+                          Other, 0x107643c00, {{16.0, 329.3}, {181.0, 44.0}}
+                            Button, 0x10aea8000, {{16.0, 329.3}, {181.0, 44.0}}, label: 'None'
+                              StaticText, 0x10aea8140, {{89.0, 343.0}, {35.0, 17.0}}, label: 'None'
+                          Other, 0x10aea8280, {{205.0, 329.3}, {181.0, 44.0}}
+                            Button, 0x10aea83c0, {{205.0, 329.3}, {181.0, 44.0}}, label: 'Custom Hook'
+                              StaticText, 0x10aea8500, {{251.7, 343.0}, {88.0, 17.0}}, label: 'Custom Hook'
+                    StaticText, 0x10aea8640, {{0.0, 373.3}, {402.0, 34.3}}, label: '調整'
+                    Other, 0x10aea8780, {{16.0, 407.7}, {370.0, 130.0}}
+                      Other, 0x10aea88c0, {{16.0, 407.7}, {370.0, 23.0}}
+                        StaticText, 0x10aea8a00, {{16.0, 407.7}, {311.3, 17.0}}, label: '時間'
+                        StaticText, 0x10aea8b40, {{335.3, 408.0}, {50.7, 16.3}}, label: '250 ms'
+                      Slider, 0x10aea8c80, {{16.0, 430.7}, {370.0, 34.0}}, label: '時間', value: 30%
+                      StaticText, 0x10aea8dc0, {{16.0, 478.7}, {370.0, 17.0}}, label: 'イージング'
+                      Other, 0x10aea8f00, {{16.0, 501.7}, {370.0, 36.0}}
+                        Other, 0x10aea9040, {{16.0, 501.7}, {370.0, 36.0}}
+                          Other, 0x10aea9180, {{16.0, 501.7}, {370.0, 36.0}}
+                            Other, 0x10aea92c0, {{16.0, 501.7}, {86.5, 36.0}}
+                              Button, 0x10aea9400, {{16.0, 501.7}, {86.5, 36.0}}, label: 'Standard', Selected
+                                StaticText, 0x10aea9540, {{32.3, 512.3}, {54.0, 15.0}}, label: 'Standard'
+                            Other, 0x10aea9680, {{110.5, 501.7}, {86.5, 36.0}}
+                              Button, 0x10aea97c0, {{110.5, 501.7}, {86.5, 36.0}}, label: 'Linear'
+                                StaticText, 0x10aea9900, {{136.5, 512.3}, {35.0, 15.0}}, label: 'Linear'
+                            Other, 0x10aea9a40, {{205.0, 501.7}, {86.5, 36.0}}
+                              Button, 0x10aea9b80, {{205.0, 501.7}, {86.5, 36.0}}, label: 'Accelerate'
+                                StaticText, 0x10aea9cc0, {{218.0, 512.3}, {61.0, 15.0}}, label: 'Accelerate'
+                            Other, 0x10aea9e00, {{299.5, 501.7}, {86.5, 36.0}}
+                              Button, 0x10aea9f40, {{299.5, 501.7}, {86.5, 36.0}}, label: 'Decelerate'
+                                StaticText, 0x10aeaa080, {{311.8, 512.3}, {62.0, 15.0}}, label: 'Decelerate'
+                  Other, 0x10aeaa1c0, {{369.0, 139.0}, {30.0, 628.0}}, label: 'Vertical scroll bar, 1 pages', value: 0%
+                    Other, 0x10aeaa300, {{396.0, 100.0}, {3.0, 36.0}}
+                  Other, 0x10aeaa440, {{0.0, 734.0}, {402.0, 30.0}}, label: 'Horizontal scroll bar, 1 pages', value: 0%
+                    Other, 0x10aeaa580, {{-39.0, 761.0}, {36.0, 3.0}}
+                  Other, 0x10aeaa6c0, {{369.0, 139.0}, {30.0, 628.0}}, label: 'Vertical scroll bar, 1 pages', value: 0%
+                    Other, 0x10aeaa800, {{396.0, 100.0}, {3.0, 36.0}}
+                  Other, 0x10aeaa940, {{0.0, 734.0}, {402.0, 30.0}}, label: 'Horizontal scroll bar, 1 pages', value: 0%
+                    Other, 0x10aeaaa80, {{-39.0, 761.0}, {36.0, 3.0}}
+                Other, 0x10aeaabc0, {{0.0, 767.0}, {402.0, 1.0}}
+                Other, 0x10aeaad00, {{16.0, 780.0}, {370.0, 44.0}}
+                  Button, 0x10aeaae40, {{16.0, 780.0}, {370.0, 44.0}}, label: '表示'
+                    StaticText, 0x10aeaaf80, {{187.7, 793.7}, {27.0, 17.0}}, label: '表示'
+Path to element:
+ →Application, 0x10ae51b80, pid: 63873, label: 'KsDialogs Sample'
+Query chain:
+ →Find: Application 'jp.kamusoft.ksdialogs.samples.maui'
+  Output: {
+    Application, 0x10aeab0c0, pid: 63873, label: 'KsDialogs Sample'
+  }
+
+===== KSN-DUMP-END initial =====
+===== KSN-DUMP-BEGIN changed =====
+    t =    14.79s Requesting snapshot of accessibility hierarchy for app with pid 63873
+    t =    14.93s Requesting snapshot of accessibility hierarchy for app with pid 63873
+Attributes: Application, 0x117dd5180, pid: 63873, label: 'KsDialogs Sample'
+Element subtree:
+ →Application, 0x117dd5180, pid: 63873, label: 'KsDialogs Sample'
+    Window (Main), 0x117dd52c0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x117dd5400, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x117dd5540, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x117dd5680, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x117dd57c0, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x117dd5900, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x117dd5a40, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x117dd5b80, {{0.0, 62.0}, {402.0, 778.0}}
+                Other, 0x117dd5cc0, {{0.0, 62.0}, {402.0, 76.0}}
+                  Button, 0x117dd5e00, {{16.0, 82.0}, {44.0, 44.0}}, label: '戻る'
+                  StaticText, 0x117dd6e40, {{68.0, 93.8}, {318.0, 20.3}}, label: 'Transition Dialog'
+                Other, 0x117dd6f80, {{0.0, 138.0}, {402.0, 1.0}}
+                ScrollView, 0x117dd70c0, {{0.0, 139.0}, {402.0, 628.0}}
+                  Other, 0x117dd7200, {{0.0, 139.0}, {402.0, 628.0}}
+                    StaticText, 0x117dd7340, {{0.0, 139.0}, {402.0, 34.3}}, label: 'プリセット'
+                    Other, 0x117dd7480, {{16.0, 173.3}, {370.0, 200.0}}
+                      Other, 0x117dd75c0, {{16.0, 173.3}, {370.0, 200.0}}
+                        Other, 0x117dd7700, {{16.0, 173.3}, {370.0, 200.0}}
+                          Other, 0x117dd7840, {{16.0, 173.3}, {181.0, 44.0}}
+                            Button, 0x117dd7980, {{16.0, 173.3}, {181.0, 44.0}}, label: 'Fade'
+                              StaticText, 0x117dd7ac0, {{90.7, 187.0}, {32.0, 17.0}}, label: 'Fade'
+                          Other, 0x117dd7c00, {{205.0, 173.3}, {181.0, 44.0}}
+                            Button, 0x117dd7d40, {{205.0, 173.3}, {181.0, 44.0}}, label: 'Slide Up'
+                              StaticText, 0x117dd7e80, {{268.0, 187.0}, {55.0, 17.0}}, label: 'Slide Up'
+                          Other, 0x117e0c000, {{16.0, 225.3}, {181.0, 44.0}}
+                            Button, 0x117e0c140, {{16.0, 225.3}, {181.0, 44.0}}, label: 'Slide Down'
+                              StaticText, 0x117e0c280, {{70.0, 239.0}, {73.0, 17.0}}, label: 'Slide Down'
+                          Other, 0x117e0c3c0, {{205.0, 225.3}, {181.0, 44.0}}
+                            Button, 0x117e0c500, {{205.0, 225.3}, {181.0, 44.0}}, label: 'Slide Start'
+                              StaticText, 0x117e0c640, {{261.7, 239.0}, {68.0, 17.0}}, label: 'Slide Start'
+                          Other, 0x117e0c780, {{16.0, 277.3}, {181.0, 44.0}}
+                            Button, 0x117e0c8c0, {{16.0, 277.3}, {181.0, 44.0}}, label: 'Slide End'
+                              StaticText, 0x117e0ca00, {{76.0, 291.0}, {61.0, 17.0}}, label: 'Slide End'
+                          Other, 0x117e0cb40, {{205.0, 277.3}, {181.0, 44.0}}
+                            Button, 0x117e0cc80, {{205.0, 277.3}, {181.0, 44.0}}, label: 'Zoom'
+                              StaticText, 0x117e0cdc0, {{276.7, 291.0}, {38.0, 17.0}}, label: 'Zoom'
+                          Other, 0x117e0cf00, {{16.0, 329.3}, {181.0, 44.0}}
+                            Button, 0x117e0d040, {{16.0, 329.3}, {181.0, 44.0}}, label: 'None', Selected
+                              StaticText, 0x117e0d180, {{88.7, 343.0}, {36.0, 17.0}}, label: 'None'
+                          Other, 0x117e0d2c0, {{205.0, 329.3}, {181.0, 44.0}}
+                            Button, 0x117e0d400, {{205.0, 329.3}, {181.0, 44.0}}, label: 'Custom Hook'
+                              StaticText, 0x117e0d540, {{251.7, 343.0}, {88.0, 17.0}}, label: 'Custom Hook'
+                    StaticText, 0x117e0d680, {{0.0, 373.3}, {402.0, 34.3}}, label: '調整'
+                    Other, 0x117e0d7c0, {{16.0, 407.7}, {370.0, 130.0}}
+                      Other, 0x117e0d900, {{16.0, 407.7}, {370.0, 23.0}}
+                        StaticText, 0x117e0da40, {{16.0, 407.7}, {311.3, 17.0}}, label: '時間'
+                        StaticText, 0x117e0db80, {{335.3, 408.0}, {50.7, 16.3}}, label: '600 ms'
+                      Slider, 0x117e0dcc0, {{16.0, 430.7}, {370.0, 34.0}}, label: '時間', value: 100%, Disabled
+                      StaticText, 0x117e0de00, {{16.0, 478.7}, {370.0, 17.0}}, label: 'イージング'
+                      Other, 0x117e0df40, {{16.0, 501.7}, {370.0, 36.0}}
+                        Other, 0x117e0e080, {{16.0, 501.7}, {370.0, 36.0}}
+                          Other, 0x117e0e1c0, {{16.0, 501.7}, {370.0, 36.0}}
+                            Other, 0x117e0e300, {{16.0, 501.7}, {86.5, 36.0}}
+                              Button, 0x117e0e440, {{16.0, 501.7}, {86.5, 36.0}}, label: 'Standard', Selected
+                                StaticText, 0x117e0e580, {{32.3, 512.3}, {54.0, 15.0}}, label: 'Standard'
+                            Other, 0x117e0e6c0, {{110.5, 501.7}, {86.5, 36.0}}
+                              Button, 0x117e0e800, {{110.5, 501.7}, {86.5, 36.0}}, label: 'Linear'
+                                StaticText, 0x117e0e940, {{136.5, 512.3}, {35.0, 15.0}}, label: 'Linear'
+                            Other, 0x117e0ea80, {{205.0, 501.7}, {86.5, 36.0}}
+                              Button, 0x117e0ebc0, {{205.0, 501.7}, {86.5, 36.0}}, label: 'Accelerate'
+                                StaticText, 0x117e0ed00, {{218.0, 512.3}, {61.0, 15.0}}, label: 'Accelerate'
+                            Other, 0x117e0ee40, {{299.5, 501.7}, {86.5, 36.0}}
+                              Button, 0x117e0ef80, {{299.5, 501.7}, {86.5, 36.0}}, label: 'Decelerate'
+                                StaticText, 0x117e0f0c0, {{311.8, 512.3}, {62.0, 15.0}}, label: 'Decelerate'
+                  Other, 0x117e0f200, {{369.0, 139.0}, {30.0, 628.0}}, label: 'Vertical scroll bar, 1 pages', value: 0%
+                    Other, 0x117e0f340, {{396.0, 100.0}, {3.0, 36.0}}
+                  Other, 0x117e0f480, {{0.0, 734.0}, {402.0, 30.0}}, label: 'Horizontal scroll bar, 1 pages', value: 0%
+                    Other, 0x117e0f5c0, {{-39.0, 761.0}, {36.0, 3.0}}
+                  Other, 0x117e0f700, {{369.0, 139.0}, {30.0, 628.0}}, label: 'Vertical scroll bar, 1 pages', value: 0%
+                    Other, 0x117e0f840, {{396.0, 100.0}, {3.0, 36.0}}
+                  Other, 0x117e0f980, {{0.0, 734.0}, {402.0, 30.0}}, label: 'Horizontal scroll bar, 1 pages', value: 0%
+                    Other, 0x117e0fac0, {{-39.0, 761.0}, {36.0, 3.0}}
+                Other, 0x117e0fc00, {{0.0, 767.0}, {402.0, 1.0}}
+                Other, 0x117e0fd40, {{16.0, 780.0}, {370.0, 44.0}}
+                  Button, 0x117e0fe80, {{16.0, 780.0}, {370.0, 44.0}}, label: '表示'
+                    StaticText, 0x117e10000, {{187.7, 793.7}, {27.0, 17.0}}, label: '表示'
+Path to element:
+ →Application, 0x117dd5180, pid: 63873, label: 'KsDialogs Sample'
+Query chain:
+ →Find: Application 'jp.kamusoft.ksdialogs.samples.maui'
+  Output: {
+    Application, 0x117e10140, pid: 63873, label: 'KsDialogs Sample'
+  }
+
+===== KSN-DUMP-END changed =====

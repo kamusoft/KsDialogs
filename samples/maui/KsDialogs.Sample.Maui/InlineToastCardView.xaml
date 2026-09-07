@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+	インライン経路のカスタム Toast の中身。
+	登録経路と同じく地を自分で描き、登録経路と見分けが付くよう無彩色の配色にする。
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:KsDialogs.Sample.Maui"
+             x:Class="KsDialogs.Sample.Maui.InlineToastCardView">
+
+    <Border BackgroundColor="{StaticResource SampleSurfaceVariant}"
+            Stroke="{StaticResource SampleDivider}"
+            StrokeThickness="1"
+            Padding="18,11">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="12" />
+        </Border.StrokeShape>
+
+        <Label x:Name="MessageLabel"
+               FontSize="14"
+               TextColor="{StaticResource SampleOnSurface}" />
+    </Border>
+
+</ContentView>

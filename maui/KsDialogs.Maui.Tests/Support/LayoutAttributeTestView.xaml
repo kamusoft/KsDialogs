@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- 添付プロパティを XAML から書けることの検証に使う中身。値は既定値と異なるものを選ぶ -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ksd="clr-namespace:KsDialogs;assembly=KsDialogs.Maui"
+             x:Class="KsDialogs.Maui.Tests.Support.LayoutAttributeTestView"
+             ksd:Dialog.LayoutArea="Window"
+             ksd:Dialog.DialogMargin="1,2,3,4"
+             ksd:Dialog.ProportionalWidth="1.5"
+             ksd:Dialog.ProportionalHeight="0.25"
+             ksd:Dialog.OverlayColor="#88556677"
+             ksd:Dialog.IsCanceledOnTouchOutside="False"
+             ksd:Dialog.HorizontalAlignment="End"
+             ksd:Dialog.VerticalAlignment="Fill"
+             ksd:Dialog.OffsetX="-12.5"
+             ksd:Dialog.OffsetY="34">
+    <Label Text="レイアウト検証用" />
+</ContentView>

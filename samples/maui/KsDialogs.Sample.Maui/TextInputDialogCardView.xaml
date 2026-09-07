@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+	Text Input Dialog の中身。
+	覆い (scrim) と中央配置はライブラリの器が受け持つため、このカード自体だけを描く。
+	入力した文字列がそのまま結果値になる。
+-->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:KsDialogs.Sample.Maui"
+             x:Class="KsDialogs.Sample.Maui.TextInputDialogCardView">
+
+    <Border WidthRequest="272"
+            BackgroundColor="{StaticResource SampleSurface}"
+            StrokeThickness="0"
+            Padding="20,24,20,20">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="20" />
+        </Border.StrokeShape>
+
+        <VerticalStackLayout Spacing="16">
+            <Label x:Name="MessageLabel"
+                   FontSize="15"
+                   TextColor="{StaticResource SampleOnSurface}"
+                   HorizontalTextAlignment="Center" />
+
+            <!-- 入力欄もボタンと同じく各 OS の推奨タップ領域を下限にする -->
+            <Border HeightRequest="{OnPlatform iOS=44, Android=48}"
+                    Padding="12,0"
+                    Stroke="{StaticResource SampleDivider}"
+                    StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10" />
+                </Border.StrokeShape>
+                <Entry x:Name="InputEntry"
+                       Placeholder="{x:Static local:SampleText.TextInputPlaceholder}"
+                       PlaceholderColor="{StaticResource SampleOnSurfaceMuted}"
+                       HandlerChanged="OnInputEntryHandlerChanged"
+                       FontSize="15"
+                       VerticalOptions="Center"
+                       TextColor="{StaticResource SampleOnSurface}" />
+            </Border>
+
+            <Grid ColumnDefinitions="*,10,*">
+                <Button Text="{x:Static local:SampleText.CancelAction}"
+                        FontSize="14"
+                        HeightRequest="{OnPlatform iOS=44, Android=48}"
+                        MinimumHeightRequest="0"
+                        Padding="0"
+                        CornerRadius="10"
+                        BorderWidth="0"
+                        BackgroundColor="{StaticResource SampleSurfaceVariant}"
+                        TextColor="{StaticResource SampleOnSurface}"
+                        Clicked="OnCancelClicked" />
+
+                <Button Grid.Column="2"
+                        Text="{x:Static local:SampleText.CompleteAction}"
+                        FontSize="14"
+                        FontAttributes="Bold"
+                        HeightRequest="{OnPlatform iOS=44, Android=48}"
+                        MinimumHeightRequest="0"
+                        Padding="0"
+                        CornerRadius="10"
+                        BorderWidth="0"
+                        BackgroundColor="{StaticResource SamplePrimary}"
+                        TextColor="{StaticResource SampleOnPrimary}"
+                        Clicked="OnCompleteClicked" />
+            </Grid>
+        </VerticalStackLayout>
+    </Border>
+
+</ContentView>

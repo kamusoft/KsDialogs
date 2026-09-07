@@ -1,0 +1,48 @@
+# 禁止トークンの負の検査 (concept 側 / task 4.3、修正サイクル 2 で kmp の集合を再分類して再実行)
+# 実行日: 2026-09-05
+# 検査規則: 各 Skill 範囲の禁止集合と、その範囲の concept (kasane/concepts/<dir>/api/*.md) の
+#           バッククォート識別子を完全一致で突き合わせる (部分一致にしない)。
+#           concept-exempt のトークンは Skill 本文にだけ禁止を効かせるため、この検査からは外す。
+#
+# この検査の実効範囲: 新設 surface 由来の禁止トークンは「他 platform の surface の識別子のうち
+#           自 platform の公開面に無いもの」という作り方をしているため、その範囲の concept とは
+#           構成上交わらず必ず 0 件になる。独立した信号を持つのは除外リスト由来の非 API トークン
+#           (A.min / C05 / C19 / approvedBy / approvedDiff — architecture への移動漏れの回帰検出) と、
+#           kmp の targets 縮小で足した iOS Native 固有名である。したがって本検査は「移動漏れが
+#           無いこと」の確認であり、design.md Decision 7 の Goal (他 platform 名が Skill に混ざらない)
+#           の達成判定は task 6.1 の Skill 側 (en / ja の生成物) の検査で行う。
+
+ios: 禁止トークン 200 件 (うち concept-exempt 0 件を除外) × ios/api/*.md → 一致 0 件
+android: 禁止トークン 178 件 (うち concept-exempt 0 件を除外) × android/api/*.md → 一致 0 件
+maui: 禁止トークン 154 件 (うち concept-exempt 3 件を除外) × maui/api/*.md → 一致 0 件
+kmp: 禁止トークン 136 件 (うち concept-exempt 0 件を除外) × kmp/api/*.md → 一致 0 件
+aiforms-migration: 禁止トークン 151 件 (うち concept-exempt 0 件を除外) × maui/api/*.md → 一致 0 件
+
+合計: 5 Skill 範囲 / 一致 0 件
+
+# kmp 集合 136 件の内訳 (修正サイクル 2 の再分類後。他 platform 固有の名前が残っていることの確認)
+#   iOS Native 固有 8 件 (ios/api にあり許可面には無い):
+#     Dialog.shared.registry / Loading.shared.registry / Toast.shared.registry /
+#     LoadingStyle.ProgressFormat / LoadingStyle.defaultProgressFormat /
+#     ToastStyle.builtinBackgroundColor / ToastStyle.builtinDefaultDuration / UIHostingController
+#   MAUI 固有 123 件 (maui/api にあり許可面には無い)
+#   非 API トークン 5 件 (A.min / C05 / C19 / approvedBy / approvedDiff)
+#   許可面 (targets の和集合 + KMP 専用 Swift 入口から到達可能な名前) との積集合: 0 件
+
+# 再実行 (修正サイクル 3、2026-09-05): kmp に 6 件を復帰 (136 → 142) 後
+# ios: 禁止 200 件 / 一致 0 件
+# android: 禁止 178 件 / 一致 0 件
+# maui: 禁止 154 件 (concept-exempt 3 件を除いた 151 件で突き合わせ) / 一致 0 件
+# kmp: 禁止 142 件 / 一致 0 件
+# aiforms-migration: 禁止 151 件 / 一致 0 件
+
+# 再実行 (task 6.1 の是正、2026-09-06): ios / android / maui / aiforms-migration の 4 集合から
+# 自 platform の実在名・見本名を外した後 (ios 200→192 / android 178→171 / maui 154→142 /
+# aiforms-migration 151→144、kmp は 142 のまま)。maui の concept-exempt 3 件は対象トークンごと
+# 集合から外したため空になり、突き合わせ件数と禁止件数が一致するようになった。
+# ios: 禁止 192 件 (concept-exempt 0 件) / 一致 0 件
+# android: 禁止 171 件 (concept-exempt 0 件) / 一致 0 件
+# maui: 禁止 142 件 (concept-exempt 0 件) / 一致 0 件
+# kmp: 禁止 142 件 (concept-exempt 0 件) / 一致 0 件
+# aiforms-migration: 禁止 144 件 (concept-exempt 0 件) / 一致 0 件
+# 合計: 5 Skill 範囲 / 一致 0 件

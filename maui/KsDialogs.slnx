@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/binding/">
+    <Project Path="macios/KsDialogs.Binding.iOS/KsDialogs.Binding.iOS.csproj" />
+    <Project Path="android/KsDialogs.Binding.Android/KsDialogs.Binding.Android.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="KsDialogs.Maui/KsDialogs.Maui.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="KsDialogs.Maui.Tests/KsDialogs.Maui.Tests.csproj" />
+    <Project Path="KsDialogs.Maui.ApiSurfaceCheck/KsDialogs.Maui.ApiSurfaceCheck.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,53 @@
+<!-- Sample の Custom Loading デモ用カスタム View (SampleTheme トークン準拠) -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Custom Loading — Sample デモ View</title>
+<style>
+  body { margin: 0; font-family: -apple-system, "Hiragino Sans", sans-serif; background: #444; display: flex; gap: 32px; justify-content: center; padding: 32px; }
+  .phone { width: 300px; height: 560px; border-radius: 24px; overflow: hidden; position: relative; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .app { position: absolute; inset: 0; padding: 16px; }
+  .app h1 { font-size: 16px; color: #1F2937; }
+  .app .row { height: 40px; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; color: #1F2937; font-size: 13px; }
+  .overlay { position: absolute; inset: 0; background: rgba(0,0,0,.40); display: flex; align-items: center; justify-content: center; }
+  /* SampleTheme: surface #FFFFFF / on-surface #1F2937 / on-surface-muted #6B7280 / primary #2563EB / surface-variant #F3F4F6 */
+  .card { width: 210px; padding: 20px; border-radius: 14px; background: #FFFFFF; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+  .title { color: #1F2937; font-size: 14px; font-weight: 600; }
+  .bar { width: 100%; height: 8px; border-radius: 4px; background: #F3F4F6; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 45%; background: #2563EB; border-radius: 4px; }
+  .pct { color: #6B7280; font-size: 12px; }
+  .caption { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; color: #fff; font-size: 11px; opacity: .7; }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="app">
+      <h1>KsDialogs Sample</h1>
+      <div class="row">Default Loading</div><div class="row">Custom Loading</div>
+    </div>
+    <div class="overlay">
+      <div class="card">
+        <div class="title">カスタムローディング</div>
+        <div class="bar"><i style="width:0%"></i></div>
+        <div class="pct">0%</div>
+      </div>
+    </div>
+    <div class="caption">状態1: 開始直後 (進捗 0%)</div>
+  </div>
+  <div class="phone">
+    <div class="app">
+      <h1>KsDialogs Sample</h1>
+      <div class="row">Default Loading</div><div class="row">Custom Loading</div>
+    </div>
+    <div class="overlay">
+      <div class="card">
+        <div class="title">カスタムローディング</div>
+        <div class="bar"><i></i></div>
+        <div class="pct">45%</div>
+      </div>
+    </div>
+    <div class="caption">状態2: 進捗 45% (VM の進捗受け口経由で反映)</div>
+  </div>
+</body>
+</html>
