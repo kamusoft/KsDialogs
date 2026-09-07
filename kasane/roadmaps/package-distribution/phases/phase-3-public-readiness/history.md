@@ -50,7 +50,7 @@
 
 ## 2026-09-07: public 化の実施
 
-- 手順書 1〜4 節をすべて実施。公開リポジトリ kamusoft/KsDialogs (public、`develop` 1 commit・1788 件 / 15 MB)、配信リポジトリ kamusoft/KsDialogs-SPM (public、README + LICENSE)、履歴の保管先 kamusoft/KsDialogs-private-archive (private、Archive)
+- 手順書 1〜4 節をすべて実施。公開 kamusoft/KsDialogs (`develop` 1 commit・1788 件 / 15 MB)、配信 kamusoft/KsDialogs-SPM (README + LICENSE)、保管先 kamusoft/KsDialogs-private-archive (private、Archive)
 - 途中の躓き 3 件:
   - エージェントの push 検査が現クローンの全履歴の未 push commit を対象にするため、別リポジトリ宛ての push まで deny された → 保管先への push をオーナーが `--no-verify` で手動実行して解消
   - private の間は README の画像 (raw URL) が表示されず、目視で指摘 → public 切替後に Browser の DOM 検査で 6 枚の読み込みを確認
