@@ -87,7 +87,7 @@ public 化を完了した。公開リポジトリは [kamusoft/KsDialogs](https:
   - `lint.identity.scope` の 5 ルート追加とコメント修正
   - `.gitignore` の verification ログ救済行と `lint.exclude` の削除 (追跡中の 23 件は公開ツリーで除外)
   - 公開直前の再走査 4 種 (ローカルパス lint・識別子 lint・gitleaks・`DEVELOPMENT_TEAM` grep)
-- [ ] phase-5 へ申し送り: 配信リポジトリ `KsDialogs-SPM` は誘導 README + LICENSE だけの状態で存在する。初回スナップショット (`Package.swift` / `Sources` / `Tests`) の push は phase-5 の生成スクリプトで行う
-- [ ] phase-4 へ申し送り: ブランチモデルは `develop` / `main` (cross/ADR-0016 proposed)。`develop` の branch protection (force-push 禁止 + 削除禁止) は public 化で設定し、必須 status check は phase-4 で足す
+- [x] phase-5 へ申し送り (2026-09-07 agenda に追記済み): 配信リポジトリ `KsDialogs-SPM` は誘導 README + LICENSE だけの状態で存在する。初回スナップショット (`Package.swift` / `Sources` / `Tests`) の push は phase-5 の生成スクリプトで行う
+- [x] phase-4 へ申し送り (2026-09-07 agenda に追記済み): ブランチモデルは `develop` / `main` (cross/ADR-0016 proposed)。`develop` の branch protection (force-push 禁止 + 削除禁止) は public 化で設定し、必須 status check は phase-4 で足す
 - [x] 調査結果のまとめ (2026-09-07、下の「調査結果」節)
-- [ ] ksn-roadmap で research 完了をマーク
+- [x] ksn-roadmap で research 完了をマーク (2026-09-07)

@@ -7,7 +7,8 @@
 - KMP の検証 job の形: `kmp/` の Android ターゲットのテスト (JVM / androidHostTest) に加えて iOS ターゲットのテストを Simulator で回すか。KMP → Android Native は composite build、KMP → Swift は `localSwiftPackage` のため macOS ランナーが要る
 - MAUI job の Xcode / .NET for iOS workload の版整合 (library-foundation phase-6 からの申し送り: .NET for iOS 26.1.10502 が Xcode 26.1 を要求し、手元の Xcode 26.5 でビルド不可だった)。CI で使う Xcode 版と workload 版をここで固定する
 - 実行件数の下限 (0 件 = fail) を 4 形態で何件にするか、テスト件数は着手時の実測で決める
-- トリガーはブランチモデル (phase-3 の結論) に従う。`main` 1 本なら「push で本体検証、PR で消費者検証」の読み替え
+- トリガーはブランチモデルに従う。**phase-3 で `develop` / `main` の 2 本に決定** (cross/ADR-0016 proposed、2026-09-07) — `develop` への push で lint + 本体検証、`main` 宛て PR で消費者検証を足す (KsSettingsView cross/ADR-0028 をそのまま逆流)。読み替えは不要
+- phase-3 からの申し送り (2026-09-07): `develop` の branch protection は force-push 禁止 + 削除禁止のみで作成済み。必須 status check の登録 (`{"context": ..., "app_id": 15368}` 形式) はこのフェーズで行う。識別子 lint の検査範囲はソース 5 ルートを含む形に拡張済み (誤検出 0 件) なので、CI では拡張後の config をそのまま走らせる。リポジトリは public になったため macOS ランナーは無料
 - KMP job に階層化 source set の metadata compile を含める (fix-kmp-iosmain-throws-metadata からの申し送り、2026-09-05)。詳細は次項
 
 ### KMP job と metadata compile (申し送り)

@@ -77,10 +77,10 @@ grep -rn DEVELOPMENT_TEAM samples/ maui/macios/native/ --include=project.pbxproj
 
 ## 5. 後続 (この手順書の外、別フローで)
 
-- [ ] phase-4 (検証 CI) へ: ブランチモデル `develop` / `main`、`develop` の必須 status check、識別子 lint の 5 ルート検査の CI 化
-- [ ] phase-5 (native packaging) へ: `KsDialogs-SPM` への初回スナップショット push
+- [x] phase-4 (検証 CI) へ (2026-09-07 agenda に追記): ブランチモデル `develop` / `main`、`develop` の必須 status check、識別子 lint の 5 ルート検査の CI 化
+- [x] phase-5 (native packaging) へ (2026-09-07 agenda に追記): `KsDialogs-SPM` への初回スナップショット push
 - [ ] cross/ADR-0016 のオーナー確認 (proposed → accepted は phase-4 / 9 の蒸留時)
-- [ ] agenda の「調査結果のまとめ」を書き、ksn-roadmap で research 完了をマーク
+- [x] agenda の「調査結果のまとめ」を書き、ksn-roadmap で research 完了をマーク (2026-09-07)
 
 ## 実施記録
 
