@@ -81,7 +81,7 @@ public 化を完了した。公開リポジトリは [kamusoft/KsDialogs](https:
 - [x] 論点の解消 (2026-09-07、決定 6 件: ブランチモデル・画像 URL・除外物・走査 scope・履歴の保管先・配信リポジトリ)
 - [x] phase-2 からの申し送り (2026-09-05): README 画像 URL のブランチ名は `develop` で確定し、README 2 枚を置換 (2026-09-07 実施)
 - [x] phase-2 からの申し送り (2026-09-05): GitHub の Pull requests 設定 (collaborators only) を実施手順 3b に含め、実施済み (2026-09-07、cross/ADR-0013)
-- [x] **[実施手順書](artifacts/publish-procedure.md) に沿って public 化を実施 (2026-09-07 完了)** — 1 節 下ごしらえ → 2 節 公開ツリー 1788 件 / 15 MB を単一 commit → 3 節 保管先の Archive・新 repo の public 化・配信リポジトリ作成 → 4 節 ローカル切り替えと 4 ルートのビルド確認。下ごしらえで実施したもの:
+- [x] **[実施手順書](artifacts/publish-procedure.md) に沿って public 化を実施 (2026-09-07 完了)** — 下ごしらえ → 公開ツリー 1788 件 / 15 MB を単一 commit → 保管先の Archive・新 repo の public 化・配信リポジトリ作成 → ローカル切り替えとビルド確認。下ごしらえで実施したもの:
   - README 画像 URL の `main` → `develop` 置換
   - `lint.identity.scope` の 5 ルート追加とコメント修正
   - `.gitignore` の verification ログ救済行と `lint.exclude` の削除 (追跡中の 23 件は公開ツリーで除外)
