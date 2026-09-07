@@ -42,38 +42,38 @@ grep -rn DEVELOPMENT_TEAM samples/ maui/macios/native/ --include=project.pbxproj
 
 ### 3a. 履歴の保管先 (private)
 
-- [ ] `gh repo create kamusoft/KsDialogs-private-archive --private` (description は「KsDialogs の public 化前の履歴保管 (読み取り専用)」相当)
-- [ ] 現クローンに remote `origin` を追加し、`main` と `spike/phase-10-packaging-poc` を push する
-- [ ] push 後に `gh repo archive kamusoft/KsDialogs-private-archive` で読み取り専用にする
+- [x] `gh repo create kamusoft/KsDialogs-private-archive --private` (description は「KsDialogs の public 化前の履歴保管 (読み取り専用)」相当)
+- [x] 現クローンに remote `origin` を追加し、`main` と `spike/phase-10-packaging-poc` を push する
+- [x] push 後に `gh repo archive kamusoft/KsDialogs-private-archive` で読み取り専用にする
 
 ### 3b. 新 repo `kamusoft/KsDialogs` (public)
 
-- [ ] `gh repo create kamusoft/KsDialogs --private` で作成し、2 節のツリーを `develop` として push。default branch を `develop` にする
-- [ ] GitHub 上で中身を目視 (README の画像表示・ツリー・ファイル数・容量) → visibility を **public** に切り替え
-- [ ] description は README の Overview 1 文目を短縮した英文。website は空 (配布先が未確定)
-- [ ] topics は次から 10 個: ios / android / dotnet-maui / kotlin-multiplatform / swift / kotlin / jetpack-compose / dialog / toast / ui-library / cross-platform
-- [ ] 設定 (gh api): Issues ON / Wiki OFF / Discussions OFF / Projects OFF (作成時の既定が ON なら public 切替の前に OFF)、Actions 有効 (既定)、Secret scanning + Push protection ON、Dependabot alerts ON
-- [ ] **Pull requests を collaborators only** にする (`pull_request_creation_policy` = `collaborators_only`。cross/ADR-0013、phase-2 からの申し送り)
-- [ ] `develop` の branch protection = force-push 禁止 + 削除禁止 (必須 status check は phase-4 の CI 後)。`main` の保護は初回リリース PR の前 (phase-9) に完全な payload で PUT する
-- [ ] ラベル `bug` / `enhancement` / `question` の存在を確認 (Issue Forms の `labels:` は存在しないラベルを自動生成しない)
+- [x] `gh repo create kamusoft/KsDialogs --private` で作成し、2 節のツリーを `develop` として push。default branch を `develop` にする
+- [x] GitHub 上で中身を目視 (README の画像表示・ツリー・ファイル数・容量) → visibility を **public** に切り替え
+- [x] description は README の Overview 1 文目を短縮した英文。website は空 (配布先が未確定)
+- [x] topics は次から 10 個: ios / android / dotnet-maui / kotlin-multiplatform / swift / kotlin / jetpack-compose / dialog / toast / ui-library / cross-platform
+- [x] 設定 (gh api): Issues ON / Wiki OFF / Discussions OFF / Projects OFF (作成時の既定が ON なら public 切替の前に OFF)、Actions 有効 (既定)、Secret scanning + Push protection ON、Dependabot alerts ON
+- [x] **Pull requests を collaborators only** にする (`pull_request_creation_policy` = `collaborators_only`。cross/ADR-0013、phase-2 からの申し送り)
+- [x] `develop` の branch protection = force-push 禁止 + 削除禁止 (必須 status check は phase-4 の CI 後)。`main` の保護は初回リリース PR の前 (phase-9) に完全な payload で PUT する
+- [x] ラベル `bug` / `enhancement` / `question` の存在を確認 (Issue Forms の `labels:` は存在しないラベルを自動生成しない)
 
 ### 3c. 配信リポジトリ `kamusoft/KsDialogs-SPM` (public)
 
-- [ ] `gh repo create kamusoft/KsDialogs-SPM --public` (description: `SwiftPM distribution snapshot of KsDialogs (source: kamusoft/KsDialogs)`、homepage: monorepo の URL)
-- [ ] 初回 commit は誘導 README と monorepo ルート `LICENSE` のコピーの 2 点。default branch は `main`
+- [x] `gh repo create kamusoft/KsDialogs-SPM --public` (description: `SwiftPM distribution snapshot of KsDialogs (source: kamusoft/KsDialogs)`、homepage: monorepo の URL)
+- [x] 初回 commit は誘導 README と monorepo ルート `LICENSE` のコピーの 2 点。default branch は `main`
   - 誘導 README は KsSettingsView-SPM の `scripts/spm-snapshot/README.template.md` を名前だけ差し替える
   - `Package.swift` / `Sources` / `Tests` は phase-5 の生成スクリプトが初回 push する
-- [ ] 設定: Issues / Wiki / Projects / Discussions すべて OFF、PR は collaborators only、workflow と branch protection は置かない、GitHub Release は作らない (tag のみ)
+- [x] 設定: Issues / Wiki / Projects / Discussions すべて OFF、PR は collaborators only、workflow と branch protection は置かない、GitHub Release は作らない (tag のみ)
 
 ## 4. ローカルの切り替え
 
-- [ ] 現クローンを `../KsDialogs-private-archive` へ改名する (remote は 3a で設定済み)
-- [ ] `../KsDialogs-public-tree` を `../KsDialogs` へ移し、remote `origin` を新 repo に設定する (`../<リポジトリ名>/` 規約と Claude Code のパス紐づけを保つ)
-- [ ] 未追跡の開発ファイルを旧ディレクトリから複製する: `local.properties` 5 件 (`android/` `kmp/` `maui/android/native/` `samples/android/` `samples/kmp/`) と `.claude/settings.local.json`。ビルド生成物は再生成
-- [ ] 新クローンで `git config core.hooksPath .githooks` を設定し、両 lint の `--selftest` が通ることを確認
-- [ ] `kasane/config.yaml` の `lint.exclude` から `kasane/**/verification/**/*.log` を外し (`exclude: []`)、識別子 lint が exit 0 のままであることを確認して commit
-- [ ] 4 ルートのビルドが通ることを確認 (iOS: `ios/` で `swift build` / Android: `android/` で `./gradlew assemble` / KMP: `kmp/` で `./gradlew assemble` / MAUI: `maui/` で `dotnet build`)
-- [ ] Claude Code のメモリ・セッションが同じパスで引き継がれていることを確認
+- [x] 現クローンを `../KsDialogs-private-archive` へ改名する (remote は 3a で設定済み)
+- [x] `../KsDialogs-public-tree` を `../KsDialogs` へ移し、remote `origin` を新 repo に設定する (`../<リポジトリ名>/` 規約と Claude Code のパス紐づけを保つ)
+- [x] 未追跡の開発ファイルを旧ディレクトリから複製する: `local.properties` 5 件 (`android/` `kmp/` `maui/android/native/` `samples/android/` `samples/kmp/`) と `.claude/settings.local.json`。ビルド生成物は再生成
+- [x] 新クローンで `git config core.hooksPath .githooks` を設定し、両 lint の `--selftest` が通ることを確認
+- [x] `kasane/config.yaml` の `lint.exclude` から `kasane/**/verification/**/*.log` を外し (`exclude: []`)、識別子 lint が exit 0 のままであることを確認して commit
+- [x] 4 ルートのビルドが通ることを確認 (iOS: `ios/` で `swift build` / Android: `android/` で `./gradlew assemble` / KMP: `kmp/` で `./gradlew assemble` / MAUI: `maui/` で `dotnet build`)
+- [x] Claude Code のメモリ・セッションが同じパスで引き継がれていることを確認
 
 ## 5. 後続 (この手順書の外、別フローで)
 
@@ -98,4 +98,26 @@ grep -rn DEVELOPMENT_TEAM samples/ maui/macios/native/ --include=project.pbxproj
 - `git init -b develop` → `git add -A` で 1788 件すべてが追跡され、無視されたファイルは 0 件。単一 commit `Initial public snapshot` (author は noreply)。`core.hooksPath` を設定
 - 公開ツリー上で再走査 4 種すべて 0 件
 - 既知の帰結: archive の `.md` から png を指す Markdown リンク 5 件 / 1 ファイルが壊れる (想定内)
+
+### 2026-09-07: 3 節 GitHub (完了)
+
+**3a 履歴の保管先**: `kamusoft/KsDialogs-private-archive` を private で作成し、`main` (cd7ca56 まで) と `spike/phase-10-packaging-poc` を push → Archive。push はオーナーが `--no-verify` で手動実行した。エージェントの commit / push 検査 (git-gate の bash hook) は、コマンドが `cd` / `-C` で別リポジトリを指していても現クローンの「どのリモートにも無い commit」を検査するため、過去に直した違反 246 件を含む全履歴の push は必ず deny され、公開ツリー・配信リポジトリの push まで同じ理由で止まった。保管先へ push し終えると未 push commit が無くなり、以降の push はエージェントから実行できた。
+
+**3b 新 repo**: `kamusoft/KsDialogs` を private で作成 → `develop` を push (1 commit・1788 ファイル) → 既定ブランチを `develop` に → オーナー目視 → public へ切替。description は英文 1 文、topics 10 個 (ios / android / dotnet-maui / kotlin-multiplatform / swift / kotlin / jetpack-compose / dialog / toast / ui-library)、website は空。
+
+設定は Issues ON / Wiki・Projects・Discussions OFF、Dependabot alerts ON (204)、PR は `pull_request_creation_policy` = `collaborators_only`。`gh api -f` の文字列 "false" では OFF にならず、`-F` の真偽値で反映した。Secret scanning + Push protection と `develop` の branch protection (force-push 禁止 + 削除禁止、必須 status check なし) は Free プランでは private だと 403 になるため public 切替の直後に設定した。ラベル bug / enhancement / question は既定で存在。
+
+private の間は README の画像 (raw.githubusercontent の絶対 URL) が表示されなかった (目視で指摘)。public 切替後に Browser で確認し、6 枚すべて読み込み済み (iOS 1206 px / Android 1080 px 幅)。
+
+**3c 配信リポジトリ**: `kamusoft/KsDialogs-SPM` を public で作成 (description・homepage は monorepo 向け)、Issues / Wiki / Projects / Discussions OFF、PR は collaborators only。初回 commit は誘導 README (KsSettingsView-SPM のテンプレートを名前だけ差し替え) + LICENSE の 2 点を `main` へ push。workflow・branch protection・Release は置いていない。
+
+- 実行制約: `gh repo create` / `gh repo edit --visibility` / `gh repo archive` / `gh api` はエージェントから実行できた。`curl` による raw URL の疎通確認は実行分類器に止められ、Browser の DOM 検査で代替した
+
+### 2026-09-07: 4 節 ローカルの切り替え (完了)
+
+- 現クローン → `../KsDialogs-private-archive` (remote は保管先)、公開ツリー → `../KsDialogs` (remote は新 repo)。未追跡の `local.properties` 5 件を複製 (`.claude/settings.local.json` と `.claude/plans` は旧側に存在しなかった)
+- `core.hooksPath` は公開ツリー作成時に設定済み。3 lint の `--selftest` 全件 OK。`lint.exclude` から verification ログの glob を外し、識別子 lint・ローカルパス lint とも exit 0
+- 4 ルートのビルド成功: iOS `swift build` 3.7 秒 / Android `./gradlew assemble` 150 タスク / KMP `./gradlew assemble` 96 タスク / MAUI `dotnet build KsDialogs.slnx` 0 警告 0 エラー
+- Claude Code のメモリ 9 件は同じパスで引き継がれている
+- 記録の残し方: 1〜2 節の実施記録までが公開スナップショット (initial commit) に入り、3〜4 節のこの記録は公開後の通常 commit として新 repo に入る
 

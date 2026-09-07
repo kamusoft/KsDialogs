@@ -12,9 +12,7 @@ context: |
 # 標準 lint / hook (scripts/local-path-lint.py / identity-lint.py / log-sanitize.py)
 lint:
   # 全 lint 共通の除外 (リポジトリ相対パスの先頭セグメントまたは glob)
-  exclude:
-    # 実行の生ログ (ビルド/クラッシュ出力に環境の絶対パスが載るため、書き換えず除外する)
-    - "kasane/**/verification/**/*.log"
+  exclude: []                  # verification/ の生ログは追跡しない (2026-09-07)。sanitize 済み抜粋 (evidence/) は検査対象
   identity:
     # 検査範囲 (先頭セグメント)。skills/ とルート README 2 枚は公開する利用者向け成果物 (docs-refresh の更新対象) のため含める。
     # ソース 5 ルートも含める — Xcode の実機ビルドが DEVELOPMENT_TEAM を xcodeproj (samples/ios・samples/kmp/iosApp・

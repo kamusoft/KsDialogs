@@ -47,3 +47,12 @@
 
 - KsSettingsView の手順書を翻案して artifacts/publish-procedure.md を作成 (1 下ごしらえ / 2 公開ツリー / 3 GitHub: 保管 repo・新 repo・配信 repo / 4 ローカル切り替え / 5 後続)。実施は未着手
 - 翻案で変えた点: rename → Archive を「private 保管 repo の新規作成 + push + Archive」に、既定ブランチを `develop` に、除外物に `.log` を追加、配信リポジトリの作成を 3c として同梱、`lint.exclude` を外す順序の注意 (追跡中の `.log` が識別子 lint に掛かる)
+
+## 2026-09-07: public 化の実施
+
+- 手順書 1〜4 節をすべて実施。公開リポジトリ kamusoft/KsDialogs (public、`develop` 1 commit・1788 件 / 15 MB)、配信リポジトリ kamusoft/KsDialogs-SPM (public、README + LICENSE)、履歴の保管先 kamusoft/KsDialogs-private-archive (private、Archive)
+- 途中の躓き 3 件:
+  - エージェントの push 検査が現クローンの全履歴の未 push commit を対象にするため、別リポジトリ宛ての push まで deny された → 保管先への push をオーナーが `--no-verify` で手動実行して解消
+  - private の間は README の画像 (raw URL) が表示されず、目視で指摘 → public 切替後に Browser の DOM 検査で 6 枚の読み込みを確認
+  - `gh api -f` の "false" では Projects / Discussions が OFF にならず、`-F` で反映
+- 4 ルートのビルド成功、3 lint selftest OK、メモリ 9 件引き継ぎ。残 TODO は ksn-roadmap での research 完了マークと phase-4 / 5 への申し送り (agenda に記入済み)

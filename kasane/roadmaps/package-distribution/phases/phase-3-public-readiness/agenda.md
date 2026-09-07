@@ -60,17 +60,33 @@ remote が無いため全履歴 (119 commit・媒体 43 MB・スパイクブラ�
 
 - 却下: 作成を phase-5 へ送る (名前が phase-5 まで 404、ロードマップの「作成は phase-3」を改訂する手間) / `ios/` を手でコピーして初回スナップショットまで置く (phase-5 のスクリプトの結果と食い違う余地)
 
+## 調査結果 (2026-09-07 完了)
+
+public 化を完了した。公開リポジトリは [kamusoft/KsDialogs](https://github.com/kamusoft/KsDialogs) (既定ブランチ `develop`)、配信リポジトリは [kamusoft/KsDialogs-SPM](https://github.com/kamusoft/KsDialogs-SPM) (誘導 README + LICENSE のみ)、全履歴は `kamusoft/KsDialogs-private-archive` (private、Archive 済み) に保管した。
+
+- **履歴を引き継がず新規リポジトリで公開した** (cross/ADR-0021 踏襲)。remote が無かったため rename は不要で、保管先は新規の private リポジトリに `main` とスパイクブランチを push した
+- **公開ツリーは 1788 件 / 15 MB** — 追跡 2150 件から archive の媒体 340 件 (43 MB) と verification の生ログ 23 件を除いた。開発ハーネスの記録 (`kasane/` `.claude/` `.codex/` `.agents/`) は含めている
+- **公開前提の規律を広げた**: 識別子 lint の検査範囲にソース 5 ルートを追加 (xcodeproj への `DEVELOPMENT_TEAM` 書き戻りを捕捉)、verification の生ログは追跡をやめた (`.gitignore` の救済行と `lint.exclude` を削除)。点検は gitleaks・2 lint・`DEVELOPMENT_TEAM` grep の 4 種で公開前後とも 0 件
+- **ブランチモデルは `develop` / `main` の 2 本** (cross/ADR-0016 proposed)。`develop` は force-push 禁止 + 削除禁止のみで、必須 status check は phase-4 の CI 後
+- 実施の全過程と実行制約 (エージェントの push 検査が全履歴の push を止めるため保管先への push はオーナーが手動、`curl` は実行分類器に止められ Browser で代替) は [実施手順書](artifacts/publish-procedure.md) の「実施記録」節にある
+
+### 後続フェーズへの影響
+
+- **phase-4 (検証 CI)**: ブランチモデル `develop` / `main` (cross/ADR-0016)、`develop` への必須 status check の追加、識別子 lint 5 ルート検査の CI 化。public になったので macOS ランナーが無料で使える
+- **phase-5 (native packaging)**: `KsDialogs-SPM` は誘導 README + LICENSE だけの状態。初回スナップショット (`Package.swift` / `Sources` / `Tests`) の push は phase-5 の生成スクリプトで行う
+- 以後の change 記録・議論はすべて公開される。ローカル絶対パス・個体 / 個人特定値は hook と git-gate が止める
+
 ## TODO
 
 - [x] 論点の解消 (2026-09-07、決定 6 件: ブランチモデル・画像 URL・除外物・走査 scope・履歴の保管先・配信リポジトリ)
-- [ ] phase-2 からの申し送り (2026-09-05): README 画像 URL のブランチ名は `develop` で確定 (2026-09-07)。README 2 枚の `main` → `develop` 置換は実施手順書の下ごしらえに含める
-- [ ] phase-2 からの申し送り (2026-09-05): public 化の実施手順に GitHub の Pull requests 設定 (collaborators only) を含める (cross/ADR-0013)
-- [ ] 実施手順書の作成 (2026-09-07 ドラフト済み、オーナー確認待ち) と実施 (新規リポジトリ・配信リポジトリ)。下ごしらえに含めるもの:
+- [x] phase-2 からの申し送り (2026-09-05): README 画像 URL のブランチ名は `develop` で確定し、README 2 枚を置換 (2026-09-07 実施)
+- [x] phase-2 からの申し送り (2026-09-05): GitHub の Pull requests 設定 (collaborators only) を実施手順 3b に含め、実施済み (2026-09-07、cross/ADR-0013)
+- [x] **[実施手順書](artifacts/publish-procedure.md) に沿って public 化を実施 (2026-09-07 完了)** — 1 節 下ごしらえ → 2 節 公開ツリー 1788 件 / 15 MB を単一 commit → 3 節 保管先の Archive・新 repo の public 化・配信リポジトリ作成 → 4 節 ローカル切り替えと 4 ルートのビルド確認。下ごしらえで実施したもの:
   - README 画像 URL の `main` → `develop` 置換
   - `lint.identity.scope` の 5 ルート追加とコメント修正
   - `.gitignore` の verification ログ救済行と `lint.exclude` の削除 (追跡中の 23 件は公開ツリーで除外)
   - 公開直前の再走査 4 種 (ローカルパス lint・識別子 lint・gitleaks・`DEVELOPMENT_TEAM` grep)
 - [ ] phase-5 へ申し送り: 配信リポジトリ `KsDialogs-SPM` は誘導 README + LICENSE だけの状態で存在する。初回スナップショット (`Package.swift` / `Sources` / `Tests`) の push は phase-5 の生成スクリプトで行う
 - [ ] phase-4 へ申し送り: ブランチモデルは `develop` / `main` (cross/ADR-0016 proposed)。`develop` の branch protection (force-push 禁止 + 削除禁止) は public 化で設定し、必須 status check は phase-4 で足す
-- [ ] 調査結果のまとめ
+- [x] 調査結果のまとめ (2026-09-07、下の「調査結果」節)
 - [ ] ksn-roadmap で research 完了をマーク
