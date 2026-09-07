@@ -15,7 +15,9 @@ Native iOS (SwiftPM 配信リポジトリ `KsDialogs-SPM` へのスナップシ�
 
 - Android toolchain 版 (Gradle / AGP / Kotlin) の追随要否: KsSettingsView は phase-1 で Gradle 9.5.0 / AGP 8.13.2 / Kotlin 2.4.10 に上げた。KsDialogs の現行版と vanniktech plugin の要件を着手時に実測して決める
 - 2 artifact (`ksdialogs` / `ksdialogs-compose`) の publication: compose → 本体は Maven の推移的依存 (`api`)。公開 ABI に露出する外部型の `api` スコープ仕分け (KsSettingsView で列挙漏れが 2 度検出された) を公開宣言の全走査で確定する
-- phase-3 からの申し送り (2026-09-07): 配信リポジトリ `kamusoft/KsDialogs-SPM` は作成済み (public・default `main`・全機能 OFF・PR は collaborators only) で、中身は誘導 README + LICENSE の 2 点だけ。`Package.swift` / `Sources` / `Tests` の初回スナップショット push はこのフェーズの生成スクリプトで行う (誘導 README は KsSettingsView-SPM のテンプレートを名前だけ差し替えたもので、スクリプト側のテンプレートと揃える)
+- phase-3 からの申し送り (2026-09-07):
+  - 配信リポジトリ `kamusoft/KsDialogs-SPM` は作成済み (public・default `main`・全機能 OFF・PR は collaborators only)。中身は誘導 README + LICENSE の 2 点だけ
+  - `Package.swift` / `Sources` / `Tests` の初回スナップショット push はこのフェーズの生成スクリプトで行う。誘導 README は KsSettingsView-SPM のテンプレートを名前だけ差し替えたもので、スクリプト側のテンプレートと揃える
 - 配信リポジトリのスナップショット: `ios/Package.swift` は `path:` 指定なし (既定の `Sources/` `Tests/`) で無改変で置ける。product は 1 本のため umbrella の問題はない。maui binding (`ios/binding`) が個別 product を参照していないか着手時に確認する
 
 ## 決定事項
