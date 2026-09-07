@@ -66,7 +66,8 @@ public 化を完了した。公開リポジトリは [kamusoft/KsDialogs](https:
 
 - **履歴を引き継がず新規リポジトリで公開した** (cross/ADR-0021 踏襲)。remote が無かったため rename は不要で、保管先は新規の private リポジトリに `main` とスパイクブランチを push した
 - **公開ツリーは 1788 件 / 15 MB** — 追跡 2150 件から archive の媒体 340 件 (43 MB) と verification の生ログ 23 件を除いた。開発ハーネスの記録 (`kasane/` `.claude/` `.codex/` `.agents/`) は含めている
-- **公開前提の規律を広げた**: 識別子 lint の検査範囲にソース 5 ルートを追加 (xcodeproj への `DEVELOPMENT_TEAM` 書き戻りを捕捉)、verification の生ログは追跡をやめた (`.gitignore` の救済行と `lint.exclude` を削除)。点検は gitleaks・2 lint・`DEVELOPMENT_TEAM` grep の 4 種で公開前後とも 0 件
+- **公開前提の規律を広げた**: 識別子 lint の検査範囲にソース 5 ルートを追加 (xcodeproj への `DEVELOPMENT_TEAM` 書き戻りを捕捉)、verification の生ログは追跡をやめた
+- 点検は gitleaks・2 lint・`DEVELOPMENT_TEAM` grep の 4 種で公開前後とも 0 件
 - **ブランチモデルは `develop` / `main` の 2 本** (cross/ADR-0016 proposed)。`develop` は force-push 禁止 + 削除禁止のみで、必須 status check は phase-4 の CI 後
 - 実施の全過程と実行制約 (エージェントの push 検査が全履歴の push を止めるため保管先への push はオーナーが手動、`curl` は実行分類器に止められ Browser で代替) は [実施手順書](artifacts/publish-procedure.md) の「実施記録」節にある
 
