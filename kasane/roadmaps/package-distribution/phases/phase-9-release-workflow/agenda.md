@@ -19,6 +19,16 @@ KsSettingsView の `release.yml` をコピー + 固有値の差し替えで逆�
 - KsDialogs 側で別途作るもの: nuget.org の Trusted Publisher Policy (Repository `KsDialogs` / Workflow `release.yml` / Environment `release` / Glob `KsDialogs.*`、Scopes は push のみ)、GitHub Environment `release` (deployment branch policy = リリース対象ブランチ) と secrets 7 件 (`MAVEN_CENTRAL_USERNAME` / `MAVEN_CENTRAL_PASSWORD` = Central Portal の User Token、`SIGNING_KEY` / `SIGNING_KEY_ID` / `SIGNING_PASSWORD`、`NUGET_USER`、`SPM_DEPLOY_KEY`)、配信リポジトリの deploy key、branch protection
 - 実測で分かった前提: Central Portal に「座標 + version が公開済みか」の API は無く `repo1.maven.org` の HEAD で判定する / drop 済み deployment の status は 404 / 初回リリースの所要は 39 分 (validate 9 秒 / test ∥ package 7 分 / consumer-maui dry-run 12 分 / publish 11 分 / smoke-maui 9 分)
 
+### phase-4 からの申し送り: `main` の branch protection (2026-09-08)
+
+`main` を作成した直後に branch protection を付ける (REST は実在するブランチにしか PUT できない)。内容は KsSettingsView の `main` と同じ形 (必須 status check・PR 経由必須 (承認数 0)・force-push 禁止・削除禁止・admin バイパスは緊急時の逃げ道として許容。`gh api -X PUT` は全体置換なので完全な payload を送る)。必須 status check は `{"context": ..., "app_id": 15368}` 形式で次の 10 件。`develop` には必須 check を付けない (cross/ADR-0028 翻案元の決定、phase-4 で確認済み)。
+
+| 種別 | check 名 |
+|---|---|
+| lint | `lint` |
+| 本体検証 5 本 (phase-4) | `ios / verify`、`android / verify`、`android-instrumented / verify`、`kmp / verify`、`maui / verify` |
+| 消費者検証 4 本 (phase-8 で job 名確定) | `consumer-ios / verify`、`consumer-android / verify`、`consumer-maui / verify`、`consumer-kmp / verify` |
+
 ## 決定事項
 
 踏襲 (解決済み論点)。出典は cross/ADR-0009 (lockstep)、KsSettingsView cross/ADR-0019・cross/ADR-0020 (dispatch 起動・tag は最後・version 注入) と同 phase-8 の決定事項 (`../KsSettingsView/kasane/roadmaps/package-distribution/phases/phase-8-release-workflow/agenda.md`)。
