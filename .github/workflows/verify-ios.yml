@@ -24,7 +24,7 @@ jobs:
     runs-on: macos-26
     # 既定の 360 分は長すぎる。Simulator の起動待ちや xcodebuild のハングで
     # 高コストな macOS ランナーを占有し続けないよう上限を置く。
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - name: Checkout

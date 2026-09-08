@@ -27,7 +27,7 @@ jobs:
     runs-on: macos-26
     # 既定の 360 分は長すぎる。ビルドのハングで高コストな macOS ランナーを
     # 占有し続けないよう上限を置く。
-    timeout-minutes: 45
+    timeout-minutes: 35
 
     steps:
       - name: Checkout

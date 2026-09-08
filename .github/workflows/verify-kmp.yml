@@ -23,7 +23,7 @@ jobs:
     runs-on: macos-26
     # 既定の 360 分は長すぎる。高コストな macOS ランナーを占有し続けないよう上限を置く
     # (手元実測 1 分弱に対し、Kotlin/Native ディストリビューションの取得を含む初回を見込む)。
-    timeout-minutes: 45
+    timeout-minutes: 25
 
     steps:
       - name: Checkout

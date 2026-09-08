@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     # 既定の 360 分は長すぎる。Emulator の起動待ちやテストのハングでランナーを
     # 占有し続けないよう上限を置く (手元実測は 300 件弱で数分)。
-    timeout-minutes: 60
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
