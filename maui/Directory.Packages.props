@@ -10,10 +10,11 @@
 
   <ItemGroup>
     <!--
-      MAUI 本体。repo 直下の global.json が固定する .NET SDK 10.0.300 / workload set 10.0.300.3
-      (MAUI SDK 10.0.20) と組み合わせて検証した版で、CI と手元で同じ版を使う。
+      MAUI 本体。repo 直下の global.json が固定する workload set 10.0.300.3 が同梱する版
+      ($(MauiVersion) の既定値) に合わせる。下限・ビルド版・同じ SDK の利用者の既定値が一致し、
+      版を書かない利用者がそのまま導入できる。workload set を上げるときは同梱版へ合わせ直す。
     -->
-    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.70" />
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.20" />
   </ItemGroup>
 
   <ItemGroup>

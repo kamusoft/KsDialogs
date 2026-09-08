@@ -2,8 +2,15 @@ package jp.kamusoft.ksdialogs.maui
 
 /** カスタム Loading の中身と、それに効くメタ属性を新規に供給するもの。 */
 public fun interface MauiLoadingContentProvider {
-    /** 中身と属性を新規に供給する。UI スレッドから呼ばれる。 */
-    public fun createContent(): MauiDialogContent
+    /**
+     * 中身と属性を新規に供給する。UI スレッドから呼ばれる。
+     *
+     * 供給元 (MAUI 側) は managed / native の境界を跨いで呼ばれるため、失敗を例外のまま返さず
+     * 中身なし (null) として返す。元の失敗は MAUI 側が呼び出し 1 回分だけ預かっている。
+     *
+     * @return 供給された中身。作れなかったときは null
+     */
+    public fun createContent(): MauiDialogContent?
 }
 
 /** MAUI 側の ViewModel へ進捗を届ける口。 */

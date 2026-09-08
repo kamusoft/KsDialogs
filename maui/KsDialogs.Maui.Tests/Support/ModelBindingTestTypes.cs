@@ -165,3 +165,29 @@ internal sealed class TestMauiApp : IDisposable
         _provider.Dispose();
     }
 }
+
+/// <summary>サービスに登録しないままにしておく依存。View を組み立てられない状況を作るのに使う。</summary>
+internal sealed class UnregisteredTestDependency;
+
+/// <summary>利用者が書いた factory / resolver が投げる例外。包み直されないことを見分けるのに使う。</summary>
+internal sealed class UserCodeTestException() : Exception("利用者コードが投げた例外");
+
+/// <summary>解決できない依存を要求する中身の View。1 行登録の生成失敗の検証に使う。</summary>
+/// <param name="dependency">サービスに登録されていない依存。</param>
+internal sealed class UnconstructableTestView(UnregisteredTestDependency dependency) : ReportingTestView
+{
+    /// <summary>注入されるはずだった依存。</summary>
+    public UnregisteredTestDependency Dependency { get; } = dependency;
+}
+
+/// <summary>解決できない依存を要求する View を結び付けた ViewModel。</summary>
+internal sealed class UnconstructableViewTestViewModel : IDialogViewModel;
+
+/// <summary>登録した factory が例外を投げる検証に使う ViewModel。</summary>
+internal sealed class FactoryThrowingTestViewModel : IDialogViewModel;
+
+/// <summary>一括解決の resolver が例外を投げる検証に使う ViewModel。</summary>
+internal sealed class ResolverThrowingTestViewModel : IDialogViewModel;
+
+/// <summary>既存の失敗経路が変わらないことの検証に使う ViewModel。</summary>
+internal sealed class UnchangedRouteTestViewModel : IDialogViewModel;

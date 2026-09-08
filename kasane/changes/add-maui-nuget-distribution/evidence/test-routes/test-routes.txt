@@ -1,0 +1,11 @@
+=== facade: cd maui && dotnet test ===
+成功!   -失敗:     0、合格:   160、スキップ:     0、合計:   160、期間: 241 ms - KsDialogs.Maui.Tests.dll (net10.0)
+
+=== Android 互換面: maui/android/native ./gradlew :ksdialogs-maui-bridge:test --rerun-tasks ===
+BUILD SUCCESSFUL in 4s
+25 actionable tasks: 25 executed
+JUnit XML 集計: tests=34 failures/errors=0 skipped=0  (修正サイクル後の再計測 2026-09-08。修正サイクル前は tests=33)
+
+=== iOS 互換面: maui/macios/native xcodebuild test (scheme KsDialogsMauiBridge) ===
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+✔ Test run with 7 tests in 4 suites passed after 4.251 seconds.

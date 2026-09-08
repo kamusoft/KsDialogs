@@ -27,4 +27,30 @@ class MauiBridgeDiagnosticMessageTests {
             failure.message,
         )
     }
+
+    @Test
+    @DisplayName("Dialog / Loading でも中身なしは同じ英語文言の失敗になる")
+    fun `DM-MA-04 Dialog と Loading でも中身なしは同じ英語文言の失敗になる`() {
+        val dialog = MauiDialogViewModel(
+            MauiDialogContentProvider { null },
+            MauiDialogPresentation(),
+        )
+        val loading = MauiLoadingViewModel(
+            MauiLoadingContentProvider { null },
+            progressReceiver = null,
+        )
+
+        val dialogFailure = assertThrows<IllegalStateException> { dialog.createContentView() }
+        val loadingFailure = assertThrows<IllegalStateException> { loading.createContentView() }
+
+        // 3 種の提示はどれも同じ状況を報告するため、文言も同一にそろえる
+        assertEquals(
+            "The MAUI side could not create the presentation content.",
+            dialogFailure.message,
+        )
+        assertEquals(
+            "The MAUI side could not create the presentation content.",
+            loadingFailure.message,
+        )
+    }
 }

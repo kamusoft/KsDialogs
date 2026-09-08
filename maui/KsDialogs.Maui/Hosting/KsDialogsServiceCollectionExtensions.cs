@@ -120,7 +120,7 @@ public static class KsDialogsServiceCollectionExtensions
 
         LoadingViewRegistry.Shared.StoreViewFactory(
             typeof(TViewModel),
-            viewModel => CreateView(typeof(TView), viewModel));
+            viewModel => CreateView(typeof(TView), typeof(TViewModel), viewModel));
         LoadingViewRegistry.Shared.StoreViewModelFactory(
             typeof(TViewModel),
             () => DialogServiceProvider.Require().GetRequiredService<TViewModel>());
@@ -159,7 +159,7 @@ public static class KsDialogsServiceCollectionExtensions
 
         ToastViewRegistry.Shared.StoreViewFactory(
             typeof(TViewModel),
-            viewModel => CreateView(typeof(TView), viewModel));
+            viewModel => CreateView(typeof(TView), typeof(TViewModel), viewModel));
         ToastViewRegistry.Shared.StoreViewModelFactory(
             typeof(TViewModel),
             () => DialogServiceProvider.Require().GetRequiredService<TViewModel>());
@@ -184,7 +184,7 @@ public static class KsDialogsServiceCollectionExtensions
 
         DialogViewRegistry.Shared.StoreViewFactory(
             typeof(TViewModel),
-            (viewModel, _) => CreateView(typeof(TView), viewModel));
+            (viewModel, _) => CreateView(typeof(TView), typeof(TViewModel), viewModel));
         DialogViewRegistry.Shared.StoreViewModelFactory(
             typeof(TViewModel),
             () => DialogServiceProvider.Require().GetRequiredService<TViewModel>());
@@ -207,14 +207,32 @@ public static class KsDialogsServiceCollectionExtensions
     /// 他の引数だけを解決して作り、どちらの場合も BindingContext に表示対象の ViewModel を設定する。
     /// </remarks>
     /// <param name="viewType">生成する View の型。</param>
+    /// <param name="viewModelType">その View に結び付いた ViewModel の型。</param>
     /// <param name="viewModel">表示対象の ViewModel。</param>
     /// <returns>BindingContext を設定した中身の View。</returns>
-    private static View CreateView(Type viewType, object viewModel)
+    private static View CreateView(Type viewType, Type viewModelType, object viewModel)
     {
         IServiceProvider provider = DialogServiceProvider.Require();
-        View view = (View)(TakesViewModel(viewType, viewModel)
-            ? ActivatorUtilities.CreateInstance(provider, viewType, viewModel)
-            : ActivatorUtilities.CreateInstance(provider, viewType));
+        View view;
+        try
+        {
+            view = (View)(TakesViewModel(viewType, viewModel)
+                ? ActivatorUtilities.CreateInstance(provider, viewType, viewModel)
+                : ActivatorUtilities.CreateInstance(provider, viewType));
+        }
+        catch (DialogException)
+        {
+            // 構成ミスとして既に表されている失敗は、包み直さずそのまま先へ通す
+            throw;
+        }
+        catch (Exception thrown)
+        {
+            throw new DialogException.ViewCreationFailed(
+                viewType.FullName ?? viewType.Name,
+                viewModelType.FullName ?? viewModelType.Name,
+                thrown);
+        }
+
         view.BindingContext = viewModel;
         return view;
     }

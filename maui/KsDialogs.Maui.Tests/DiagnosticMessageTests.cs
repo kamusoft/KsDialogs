@@ -14,11 +14,16 @@ namespace KsDialogs.Maui.Tests;
 [TestFixture]
 public class DiagnosticMessageTests
 {
-    /// <summary>失敗型 6 種の <c>Message</c> が英語文言と完全一致する。</summary>
+    /// <summary>失敗型 7 種の <c>Message</c> が英語文言と完全一致する。</summary>
     [Test]
     [Description("DialogException の全入れ子型が英語文言を持つ")]
     public void DM_MA_01_EveryNestedDialogExceptionCarriesTheEnglishMessage()
     {
+        // 生成失敗だけは元の失敗を伴うため、文言と併せて原因の保持と型名の取り出しもここで固定する
+        InvalidOperationException viewCreationCause = new("dependency is missing");
+        DialogException.ViewCreationFailed viewCreationFailed =
+            new("SampleView", "SampleViewModel", viewCreationCause);
+
         Assert.Multiple(() =>
         {
             Assert.That(
@@ -39,6 +44,16 @@ public class DiagnosticMessageTests
             Assert.That(
                 new DialogException.PresentationHostUnavailable().Message,
                 Is.EqualTo("No screen is available to present the Dialog."));
+            Assert.That(
+                viewCreationFailed.Message,
+                Is.EqualTo(
+                    "Could not create the View SampleView registered for ViewModel type SampleViewModel."));
+            Assert.That(viewCreationFailed.ViewTypeName, Is.EqualTo("SampleView"));
+            Assert.That(viewCreationFailed.ViewModelTypeName, Is.EqualTo("SampleViewModel"));
+            Assert.That(
+                viewCreationFailed.InnerException,
+                Is.SameAs(viewCreationCause),
+                "元の失敗がそのまま原因として残ること");
         });
     }
 

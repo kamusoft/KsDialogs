@@ -1,0 +1,17 @@
+<Project>
+
+  <!--
+    KsDialogs が要求する最低 OS 版。この 2 つの定数がリポジトリと配布パッケージを通じた
+    単一の宣言元であり、利用者ビルドの検査 (KsDialogs.Maui.targets) と、リポジトリ内の
+    facade / binding 2 件の SupportedOSPlatformVersion がここから導かれる (cross/ADR-0002)。
+
+    samples/maui の Sample アプリは別のビルドルートにあり、この props も配布パッケージも届かない
+    (facade を ProjectReference で参照する) ため SupportedOSPlatformVersion を直書きしている。
+    ここの値を変えるときは Sample の直書きも合わせる。
+  -->
+  <PropertyGroup>
+    <KsDialogsMinAndroidApi>24</KsDialogsMinAndroidApi>
+    <KsDialogsMinIOSVersion>17.0</KsDialogsMinIOSVersion>
+  </PropertyGroup>
+
+</Project>

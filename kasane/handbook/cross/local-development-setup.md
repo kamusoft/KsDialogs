@@ -74,8 +74,10 @@ repo 直下の `global.json` が .NET SDK と workload set の版を固定する
 - 解決できていることは `dotnet --version` が `10.0.300` を返し、`dotnet workload list` が repo の `global.json` の workload set を使う旨を表示することで確認する
 - `rollForward` を `disable` にしているため、指定した SDK が手元に無ければ**ロールフォワードせずに失敗する** (近い patch を黙って拾うことはない)。表示された版を導入して揃える
 - workload set を固定すると .NET for iOS の版も固定される (`10.0.300.3` は .NET for iOS 26.5)。ワークロード自体の導入は `dotnet workload install maui`
-- 版を上げるときは `global.json` の `version` / `workloadVersion` と `maui/Directory.Packages.props` の `Microsoft.Maui.Controls` を併せて見直す
-- Sample の `samples/maui/KsDialogs.Sample.Maui/KsDialogs.Sample.Maui.csproj` の `MauiVersion` も同じ版へ手で揃える。Sample は CI の検証対象ではないため、ずれても検査で気づけない
+- **workload set を上げるときは、`maui/Directory.Packages.props` の `Microsoft.Maui.Controls` と Sample の `MauiVersion` を同梱版に合わせる**
+- 同梱版は `$(MauiVersion)` の既定値。版を書いていないプロジェクトで評価して確かめる (`dotnet msbuild maui/KsDialogs.Maui/KsDialogs.Maui.csproj -getProperty:MauiVersion -p:TargetFramework=net10.0`。2026-09-08 の実測は `10.0.20`)
+- 揃えると下限・ビルド版・版を書かない利用者の既定値が一致し、CI が下限を常時検証する
+- Sample (`samples/maui/KsDialogs.Sample.Maui/KsDialogs.Sample.Maui.csproj`) は CI の検証対象ではないため、ずれても検査で気づけない
 
 ## MAUI iOS ビルドの Xcode 版数
 

@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using KsDialogs.Maui.Tests.Support;
 using Microsoft.Extensions.DependencyInjection;
@@ -82,6 +83,39 @@ public class LoadingDependencyInjectionTests
         {
             Assert.That(gateway.CreatedViews[0], Is.TypeOf<ScopedRegisteredLoadingTestView>());
             Assert.That(value, Is.EqualTo(42));
+        });
+    }
+
+    /// <summary>1 行登録した View を組み立てられないときは、構成ミスとして原因つきで失敗する。</summary>
+    [Test]
+    [Description("[MB-MA-11] 依存を解決できない Loading の View は ViewCreationFailed で失敗する")]
+    public void MB_MA_11_TheUnconstructableViewFailsAsAViewCreationFailure()
+    {
+        using TestMauiApp app = new(services => services
+            .RegisterForLoading<UnconstructableLoadingTestView, UnconstructableViewLoadingTestViewModel>());
+        TestLoadingGateway gateway = new();
+        IKsLoading loading = new Loading(gateway);
+
+        DialogException.ViewCreationFailed failure =
+            Assert.ThrowsAsync<DialogException.ViewCreationFailed>(
+                async () => await loading.ShowAsync(new UnconstructableViewLoadingTestViewModel()))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(failure.ViewTypeName, Is.EqualTo(typeof(UnconstructableLoadingTestView).FullName));
+            Assert.That(
+                failure.ViewModelTypeName,
+                Is.EqualTo(typeof(UnconstructableViewLoadingTestViewModel).FullName));
+            Assert.That(
+                failure.InnerException,
+                Is.InstanceOf<InvalidOperationException>(),
+                "依存の解決失敗が原因として残ること");
+            Assert.That(
+                failure.InnerException?.Message,
+                Does.Contain(typeof(UnregisteredTestDependency).FullName!)
+                    .And.Contain(typeof(UnconstructableLoadingTestView).FullName!),
+                "原因が、解決できなかった依存と組み立てられなかった View を指していること");
+            Assert.That(gateway.CreatedViews, Is.Empty, "View は生成も表示もされないこと");
         });
     }
 

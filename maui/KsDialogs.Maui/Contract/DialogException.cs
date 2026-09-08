@@ -18,6 +18,11 @@ public abstract class DialogException : Exception
     {
     }
 
+    // 元の失敗を保持したまま報告する入れ子の型のための基底コンストラクタ
+    private DialogException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
+
     /// <summary>ViewModel 型に対する View factory がレジストリに登録されていない。</summary>
     public sealed class ViewFactoryNotRegistered : DialogException
     {
@@ -39,6 +44,33 @@ public abstract class DialogException : Exception
             => ViewModelTypeName = viewModelTypeName;
 
         /// <summary>解決できなかった ViewModel の型名。</summary>
+        public string ViewModelTypeName { get; }
+    }
+
+    /// <summary>
+    /// 1 行登録が結び付けた View を組み立てられなかった。
+    /// </summary>
+    /// <remarks>
+    /// 1 行登録 (<c>RegisterForDialog</c> / <c>RegisterForLoading</c> / <c>RegisterForToast</c>) では
+    /// ライブラリ自身が View を生成するため、その生成が失敗したことを「factory 未登録」と区別して
+    /// 報告する。元の失敗は <see cref="Exception.InnerException"/> にそのまま残る。
+    /// 利用者が書いた factory や fallback resolver が投げた例外はこの型に包まれず、そのまま届く。
+    /// </remarks>
+    public sealed class ViewCreationFailed : DialogException
+    {
+        internal ViewCreationFailed(string viewTypeName, string viewModelTypeName, Exception innerException)
+            : base(
+                $"Could not create the View {viewTypeName} registered for ViewModel type {viewModelTypeName}.",
+                innerException)
+        {
+            ViewTypeName = viewTypeName;
+            ViewModelTypeName = viewModelTypeName;
+        }
+
+        /// <summary>生成できなかった View の型名。</summary>
+        public string ViewTypeName { get; }
+
+        /// <summary>その View に結び付いた ViewModel の型名。</summary>
         public string ViewModelTypeName { get; }
     }
 

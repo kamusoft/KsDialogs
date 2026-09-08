@@ -9,15 +9,20 @@
   -->
   <PropertyGroup>
     <TargetFramework>net10.0-ios</TargetFramework>
-    <!-- 最低対象 OS は iOS 17 (cross/ADR-0002) -->
-    <SupportedOSPlatformVersion>17.0</SupportedOSPlatformVersion>
+    <!-- 最低対象 OS は iOS 17 (cross/ADR-0002)。要件の数値は buildTransitive の props が宣言元 -->
+    <SupportedOSPlatformVersion>$(KsDialogsMinIOSVersion)</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>true</ImplicitUsings>
     <IsBindingProject>true</IsBindingProject>
     <IsTrimmable>true</IsTrimmable>
-    <IsPackable>false</IsPackable>
     <RootNamespace>KsDialogs.Bridge</RootNamespace>
     <AssemblyName>KsDialogs.Binding.iOS</AssemblyName>
+  </PropertyGroup>
+
+  <!-- PackageId はアセンブリ名の既定に任せる -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <Description>iOS native bridge binding for KsDialogs.Maui. Referenced transitively by KsDialogs.Maui; do not reference this package directly.</Description>
   </PropertyGroup>
 
   <ItemGroup>

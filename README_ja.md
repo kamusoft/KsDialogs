@@ -157,27 +157,27 @@ suspend fun showConfirmation(message: String): DialogResult<Boolean> =
 
 ## Agent Skills
 
-[Agent Skills の索引](skills/README_ja.md)では、Dialog、Loading、Toast、layout、transition、ViewModel の platform 別セットアップと完全なレシピ、および AiForms.Maui.Dialogs からの移行方法を案内しています。
+[Agent Skills の索引](https://github.com/kamusoft/KsDialogs/blob/develop/skills/README_ja.md)では、Dialog、Loading、Toast、layout、transition、ViewModel の platform 別セットアップと完全なレシピ、および AiForms.Maui.Dialogs からの移行方法を案内しています。
 
 ## リポジトリ構成
 
 | ディレクトリ | 入口 |
 |---|---|
-| [`ios/`](ios/) | Native iOS ライブラリ |
-| [`android/`](android/) | Native Android ライブラリ |
-| [`maui/`](maui/) | .NET MAUI wrapper |
-| [`kmp/`](kmp/) | Kotlin Multiplatform wrapper |
+| [`ios/`](https://github.com/kamusoft/KsDialogs/tree/develop/ios) | Native iOS ライブラリ |
+| [`android/`](https://github.com/kamusoft/KsDialogs/tree/develop/android) | Native Android ライブラリ |
+| [`maui/`](https://github.com/kamusoft/KsDialogs/tree/develop/maui) | .NET MAUI wrapper |
+| [`kmp/`](https://github.com/kamusoft/KsDialogs/tree/develop/kmp) | Kotlin Multiplatform wrapper |
 | `samples/` | 4 形態の Sample アプリケーション |
-| [`skills/`](skills/) | 英語版と日本語版の Agent Skills |
-| [`assets/`](assets/) | 公開ドキュメント用画像 |
-| [`kasane/`](kasane/) | プロジェクト知識と変更記録 |
+| [`skills/`](https://github.com/kamusoft/KsDialogs/tree/develop/skills) | 英語版と日本語版の Agent Skills |
+| [`assets/`](https://github.com/kamusoft/KsDialogs/tree/develop/assets) | 公開ドキュメント用画像 |
+| [`kasane/`](https://github.com/kamusoft/KsDialogs/tree/develop/kasane) | プロジェクト知識と変更記録 |
 
-[AGENTS.md](AGENTS.md) · [概念ドキュメント](kasane/concepts/)
+[AGENTS.md](https://github.com/kamusoft/KsDialogs/blob/develop/AGENTS.md) · [概念ドキュメント](https://github.com/kamusoft/KsDialogs/tree/develop/kasane/concepts)
 
 ## 貢献
 
-このプロジェクトでは外部からの Pull Request を受け付けていません。不具合の報告、機能の提案、質問は Issue で受け付けます。必要な情報を含められるよう、内容に合った Issue template を選んでください。貢献方針と報告方法は [CONTRIBUTING_ja.md](.github/CONTRIBUTING_ja.md) を参照してください。
+このプロジェクトでは外部からの Pull Request を受け付けていません。不具合の報告、機能の提案、質問は Issue で受け付けます。必要な情報を含められるよう、内容に合った Issue template を選んでください。貢献方針と報告方法は [CONTRIBUTING_ja.md](https://github.com/kamusoft/KsDialogs/blob/develop/.github/CONTRIBUTING_ja.md) を参照してください。
 
 ## ライセンス
 
-KsDialogs は [MIT License](LICENSE) で提供されます。
+KsDialogs は [MIT License](https://github.com/kamusoft/KsDialogs/blob/develop/LICENSE) で提供されます。

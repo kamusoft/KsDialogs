@@ -103,6 +103,85 @@ public class DialogDependencyInjectionTests
         });
     }
 
+    /// <summary>1 行登録した View を組み立てられないときは、構成ミスとして原因つきで失敗する。</summary>
+    [Test]
+    [Description("[MB-MA-11] 依存を解決できない View は ViewCreationFailed で失敗する")]
+    public void MB_MA_11_TheUnconstructableViewFailsAsAViewCreationFailure()
+    {
+        using TestMauiApp app = new(services =>
+            services.RegisterForDialog<UnconstructableTestView, UnconstructableViewTestViewModel>());
+        TestDialogGateway gateway = new();
+        IKsDialog dialogs = new Dialog(gateway);
+
+        DialogException.ViewCreationFailed failure =
+            Assert.ThrowsAsync<DialogException.ViewCreationFailed>(
+                async () => await dialogs.ShowAsync(new UnconstructableViewTestViewModel()))!;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(failure.ViewTypeName, Is.EqualTo(typeof(UnconstructableTestView).FullName));
+            Assert.That(
+                failure.ViewModelTypeName,
+                Is.EqualTo(typeof(UnconstructableViewTestViewModel).FullName));
+            Assert.That(
+                failure.InnerException,
+                Is.InstanceOf<InvalidOperationException>(),
+                "依存の解決失敗が原因として残ること");
+            Assert.That(
+                failure.InnerException?.Message,
+                Does.Contain(typeof(UnregisteredTestDependency).FullName!)
+                    .And.Contain(typeof(UnconstructableTestView).FullName!),
+                "原因が、解決できなかった依存と組み立てられなかった View を指していること");
+            Assert.That(gateway.CreatedViews, Is.Empty, "View は生成も表示もされないこと");
+        });
+    }
+
+    /// <summary>利用者が書いた factory と resolver の例外は、包み直さずそのまま届く。</summary>
+    [Test]
+    [Description("[MB-MA-13] 利用者コードの例外は包まれない")]
+    public void MB_MA_13_TheUserCodeExceptionIsNotWrapped()
+    {
+        using TestMauiApp app = new(services => services.AddKsDialogs(options =>
+            options.UseViewFallback((viewModelType, _) => viewModelType == typeof(ResolverThrowingTestViewModel)
+                ? throw new UserCodeTestException()
+                : null)));
+        DialogViewRegistry.Shared.Register<FactoryThrowingTestViewModel>(
+            _ => throw new UserCodeTestException());
+        IKsDialog dialogs = new Dialog(new TestDialogGateway());
+
+        Assert.Multiple(() =>
+        {
+            Assert.ThrowsAsync<UserCodeTestException>(
+                async () => await dialogs.ShowAsync(new FactoryThrowingTestViewModel()),
+                "登録した factory の例外はそのまま届くこと");
+            Assert.ThrowsAsync<UserCodeTestException>(
+                async () => await dialogs.ShowAsync(new ResolverThrowingTestViewModel()),
+                "一括解決の resolver の例外はそのまま届くこと");
+            Assert.ThrowsAsync<DialogException.ViewFactoryNotRegistered>(
+                async () => await dialogs.ShowAsync(new UnresolvableFallbackTestViewModel()),
+                "resolver が null を返した場合は従来どおり未登録の失敗になること");
+        });
+    }
+
+    /// <summary>提示先の不在と利用者操作によるキャンセルは、従来どおりの形で届く。</summary>
+    [Test]
+    [Description("[MB-MA-16] 既存の失敗経路は変わらない")]
+    public async Task MB_MA_16_TheExistingFailureRoutesAreUnchanged()
+    {
+        using TestMauiApp app = new(services =>
+            services.RegisterForDialog<SimpleRegisteredTestView, UnchangedRouteTestViewModel>());
+        FailingTestDialogGateway hostless = new(new DialogException.PresentationHostUnavailable());
+        TestDialogGateway gateway = new(request =>
+            request.ResultChannel.Settle(DialogOutcome.Cancelled.Instance));
+
+        Assert.ThrowsAsync<DialogException.PresentationHostUnavailable>(
+            async () => await new Dialog(hostless).ShowAsync(new UnchangedRouteTestViewModel()));
+        DialogResult<bool> cancelled =
+            await new Dialog(gateway).ShowAsync(new UnchangedRouteTestViewModel());
+
+        Assert.That(cancelled, Is.EqualTo(new DialogResult<bool>.Cancelled()));
+    }
+
     /// <summary>明示登録がある型では一括解決は呼ばれない。</summary>
     [Test]
     [Description("[MB-MA-05] 明示登録が fallback より優先される")]

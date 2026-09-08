@@ -26,7 +26,12 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     public Task ShowAsync(LoadingPresentationRequest request)
     {
         TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        MauiLoadingBridge.Shared!.Show(ToBridgeContent(request), new CompletionListener(completion));
+        // 中身を作れなかった失敗はこの表示 1 回分の預かり口に残り、完了の通知で呼び出し元へ返る
+        BridgeContentFailure contentFailure = new();
+
+        MauiLoadingBridge.Shared!.Show(
+            ToBridgeContent(request, contentFailure),
+            new CompletionListener(completion, contentFailure));
         return completion.Task;
     }
 
@@ -37,11 +42,13 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
         // 処理の失敗は互換面へ渡さず、こちらで抱えたまま合流1件の終了だけを伝える。
         // 呼び出し元へは撤去の完了を待ってからそのまま投げ直す
         LoadingActionFailure failure = new();
+        // 中身を作れなかった失敗はこの表示 1 回分の預かり口に残り、完了の通知で呼び出し元へ返る
+        BridgeContentFailure contentFailure = new();
 
         MauiLoadingBridge.Shared!.Start(
-            ToBridgeContent(request),
+            ToBridgeContent(request, contentFailure),
             new ActionRunner(action, failure),
-            new CompletionListener(completion));
+            new CompletionListener(completion, contentFailure));
 
         await completion.Task.ConfigureAwait(false);
         if (failure.Value is not null)
@@ -54,7 +61,8 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     public Task HideAsync()
     {
         TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        MauiLoadingBridge.Shared!.Hide(new CompletionListener(completion));
+        // 閉じる操作には中身の供給が無いため、預かり口も持たない
+        MauiLoadingBridge.Shared!.Hide(new CompletionListener(completion, contentFailure: null));
         return completion.Task;
     }
 
@@ -67,8 +75,11 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     /// カスタム View では中身の生成を供給元として渡し、器が提示先を確保した後に呼ばれる。
     /// </remarks>
     /// <param name="request">その表示の中身と供給値。</param>
+    /// <param name="contentFailure">中身を作れなかった失敗の預かり口。</param>
     /// <returns>互換面へ渡す中身の指定。</returns>
-    private static MauiLoadingContent ToBridgeContent(LoadingPresentationRequest request)
+    private static MauiLoadingContent ToBridgeContent(
+        LoadingPresentationRequest request,
+        BridgeContentFailure contentFailure)
     {
         MauiDialogPlacement? placement = request.ShowPlacement is null
             ? null
@@ -77,7 +88,7 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
         return request.IsBuiltin
             ? new MauiLoadingContent(request.Message, placement)
             : new MauiLoadingContent(
-                new ContentProvider(request),
+                new ContentProvider(request, contentFailure),
                 placement,
                 request.ProgressReceiver is null ? null : new ProgressReceiver(request.ProgressReceiver));
     }
@@ -103,16 +114,26 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     }
 
     /// <summary>カスタム Loading の中身を、器が提示先を確保した後に供給する。</summary>
+    /// <remarks>
+    /// 供給元は互換面 (Java) から呼ばれる。失敗を例外のまま境界へ返すと未処理の障害になるため、
+    /// 中身なしとして返し、表示そのものの失敗として完了の通知で受け取る。
+    /// 元の失敗は預かり口に残り、その通知を受けたときに呼び出し元へそのまま返る (core/ADR-0033)。
+    /// </remarks>
     /// <param name="request">その表示の中身と供給値。</param>
-    private sealed class ContentProvider(LoadingPresentationRequest request)
+    /// <param name="contentFailure">中身を作れなかった失敗の預かり口。</param>
+    private sealed class ContentProvider(
+        LoadingPresentationRequest request,
+        BridgeContentFailure contentFailure)
         : Java.Lang.Object, IMauiLoadingContentProvider
     {
-        public MauiDialogContent CreateContent() =>
-            PlatformDialogContent.Create(
-                request.CreateContent(),
-                // 供給元が呼ばれるのは器が提示先を確保した後なので、この時点では文脈が取れる
-                PlatformDialogContent.ResolveMauiContext()
-                    ?? throw new DialogException.PresentationHostUnavailable());
+        public MauiDialogContent? CreateContent() =>
+            BridgeContentSupply.CreateOrFail(
+                () => PlatformDialogContent.Create(
+                    request.CreateContent(),
+                    // 供給元が呼ばれるのは器が提示先を確保した後なので、この時点では文脈が取れる
+                    PlatformDialogContent.ResolveMauiContext()
+                        ?? throw new DialogException.PresentationHostUnavailable()),
+                contentFailure);
     }
 
     /// <summary>互換面から届いた進捗を、MAUI 側の ViewModel の受け口へ渡す。</summary>
@@ -148,14 +169,21 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     }
 
     /// <summary>互換面から届いた結末を、待っている呼び出しへ渡す。</summary>
+    /// <remarks>
+    /// 中身を作れなかったときに互換面が返す理由は「中身が無かった」ことだけなので、
+    /// 元の失敗を預かっていればそれをそのまま渡す (型・メッセージ・スタックが保たれる)。
+    /// </remarks>
     /// <param name="completion">待っている呼び出しの完了源。</param>
-    private sealed class CompletionListener(TaskCompletionSource completion)
+    /// <param name="contentFailure">中身を作れなかった失敗の預かり口。供給が無い操作では null。</param>
+    private sealed class CompletionListener(
+        TaskCompletionSource completion,
+        BridgeContentFailure? contentFailure)
         : Java.Lang.Object, IMauiLoadingCompletionListener
     {
         public void OnCompleted() => completion.TrySetResult();
 
         public void OnFailure(string? message) =>
-            completion.TrySetException(new InvalidOperationException(
+            completion.TrySetException(contentFailure?.Cause ?? new InvalidOperationException(
                 message ?? "Could not show the Loading."));
     }
 }

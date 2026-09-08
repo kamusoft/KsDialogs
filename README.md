@@ -157,27 +157,27 @@ suspend fun showConfirmation(message: String): DialogResult<Boolean> =
 
 ## Agent Skills
 
-The [Agent Skills index](skills/README.md) provides platform-specific setup and complete recipes for Dialog, Loading, Toast, layout, transitions, view models, and migration from AiForms.Maui.Dialogs.
+The [Agent Skills index](https://github.com/kamusoft/KsDialogs/blob/develop/skills/README.md) provides platform-specific setup and complete recipes for Dialog, Loading, Toast, layout, transitions, view models, and migration from AiForms.Maui.Dialogs.
 
 ## Repository layout
 
 | Directory | Entry point |
 |---|---|
-| [`ios/`](ios/) | Native iOS library |
-| [`android/`](android/) | Native Android libraries |
-| [`maui/`](maui/) | .NET MAUI wrapper |
-| [`kmp/`](kmp/) | Kotlin Multiplatform wrapper |
+| [`ios/`](https://github.com/kamusoft/KsDialogs/tree/develop/ios) | Native iOS library |
+| [`android/`](https://github.com/kamusoft/KsDialogs/tree/develop/android) | Native Android libraries |
+| [`maui/`](https://github.com/kamusoft/KsDialogs/tree/develop/maui) | .NET MAUI wrapper |
+| [`kmp/`](https://github.com/kamusoft/KsDialogs/tree/develop/kmp) | Kotlin Multiplatform wrapper |
 | `samples/` | Sample applications for the four forms |
-| [`skills/`](skills/) | Agent Skills in English and Japanese |
-| [`assets/`](assets/) | Public documentation images |
-| [`kasane/`](kasane/) | Project knowledge and change records |
+| [`skills/`](https://github.com/kamusoft/KsDialogs/tree/develop/skills) | Agent Skills in English and Japanese |
+| [`assets/`](https://github.com/kamusoft/KsDialogs/tree/develop/assets) | Public documentation images |
+| [`kasane/`](https://github.com/kamusoft/KsDialogs/tree/develop/kasane) | Project knowledge and change records |
 
-[AGENTS.md](AGENTS.md) · [Concept documentation](kasane/concepts/)
+[AGENTS.md](https://github.com/kamusoft/KsDialogs/blob/develop/AGENTS.md) · [Concept documentation](https://github.com/kamusoft/KsDialogs/tree/develop/kasane/concepts)
 
 ## Contributing
 
-This project does not accept external pull requests. Please use an Issue to report a bug, propose a feature, or ask a question, and choose the matching Issue template so the necessary context is included. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contribution policy and reporting guidance.
+This project does not accept external pull requests. Please use an Issue to report a bug, propose a feature, or ask a question, and choose the matching Issue template so the necessary context is included. See [CONTRIBUTING.md](https://github.com/kamusoft/KsDialogs/blob/develop/.github/CONTRIBUTING.md) for the contribution policy and reporting guidance.
 
 ## License
 
-KsDialogs is available under the [MIT License](LICENSE).
+KsDialogs is available under the [MIT License](https://github.com/kamusoft/KsDialogs/blob/develop/LICENSE).

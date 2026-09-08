@@ -230,7 +230,7 @@ internal suspend fun reportLoadingCompletion(
  * ViewModel はメタ属性を持たない。MAUI 側で指定された属性は、中身の View への添付として
  * 器へ渡る (core/ADR-0015)。
  */
-private class MauiLoadingViewModel(
+internal class MauiLoadingViewModel(
     private val contentProvider: MauiLoadingContentProvider,
     private val progressReceiver: MauiLoadingProgressReceiver?,
 ) : LoadingViewModel, LoadingProgressReceiver {
@@ -238,9 +238,13 @@ private class MauiLoadingViewModel(
     /**
      * 中身の View を新規生成し、MAUI 側で指定されたメタ属性を添付して返す。
      * 提示先が確保できた後に UI スレッドで呼ばれる。
+     *
+     * MAUI 側が中身を作れなかったときは失敗を投げる。その失敗は完了の通知の失敗に合流し、
+     * MAUI 側が預かっている元の失敗が呼び出し元へ返る。
      */
     fun createContentView(): View {
         val content = contentProvider.createContent()
+            ?: error("The MAUI side could not create the presentation content.")
         MauiDialogContent.applyAttributes(content.view, content.options, content.placement)
         return content.view
     }

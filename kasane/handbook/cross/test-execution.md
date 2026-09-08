@@ -22,8 +22,8 @@ timestamp: 2026-09-08
 | android/ | `./gradlew test --rerun-tasks` | 68 tests / 0 failures (2026-09-07) |
 | android/ (instrumented) | `./gradlew connectedDebugAndroidTest` | 333 tests / 0 failures (`:ksdialogs-core` 294 + `:ksdialogs` 39。1 台分の件数。API レベルによる skip あり — 後述。2026-09-07) |
 | kmp/ | `./gradlew allTests --rerun-tasks` | 151 tests / 0 failures (iosSimulatorArm64 75 + androidHostTest 76。2026-09-07) |
-| maui/ | `dotnet test` | 155 tests / 0 failures (2026-09-07) |
-| maui/android/native/ | `./gradlew :ksdialogs-maui-bridge:test --rerun-tasks` | 31 tests / 0 failures (2026-09-07) |
+| maui/ | `dotnet test` | 160 tests / 0 failures (2026-09-08) |
+| maui/android/native/ | `./gradlew :ksdialogs-maui-bridge:test --rerun-tasks` | 34 tests / 0 failures (2026-09-08) |
 | maui/macios/native/ | `xcodebuild test -project KsDialogsMauiBridge.xcodeproj -scheme KsDialogsMauiBridge -destination 'platform=iOS Simulator,name=iPhone 17'` | 7 tests / 4 suites (2026-09-07) |
 
 **android/ 系の Gradle ビルドを同時に走らせない**: `maui/android/native/` は `android/` を複合ビルドで巻き込むため、`android/` のタスク (`test` / `connectedDebugAndroidTest`) と同時に実行すると build ディレクトリの取り合いで双方が壊れる (2026-08-26 実測)。上表の実行は逐次で回す。
@@ -144,7 +144,7 @@ cd maui/android/native
 ./gradlew :ksdialogs-maui-bridge:test --rerun-tasks
 ```
 
-件数の確認と up-to-date スキップの注意は android/ と同じ。この 31 件が MAUI Android 経路の「結果がちょうど1つ届く」「演出の完了通知がちょうど1回届く」「factory の失敗が 1 枚だけの破棄に合流する」保証を持つ。
+件数の確認と up-to-date スキップの注意は android/ と同じ。この 34 件が MAUI Android 経路の「結果がちょうど1つ届く」「演出の完了通知がちょうど1回届く」「factory の失敗が 1 枚だけの破棄に合流する」保証を持つ。
 
 互換面 (Swift) のテストも同じく .NET 側からは走らない。bridge の Xcode プロジェクトを scheme 指定で回す:
 

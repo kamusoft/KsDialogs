@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using KsDialogs.Maui.Tests.Support;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
@@ -61,6 +62,47 @@ public class ToastDependencyInjectionTests
             Assert.That(viewModel.Dependency, Is.Not.Null, "VM のコンストラクタ依存が注入されること");
             Assert.That(created.InjectedViewModel, Is.SameAs(viewModel));
             Assert.That(created.BindingContext, Is.SameAs(viewModel));
+        });
+    }
+
+    /// <summary>
+    /// 1 行登録した View を組み立てられない Toast は、警告に原因を残してその 1 枚だけを捨てる。
+    /// </summary>
+    /// <remarks>
+    /// Show は戻り値を持たないため呼び出し元へは返せない。原因を追える手掛かりは警告にしか残らない。
+    /// </remarks>
+    [Test]
+    [Description("[MB-MA-12] Toast の 1 行登録の生成失敗は警告に残して 1 枚だけ破棄する")]
+    public void MB_MA_12_TheUnconstructableViewIsDiscardedWithAWarning()
+    {
+        using TestMauiApp app = new(services => services
+            .RegisterForToast<UnconstructableToastTestView, UnconstructableViewToastTestViewModel>()
+            .RegisterForToast<RegisteredToastTestView, RegisteredToastTestViewModel>());
+        TestToastGateway gateway = new();
+        IKsToast toast = new Toast(gateway);
+
+        IReadOnlyList<string> warnings = RecordingTraceListener.Capture(() =>
+        {
+            toast.Show(new UnconstructableViewToastTestViewModel());
+            toast.Show(new RegisteredToastTestViewModel());
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(gateway.DiscardedCount, Is.EqualTo(1), "作れなかった 1 枚だけが捨てられること");
+            Assert.That(
+                gateway.CreatedViews,
+                Has.Count.EqualTo(1).And.All.TypeOf<RegisteredToastTestView>(),
+                "後続の Toast は表示されること");
+            Assert.That(warnings, Has.Count.EqualTo(1));
+            Assert.That(
+                warnings[0],
+                Does.Contain(nameof(DialogException.ViewCreationFailed)),
+                "原因が警告に残ること");
+            Assert.That(
+                warnings[0],
+                Does.Contain(typeof(UnregisteredTestDependency).FullName!),
+                "元の失敗も警告に残ること");
         });
     }
 

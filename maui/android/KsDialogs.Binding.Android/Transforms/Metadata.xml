@@ -14,4 +14,29 @@
       name="propertyName">IsCanceledOnTouchOutside</attr>
   <attr path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiDialogOptions']/method[@name='setCanceledOnTouchOutside']"
       name="propertyName">IsCanceledOnTouchOutside</attr>
+
+  <!--
+    companion object 由来の入れ子型と、それを指す outer の static フィールドを binding の対象外にする。
+    中身は @JvmStatic メンバーだけで outer 型の static として .NET 側へ出るため、
+    入れ子型そのものは使い道が無く、束縛すると入れ子型名の重複 (BG8401) になる。
+
+    入れ子型は非公開扱いにして生成対象から外す (非公開の companion object を持つ型と同じ形になる)。
+    それを指す static フィールドは、型が生成されないままだと束縛できない種類 (BG8400) になるため、
+    ノードごと落とす。落とした側は生成器が同じ metadata を 2 度目に当てるときに
+    対象が既に無いことを警告する (BG8A00) が、生成結果には影響しない。
+
+    public な companion object を持つ型を互換面に足したときは、ここにも 2 行足す。
+  -->
+  <attr path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiDialogBridge.Companion']"
+      name="visibility">private</attr>
+  <remove-node path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiDialogBridge']/field[@name='Companion']" />
+  <attr path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiLoadingBridge.Companion']"
+      name="visibility">private</attr>
+  <remove-node path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiLoadingBridge']/field[@name='Companion']" />
+  <attr path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiToastBridge.Companion']"
+      name="visibility">private</attr>
+  <remove-node path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiToastBridge']/field[@name='Companion']" />
+  <attr path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiDialogContent.Companion']"
+      name="visibility">private</attr>
+  <remove-node path="/api/package[@name='jp.kamusoft.ksdialogs.maui']/class[@name='MauiDialogContent']/field[@name='Companion']" />
 </metadata>

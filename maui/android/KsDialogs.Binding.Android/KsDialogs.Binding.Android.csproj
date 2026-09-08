@@ -10,14 +10,19 @@
   -->
   <PropertyGroup>
     <TargetFramework>net10.0-android</TargetFramework>
-    <!-- 最低対象 OS は Android 7.0 (API 24) (cross/ADR-0002) -->
-    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <!-- 最低対象 OS は Android 7.0 (API 24) (cross/ADR-0002)。要件の数値は buildTransitive の props が宣言元 -->
+    <SupportedOSPlatformVersion>$(KsDialogsMinAndroidApi)</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsTrimmable>true</IsTrimmable>
-    <IsPackable>false</IsPackable>
     <RootNamespace>KsDialogs.Bridge</RootNamespace>
     <AssemblyName>KsDialogs.Binding.Android</AssemblyName>
+  </PropertyGroup>
+
+  <!-- PackageId はアセンブリ名の既定に任せる -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <Description>Android native bridge binding for KsDialogs.Maui. Referenced transitively by KsDialogs.Maui; do not reference this package directly.</Description>
   </PropertyGroup>
 
   <PropertyGroup>

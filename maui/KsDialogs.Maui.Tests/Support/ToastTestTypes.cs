@@ -60,3 +60,14 @@ internal sealed class SharedContractToastTestViewModel : ILoadingViewModel, IToa
 /// 渡せる。
 /// </remarks>
 internal readonly struct ValueTypeToastTestViewModel : IToastViewModel;
+
+/// <summary>解決できない依存を要求するカスタム Toast の中身の View。</summary>
+/// <param name="dependency">サービスに登録されていない依存。</param>
+internal sealed class UnconstructableToastTestView(UnregisteredTestDependency dependency) : ContentView
+{
+    /// <summary>注入されるはずだった依存。</summary>
+    public UnregisteredTestDependency Dependency { get; } = dependency;
+}
+
+/// <summary>解決できない依存を要求する View を結び付けたカスタム Toast の ViewModel。</summary>
+internal sealed class UnconstructableViewToastTestViewModel : IToastViewModel;

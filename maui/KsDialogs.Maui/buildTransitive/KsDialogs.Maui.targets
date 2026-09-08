@@ -1,0 +1,31 @@
+<Project>
+
+  <!--
+    利用者アプリのビルドで、最低 OS 版の要件 (KsDialogs.Maui.props の定数) を検査する。
+
+    有効になるのは android / ios の platform inner build だけに限る。この資産は推移的な全消費者へ
+    import されるため、素の net10.0、複数 TFM プロジェクトの outer build (TargetFramework が空)、
+    KsDialogs を間接参照するライブラリの非 platform TFM では何もしてはいけない。
+
+    Android の manifest merger は要件未満を読み取りにくいエラーで報告するため、それより前に
+    出るよう CoreCompile の前で走らせる。
+    比較は文字列比較や数値演算子ではなく VersionLessThan で行う (iOS の "17.0" のような
+    ドット区切りと Android の API level の双方を同じ形で扱うため)。
+  -->
+  <Target Name="KsDialogsValidateSupportedOSPlatformVersion"
+      BeforeTargets="CoreCompile"
+      Condition=" '$(TargetFramework)' != '' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios') ">
+
+    <PropertyGroup>
+      <_KsDialogsRequiredOSVersion Condition=" '$(TargetPlatformIdentifier)' == 'android' ">$(KsDialogsMinAndroidApi)</_KsDialogsRequiredOSVersion>
+      <_KsDialogsRequiredOSVersion Condition=" '$(TargetPlatformIdentifier)' == 'ios' ">$(KsDialogsMinIOSVersion)</_KsDialogsRequiredOSVersion>
+      <_KsDialogsOSVersionUnsatisfied Condition=" '$(SupportedOSPlatformVersion)' == '' ">true</_KsDialogsOSVersionUnsatisfied>
+      <_KsDialogsOSVersionUnsatisfied Condition=" '$(SupportedOSPlatformVersion)' != '' and $([MSBuild]::VersionLessThan('$(SupportedOSPlatformVersion)', '$(_KsDialogsRequiredOSVersion)')) ">true</_KsDialogsOSVersionUnsatisfied>
+    </PropertyGroup>
+
+    <Error Condition=" '$(_KsDialogsOSVersionUnsatisfied)' == 'true' "
+        Code="KSDLG0001"
+        Text="KsDialogs requires SupportedOSPlatformVersion $(_KsDialogsRequiredOSVersion) or later for $(TargetFramework) (minimum supported: Android API $(KsDialogsMinAndroidApi), iOS $(KsDialogsMinIOSVersion)), but the current value is '$(SupportedOSPlatformVersion)'. Add &lt;SupportedOSPlatformVersion&gt;$(_KsDialogsRequiredOSVersion)&lt;/SupportedOSPlatformVersion&gt; to a PropertyGroup for this target framework in your project file." />
+  </Target>
+
+</Project>
