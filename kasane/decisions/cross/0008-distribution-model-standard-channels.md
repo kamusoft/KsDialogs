@@ -42,7 +42,7 @@ KMP iOS 側の手動1点は、static framework が Swift 実体を同梱しな�
 - 配信リポジトリは Issues / PR を無効化し、README で monorepo (ソース・Issue 窓口) へ誘導する。手で commit しない (CI のみが書く)
 - 配信リポジトリ名の `-SPM` サフィックスは配信専用リポジトリの既存慣例 (`airbnb/lottie-spm`・`RevenueCat/purchases-ios-spm` 等) に倣い、KsSettingsView cross/ADR-0018 が姉妹ライブラリの展開形として先に定めた名前を採る。利用者が `Package.swift` に書く identity は `KsDialogs-SPM`、Xcode 上の表示は package 名の `KsDialogs`
 - 配信リポジトリの tag は monorepo の semver tag と同じ値を持つ (cross/ADR-0009)。配信リポジトリへの push は SwiftPM の publish 工程である
-- KMP の発行時 Swift 参照は配信リポジトリを指す: `swiftPackage(url("https://github.com/kamusoft/KsDialogs-SPM"), exact(x.y.z))`。開発時の `localSwiftPackage(../ios)` はそのまま維持する
+- KMP の発行時 Swift 参照は配信リポジトリを指す: `swiftPackage(url("https://github.com/kamusoft/KsDialogs-SPM"), exact(x.y.z))`。開発時の `localSwiftPackage(../ios)` はそのまま維持する。どちらを宣言するかは version から導出する (下記 Consequences、2026-09-08 追記)
 
 ## Alternatives Considered
 
@@ -64,8 +64,10 @@ KMP iOS 側の手動1点は、static framework が Swift 実体を同梱しな�
 - 負: KMP 利用者は iOS アプリ側の SwiftPM 依存追加という手動手順が1点残り、ドキュメントでの案内が必須になる
 - 負: 配信リポジトリという 2 つ目のリポジトリと、release CI がそこへ書き込むための secret (deploy key) を持つ。利用者から見て「ソース・Issue は monorepo、Package URL は配信リポジトリ」の 2 URL 体制になる
 - 負: リポジトリの public 化が配布の前提条件になる (SwiftPM が git を直接解決するため)。消費者検証の publish 前 dry-run は配信リポジトリの prerelease tag か `path:` 参照で行う必要がある
-- 検証済み: リモート SwiftPM 参照での Kotlin SwiftPM 連携の配布時成立性は PoC で全4項目成立を確認した (2026-08-17。PoC 記録 poc-swiftpm-remote-distribution.md、出典参照)。発行時は `swiftPackage(url(...), exact(...))` のリモート参照が必須で、`localSwiftPackage` のまま発行すると発行者マシンの絶対パスが伝播して消費者ビルドが壊れる。dev (ローカル参照) / publish (リモート参照) の切り替え機構が発行実装に必要
+- 検証済み: リモート SwiftPM 参照での Kotlin SwiftPM 連携の配布時成立性は PoC で全4項目成立を確認した (2026-08-17。PoC 記録 poc-swiftpm-remote-distribution.md、出典参照)。発行時は `swiftPackage(url(...), exact(...))` のリモート参照が必須で、`localSwiftPackage` のまま発行すると発行者マシンの絶対パスが伝播して消費者ビルドが壊れる (警告も出ない)
+- dev / publish の切り替え (2026-09-08 追記): 専用のモード切替スイッチは持たず、**version から導出する**。version が `-SNAPSHOT` なら `localSwiftPackage(../ios)`、それ以外 (リリース版の注入時) なら `swiftPackage(url, exact(<version>))` を宣言し、リリース版で local 参照を選べない形にして絶対パスの伝播を構造的に防ぐ。exact の値は version と同じ導出式から出るため lockstep (cross/ADR-0009) を手で揃える箇所がない。URL だけは Gradle プロパティ 1 つで上書きでき (既定は配信リポジトリ)、publish 前の dry-run はスナップショットを同期したローカル clone に commit + tag した `file://` URL を注入して行う。exact は上書きしない。既知の限界: SNAPSHOT を mavenLocal へ発行した成果物には local パスが載り同一マシンでだけ動く (SNAPSHOT の消費はリポジトリ内 Sample の composite build が担う)。却下: Gradle プロパティでの明示切替 (フラグ忘れが残り別途ガードが要る) / URL 上書きなし (dry-run のたびに配信リポジトリへ一時 tag を push する運用になる)
 - 負: KMP 形態の配布は KGP の SwiftPM import 機能 (Alpha, `@ExperimentalKotlinGradlePluginApi`) に依存する。影響は KMP 消費者のビルド時のみ (Native / MAUI 利用者と実行時成果物には及ばない) で、KMP がリンク時に Swift 実体へ委譲する代替手段が現状ないため、見直し条件付きで受け入れる。消費者向けにサポートする Kotlin バージョン範囲をドキュメントで宣言する。**見直し条件**: 機能の Stable 化、または swiftpm-metadata 形式の破壊的変更で消費者ビルドの互換が切れたとき
 
 出典: kasane/roadmaps/archive/2026-09-04-library-foundation/phases/phase-10-packaging-model/history.md (2026-08-16: 論点A①・A②、2026-08-17: 論点C)
 出典 (2026-09-04 SwiftPM 節の改訂): ../KsSettingsView/kasane/decisions/cross/0018-distribution-public-channels-root-swiftpm-manifest.md / kasane/roadmaps/package-distribution/exploration.md (A) — オーナー判断「KsSettingsView ADR-0018 を採用する。0008 は KsSettingsView 側で問題が発生して 0018 の形になったため」
+出典 (2026-09-08 切り替え機構の追記): kasane/roadmaps/package-distribution/phases/phase-7-kmp-packaging/history.md (2026-09-08: A2)
