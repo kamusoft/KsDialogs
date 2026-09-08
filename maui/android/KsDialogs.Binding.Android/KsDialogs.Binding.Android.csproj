@@ -36,7 +36,7 @@
   -->
   <ItemGroup>
     <AndroidLibrary Include="$(KsBridgeGradleDir)ksdialogs-maui-bridge/build/outputs/aar/ksdialogs-maui-bridge-release.aar" Bind="true" />
-    <AndroidLibrary Include="$(KsAndroidRoot)ksdialogs/build/outputs/aar/ksdialogs-release.aar" Bind="false" />
+    <AndroidLibrary Include="$(KsAndroidRoot)ksdialogs-core/build/outputs/aar/ksdialogs-core-release.aar" Bind="false" />
   </ItemGroup>
 
   <!-- 互換面と Android Native ライブラリが Gradle 側で宣言している依存。aar には同梱されない -->
@@ -55,9 +55,9 @@
     <KsAndroidModuleSource Include="$(KsBridgeGradleDir)ksdialogs-maui-bridge/src/main/**/*" />
     <KsAndroidModuleSource Include="$(KsBridgeGradleDir)*.kts" />
     <KsAndroidModuleSource Include="$(KsBridgeGradleDir)ksdialogs-maui-bridge/build.gradle.kts" />
-    <KsAndroidModuleSource Include="$(KsAndroidRoot)ksdialogs/src/main/**/*" />
+    <KsAndroidModuleSource Include="$(KsAndroidRoot)ksdialogs-core/src/main/**/*" />
     <KsAndroidModuleSource Include="$(KsAndroidRoot)*.kts" />
-    <KsAndroidModuleSource Include="$(KsAndroidRoot)ksdialogs/build.gradle.kts" />
+    <KsAndroidModuleSource Include="$(KsAndroidRoot)ksdialogs-core/build.gradle.kts" />
   </ItemGroup>
 
   <!--
@@ -70,7 +70,7 @@
       BeforeTargets="_CategorizeAndroidLibraries;_ResolveLibraryProjectImports"
       Inputs="@(KsAndroidModuleSource)"
       Outputs="@(AndroidLibrary)">
-    <Exec Command="./gradlew --console=plain :ksdialogs:assembleRelease"
+    <Exec Command="./gradlew --console=plain :ksdialogs-core:assembleRelease"
         WorkingDirectory="$(KsAndroidRoot)"
         EnvironmentVariables="JAVA_HOME=$(JavaSdkDirectory);ANDROID_HOME=$(AndroidSdkDirectory)" />
     <Exec Command="./gradlew --console=plain :ksdialogs-maui-bridge:assembleRelease"

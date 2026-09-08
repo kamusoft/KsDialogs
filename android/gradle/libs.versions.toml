@@ -7,9 +7,12 @@ kotlin = "2.4.10"
 # 最低対象 OS は Android 7.0 (API 24) (cross/ADR-0002)
 android-minSdk = "24"
 android-compileSdk = "36"
-# Android Native ライブラリ jp.kamusoft:ksdialogs の発行バージョン。
-# android/ 側の version 宣言と kmp/ 側の依存宣言が同じ値を指すよう、ここを唯一の情報源とする
-ksdialogs = "0.1.0"
+# Android Native ライブラリ (jp.kamusoft:ksdialogs-core / jp.kamusoft:ksdialogs) の
+# 開発用の既定バージョン。android/ 側の version 宣言と kmp/ 側の依存宣言が同じ値を指すよう、
+# ここを唯一の情報源とする。リリース時は CI が `-Pversion=` で注入した値が優先され、
+# この値は注入が無いときだけ使われる (ルート build.gradle.kts の導出式)。
+# -SNAPSHOT を末尾に持つあいだ Maven Central へ向かう発行タスクは失敗する
+ksdialogs = "0.1.0-SNAPSHOT"
 kotlinx-coroutines = "1.11.0"
 junit = "5.14.0"
 # instrumented test (実機・エミュレータ上で実 View を測る検証) 用。JUnit 4 系で動く
@@ -19,16 +22,19 @@ androidx-test-runner = "1.6.2"
 androidx-test-ext-junit = "1.2.1"
 # 公開 API の色引数へ @ColorInt を付けるためだけの依存。lint 注釈のみでランタイム実体を持たない
 androidx-annotation = "1.9.1"
-# 宣言的 UI (Jetpack Compose) 用。取り込むのは jp.kamusoft:ksdialogs-compose とその利用側だけで、
-# 本体 jp.kamusoft:ksdialogs の依存グラフには入らない
+# 宣言的 UI (Jetpack Compose) 用。取り込むのは jp.kamusoft:ksdialogs とその利用側だけで、
+# 本体 jp.kamusoft:ksdialogs-core の依存グラフには入らない
 androidx-compose = "1.8.1"
 # Compose のホストが必要とする owner 2種 (LifecycleOwner / SavedStateRegistryOwner) の実体
 androidx-lifecycle = "2.8.7"
 androidx-savedstate = "1.2.1"
 # Sample が戻る操作を予測型戻りジェスチャーの受け口 (OnBackPressedDispatcher) で受けるための依存。
-# 本体 jp.kamusoft:ksdialogs の依存グラフには入らない。
+# 本体 jp.kamusoft:ksdialogs-core の依存グラフには入らない。
 # androidx-lifecycle / androidx-savedstate の宣言値より新しい版を要求しないものを選ぶ
 androidx-activity = "1.10.1"
+# Maven 発行プラグイン (vanniktech)。Sonatype Central Portal への発行・署名・
+# sources jar / javadoc jar の生成を担う
+maven-publish = "0.37.0"
 
 [libraries]
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
@@ -56,3 +62,5 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 # AGP 9 以降、KMP モジュールの Android ターゲットは com.android.library ではなくこのプラグインで構成する
 androidKotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+# Maven Central へ発行するモジュールにだけ適用する。共通の発行設定はルート build.gradle.kts が持つ
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }

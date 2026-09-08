@@ -1,0 +1,142 @@
+# SwiftPM 同期スクリプトのテストと iOS 消費者のビルド (2026-09-08)
+
+対象:
+- scripts/spm-snapshot/sync-snapshot.sh / sync-snapshot-test.sh / README.template.md
+- ios/ の全テスト、samples/ios と maui/macios/native のビルド
+
+## 1. 誘導 README の整合 (README.template.md と配信リポジトリの現行 README)
+
+コマンド: diff -u ../KsDialogs-SPM/README.md scripts/spm-snapshot/README.template.md
+
+    (出力なし / 終了コード 0)
+
+差分なし。テンプレートは翻案元から名前だけを差し替えたもので、配信リポジトリに現在置かれて
+いる README と 1 バイトも違わない。
+
+## 2. 同期スクリプトのテスト (sync-snapshot-test.sh)
+
+コマンド: ./scripts/spm-snapshot/sync-snapshot-test.sh
+終了コード: 0 / 判定 41 件すべて ok / FAIL 0 件
+
+テストは mktemp -d の一時ディレクトリに配信リポジトリを模した git リポジトリを作って
+同期先とする (固定の一時パス名は使わないので、同じ道具を持つ姉妹リポジトリと同時に
+動かしても衝突しない)。monorepo 側は読むだけ。
+
+出力 (全量):
+
+    sync-snapshot.sh のテスト
+      ok   : ホワイトリスト 5 点の配置 — 同期が成功する
+      ok   : ホワイトリスト 5 点の配置 — 直下に 5 点だけが存在する
+      ok   : ホワイトリスト 5 点の配置 — Package.swift はファイル、Sources / Tests はディレクトリとして配置される
+      ok   : ホワイトリスト 5 点の配置 — Package.swift の内容がコピー元と一致する
+      ok   : ホワイトリスト 5 点の配置 — README.md はテンプレートの内容になる
+      ok   : ホワイトリスト 5 点の配置 — LICENSE の内容がコピー元と一致する
+      ok   : ホワイトリスト 5 点の配置 — Sources/ の相対パス一覧とファイル内容がコピー元と一致する
+      ok   : ホワイトリスト 5 点の配置 — Tests/ の相対パス一覧とファイル内容がコピー元と一致する
+      ok   : 列挙外ファイルの混入防止 — 同期が成功する
+      ok   : 列挙外ファイルの混入防止 — 列挙外の残骸 (隠しファイル含む) がすべて除去される
+      ok   : 列挙外ファイルの混入防止 — ディレクトリ内部の残骸も残らない
+      ok   : 冪等性 — 2 回目の同期が成功する
+      ok   : 冪等性 — 2 回目の実行後もファイル一覧が同一である
+      ok   : 冪等性 — 2 回目の実行後も全ファイルの内容が同一である
+      ok   : 同期先の誤指定の拒否 (git top-level でない) — 非ゼロ終了する
+      ok   : 同期先の誤指定の拒否 (git top-level でない) — 同期先の内容が変更されない
+      ok   : 同期先の誤指定の拒否 (git リポジトリのサブディレクトリ) — 非ゼロ終了する
+      ok   : 同期先の誤指定の拒否 (git リポジトリのサブディレクトリ) — 同期先の内容が変更されない
+      ok   : 同期先の誤指定の拒否 (origin が配信リポジトリでない) — 非ゼロ終了する
+      ok   : 同期先の誤指定の拒否 (origin が配信リポジトリでない) — 同期先の内容が変更されない
+      ok   : 同期先の誤指定の拒否 (origin が配信リポジトリ名を含む別 URL) — 非ゼロ終了する
+      ok   : 同期先の誤指定の拒否 (origin が配信リポジトリ名を含む別 URL) — 同期先の内容が変更されない
+      ok   : 同期先の誤指定の拒否 (monorepo 自身) — 非ゼロ終了する
+      ok   : 同期先の誤指定の拒否 (monorepo 自身) — monorepo 自身の内容が変更されない
+      ok   : 同期先の誤指定の拒否 (monorepo の祖先ディレクトリ) — 非ゼロ終了する
+      ok   : 同期先の誤指定の拒否 (monorepo の祖先ディレクトリ) — 祖先ディレクトリの内容が変更されない
+      ok   : 祖先判定 (実ディレクトリを操作しない判定ロジック単体) — filesystem root はあらゆるパスの祖先と判定される
+      ok   : 祖先判定 (実ディレクトリを操作しない判定ロジック単体) — 同一パスは自身として拒否対象になる
+      ok   : 祖先判定 (実ディレクトリを操作しない判定ロジック単体) — 末尾スラッシュの有無で判定が変わらない
+      ok   : 祖先判定 (実ディレクトリを操作しない判定ロジック単体) — 名前の前方一致だけでは祖先と判定しない
+      ok   : 祖先判定 (実ディレクトリを操作しない判定ロジック単体) — 内側のパスの子孫は祖先と判定しない
+      ok   : コピー元不足時の無変更 — 非ゼロ終了する
+      ok   : コピー元不足時の無変更 — 同期先の内容が変更されない
+      ok   : git 非操作 — 同期が成功する
+      ok   : git 非操作 — .git が保持される
+      ok   : git 非操作 — HEAD が変わらない
+      ok   : git 非操作 — commit が増えない
+      ok   : git 非操作 — tag が増えない
+      ok   : git 非操作 — index が変わらない
+      ok   : git 非操作 — remote 設定が変わらない
+      ok   : git 非操作 — 同期結果は未コミットの working tree の変更として残る
+
+    すべて成功しました。
+
+## 3. 配信リポジトリの作業コピー (未操作)
+
+同期スクリプトを実リポジトリの作業コピー (../KsDialogs-SPM) に対して実行する確認は、
+実行環境の保護機構が worktree 外の破壊的操作を拒否したため行っていない。作業コピーは
+実行前と同じ状態のまま:
+
+    $ git -C ../KsDialogs-SPM status --porcelain
+    (出力なし = clean)
+    $ ls -A ../KsDialogs-SPM
+    .git
+    LICENSE
+    README.md
+    $ git -C ../KsDialogs-SPM tag | wc -l
+    0
+
+配置内容・除去・冪等・誤指定拒否・git 非操作は上記 2 の fixture リポジトリで検証済み。
+誘導 README の同一性は 1 の diff で確認済み。
+
+## 4. ios/ の全テスト (iOS Simulator destination)
+
+`ios/` は本作業で無改変:
+
+    $ git diff --stat ios/
+    (出力なし)
+    $ git status --porcelain ios/
+    (出力なし)
+
+Simulator は起動中のものを流用せず、専用に新規作成した機体 (iPhone 17 Pro / iOS 26.5) を
+boot して使用した。
+
+コマンド: cd ios && xcodebuild test -scheme KsDialogs \
+    -destination 'platform=iOS Simulator,id=<UDID>' -parallel-testing-enabled NO
+
+    ✔ Test run with 277 tests in 50 suites passed after 88.494 seconds.
+    ** TEST SUCCEEDED **
+
+277 件 (1 件以上) が成功。50 スイートすべてが ✔。
+
+補足 (並列既定での先行実行): 同じ機体・同じコマンドから -parallel-testing-enabled を
+外した実行では 277 件中 5 件が失敗した。失敗はいずれも提示待ちの時間切れ
+([MB-TS-01] / [PB-KC-03] / [TS-CO-01] / [TS-IO-02] / [TS-TR-01]) で、待ちの上限 5 秒に対して
+9.8〜14.6 秒後に落ち、Toast / ModelBinding / KMP トランジションと無関係な領域に散っている。
+これは検証 CI の ios job を直列で回す理由として handbook が記す並列スイートの飢餓の形と
+一致する (実行機の容量差であってテスト・実装の欠陥ではない)。直列実行で全件が通ることを
+上記のとおり確認した。
+
+## 5. iOS 消費者のビルド (Local Swift Package 参照のまま)
+
+### samples/ios
+
+コマンド: cd samples/ios && xcodebuild -project KsDialogsSample.xcodeproj \
+    -scheme KsDialogsSample -destination 'platform=iOS Simulator,id=<UDID>' \
+    -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+
+    ** BUILD SUCCEEDED **
+
+ログには `in target 'KsDialogs' from project 'KsDialogs'` として `ios/Sources/KsDialogs/` 配下の
+`.swift` をコンパイルする行が並び、ローカルの `ios/` を Swift Package として解決していることが
+読み取れる (例: `/ios/Sources/KsDialogs/Registry/LoadingViewRegistry.swift`)。
+
+### maui/macios/native (iOS binding の Swift 橋渡し)
+
+コマンド: cd maui/macios/native && xcodebuild -project KsDialogsMauiBridge.xcodeproj \
+    -scheme KsDialogsMauiBridge -destination 'platform=iOS Simulator,id=<UDID>' \
+    -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
+
+    ** BUILD SUCCEEDED **
+
+同じく `in target 'KsDialogs' from project 'KsDialogs'` で `ios/Sources/KsDialogs/` を
+コンパイルしており、Local Swift Package 参照のまま `KsDialogsMauiBridge.framework` が
+生成される。

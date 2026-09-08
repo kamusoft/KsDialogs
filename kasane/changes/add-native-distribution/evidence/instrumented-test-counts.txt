@@ -1,0 +1,16 @@
+# instrumented test 件数 (改名後、tasks 1.2 / Scenario「instrumented test の無改変実行」)
+
+実行条件: 接続中の実機 (Android 16 / API 36。機種名は個体情報として省略) で connectedDebugAndroidTest。
+spec の GIVEN (API 36 エミュレータ) からの置き換えは deviation.md に記録 (オーナー合意 2026-09-08)。
+改名前の実測 (同一端末・同一コマンド): ksdialogs 294 / ksdialogs-compose 39 (実装ワーカーの記録)。
+
+出典: android/<module>/build/outputs/androidTest-results/connected/debug/TEST-*.xml の <testsuites> 集計行と <testcase> 件数。
+
+## :ksdialogs-core
+<testsuites tests="294" failures="0" errors="0" skipped="1" timestamp="2026-09-08T07:31:19">
+testcase 要素数: 294 / failure: 0 / skipped: 1
+
+## :ksdialogs
+<testsuites tests="39" failures="0" errors="0" skipped="0" timestamp="2026-09-08T07:22:41">
+testcase 要素数: 39 / failure: 0 / skipped: 0
+

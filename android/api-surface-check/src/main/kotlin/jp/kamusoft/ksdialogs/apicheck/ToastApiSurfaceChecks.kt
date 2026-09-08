@@ -52,7 +52,7 @@ public object ToastApiSurfaceChecks {
         }
     }
 
-    /** Compose のコンテンツでも登録できる (配布物は ksdialogs-compose 側)。 */
+    /** Compose のコンテンツでも登録できる (配布物は Compose 系の ksdialogs 側)。 */
     public fun TS_AN_01_acceptsComposeRegistration(registry: ToastViewRegistry) {
         registry.registerCompose(ConsumerToastViewModel::class) { viewModel ->
             check(viewModel.title.isNotEmpty())

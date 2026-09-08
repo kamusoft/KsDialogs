@@ -43,11 +43,14 @@ includeBuild("../../kmp") {
     }
 }
 
-// 宣言的 UI (Jetpack Compose) で中身を書く消費者だけが足す配布物も、同じくローカルの Android ビルドへ解決する。
+// Android Native の配布物も、同じくローカルの Android ビルドへ解決する。
 // AGP のライブラリモジュールは Maven publication を生成せず自動置換が発火しないため、置換を明示する
 includeBuild("../../android") {
     dependencySubstitution {
-        substitute(module("jp.kamusoft:ksdialogs-compose")).using(project(":ksdialogs-compose"))
+        // 宣言的 UI (Jetpack Compose) で中身を書く消費者が足す配布物
+        substitute(module("jp.kamusoft:ksdialogs")).using(project(":ksdialogs"))
+        // 上の配布物と KMP facade が公開依存として連れてくる本体 (View 系)
+        substitute(module("jp.kamusoft:ksdialogs-core")).using(project(":ksdialogs-core"))
     }
 }
 

@@ -492,11 +492,11 @@ fi
 | 形態 | コード上の識別子 | 配布上の識別子 |
 | --- | --- | --- |
 | iOS | Swift モジュール `KsDialogs` | SwiftPM パッケージ `KsDialogs` |
-| Android | Kotlin パッケージ `jp.kamusoft.ksdialogs` (Compose 系は `jp.kamusoft.ksdialogs.compose`) | Maven `jp.kamusoft:ksdialogs` / `jp.kamusoft:ksdialogs-compose` |
+| Android | Kotlin パッケージ `jp.kamusoft.ksdialogs` (Compose 系は `jp.kamusoft.ksdialogs.compose`) | Maven `jp.kamusoft:ksdialogs-core` (View 系本体) / `jp.kamusoft:ksdialogs` (Compose 系) |
 | KMP | Kotlin パッケージ `jp.kamusoft.ksdialogs.kmp` | Maven `jp.kamusoft:ksdialogs-kmp` |
 | MAUI | .NET namespace `KsDialogs` | NuGet ID `KsDialogs.Maui` |
 
-ブランド名で始まる**正しい API 名**もある — 4 形態の Dialog 表示契約 `KsDialog` / `IKsDialog` (MAUI) と、Compose 系の公開 API `KsDialogAttributes` (`android/ksdialogs-compose`。`kasane/concepts/core/api/` の layout-semantics / registration-show-semantics / transition-semantics の 3 本に記載があり、Compose のレシピを書けば生成物に現れる) がその代表で、これらは誤表記ではなく素通りさせる対象である。
+ブランド名で始まる**正しい API 名**もある — 4 形態の Dialog 表示契約 `KsDialog` / `IKsDialog` (MAUI) と、Compose 系の公開 API `KsDialogAttributes` (`android/ksdialogs`。`kasane/concepts/core/api/` の layout-semantics / registration-show-semantics / transition-semantics の 3 本に記載があり、Compose のレシピを書けば生成物に現れる) がその代表で、これらは誤表記ではなく素通りさせる対象である。
 
 ecosystem ごとの表記規則 (SwiftPM / .NET は PascalCase、Kotlin パッケージと Maven 座標は lowercase でブランド名の内部にハイフンや下線を入れない、reverse-DNS の根は `jp.kamusoft`) を崩した表記を検出する:
 
@@ -513,9 +513,9 @@ fi
 
 行が出たら該当ファイルを再修正対象に追加する。
 
-> パターンの読み方: **単数形 `KsDialog` を拾うパターンは持たない** — Dialog の表示契約が `KsDialog` / `IKsDialog` (MAUI) という単数形の正しい公開名であり (`kasane/decisions/core/0034-contract-type-name-singular-feature.md`)、`KsDialogAttributes` と合わせて単数形はブランド名の誤表記と区別できないため、この検査は綴りの崩れ (大文字小文字・区切り文字・reverse-DNS の根) だけを見る。契約の旧名 `KsDialogs` / `IKsDialogs` が文書に残っていないことは、改名を行う変更側の残存検査で担保する。`ks[-_]dialogs` は Maven artifactId / Kotlin パッケージのブランド名にハイフン・下線が割り込んだ形、`jp\.kamusoft[.:]KsDialogs` は lowercase であるべき Maven 座標・Kotlin パッケージへ PascalCase のブランド名が混入した形、`KsDialogsMaui` と `KsDialogs\.(MAUI|maui)` は NuGet ID の崩れを拾う。`ksdialogs-compose` / `ksdialogs-kmp` は正しい artifactId なので当たらない (ハイフンはブランド名の**内部**ではなく接尾辞の区切りである)。
+> パターンの読み方: **単数形 `KsDialog` を拾うパターンは持たない** — Dialog の表示契約が `KsDialog` / `IKsDialog` (MAUI) という単数形の正しい公開名であり (`kasane/decisions/core/0034-contract-type-name-singular-feature.md`)、`KsDialogAttributes` と合わせて単数形はブランド名の誤表記と区別できないため、この検査は綴りの崩れ (大文字小文字・区切り文字・reverse-DNS の根) だけを見る。契約の旧名 `KsDialogs` / `IKsDialogs` が文書に残っていないことは、改名を行う変更側の残存検査で担保する。`ks[-_]dialogs` は Maven artifactId / Kotlin パッケージのブランド名にハイフン・下線が割り込んだ形、`jp\.kamusoft[.:]KsDialogs` は lowercase であるべき Maven 座標・Kotlin パッケージへ PascalCase のブランド名が混入した形、`KsDialogsMaui` と `KsDialogs\.(MAUI|maui)` は NuGet ID の崩れを拾う。`ksdialogs-core` / `ksdialogs-kmp` は正しい artifactId なので当たらない (ハイフンはブランド名の**内部**ではなく接尾辞の区切りである)。
 >
-> Maven の配布座標: group は `jp.kamusoft` で、artifactId は `ksdialogs` (Android Native) / `ksdialogs-compose` (Compose 系 API) / `ksdialogs-kmp` (KMP) の 3 本。ただし Maven Central への公開は未実施のため、**利用者向けの配布座標には公開が未導入である旨を添えて記述する**。
+> Maven の配布座標: group は `jp.kamusoft` で、artifactId は `ksdialogs-core` (Android Native の View 系本体) / `ksdialogs` (Compose 系 API) / `ksdialogs-kmp` (KMP) の 3 本。ただし Maven Central への公開は未実施のため、**利用者向けの配布座標には公開が未導入である旨を添えて記述する**。
 
 ### 7. manifest の更新
 

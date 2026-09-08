@@ -2,18 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
-        <!-- 実 View のレイアウト結果を測るための提示先。テストからのみ起動する -->
+        <!-- 宣言的 UI の中身を実際に提示するための提示先。テストからのみ起動する -->
         <activity
-            android:name="jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity"
+            android:name="jp.kamusoft.ksdialogs.compose.support.ComposeDialogTestActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Material.Light.NoActionBar" />
-
-        <!-- ソフトキーボードとシステムのジェスチャの届き方を確かめるための提示先 -->
-        <activity
-            android:name="jp.kamusoft.ksdialogs.support.ToastInputTestActivity"
-            android:exported="false"
-            android:theme="@android:style/Theme.Material.Light.NoActionBar"
-            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

@@ -1,0 +1,148 @@
+# release aar の公開シグネチャ検算 (2026-09-08)
+
+publishToMavenLocal の release aar (0.1.0-SNAPSHOT) から classes.jar を取り出し、
+javap の詳細出力を走査して公開シグネチャに現れるモジュール外の型を列挙した。
+目的は「発行メタデータの compile スコープに載っていない外部型が公開面に露出していないか」
+の検算であり、静的読解の見落としを発行物の側で堰き止める。
+
+## 走査の条件
+
+- 対象: aar 内 classes.jar の全クラス (ksdialogs-core 212 / ksdialogs 12)
+- 採る宣言: JVM の public クラスの、public / protected なメンバー
+  (ACC_SYNTHETIC / ACC_BRIDGE を除く) のシグネチャと、そこに付いた注釈の型
+- 除く宣言: Kotlin の internal 宣言。Kotlin の internal は JVM では public になるため、
+  ソースの `internal class|object|interface` 名と、名前が `名前$モジュール名` に
+  変わった internal 関数を機械的に外す
+- 除く型: 自モジュールのパッケージ (jp.kamusoft.ksdialogs) と、プラットフォーム
+  (java. / javax. / kotlin. / android.)
+
+走査したクラス数 / 除外数: ksdialogs-core 56 / 156、ksdialogs 8 / 4。
+
+## 列挙された外部の非プラットフォーム型
+
+[ksdialogs-core]
+androidx.annotation.ColorInt          ← androidx.annotation:annotation (compile)
+org.jetbrains.annotations.NotNull     ← Kotlin コンパイラが挿入。kotlin-stdlib 経由
+org.jetbrains.annotations.Nullable    ← 同上
+
+  ColorInt の出所 (抜粋):
+    DialogOptions: public final int getOverlayColor();
+    DialogOptions: public DialogOptions(DialogLayoutArea, DialogEdgeInsets, double, double, int, boolean);
+    LoadingStyle: public final int getIndicatorColor();
+
+[ksdialogs]
+androidx.compose.runtime.Composable                 ← androidx.compose.runtime:runtime (compile)
+androidx.compose.runtime.Composer                   ← 同 artifact
+androidx.compose.runtime.ProvidableCompositionLocal ← 同 artifact
+org.jetbrains.annotations.NotNull / Nullable        ← Kotlin コンパイラが挿入
+
+  Composer の出所 (抜粋。Compose コンパイラが @Composable 関数の JVM シグネチャへ加える引数):
+    ComposeDialogRegistrationKt: registerCompose(DialogViewRegistry, KClass<VM>, Function3<..., Composer, Integer, Unit>)
+    ComposeDialogShowKt: showCompose(KsDialog, VM, DialogPlacement, Function4<..., Composer, Integer, Unit>, Continuation<...>)
+  ProvidableCompositionLocal の出所:
+    DialogAttributeCollectorKt: public static final ProvidableCompositionLocal<DialogAttributeCollector> getLocalDialogAttributeCollector();
+
+## 判定
+
+列挙された型の提供 artifact は次のとおりで、すべて発行メタデータの compile スコープにある
+(evidence/publish-to-maven-local.txt の依存スコープ一覧):
+
+| 型 | 提供 artifact | 発行メタデータでの位置 |
+|---|---|---|
+| androidx.annotation.ColorInt | androidx.annotation:annotation:1.9.1 | ksdialogs-core の compile |
+| androidx.compose.runtime.Composable / Composer / ProvidableCompositionLocal | androidx.compose.runtime:runtime:1.8.1 | ksdialogs の compile |
+| org.jetbrains.annotations.NotNull / Nullable | org.jetbrains:annotations (kotlin-stdlib の推移的依存) | kotlin-stdlib と同じくビルドツールが自動で加える分 |
+
+`implementation` にしか無い依存の型 (kotlinx-coroutines / compose-ui / lifecycle /
+savedstate) は公開面に 1 つも現れなかった。
+
+org.jetbrains:annotations が Kotlin 由来であることの確認:
+
+$ ./gradlew :ksdialogs-core:dependencyInsight --configuration releaseRuntimeClasspath \
+    --dependency org.jetbrains:annotations
+org.jetbrains:annotations:13.0 -> 23.0.0
+\--- org.jetbrains.kotlin:kotlin-stdlib:2.2.20
+
+## この検算がカバーしない面
+
+- 走査は JVM バイトコードの可視性を基に Kotlin の internal をソース名で外す近似で、
+  型を過剰に拾う側に倒してある (実際 ProvidableCompositionLocal は internal 宣言
+  `LocalDialogAttributeCollector` の getter 由来で、Kotlin の公開 API ではない)。
+  取りこぼす側には倒れないため、compile スコープとの一致検査の材料としては足りる
+- 見ているのは release variant の aar だけで、debug variant と instrumented test の
+  classpath は対象外
+- 検算は本チェンジの発行時に 1 回通したもので、常設の検査タスクにはしていない
+
+## 走査に使ったスクリプト (使い捨て。リポジトリには置いていない)
+
+    import re, subprocess, sys, pathlib
+
+    aar_classes, src_root = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+    own = tuple(sys.argv[3:])
+
+    internal_classes = set()
+    for kt in src_root.rglob("*.kt"):
+        for name in re.findall(r"^\s*internal (?:\w+ )*(?:class|object|interface) (\w+)",
+                               kt.read_text(), re.M):
+            internal_classes.add(name)
+
+    classes = sorted(p.relative_to(aar_classes).with_suffix("").as_posix().replace("/", ".")
+                     for p in aar_classes.rglob("*.class"))
+    out = subprocess.run(["javap", "-v", "-classpath", str(aar_classes), *classes],
+                         capture_output=True, text=True, check=True).stdout
+
+    FQN = re.compile(r"\b(?:[a-z][A-Za-z0-9_]*\.){1,}[A-Z][A-Za-z0-9_$]*")
+    found = {}
+
+    def record(types, where):
+        for t in types:
+            if not t.startswith(own):
+                found.setdefault(t, set()).add(where)
+
+    for chunk in out.split("Classfile ")[1:]:
+        lines = chunk.splitlines()
+        decl_i = next(i for i, l in enumerate(lines)
+                      if l and not l.startswith(" ") and re.search(r"\b(class|interface) [\w.$]", l))
+        decl = lines[decl_i]
+        body_i = next(i for i in range(decl_i, len(lines)) if lines[i].rstrip() == "{")
+        cls = re.search(r"(?:class|interface) ([\w.$]+)", decl).group(1)
+        if not decl.startswith("public ") or set(cls.split(".")[-1].split("$")) & internal_classes:
+            continue
+        record(FQN.findall(decl), cls)
+        i = body_i + 1
+        while i < len(lines):
+            line = lines[i]
+            if line.startswith("  ") and not line.startswith("   ") and line.strip():
+                sig = line.strip()
+                j = i + 1
+                while j < len(lines) and (not lines[j].startswith("  ")
+                                          or lines[j].startswith("   ")
+                                          or not lines[j].strip()):
+                    j += 1
+                block = lines[i:j]
+                flags = next((b for b in block if b.strip().startswith("flags:")), "")
+                member = re.search(r"([\w$]+)\(", sig)
+                mangled = bool(member and "$" in member.group(1))
+                if ("ACC_PUBLIC" in flags or "ACC_PROTECTED" in flags) \
+                        and "ACC_SYNTHETIC" not in flags and "ACC_BRIDGE" not in flags \
+                        and not mangled:
+                    record(FQN.findall(sig), f"{cls}: {sig}")
+                    in_ann = False
+                    for b in block:
+                        if re.search(r"Runtime\w*Annotations:", b):
+                            in_ann = True
+                            continue
+                        if in_ann:
+                            s = b.strip()
+                            if re.fullmatch(r"[\w.$]+", s) and "." in s:
+                                record([s], f"{cls}: {sig}")
+                            elif not (s.startswith("parameter ") or re.match(r"\d+: #", s)):
+                                in_ann = False
+                i = j
+            else:
+                i += 1
+
+    for t in sorted(found):
+        print(t)
+        for w in sorted(found[t])[:4]:
+            print("    ", w)

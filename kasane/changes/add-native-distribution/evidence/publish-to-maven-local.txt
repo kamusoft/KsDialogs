@@ -1,0 +1,181 @@
+# publishToMavenLocal 発行物の検証 (2026-09-08)
+
+コマンド: cd android && ./gradlew publishToMavenLocal
+発行座標: jp.kamusoft:ksdialogs-core:0.1.0-SNAPSHOT / jp.kamusoft:ksdialogs:0.1.0-SNAPSHOT
+以下の抜粋は署名鍵を渡さない実行の発行物を開き直して採取した (`.asc` は無い)。
+
+## 発行物一覧 (<M2>/jp/kamusoft/<artifact>/0.1.0-SNAPSHOT/)
+
+[ksdialogs-core]
+261 ksdialogs-core-0.1.0-SNAPSHOT-javadoc.jar
+113287 ksdialogs-core-0.1.0-SNAPSHOT-sources.jar
+309884 ksdialogs-core-0.1.0-SNAPSHOT.aar
+3680 ksdialogs-core-0.1.0-SNAPSHOT.module
+2325 ksdialogs-core-0.1.0-SNAPSHOT.pom
+1288 maven-metadata-local.xml
+
+[ksdialogs]
+261 ksdialogs-0.1.0-SNAPSHOT-javadoc.jar
+11700 ksdialogs-0.1.0-SNAPSHOT-sources.jar
+25061 ksdialogs-0.1.0-SNAPSHOT.aar
+4291 ksdialogs-0.1.0-SNAPSHOT.module
+2818 ksdialogs-0.1.0-SNAPSHOT.pom
+1283 maven-metadata-local.xml
+
+aar・sources jar・javadoc jar・POM・.module の 5 点が両 artifact に揃っている。
+
+## javadoc jar の中身 (両 artifact とも空)
+
+---------  ---------- -----   ----
+        0  02-01-1980 00:00   META-INF/
+       25  02-01-1980 00:00   META-INF/MANIFEST.MF
+---------                     -------
+       25                     2 files
+
+## sources jar のパッケージ別 .kt ファイル数
+
+  74 jp/kamusoft/ksdialogs            (ksdialogs-core)
+   9 jp/kamusoft/ksdialogs/compose    (ksdialogs)
+
+各 module の公開パッケージの Kotlin ソースが入っている (存在確認だけでなく中身の数を見た)。
+
+## aar (classes.jar) のパッケージ別クラス数
+
+ 212 jp/kamusoft/ksdialogs            (ksdialogs-core)
+  12 jp/kamusoft/ksdialogs/compose    (ksdialogs)
+
+## aar のトップレベル構成
+
+[ksdialogs-core] R.txt / AndroidManifest.xml / classes.jar / res/
+[ksdialogs]      R.txt / AndroidManifest.xml / classes.jar
+
+## POM の依存スコープ
+
+[ksdialogs-core]
+  compile  androidx.annotation:annotation:1.9.1
+  compile  org.jetbrains.kotlin:kotlin-stdlib:2.2.10
+  runtime  org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0
+
+[ksdialogs]
+  compile  jp.kamusoft:ksdialogs-core:0.1.0-SNAPSHOT
+  compile  androidx.compose.runtime:runtime:1.8.1
+  compile  org.jetbrains.kotlin:kotlin-stdlib:2.2.10
+  runtime  androidx.compose.ui:ui:1.8.1
+  runtime  androidx.lifecycle:lifecycle-runtime:2.8.7
+  runtime  androidx.savedstate:savedstate:1.2.1
+
+compile スコープは公開シグネチャに現れる外部型の提供元だけ (kotlin-stdlib はビルドツールが
+自動で加えるもので対象外)。runtime スコープは実装が要する依存を含む。
+
+## Gradle Module Metadata (.module) の variant 別依存
+
+[ksdialogs-core]
+  releaseVariantReleaseApiPublication
+    androidx.annotation:annotation:1.9.1
+    org.jetbrains.kotlin:kotlin-stdlib:2.2.10
+    file ksdialogs-core-0.1.0-SNAPSHOT.aar (309884 bytes)
+  releaseVariantReleaseRuntimePublication
+    org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0
+    androidx.annotation:annotation:1.9.1
+    org.jetbrains.kotlin:kotlin-stdlib:2.2.10
+    file ksdialogs-core-0.1.0-SNAPSHOT.aar (309884 bytes)
+  releaseVariantReleaseSourcePublication
+    file ksdialogs-core-0.1.0-SNAPSHOT-sources.jar (113287 bytes)
+
+[ksdialogs]
+  releaseVariantReleaseApiPublication
+    jp.kamusoft:ksdialogs-core:0.1.0-SNAPSHOT
+    androidx.compose.runtime:runtime:1.8.1
+    org.jetbrains.kotlin:kotlin-stdlib:2.2.10
+    file ksdialogs-0.1.0-SNAPSHOT.aar (25061 bytes)
+  releaseVariantReleaseRuntimePublication
+    androidx.compose.ui:ui:1.8.1
+    androidx.lifecycle:lifecycle-runtime:2.8.7
+    androidx.savedstate:savedstate:1.2.1
+    jp.kamusoft:ksdialogs-core:0.1.0-SNAPSHOT
+    androidx.compose.runtime:runtime:1.8.1
+    org.jetbrains.kotlin:kotlin-stdlib:2.2.10
+    file ksdialogs-0.1.0-SNAPSHOT.aar (25061 bytes)
+  releaseVariantReleaseSourcePublication
+    file ksdialogs-0.1.0-SNAPSHOT-sources.jar (11700 bytes)
+
+API variant / runtime variant とも POM のスコープと同じ内訳。
+
+## テスト専用ライブラリの混入検査
+
+$ grep -oiE "junit|robolectric|androidx\.test|coroutines-test|test-runner|kotlin-test" \
+    <両 artifact の .pom と .module>
+(該当行なし = 発行メタデータへの混入なし。grep の終了コードは 1)
+
+## POM のメタデータ (共通部と module ごとの name / description)
+
+共通部は両 artifact で同一:
+
+  <url>https://github.com/kamusoft/KsDialogs</url>
+  <inceptionYear>2026</inceptionYear>
+  <licenses><license>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+  </license></licenses>
+  <developers><developer>
+      <id>kamusoft</id><name>kamusoft</name>
+      <url>https://github.com/kamusoft</url>
+  </developer></developers>
+  <scm>
+      <connection>scm:git:https://github.com/kamusoft/KsDialogs.git</connection>
+      <developerConnection>scm:git:ssh://<email>/kamusoft/KsDialogs.git</developerConnection>
+      <url>https://github.com/kamusoft/KsDialogs</url>
+  </scm>
+
+  注: developerConnection の ssh ユーザ@ホスト部は log-sanitize が <email> に置換した。
+      実値は android/build.gradle.kts の scm ブロックが正。
+
+module ごとに異なる部分:
+
+  [ksdialogs-core]
+  <name>KsDialogs Core</name>
+  <description>The Compose-free core of KsDialogs for Android: typed dialogs, loading indicators, and toasts built with Android Views. Use this artifact directly only when you do not use Jetpack Compose.</description>
+
+  [ksdialogs]
+  <name>KsDialogs</name>
+  <description>A dialog UI library for Android that presents dialogs, loading indicators, and toasts from anywhere in an application, with content written in Jetpack Compose.</description>
+
+## 署名 — 鍵なしのローカル発行
+
+$ ./gradlew publishToMavenLocal
+> Task :ksdialogs-core:signMavenPublication SKIPPED
+> Task :ksdialogs:signMavenPublication SKIPPED
+BUILD SUCCESSFUL
+
+$ find <M2>/jp/kamusoft/ksdialogs <M2>/jp/kamusoft/ksdialogs-core -name '*.asc' | wc -l
+0
+
+署名は要求されず、未署名のまま成功する。
+
+## 署名 — 鍵ありのローカル発行
+
+検証専用に一時生成した GPG 鍵 (RSA 3072・スクラッチ領域の GNUPGHOME・確認後に破棄) を
+`ORG_GRADLE_PROJECT_signingInMemoryKey` / `signingInMemoryKeyPassword` /
+`signingInMemoryKeyId` で渡して実行した (ネットワーク送信なし)。
+
+$ ./gradlew publishToMavenLocal --rerun-tasks
+> Task :ksdialogs-core:signMavenPublication
+> Task :ksdialogs:signMavenPublication
+BUILD SUCCESSFUL
+
+生成された .asc (両 module の全 publication 5 点ずつ、計 10 件):
+
+  ksdialogs-core-0.1.0-SNAPSHOT.aar.asc
+  ksdialogs-core-0.1.0-SNAPSHOT-sources.jar.asc
+  ksdialogs-core-0.1.0-SNAPSHOT-javadoc.jar.asc
+  ksdialogs-core-0.1.0-SNAPSHOT.pom.asc
+  ksdialogs-core-0.1.0-SNAPSHOT.module.asc
+  ksdialogs-0.1.0-SNAPSHOT.aar.asc
+  ksdialogs-0.1.0-SNAPSHOT-sources.jar.asc
+  ksdialogs-0.1.0-SNAPSHOT-javadoc.jar.asc
+  ksdialogs-0.1.0-SNAPSHOT.pom.asc
+  ksdialogs-0.1.0-SNAPSHOT.module.asc
+
+確認後、鍵束 (GNUPGHOME) を破棄し、鍵とパスフレーズはリポジトリにも本証跡にも残していない。
+上の「鍵なし」節と発行物一覧は、破棄後に鍵なしで再発行した状態を開き直して採取している。

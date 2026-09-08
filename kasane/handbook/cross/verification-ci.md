@@ -21,7 +21,7 @@ timestamp: 2026-09-08
 | android-instrumented | 上表 android/ (instrumented) の全件。API 36 の Emulator 1 台 |
 | kmp | 上表 kmp/ の全件と、階層化 source set の metadata compile |
 | maui | 上表 maui/ と maui/android/native/ と maui/macios/native/ の全件、および platform TFM と binding のビルド |
-| lint | secret scan・ローカル絶対パス検査・個体情報検査・コメント規約検査・仕様とテストの対応の検査 |
+| lint | secret scan・ローカル絶対パス検査・個体情報検査・コメント規約検査・仕様とテストの対応の検査・SwiftPM スナップショット同期スクリプトの自己テスト |
 
 CI に載らない検証は**手元の完了判定に残る**。変更の完了を判定するときは CI の緑だけでは足りず、該当するものを手で回す。
 

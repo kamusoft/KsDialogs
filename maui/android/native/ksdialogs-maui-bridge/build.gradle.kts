@@ -46,7 +46,7 @@ android {
 dependencies {
     // ViewModel 契約と結果報告口が公開面に現れるため、利用者へも見える依存として公開する。
     // composite build により、公開済み成果物ではなくローカルの android/ ビルドへ解決される (cross/ADR-0004)
-    api("jp.kamusoft:ksdialogs:${libs.versions.ksdialogs.get()}")
+    api("jp.kamusoft:ksdialogs-core:${libs.versions.ksdialogs.get()}")
 
     // suspend な show の呼び出しに Android の Main ディスパッチャを使う
     implementation(libs.kotlinx.coroutines.android)

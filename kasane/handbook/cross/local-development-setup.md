@@ -127,7 +127,7 @@ xcrun simctl launch <UDID> jp.kamusoft.ksdialogs.samples.ios
 
 ### Android Native
 
-`samples/android/settings.gradle.kts` は `includeBuild("../../android")` と `dependencySubstitution` を使い、Maven 座標 `jp.kamusoft:ksdialogs` を included build の `:ksdialogs` へ置き換える。Android Gradle Plugin の library module は Maven publication を自動生成しないため、GAV の自動置換に頼らず利用側で明示する。version catalog は `android/gradle/libs.versions.toml` を共有し、Sample だけ依存版がずれないようにする。
+`samples/android/settings.gradle.kts` は `includeBuild("../../android")` と `dependencySubstitution` を使い、Maven 座標 `jp.kamusoft:ksdialogs-core` / `jp.kamusoft:ksdialogs` を included build の `:ksdialogs-core` / `:ksdialogs` へ置き換える。Android Gradle Plugin の library module は Maven publication を自動生成しないため、GAV の自動置換に頼らず利用側で明示する。version catalog は `android/gradle/libs.versions.toml` を共有し、Sample だけ依存版がずれないようにする。
 
 ```bash
 cd samples/android

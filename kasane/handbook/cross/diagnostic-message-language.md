@@ -2,11 +2,11 @@
 kind: rule
 applies-when:
   always: false
-  paths: ["ios/Sources/**", "android/ksdialogs/src/main/**", "android/ksdialogs-compose/src/main/**", "kmp/ksdialogs-kmp/src/commonMain/**", "kmp/ksdialogs-kmp/src/androidMain/**", "kmp/ksdialogs-kmp/src/iosMain/**", "maui/KsDialogs.Maui/**", "maui/macios/native/KsDialogsMauiBridge/**", "maui/android/native/ksdialogs-maui-bridge/src/main/**"]
+  paths: ["ios/Sources/**", "android/ksdialogs-core/src/main/**", "android/ksdialogs/src/main/**", "kmp/ksdialogs-kmp/src/commonMain/**", "kmp/ksdialogs-kmp/src/androidMain/**", "kmp/ksdialogs-kmp/src/iosMain/**", "maui/KsDialogs.Maui/**", "maui/macios/native/KsDialogsMauiBridge/**", "maui/android/native/ksdialogs-maui-bridge/src/main/**"]
   tasks: [失敗型の case・例外型の追加, 例外メッセージ・警告ログの追加や変更, 診断文言を引用する文書の更新]
 title: ライブラリが外へ出す診断文言の言語
 description: 失敗型のメッセージ・throw 箇所の文言・警告ログとその部品は英語固定でローカライズしない。文言は互換契約ではない。日本語リテラルの残存は静的 grep で検査する
-timestamp: 2026-09-07
+timestamp: 2026-09-08
 ---
 
 # ライブラリが外へ出す診断文言の言語
@@ -38,10 +38,10 @@ gateway / bridge は KMP・MAUI が Native ライブラリを呼ぶ継ぎ目の�
 
 ## 検査
 
-対象範囲に日本語の文字列リテラルが残っていないことを、次の静的 grep で確かめる (出力なしが期待結果)。行頭がコメントの行とテストソースは除外している。走査はモジュール全体 (`android/ksdialogs` 等) に掛け、テストはフィルタで落とすため、frontmatter の `paths` より広い範囲を見て同じ結果になる。
+対象範囲に日本語の文字列リテラルが残っていないことを、次の静的 grep で確かめる (出力なしが期待結果)。行頭がコメントの行とテストソースは除外している。走査はモジュール全体 (`android/ksdialogs-core` 等) に掛け、テストはフィルタで落とすため、frontmatter の `paths` より広い範囲を見て同じ結果になる。
 
 ```bash
-grep -rn --include='*.swift' --include='*.kt' --include='*.cs' -E '"[^"]*[ぁ-んァ-ヶ一-龠][^"]*"' ios/Sources android/ksdialogs android/ksdialogs-compose kmp/ksdialogs-kmp/src maui/KsDialogs.Maui maui/macios/native maui/android/native | grep -v '/build/' | grep -v -E '^[^:]+:[0-9]+:\s*(//|///|\*|/\*)' | grep -v -E '/src/(test|androidTest|commonTest|iosTest|androidHostTest)/' | grep -v 'Tests/'
+grep -rn --include='*.swift' --include='*.kt' --include='*.cs' -E '"[^"]*[ぁ-んァ-ヶ一-龠][^"]*"' ios/Sources android/ksdialogs-core android/ksdialogs kmp/ksdialogs-kmp/src maui/KsDialogs.Maui maui/macios/native maui/android/native | grep -v '/build/' | grep -v -E '^[^:]+:[0-9]+:\s*(//|///|\*|/\*)' | grep -v -E '/src/(test|androidTest|commonTest|iosTest|androidHostTest)/' | grep -v 'Tests/'
 ```
 
 この検査は「日本語が残っていない」ことしか見ない。英語文言が意図どおりであることはレビューと、失敗型ごとの完全一致テスト (iOS / Android / MAUI の `DM-IO-01` / `DM-IO-02` / `DM-AN-01` / `DM-MA-01`〜`04` の系列。KMP 共有コードの自前文言は型指定 show のテスト `PB-KT-05` / `PB-KT-13` が部分一致で見る) が担う。文言を変えたら、その文言を部分一致で見ている既存テストを確認する — 部分一致 assertion が、実装の文言ではなくテストが自分で組み立てた文字列にだけ一致する状態になっていないか。

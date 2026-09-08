@@ -66,7 +66,7 @@ kotlin {
         androidMain.dependencies {
             // ViewModel 契約が Native ライブラリの型そのものになるため、利用者へも見える依存として公開する。
             // composite build により、公開済み成果物ではなくローカルの android/ ビルドへ解決される (cross/ADR-0004)
-            api("jp.kamusoft:ksdialogs:${libs.versions.ksdialogs.get()}")
+            api("jp.kamusoft:ksdialogs-core:${libs.versions.ksdialogs.get()}")
         }
         iosMain.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.kotlinx.coroutines.get()}")
