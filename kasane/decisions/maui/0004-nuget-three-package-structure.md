@@ -18,12 +18,22 @@ MAUI 形態の配布は NuGet で、消費者の手数は「`KsDialogs.Maui` 1�
 
 ## Decision
 
-- **3パッケージ構成**: facade (`KsDialogs.Maui`) + 輸送層 binding 2件 (`KsDialogs.Binding.iOS` / `KsDialogs.Binding.Android`) をそれぞれ NuGet パッケージとして発行し、facade が TFM 条件付き NuGet 依存で binding を参照する。消費者の手数は `KsDialogs.Maui` 1点のまま
-- **native 成果物の同梱は SDK 標準の pack 経路**を使う: binding プロジェクトを `IsPackable=true` にするだけで、iOS は binding resource package (resources.zip 内に xcframework)、Android は aar 2件 (束縛対象 + `Bind=false` 同梱) が nupkg に入る。pack の内部構造に依存する自作 MSBuild は足さない
+### 3パッケージ構成と SDK 標準の pack 経路
+
+facade (`KsDialogs.Maui`) + 輸送層 binding 2件 (`KsDialogs.Binding.iOS` / `KsDialogs.Binding.Android`) をそれぞれ NuGet パッケージとして発行し、facade が TFM 条件付き NuGet 依存で binding を参照する。消費者の手数は `KsDialogs.Maui` 1点のまま。
+
+native 成果物の同梱は SDK 標準の pack 経路を使う。binding プロジェクトを `IsPackable=true` にするだけで、iOS は binding resource package (resources.zip 内に xcframework)、Android は aar 2件 (束縛対象 + `Bind=false` 同梱) が nupkg に入る。pack の内部構造に依存する自作 MSBuild は足さない。
+
 - binding パッケージの Description に「直接参照しないでください」を明記し、輸送層であることを示す (maui/ADR-0001 の位置づけの表明)
 - バージョンは cross/ADR-0009 の lockstep に従い、3パッケージ同版で一斉発行する
-- **MAUI 本体の下限版は、リポジトリが固定する workload set が同梱する `Microsoft.Maui.Controls` の版とし、ライブラリをビルド・テストする版もその版に揃える**。下限・実際に検証する版・同じ SDK の利用者の既定値が一致し、検証 CI が下限そのものを常時検証する。`global.json` の workload set を上げるときは `maui/Directory.Packages.props` の版を同梱版に合わせる
-- **最低 OS 版 (cross/ADR-0002) は facade パッケージに同梱する `buildTransitive/` の props + targets で利用者ビルド時に検査し、要件未満なら要件を書いたエラー (`KSDLG0001`) で止める**。要件の数値は同梱 props を単一の宣言元とし、リポジトリ内の `SupportedOSPlatformVersion` もそこから供給する。利用者ビルドの資産を同梱することは「pack 内部構造に依存する自作 MSBuild を足さない」の対象外
+
+### MAUI 本体の下限版は workload set 同梱の版
+
+MAUI 本体 (`Microsoft.Maui.Controls`) の下限版は、リポジトリが固定する workload set が同梱する版とし、ライブラリをビルド・テストする版もその版に揃える。下限・実際に検証する版・同じ SDK の利用者の既定値が一致し、検証 CI が下限そのものを常時検証する。`global.json` の workload set を上げるときは `maui/Directory.Packages.props` の版を同梱版に合わせる。
+
+### 最低 OS 版は facade 同梱のビルド時ガードで検査
+
+最低 OS 版 (cross/ADR-0002) は facade パッケージに同梱する `buildTransitive/` の props + targets で利用者ビルド時に検査し、要件未満なら要件を書いたエラー (`KSDLG0001`) で止める。要件の数値は同梱 props を単一の宣言元とし、リポジトリ内の `SupportedOSPlatformVersion` もそこから供給する。利用者ビルドの資産を同梱することは「pack 内部構造に依存する自作 MSBuild を足さない」の対象外である。
 
 ## Alternatives Considered
 
