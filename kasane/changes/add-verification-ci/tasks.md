@@ -29,7 +29,7 @@
 
 ## 5. 検証 (Scenario の実機確認)
 
-- [ ] 5.1 `develop` へ push して lint + 5 job が起動・成功することを確認し、各 job の所要時間を記録して timeout を実測に合わせる (→ Scenario: develop への push で本体検証と lint が起動する)
+- [x] 5.1 `develop` へ push して lint + 5 job が起動・成功することを確認し、各 job の所要時間を記録して timeout を実測に合わせる (→ Scenario: develop への push で本体検証と lint が起動する)
 - [ ] 5.2 `kasane/` 配下だけの commit を push して lint だけが走り本体検証 5 job がスキップされること、`kasane/` とソースを混ぜた commit で全 job が走ること、連続 push で古い実行が打ち切られることを確認する (→ Scenario: 記録だけの push では lint だけが走る / 記録とソースが混ざった push では全 job が走る / 連続する push で古い実行が打ち切られる)
 - [x] 5.3 件数検査の負ケースを job ごとにステップ単体で確認する — ios / maui の iOS 橋渡し (Swift Testing のみ・XCTest のみ・混在・両方 0 件・件数行欠落)、maui facade (TRX 0 件)、android / kmp (結果 XML 欠落・0 件・導出集合が空)、android-instrumented (XML 欠落・全件 skip) (→ Scenario: 各 job の 0 件実行の検出 / Swift Testing だけの構成で件数が取れる)
 - [x] 5.8 android job で本体に Compose 依存を一時的に足し、依存グラフ検査で job が失敗することを確認する (→ Scenario: 依存グラフ違反の検出)
