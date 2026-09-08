@@ -1,0 +1,82 @@
+# https 解決検証の抜粋 (tasks 7.1〜7.3 / Scenario: 実リモートからの依存解決とビルド・検証用 tag の後始末 (成功時))
+
+実行: 2026-09-08、`scripts/spm-snapshot/verify-https-resolution.sh ../KsDialogs-SPM 0.1.0-alpha.1 <このファイル>` を develop (59d2212) の checkout から実行。
+配信リポジトリのスナップショット commit は 49fc0a8 (オーナーが手動で push)。生ログ (約 313 KB、xcodebuild の全出力) は追跡しない。
+以下は生ログから各段の行を抜粋したもの (省略箇所は `...`)。
+
+
+## 事前検証と tag の作成
+== https 解決検証 ==
+配信リポジトリ: kamusoft/KsDialogs-SPM
+検証用 tag: 0.1.0-alpha.1
+-- remote の tag 一覧 (実行前) --
+(なし)
+-- local の tag 一覧 (実行前) --
+(なし)
+-- 事前検証: スナップショットの remote 到達 --
+HEAD は origin/main に含まれる
+-- 検証用 tag の作成 --
+To https://github.com/kamusoft/KsDialogs-SPM.git
+ * [new tag]         0.1.0-alpha.1 -> 0.1.0-alpha.1
+
+## 一時消費者パッケージ (Package.swift)
+-- 一時消費者パッケージ --
+場所: <TMP>/KsDialogsSpmConsumer
+// swift-tools-version:5.9
+import PackageDescription
+
+let package = Package(
+    name: "KsDialogsSpmConsumer",
+    platforms: [.iOS(.v17)],
+    products: [.library(name: "KsDialogsSpmConsumer", targets: ["KsDialogsSpmConsumer"])],
+    dependencies: [
+        .package(url: "https://github.com/kamusoft/KsDialogs-SPM", exact: "0.1.0-alpha.1")
+    ],
+    targets: [
+        .target(
+            name: "KsDialogsSpmConsumer",
+            dependencies: [.product(name: "KsDialogs", package: "KsDialogs-SPM")])
+    ]
+)
+
+## iOS Simulator 向けビルド (抜粋)
+    xcodebuild build -scheme KsDialogsSpmConsumer -destination "generic/platform=iOS Simulator" -derivedDataPath <TMP>/DerivedData
+Fetching from https://github.com/kamusoft/KsDialogs-SPM
+Checking out 0.1.0-alpha.1 of package ‘KsDialogs-SPM’
+Resolved source packages:
+  KsDialogsSpmConsumer: <TMP>/KsDialogsSpmConsumer
+  KsDialogs: https://github.com/kamusoft/KsDialogs-SPM @ 0.1.0-alpha.1
+** BUILD SUCCEEDED **
+...
+
+## Package.resolved と後始末
+-- Package.resolved --
+{
+  "pins" : [
+    {
+      "identity" : "ksdialogs-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kamusoft/KsDialogs-SPM",
+      "state" : {
+        "revision" : "49fc0a84168552b924a83708b7c67ad7609c22f0",
+        "version" : "0.1.0-alpha.1"
+      }
+    }
+  ],
+  "version" : 2
+}
+-- 後始末 --
+remote の 0.1.0-alpha.1 を削除します
+To https://github.com/kamusoft/KsDialogs-SPM.git
+ - [deleted]         0.1.0-alpha.1
+remote の削除コマンドは成功
+local の 0.1.0-alpha.1 を削除します
+Deleted tag '0.1.0-alpha.1' (was 49fc0a8)
+local の削除コマンドは成功
+-- remote の tag 一覧 (実行後) --
+(なし)
+-- local の tag 一覧 (実行後) --
+(なし)
+tag 一覧は実行前と同一 (検証用 tag は残らず、他の tag にも触れていない)
+結果: 成功
+ログ: kasane/changes/add-native-distribution/evidence/spm-https-resolution.txt
