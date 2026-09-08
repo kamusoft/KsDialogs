@@ -40,8 +40,8 @@
 
 ## 7. 配信リポジトリへの初回 push と解決確認
 
-- [ ] 7.1 検証手順を「tag 作成後は成否を問わず local / remote の検証用 tag を削除する後始末」を組み込んだ形 (`trap` 相当) で用意し、同期スクリプトの成果物を手動で commit・push して検証用 prerelease tag (`X.Y.Z-alpha.N`) を打つ (design Decision 2) (→ Scenario: 実リモートからの依存解決とビルド)
-- [ ] 7.2 一時消費者プロジェクト (リポジトリ外) から https URL + tag の exact 指定で依存解決し、`KsDialogs` の公開型を参照するコードを iOS Simulator 向けにビルドして成功を確認する (design Decision 8) (→ Scenario: 実リモートからの依存解決とビルド)
-- [ ] 7.3 後始末で検証用 tag が remote と作業コピーの両方から消え、他の tag に触れていないことを確認する。証跡 (解決ログ・後始末の記録) を evidence/ に保存する (→ Scenario: 検証用 tag の後始末 (成功時) / 検証用 tag の後始末 (失敗時))
+- [x] 7.1 検証手順を「tag 作成後は成否を問わず local / remote の検証用 tag を削除する後始末」を組み込んだ形 (`trap` 相当) で用意し、同期スクリプトの成果物を手動で commit・push して検証用 prerelease tag (`X.Y.Z-alpha.N`) を打つ (design Decision 2) (→ Scenario: 実リモートからの依存解決とビルド)
+- [x] 7.2 一時消費者プロジェクト (リポジトリ外) から https URL + tag の exact 指定で依存解決し、`KsDialogs` の公開型を参照するコードを iOS Simulator 向けにビルドして成功を確認する (design Decision 8) (→ Scenario: 実リモートからの依存解決とビルド)
+- [x] 7.3 後始末で検証用 tag が remote と作業コピーの両方から消え、他の tag に触れていないことを確認する。証跡 (解決ログ・後始末の記録) を evidence/ に保存する (→ Scenario: 検証用 tag の後始末 (成功時) / 検証用 tag の後始末 (失敗時))
 - [x] 7.4 `ios/` の全テストを iOS Simulator destination で実行し、1 件以上が成功することを確認する (`ios/Package.swift` 無変更の確認を兼ねる) (→ Scenario: iOS package のテスト維持)
 - [x] 7.5 `samples/ios` と maui の iOS binding を iOS Simulator 向けにビルドし、Local Swift Package 参照のまま成功することを確認する (→ Scenario: iOS Sample と binding のビルド)
