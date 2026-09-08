@@ -41,8 +41,8 @@
 
   <!-- 互換面と Android Native ライブラリが Gradle 側で宣言している依存。aar には同梱されない -->
   <ItemGroup>
-    <PackageReference Include="Xamarin.Kotlin.StdLib" Version="2.4.0.1" />
-    <PackageReference Include="Xamarin.KotlinX.Coroutines.Android" Version="1.11.0.1" />
+    <PackageReference Include="Xamarin.Kotlin.StdLib" />
+    <PackageReference Include="Xamarin.KotlinX.Coroutines.Android" />
   </ItemGroup>
 
   <!-- Java パッケージ名から .NET namespace への変換など、生成コードの調整 -->

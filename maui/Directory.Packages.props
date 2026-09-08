@@ -1,0 +1,34 @@
+<Project>
+
+  <!--
+    maui/ ビルドルート配下の PackageReference の版はここが単一の宣言元。各 csproj は Version を持たない。
+    samples/maui は別のビルドルートであり、利用者が真似する形 (MauiVersion の直書き) を保つため対象外。
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      MAUI 本体。repo 直下の global.json が固定する .NET SDK 10.0.300 / workload set 10.0.300.3
+      (MAUI SDK 10.0.20) と組み合わせて検証した版で、CI と手元で同じ版を使う。
+    -->
+    <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.70" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Android 本体が Gradle 側で implementation 依存として宣言しているライブラリ。
+      aar には同梱されないため、消費側アプリへ届くよう binding の依存として並べる。
+    -->
+    <PackageVersion Include="Xamarin.Kotlin.StdLib" Version="2.4.0.1" />
+    <PackageVersion Include="Xamarin.KotlinX.Coroutines.Android" Version="1.11.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageVersion Include="NUnit" Version="4.6.1" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="6.2.0" />
+  </ItemGroup>
+
+</Project>

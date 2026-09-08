@@ -1,0 +1,251 @@
+# 検証 CI の入口
+#
+# トリガーはブランチの役割で分ける。
+# - develop への push: lint と 5 形態の検証。開発はローカルで develop へマージして
+#   直接 push する運用なので、develop 宛ての pull_request は起動条件に持たない
+# - main 宛ての pull_request (head は develop のみ。lint job が検査する): 同じ内容を
+#   マージ条件として実行する
+#
+# `paths-ignore` は使わない。lint (gitleaks / identity-lint / scenario-id-coverage) は
+# `kasane/**` も入力にするため、起動のたびに必ず走らせる必要がある。本体検証 5 job だけを
+# 軽量な変更検出 job (changes) の出力で絞り、ビルド・テストのどちらにも入力されない
+# ファイル (開発ハーネスの記録・Issue テンプレート・貢献案内) だけの push ではスキップする。
+# main 宛ての pull_request では絞り込みを行わず常に全 job を実行する — 必須 status check
+# として素通りする経路を作らないため。
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+# 連続する起動では古い実行を打ち切る (macOS ランナーを二重に積み上げないため)。
+# group は PR では PR 番号、push ではブランチ (github.ref)。develop の検証は
+# 「最新の状態が通るか」の事後検証なので、追い越された中間 commit の結果は残さない。
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 本体検証 5 job を起こすかどうかだけを決める軽量 job。
+  # 判定を各 job の `paths` に散らさず 1 か所へ集めることで、除外パスの定義が
+  # 5 job 分ずれる余地をなくす。
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    # 実測数秒の job に対する上限として置く (既定の 360 分は長すぎる)。
+    timeout-minutes: 10
+    outputs:
+      source: ${{ steps.detect.outputs.source }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # push 前の commit まで遡って差分を取るため全履歴を取得する。
+          # 既定の shallow clone では github.event.before が到達不能になり、
+          # 差分が取れないまま「変更なし」に倒れる余地が生まれる。
+          fetch-depth: 0
+
+      - name: Detect source changes
+        id: detect
+        env:
+          KS_EVENT_NAME: ${{ github.event_name }}
+          KS_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          # 判定は「ソース変更あり」に倒す側を既定にする。判定不能を「変更なし」と
+          # 読むと、検証されないまま緑になる push が生まれる。
+          emit_true() {
+            echo "$1"
+            echo "source=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          if [ "${KS_EVENT_NAME}" != "push" ]; then
+            emit_true "push 以外の起動なので本体検証を実行する (event: ${KS_EVENT_NAME})"
+          fi
+
+          before="${KS_BEFORE:-}"
+          # 初回 push と force push では before が空、または全 0 (存在しない commit) になる。
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            emit_true "push 前の commit が特定できないので本体検証を実行する (before: '${before}')"
+          fi
+          # force push の後は before が履歴から消えていることがある。
+          if ! git cat-file -e "${before}^{commit}" 2>/dev/null; then
+            emit_true "push 前の commit ${before} に到達できないので本体検証を実行する"
+          fi
+
+          changed=$(git diff --name-only "${before}" "${GITHUB_SHA}")
+          if [ -z "$changed" ]; then
+            emit_true "差分が空なので本体検証を実行する (${before}..${GITHUB_SHA})"
+          fi
+
+          echo "変更ファイル:"
+          echo "$changed" | sed 's/^/  /'
+
+          # ビルド・テストのいずれにも入力されないファイル。これ以外が 1 つでも
+          # 変わっていれば本体検証を実行する。
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            case "$path" in
+              kasane/*) ;;
+              .github/ISSUE_TEMPLATE/*) ;;
+              .github/CONTRIBUTING*.md) ;;
+              *) emit_true "ビルド・テストの入力 ${path} が変更されたので本体検証を実行する" ;;
+            esac
+          done <<EOF
+          $changed
+          EOF
+
+          echo "記録だけの変更なので本体検証をスキップする"
+          echo "source=false" >> "$GITHUB_OUTPUT"
+
+  # 再利用可能 workflow を呼ぶ job の status check 名は
+  # 「呼び出し側の job 名 / 呼ばれた側の job 名」になる。branch protection に登録する名前を
+  # 固定するため、両側の job 名を明示する (ここでは ios / verify、android / verify、
+  # android-instrumented / verify、kmp / verify、maui / verify)。
+  #
+  # 5 job の起動条件は同じ式で揃える。pull_request では changes の判定を見ずに常に実行する。
+  #
+  # 条件に `if` を書いた job は、既定の「先行 job がすべて成功したときだけ走る」を失う代わりに
+  # 明示した式だけで判定される。changes 自身が失敗したときに本体検証が黙って skip されると、
+  # 検証されないまま緑になる経路ができるので、失敗時も走る形にする。
+  # - changes が失敗すると outputs.source は空文字になる。判定を `== 'true'` ではなく
+  #   `!= 'false'` にすることで、空文字を「ソース変更あり」に倒す (判定不能は実行する側へ)
+  # - `!cancelled()` を前置し、concurrency による打ち切り (cancel-in-progress) のときは
+  #   走らせない。省略すると打ち切られた実行から macOS ランナーが起き直る
+  ios:
+    name: ios
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.changes.outputs.source != 'false') }}
+    uses: ./.github/workflows/verify-ios.yml
+
+  android:
+    name: android
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.changes.outputs.source != 'false') }}
+    uses: ./.github/workflows/verify-android.yml
+
+  android-instrumented:
+    name: android-instrumented
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.changes.outputs.source != 'false') }}
+    uses: ./.github/workflows/verify-android-instrumented.yml
+
+  kmp:
+    name: kmp
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.changes.outputs.source != 'false') }}
+    uses: ./.github/workflows/verify-kmp.yml
+
+  maui:
+    name: maui
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.changes.outputs.source != 'false') }}
+    uses: ./.github/workflows/verify-maui.yml
+
+  lint:
+    name: lint
+    # ランナーイメージは版指定にする。`ubuntu-latest` は指す実体が予告なく次の LTS へ
+    # 移り、python3 やプリインストールツールの版が diff なしに入れ替わる。
+    runs-on: ubuntu-24.04
+    # 既定の 360 分は長すぎる。手元実測 10 秒台に対する上限として置く。
+    timeout-minutes: 10
+
+    env:
+      # secret scan に使う gitleaks の版と、配布物の SHA-256。
+      # 版を上げるときは checksum も同時に更新する。
+      KS_GITLEAKS_VERSION: "8.30.1"
+      KS_GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+
+    steps:
+      # `main` の先端はリリース済み (またはリリース進行中) の状態を表すので、そこへ入るのは
+      # 検証を通った `develop` の内容だけに限る。branch protection は base だけを縛り head を
+      # 見ないため、この job で head を検査する (lint は必須 status check なので、失敗すれば
+      # マージがブロックされる)。push では何もしない。
+      # ブランチ名はシェルへ直に展開せず環境変数で渡す (名前にシェルの特殊文字が入り得る)。
+      # head のブランチ名だけでは fork 側の同名ブランチも通ってしまうため、head の
+      # リポジトリが自リポジトリであることも併せて検査する (外部からの pull request は
+      # 受け付けない。cross/ADR-0013)。
+      - name: Pull request head restriction
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        env:
+          KS_HEAD_REF: ${{ github.head_ref }}
+          KS_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          if [ "${KS_HEAD_REPOSITORY}" != "${GITHUB_REPOSITORY}" ]; then
+            echo "::error::main を base とする pull request の head は ${GITHUB_REPOSITORY} のブランチでなければならない (head: ${KS_HEAD_REPOSITORY})"
+            exit 1
+          fi
+          if [ "${KS_HEAD_REF}" != "develop" ]; then
+            echo "::error::main を base とする pull request の head は develop でなければならない (head: ${KS_HEAD_REF})"
+            exit 1
+          fi
+          echo "head は ${GITHUB_REPOSITORY} の develop"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/gitleaks.tar.gz"
+          curl --fail --silent --show-error --location \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${KS_GITLEAKS_VERSION}/gitleaks_${KS_GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            --output "$archive"
+          echo "${KS_GITLEAKS_SHA256}  ${archive}" | sha256sum --check --strict
+          mkdir -p "${RUNNER_TEMP}/gitleaks"
+          tar -xzf "$archive" -C "${RUNNER_TEMP}/gitleaks" gitleaks
+          echo "${RUNNER_TEMP}/gitleaks" >> "$GITHUB_PATH"
+
+      # 手元用の一括実行 (scripts/secret-scan.sh) は履歴と作業ツリーを対象にし、
+      # gitleaks が PATH にあることを前提にする。CI は追跡内容の展開ディレクトリを
+      # 対象にし、展開数の突き合わせまで行うので、ここは別手順として書く。
+      - name: Secret scan (gitleaks)
+        run: |
+          # 既定シェルは `bash -e` で pipefail が入らない。パイプ前段 (git archive) の
+          # 失敗が握り潰されると、空ディレクトリに対する gitleaks が検出 0 件 = exit 0 を
+          # 返し、secret scan が無検査のまま緑になる。
+          set -euo pipefail
+          gitleaks version
+          # 追跡中の内容だけを取り出して走査する。作業ツリーをそのまま走査すると
+          # ビルド出力 (obj/ bin/ build/ 配下の生成物) まで対象に入り、検査が生成物由来の
+          # 誤検出で埋まる。
+          scan_dir="${RUNNER_TEMP}/gitleaks-scan"
+          mkdir -p "$scan_dir"
+          git archive --format=tar HEAD | tar -x -C "$scan_dir"
+          # 走査対象が実際に存在することを確かめてから走らせる。追跡ファイル数と
+          # 展開後のファイル数を突き合わせ、取りこぼしがあれば検査対象不足として落とす。
+          tracked=$(git ls-files | wc -l | tr -d ' ')
+          # 追跡内容には symlink も含まれるため、-type f だけで数えると取りこぼす。
+          extracted=$(find "$scan_dir" \( -type f -o -type l \) | wc -l | tr -d ' ')
+          echo "走査対象: ${extracted} ファイル (追跡: ${tracked} ファイル)"
+          if [ "$extracted" -lt "$tracked" ]; then
+            echo "::error::走査対象の展開に失敗している (追跡 ${tracked} に対し展開 ${extracted})"
+            exit 1
+          fi
+          # 誤検出の除外定義 (.gitleaks.toml) は追跡対象なので展開先にも入る。
+          gitleaks dir "$scan_dir" --no-banner --redact --verbose
+
+      - name: Local absolute path lint
+        run: python3 scripts/local-path-lint.py
+
+      - name: Identity lint
+        run: python3 scripts/identity-lint.py
+
+      - name: Comment policy lint
+        run: python3 scripts/comment-policy-lint.py
+
+      # 仕様の Scenario ID がテスト名に網羅されているかの検査。実行系のテストとは別軸で、
+      # 「仕様にあってテストに無い」を検出する。
+      - name: Scenario ID coverage
+        run: python3 scripts/scenario-id-coverage.py

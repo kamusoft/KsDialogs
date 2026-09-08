@@ -1,0 +1,172 @@
+# iOS Native の検証 (再利用可能 workflow)
+#
+# iOS Simulator 上でパッケージ全体のテストを実行する。macOS ホスト上の `swift test` は
+# `#if canImport(UIKit)` ガード内のテストがコンパイル対象から外れて実行されないため、
+# 成否判定には使わない。
+# テストが 1 件も実行されなくてもコマンドは成功で終わるため、実行件数の検査までを
+# job の成否判定に含める (android / kmp / maui の検証と同じ規律)。
+name: verify ios
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  # Xcode はメジャー.マイナーで固定し、パッチはランナーイメージ同梱の版に任せる。
+  # 版を上げるときはこの値を変える PR として意図的に行う。
+  KS_XCODE_VERSION: "26.5"
+
+jobs:
+  verify:
+    name: verify
+    runs-on: macos-26
+    # 既定の 360 分は長すぎる。Simulator の起動待ちや xcodebuild のハングで
+    # 高コストな macOS ランナーを占有し続けないよう上限を置く。
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select Xcode
+        run: |
+          # メジャー.マイナーが一致する Xcode のうち、パッチが最も新しいものを選ぶ。
+          app=$(ls -d "/Applications/Xcode_${KS_XCODE_VERSION}"*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$app" ]; then
+            echo "::error::Xcode ${KS_XCODE_VERSION} がランナーイメージに存在しない"
+            ls -d /Applications/Xcode_*.app || true
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=${app}/Contents/Developer" >> "$GITHUB_ENV"
+
+      - name: Show toolchain
+        run: |
+          echo "DEVELOPER_DIR=${DEVELOPER_DIR}"
+          xcodebuild -version
+          swift --version
+
+      - name: Resolve iOS Simulator destination
+        run: |
+          # 利用可能な iOS Simulator のうち、ランタイムが最も新しい iPhone を選ぶ。
+          # 機種名はランナーイメージの更新で変わるため、名前ではなく実在する UDID で指定する。
+          xcrun simctl list devices available --json > "${RUNNER_TEMP}/simulators.json"
+          udid=$(python3 - "${RUNNER_TEMP}/simulators.json" <<'PY'
+          import json
+          import re
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as f:
+              catalog = json.load(f)
+
+          best = None
+          for runtime, devices in catalog.get("devices", {}).items():
+              matched = re.search(r"iOS-(\d+)-(\d+)", runtime)
+              if not matched:
+                  continue
+              version = (int(matched.group(1)), int(matched.group(2)))
+              for device in devices:
+                  if not device.get("isAvailable"):
+                      continue
+                  if not device.get("name", "").startswith("iPhone"):
+                      continue
+                  if best is None or version > best[0]:
+                      best = (version, device["udid"], device["name"], runtime)
+
+          if best is None:
+              sys.exit("利用可能な iPhone Simulator が見つからない")
+
+          print(best[1])
+          print(f"selected: {best[2]} ({best[3]})", file=sys.stderr)
+          PY
+          )
+          echo "KS_SIMULATOR_UDID=${udid}" >> "$GITHUB_ENV"
+
+      - name: Run tests on iOS Simulator
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -scheme KsDialogs \
+            -destination "platform=iOS Simulator,id=${KS_SIMULATOR_UDID}" \
+            | tee "${RUNNER_TEMP}/xcodebuild.log"
+
+      - name: Verify executed test count
+        # テストが失敗した場合も件数を残すため、常に実行する。
+        if: always()
+        run: |
+          python3 - "${RUNNER_TEMP}/xcodebuild.log" "iOS テスト実行件数" <<'PY'
+          import os
+          import re
+          import sys
+
+          log_path = sys.argv[1]
+          title = sys.argv[2]
+
+          if not os.path.isfile(log_path):
+              print(f"::error::{title}: テストログ {log_path} が無いため実行件数を確認できない")
+              sys.exit(1)
+
+          with open(log_path, encoding="utf-8", errors="replace") as f:
+              lines = f.read().splitlines()
+
+          # 件数は 2 系統ある。Swift Testing は総括行 (`Test run with N tests in M suites ...`)、
+          # XCTest は `Executed N tests` 行に出る。全テストが Swift Testing 製の構成では
+          # XCTest 側が 0 件と表示されるため、片方だけを見ると全件が 0 件に見える。
+          swift_testing = re.compile(r"Test run with ([0-9]+) tests?\b")
+          # XCTest の `Executed` 行は suite ごとにも出る。合計を二重に数えないよう、
+          # 総括 suite (`All tests`) の直後の行だけを数える。
+          all_tests_suite = re.compile(r"^Test Suite 'All tests' (passed|failed)")
+          xctest_executed = re.compile(r"^\s*Executed ([0-9]+) tests?\b")
+
+          swift_total = None
+          xctest_total = None
+          evidence = []
+
+          for index, line in enumerate(lines):
+              matched = swift_testing.search(line)
+              if matched:
+                  swift_total = (swift_total or 0) + int(matched.group(1))
+                  evidence.append(line.strip())
+                  continue
+              if all_tests_suite.match(line):
+                  for following in lines[index + 1:index + 3]:
+                      executed = xctest_executed.match(following)
+                      if executed:
+                          xctest_total = (xctest_total or 0) + int(executed.group(1))
+                          evidence.append(following.strip())
+                          break
+
+          total = (swift_total or 0) + (xctest_total or 0)
+          reason = ""
+          if swift_total is None and xctest_total is None:
+              reason = (
+                  "Swift Testing (`Test run with N tests`) と XCTest (`Executed N tests`) の"
+                  "どちらの件数行もログに無い (出力形式が変わった可能性がある)"
+              )
+          elif total == 0:
+              reason = "テストが 1 件も実行されていない (2 系統の合算が 0 件)"
+
+          report = [
+              f"## {title}",
+              "",
+              f"- Swift Testing: {'-' if swift_total is None else swift_total} 件",
+              f"- XCTest: {'-' if xctest_total is None else xctest_total} 件",
+              f"- 合算: **{total} 件**",
+          ]
+          if evidence:
+              report += ["", "```"] + evidence + ["```"]
+          if reason:
+              report += ["", "### 件数検査の失敗", "", f"- {reason}"]
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as f:
+                  f.write("\n".join(report) + "\n")
+          print("\n".join(report))
+
+          if reason:
+              print(f"::error::{title}: {reason}")
+              sys.exit(1)
+          PY

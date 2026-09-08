@@ -2,15 +2,15 @@
 kind: guide
 applies-when:
   always: false
-  tasks: [環境構築, worktree での作業開始, Gradle ルートのビルド・テスト, Sample のビルドと実行, MAUI iOS の Sample ビルド]
+  tasks: [環境構築, worktree での作業開始, Gradle ルートのビルド・テスト, Sample のビルドと実行, MAUI iOS の Sample ビルド, .NET SDK の解決]
 title: ローカル開発環境の準備
-description: Android SDK と Xcode のローカル環境を整え、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド
-timestamp: 2026-09-05
+description: Android SDK と Xcode のローカル環境を整え、repo 直下の global.json が固定する .NET SDK / workload set を確認し、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド
+timestamp: 2026-09-08
 ---
 
 # ローカル開発環境の準備
 
-この文書は、clone 直後や git worktree を切った直後に Gradle ルートを動かすまでの準備と、MAUI iOS のビルドを 1 つの Xcode で通すための条件をまとめる。読むと、Android SDK の場所をどこに置けば 5 つの build root すべてが解決できるか、worktree で `SDK location not found` が出たとき何を複製すればよいか、`Swift tools version` の不一致でパッケージ解決が止まったとき何を指定すればよいかが分かる。テストの実行方法と完了判定は [テスト実行規約](test-execution.md) が正であり、本書は準備だけを扱う。先例 KsSettingsView の同名 guide を下敷きにし、このリポジトリで実測した範囲に絞っている。
+この文書は、clone 直後や git worktree を切った直後に Gradle ルートを動かすまでの準備と、MAUI のビルドが使うツールチェインの解決条件をまとめる。読むと、Android SDK の場所をどこに置けば 5 つの build root すべてが解決できるか、worktree で `SDK location not found` が出たとき何を複製すればよいか、`dotnet` がどの SDK と workload set を拾うか、`Swift tools version` の不一致でパッケージ解決が止まったとき何を指定すればよいかが分かる。テストの実行方法と完了判定は [テスト実行規約](test-execution.md) が正であり、本書は準備だけを扱う。先例 KsSettingsView の同名 guide を下敷きにし、このリポジトリで実測した範囲に絞っている。
 
 ## Android SDK ロケーション
 
@@ -57,19 +57,44 @@ cp <元の checkout>/maui/android/native/local.properties maui/android/native/
 
 2026-09-02 の実測: worktree で `maui/android/native/` のテストを回したところ `android/` と `maui/android/native/` の両方で `SDK location not found` になり、元の checkout から 2 ファイルを複製して解消した。
 
+## .NET SDK と MAUI ワークロード
+
+repo 直下の `global.json` が .NET SDK と workload set の版を固定する。`maui/` や `samples/maui/` で `dotnet` を実行すると、親ディレクトリに別の `global.json` があってもこの設定が使われる。
+
+```json
+{
+  "sdk": {
+    "version": "10.0.300",
+    "rollForward": "disable",
+    "workloadVersion": "10.0.300.3"
+  }
+}
+```
+
+- 解決できていることは `dotnet --version` が `10.0.300` を返し、`dotnet workload list` が repo の `global.json` の workload set を使う旨を表示することで確認する
+- `rollForward` を `disable` にしているため、指定した SDK が手元に無ければ**ロールフォワードせずに失敗する** (近い patch を黙って拾うことはない)。表示された版を導入して揃える
+- workload set を固定すると .NET for iOS の版も固定される (`10.0.300.3` は .NET for iOS 26.5)。ワークロード自体の導入は `dotnet workload install maui`
+- 版を上げるときは `global.json` の `version` / `workloadVersion` と `maui/Directory.Packages.props` の `Microsoft.Maui.Controls` を併せて見直す
+- Sample の `samples/maui/KsDialogs.Sample.Maui/KsDialogs.Sample.Maui.csproj` の `MauiVersion` も同じ版へ手で揃える。Sample は CI の検証対象ではないため、ずれても検査で気づけない
+
 ## MAUI iOS ビルドの Xcode 版数
 
-MAUI ワークロードが解決する .NET for iOS SDK が要求する Xcode と、iOS Native の Swift パッケージ (`ios/Package.swift` の swift-tools 版数) が要求する Xcode は独立に決まり、食い違うことがある。2026-09-02 の実測では、.NET for iOS 26.1 は Xcode 26.1 を要求する一方、`ios/` は swift-tools 6.3 を宣言しており、Xcode 26.1 の Swift 6.2.1 では次のエラーでパッケージ解決に失敗した。
-
-```
-package 'ios' is using Swift tools version 6.3.0 but the installed version is 6.2.1
-```
-
-この場合は Xcode を新しい側 (26.5) に揃え、SDK が用意している Xcode 版数検査の opt-out (`ValidateXcodeVersion=false`) を付けて 1 つのツールチェインで通す。Simulator 向けのビルドとテストでは、この opt-out による他への影響は出ていない。
+MAUI ワークロードが解決する .NET for iOS SDK が要求する Xcode と、iOS Native の Swift パッケージ (`ios/Package.swift` の swift-tools 版数) が要求する Xcode は独立に決まり、食い違うことがある。現行の固定ではどちらも Xcode 26.5 を要求して一致しているため、**`DEVELOPER_DIR` の付け替えも版数検査の opt-out も既定では要らない**。
 
 ```bash
 dotnet build samples/maui/KsDialogs.Sample.Maui/KsDialogs.Sample.Maui.csproj \
-  -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 -p:ValidateXcodeVersion=false
+  -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64
+```
+
+- 手元の既定の Xcode が 26.5 であることは `xcodebuild -version` で確認する。異なる版が選択されていれば `xcode-select` で切り替える
+- 2026-09-08 の実測: 上のコマンドと facade の `net10.0-ios` ビルドが、既定の Xcode 26.5 のまま opt-out なしで成功する
+
+### 版が食い違ったとき
+
+パッケージ解決が `package 'ios' is using Swift tools version X but the installed version is Y` で止まったら、要求版が再び割れている。Xcode を新しい側に揃えたうえで、SDK が用意している版数検査の opt-out を付けて 1 つのツールチェインで通す。Simulator 向けのビルドとテストでは、この opt-out による他への影響は出ていない。
+
+```bash
+dotnet build ... -p:ValidateXcodeVersion=false
 ```
 
 ## Sample のビルドと実行
@@ -127,7 +152,7 @@ adb -s <device> install -r bin/Debug/net10.0-android/jp.kamusoft.ksdialogs.sampl
 adb -s <device> shell am start -n "$(adb -s <device> shell cmd package resolve-activity --brief jp.kamusoft.ksdialogs.samples.maui | tr -d '\r')"
 ```
 
-手動で APK を install する場合は `EmbedAssembliesIntoApk=true` を付ける。Fast Deployment の古い override assembly が端末に残っている場合は、再 install の前に対象 package を uninstall する。MAUI iOS が要求する Xcode と Swift tools の版が食い違うときは前節の `ValidateXcodeVersion=false` を使う。
+手動で APK を install する場合は `EmbedAssembliesIntoApk=true` を付ける。Fast Deployment の古い override assembly が端末に残っている場合は、再 install の前に対象 package を uninstall する。iOS 側の SDK と Swift tools の版が食い違ったときの対処は「MAUI iOS ビルドの Xcode 版数」節を参照する。
 
 ### Kotlin Multiplatform
 

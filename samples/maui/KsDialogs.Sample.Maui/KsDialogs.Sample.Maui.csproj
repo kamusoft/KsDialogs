@@ -17,6 +17,12 @@
 		<ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
+		<!--
+			MAUI 本体の版。maui/ の公開 product が参照する版と揃える。
+			workload set 既定の版のままでは推移参照の側が上位を要求して restore が失敗する。
+		-->
+		<MauiVersion>10.0.70</MauiVersion>
+
 		<!-- 最低対象 OS は iOS 17 / Android 7.0 (API 24) (cross/ADR-0002) -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">17.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>

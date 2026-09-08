@@ -1,0 +1,200 @@
+# Android instrumented の検証 (再利用可能 workflow)
+#
+# 実 View のレイアウト・実入力の注入・実ウィンドウの見えを測るテストは instrumented に
+# しかなく、JVM 単体テストの実行では 1 件も走らない。Emulator 1 台で instrumented テストを
+# 持つ全モジュールを実行し、module ごとの実行件数を検査する。
+# 端末が無い・テストが 1 件も実行されないまま成功で終わる経路を塞ぐため、件数の検査までを
+# job の成否判定に含める。
+# 特定の API レベルでしか成立しない挙動のテストは自分を skip して結果 XML の skipped に
+# 数えられるため、実行数は tests から skipped を引いた数で見る。
+name: verify android instrumented
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    # ランナーイメージは版指定にする。`ubuntu-latest` は指す実体が予告なく次の LTS へ
+    # 移り、JDK 既定版・Android SDK 同梱内容が diff なしに入れ替わる。
+    # Emulator をハードウェア支援で動かせるのは Linux ランナー (KVM) だけ。
+    runs-on: ubuntu-24.04
+    # 既定の 360 分は長すぎる。Emulator の起動待ちやテストのハングでランナーを
+    # 占有し続けないよう上限を置く (手元実測は 300 件弱で数分)。
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup JDK
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          # 依存の解決結果と wrapper ディストリビューションだけをキャッシュする。
+          # ビルド出力とテスト結果 (`build/`) はキャッシュしない。復元された結果を
+          # 実行済みとみなす経路を作らないため。
+          path: |
+            ~/.gradle/caches/modules-2
+            ~/.gradle/wrapper
+          key: gradle-deps-${{ runner.os }}-${{ hashFiles('android/gradle/libs.versions.toml', 'android/gradle/wrapper/gradle-wrapper.properties', 'android/**/build.gradle.kts', 'android/settings.gradle.kts') }}
+          restore-keys: |
+            gradle-deps-${{ runner.os }}-
+
+      - name: Enable KVM
+        # Emulator をハードウェア支援で動かすため、ランナーのユーザーから /dev/kvm を
+        # 開けるようにする。これが無いとソフトウェア実行になり起動が現実的な時間で終わらない。
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Show toolchain
+        run: |
+          java -version
+          echo "JAVA_HOME=${JAVA_HOME}"
+          echo "ANDROID_HOME=${ANDROID_HOME}"
+
+      - name: Prepare Android SDK location
+        # ビルドが SDK の位置を必要とする。local.properties は VCS 管理外のファイルなので、
+        # ランナーの SDK を指すものを実行前に置く。
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_HOME:-}" ]; then
+            echo "::error::ANDROID_HOME が設定されていない (ランナーイメージに Android SDK が無い)"
+            exit 1
+          fi
+          printf 'sdk.dir=%s\n' "${ANDROID_HOME}" > android/local.properties
+
+      - name: Run instrumented tests on emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          # API レベルは固定境界。上げるときはこの値を変える PR として意図的に行う。
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none
+          working-directory: android
+          script: ./gradlew --no-daemon --console=plain connectedDebugAndroidTest
+
+      - name: Verify executed test count
+        # テストが失敗した場合も件数の内訳を残すため、常に実行する。
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import os
+          import re
+          import sys
+          import xml.etree.ElementTree as ET
+
+          ANDROID_ROOT = "android"
+
+          # 期待する module の集合はビルド構成 (settings.gradle.kts の include) から導出する。
+          # 存在する XML を数えるだけでは、タスクごと実行されなかった module を見逃す。
+          settings_path = os.path.join(ANDROID_ROOT, "settings.gradle.kts")
+          with open(settings_path, encoding="utf-8") as f:
+              settings = f.read()
+
+          # コメントを除去してから全文を走査する。行頭一致で拾う形にすると、複数行に
+          # 分けて書かれた include や Groovy 記法が期待集合から静かに落ち、検査が
+          # 緑のまま素通りする。行末コメント内の module 名を拾わないためでもある。
+          body = re.sub(r"/\*.*?\*/", " ", settings, flags=re.DOTALL)
+          body = re.sub(r"//[^\n]*", " ", body)
+
+          modules = []
+          # `include(":a", ":b")` の括弧形式と、Groovy の `include ":a"` の両方を拾う。
+          for matched in re.finditer(r'\binclude\s*(?:\(([^)]*)\)|((?:\s*"[^"]*"\s*,?)+))', body):
+              arguments = matched.group(1) or matched.group(2) or ""
+              modules.extend(re.findall(r'"(:[^"]+)"', arguments))
+          modules = sorted(set(modules))
+
+          if not modules:
+              sys.exit(f"{settings_path} から module を 1 つも導出できなかった")
+
+
+          def module_dir(module):
+              return os.path.join(ANDROID_ROOT, *module.lstrip(":").split(":"))
+
+
+          # 期待するのは instrumented テストのソースセットを持つ module だけ。
+          expected = [
+              m for m in modules
+              if os.path.isdir(os.path.join(module_dir(m), "src", "androidTest"))
+          ]
+          if not expected:
+              sys.exit(
+                  f"{settings_path} の include ({', '.join(modules)}) から"
+                  " src/androidTest を持つ module を 1 つも導出できなかった"
+              )
+
+          print(f"::notice::期待する module: {', '.join(expected)}")
+
+          rows = []
+          failures = []
+          total_executed = 0
+
+          for module in expected:
+              # 結果は variant と端末ごとのディレクトリに分かれて出るため、再帰で拾う。
+              result_root = os.path.join(
+                  module_dir(module), "build", "outputs", "androidTest-results", "connected"
+              )
+              xml_files = sorted(
+                  glob.glob(os.path.join(result_root, "**", "TEST-*.xml"), recursive=True)
+              )
+              if not xml_files:
+                  rows.append((module, "結果 XML なし", "-", "-", "-"))
+                  failures.append(f"{module}: {result_root} にテスト結果 XML が無い")
+                  continue
+
+              tests = 0
+              skipped = 0
+              failed = 0
+              for xml_file in xml_files:
+                  root = ET.parse(xml_file).getroot()
+                  tests += int(root.get("tests", "0"))
+                  skipped += int(root.get("skipped", "0"))
+                  failed += int(root.get("failures", "0")) + int(root.get("errors", "0"))
+
+              executed = tests - skipped
+              rows.append((module, str(tests), str(skipped), str(failed), str(executed)))
+              total_executed += executed
+              if executed <= 0:
+                  failures.append(
+                      f"{module}: instrumented テストの実行数 (tests - skipped) が 0"
+                      f" (tests {tests} / skipped {skipped})"
+                  )
+
+          lines = [
+              "## Android instrumented テスト実行件数",
+              "",
+              "| module | tests | skipped | failures | 実行数 |",
+              "|---|---:|---:|---:|---:|",
+          ]
+          lines += [f"| {m} | {t} | {s} | {f} | {e} |" for m, t, s, f, e in rows]
+          lines += ["", f"**実行数の合計: {total_executed} 件** (期待 {len(expected)} module)"]
+
+          if failures:
+              lines += ["", "### 件数検査の失敗", ""]
+              lines += [f"- {message}" for message in failures]
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as f:
+                  f.write("\n".join(lines) + "\n")
+          print("\n".join(lines))
+
+          if failures:
+              for message in failures:
+                  print(f"::error::{message}")
+              sys.exit(1)
+          PY

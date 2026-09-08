@@ -1,0 +1,335 @@
+# .NET MAUI の検証 (再利用可能 workflow)
+#
+# facade の純ロジックをユニットテストで全件検証し、あわせて facade の platform TFM と
+# binding 2 本がビルドできること (native への配線がコンパイルできること) を確かめる。
+# native 橋渡し (Android の Kotlin / iOS の Swift) のテストは .NET 側からは走らないため、
+# 別のビルドルートとしてこの job で明示的に実行する。
+# 検証ホストアプリの実行 (end-to-end 疎通) はこの workflow の対象に含めない。
+name: verify maui
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  # iOS binding と iOS 橋渡しのテストが Xcode を必要とするため、ios の検証と同じ版を選ぶ。
+  KS_XCODE_VERSION: "26.5"
+  KS_FACADE: maui/KsDialogs.Maui/KsDialogs.Maui.csproj
+  KS_FACADE_TESTS: maui/KsDialogs.Maui.Tests/KsDialogs.Maui.Tests.csproj
+  KS_BINDING_IOS: maui/macios/KsDialogs.Binding.iOS/KsDialogs.Binding.iOS.csproj
+  KS_BINDING_ANDROID: maui/android/KsDialogs.Binding.Android/KsDialogs.Binding.Android.csproj
+
+jobs:
+  verify:
+    name: verify
+    runs-on: macos-26
+    # 既定の 360 分は長すぎる。ビルドのハングで高コストな macOS ランナーを
+    # 占有し続けないよう上限を置く。
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select Xcode
+        run: |
+          # メジャー.マイナーが一致する Xcode のうち、パッチが最も新しいものを選ぶ。
+          app=$(ls -d "/Applications/Xcode_${KS_XCODE_VERSION}"*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$app" ]; then
+            echo "::error::Xcode ${KS_XCODE_VERSION} がランナーイメージに存在しない"
+            ls -d /Applications/Xcode_*.app || true
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=${app}/Contents/Developer" >> "$GITHUB_ENV"
+
+      - name: Setup JDK
+        # Android binding のビルドが呼ぶ Gradle と、Android 橋渡しのテストの実行 JVM になる。
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'maui/Directory.Packages.props', 'maui/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Show toolchain
+        run: |
+          echo "DEVELOPER_DIR=${DEVELOPER_DIR}"
+          xcodebuild -version
+          dotnet --info
+          java -version
+          echo "ANDROID_HOME=${ANDROID_HOME}"
+
+      - name: Prepare Android SDK location
+        # Android 橋渡しの Gradle ビルドが SDK の位置を必要とする。local.properties は
+        # VCS 管理外のファイルなので、ランナーの SDK を指すものを実行前に置く。
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_HOME:-}" ]; then
+            echo "::error::ANDROID_HOME が設定されていない (ランナーイメージに Android SDK が無い)"
+            exit 1
+          fi
+          printf 'sdk.dir=%s\n' "${ANDROID_HOME}" > maui/android/native/local.properties
+
+      - name: Install MAUI workload
+        # workload set の版は global.json の workloadVersion で固定されている。
+        run: dotnet workload install maui
+
+      - name: Run facade unit tests
+        id: facade-tests
+        run: |
+          dotnet test "${KS_FACADE_TESTS}" \
+            -c Release \
+            --logger "trx;LogFileName=maui-facade.trx" \
+            --results-directory "${RUNNER_TEMP}/test-results"
+
+      - name: Verify facade test count
+        # テストが失敗した場合も件数を残すため実行する。ただし前段の環境準備が落ちて
+        # テスト自体が走らなかった (skipped) ときは、結果の不在を件数不足として
+        # 報告しても原因を指さないので実行しない。
+        if: ${{ !cancelled() && steps.facade-tests.conclusion != 'skipped' }}
+        run: |
+          python3 - "${RUNNER_TEMP}/test-results" <<'PY'
+          import glob
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+
+          results_dir = sys.argv[1]
+          trx_files = sorted(glob.glob(os.path.join(results_dir, "*.trx")))
+
+          total = 0
+          passed = 0
+          failed = 0
+          for trx in trx_files:
+              for element in ET.parse(trx).getroot().iter():
+                  if element.tag.rsplit("}", 1)[-1] != "Counters":
+                      continue
+                  total += int(element.get("total", "0"))
+                  passed += int(element.get("passed", "0"))
+                  failed += int(element.get("failed", "0"))
+
+          lines = [
+              "## MAUI facade テスト実行件数",
+              "",
+              f"- 合計: **{total} 件** (成功 {passed} / 失敗 {failed})",
+          ]
+          if not trx_files:
+              lines.append(f"- テスト結果 (TRX) が {results_dir} に無い")
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as f:
+                  f.write("\n".join(lines) + "\n")
+          print("\n".join(lines))
+
+          if total == 0:
+              print("::error::facade のユニットテストが 1 件も実行されていない")
+              sys.exit(1)
+          PY
+
+      - name: Build iOS binding
+        run: dotnet build "${KS_BINDING_IOS}" -c Release
+
+      - name: Build Android binding
+        run: dotnet build "${KS_BINDING_ANDROID}" -c Release -p:JavaSdkDirectory="${JAVA_HOME}"
+
+      - name: Build facade for iOS
+        run: dotnet build "${KS_FACADE}" -f net10.0-ios -c Release
+
+      - name: Build facade for Android
+        run: dotnet build "${KS_FACADE}" -f net10.0-android -c Release -p:JavaSdkDirectory="${JAVA_HOME}"
+
+      - name: Run Android bridge tests
+        id: android-bridge-tests
+        working-directory: maui/android/native
+        run: ./gradlew --no-daemon --console=plain :ksdialogs-maui-bridge:test
+
+      - name: Verify Android bridge test count
+        # テストが失敗した場合も件数を残すため実行する。ただし前段が落ちてテスト自体が
+        # 走らなかった (skipped) ときは、結果 XML の不在を件数不足として報告しない。
+        if: ${{ !cancelled() && steps.android-bridge-tests.conclusion != 'skipped' }}
+        run: |
+          python3 - <<'PY'
+          import glob
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+
+          # 結果ディレクトリ名は variant 名ではなく Gradle のタスク名になる。
+          result_dir = os.path.join(
+              "maui", "android", "native", "ksdialogs-maui-bridge",
+              "build", "test-results", "testDebugUnitTest",
+          )
+          xml_files = sorted(glob.glob(os.path.join(result_dir, "TEST-*.xml")))
+
+          tests = 0
+          failed = 0
+          for xml_file in xml_files:
+              root = ET.parse(xml_file).getroot()
+              tests += int(root.get("tests", "0"))
+              failed += int(root.get("failures", "0")) + int(root.get("errors", "0"))
+
+          reason = ""
+          if not xml_files:
+              reason = f"{result_dir} にテスト結果 XML が無い"
+          elif tests == 0:
+              reason = "Android 橋渡しのテストが 1 件も実行されていない"
+
+          lines = [
+              "## MAUI Android 橋渡しテスト実行件数",
+              "",
+              f"- 合計: **{tests} 件** (失敗 {failed})",
+          ]
+          if reason:
+              lines += ["", "### 件数検査の失敗", "", f"- {reason}"]
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as f:
+                  f.write("\n".join(lines) + "\n")
+          print("\n".join(lines))
+
+          if reason:
+              print(f"::error::{reason}")
+              sys.exit(1)
+          PY
+
+      - name: Resolve iOS Simulator destination
+        run: |
+          # 利用可能な iOS Simulator のうち、ランタイムが最も新しい iPhone を選ぶ。
+          # 機種名はランナーイメージの更新で変わるため、名前ではなく実在する UDID で指定する。
+          xcrun simctl list devices available --json > "${RUNNER_TEMP}/simulators.json"
+          udid=$(python3 - "${RUNNER_TEMP}/simulators.json" <<'PY'
+          import json
+          import re
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as f:
+              catalog = json.load(f)
+
+          best = None
+          for runtime, devices in catalog.get("devices", {}).items():
+              matched = re.search(r"iOS-(\d+)-(\d+)", runtime)
+              if not matched:
+                  continue
+              version = (int(matched.group(1)), int(matched.group(2)))
+              for device in devices:
+                  if not device.get("isAvailable"):
+                      continue
+                  if not device.get("name", "").startswith("iPhone"):
+                      continue
+                  if best is None or version > best[0]:
+                      best = (version, device["udid"], device["name"], runtime)
+
+          if best is None:
+              sys.exit("利用可能な iPhone Simulator が見つからない")
+
+          print(best[1])
+          print(f"selected: {best[2]} ({best[3]})", file=sys.stderr)
+          PY
+          )
+          echo "KS_SIMULATOR_UDID=${udid}" >> "$GITHUB_ENV"
+
+      - name: Run iOS bridge tests on iOS Simulator
+        id: ios-bridge-tests
+        working-directory: maui/macios/native
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project KsDialogsMauiBridge.xcodeproj \
+            -scheme KsDialogsMauiBridge \
+            -destination "platform=iOS Simulator,id=${KS_SIMULATOR_UDID}" \
+            | tee "${RUNNER_TEMP}/xcodebuild-bridge.log"
+
+      - name: Verify iOS bridge test count
+        # テストが失敗した場合も件数を残すため実行する。ただし前段 (Simulator の選定を含む) が
+        # 落ちてテスト自体が走らなかった (skipped) ときは、ログの不在を件数不足として報告しない。
+        if: ${{ !cancelled() && steps.ios-bridge-tests.conclusion != 'skipped' }}
+        run: |
+          python3 - "${RUNNER_TEMP}/xcodebuild-bridge.log" "MAUI iOS 橋渡しテスト実行件数" <<'PY'
+          import os
+          import re
+          import sys
+
+          log_path = sys.argv[1]
+          title = sys.argv[2]
+
+          if not os.path.isfile(log_path):
+              print(f"::error::{title}: テストログ {log_path} が無いため実行件数を確認できない")
+              sys.exit(1)
+
+          with open(log_path, encoding="utf-8", errors="replace") as f:
+              lines = f.read().splitlines()
+
+          # 件数は 2 系統ある。Swift Testing は総括行 (`Test run with N tests in M suites ...`)、
+          # XCTest は `Executed N tests` 行に出る。全テストが Swift Testing 製の構成では
+          # XCTest 側が 0 件と表示されるため、片方だけを見ると全件が 0 件に見える。
+          swift_testing = re.compile(r"Test run with ([0-9]+) tests?\b")
+          # XCTest の `Executed` 行は suite ごとにも出る。合計を二重に数えないよう、
+          # 総括 suite (`All tests`) の直後の行だけを数える。
+          all_tests_suite = re.compile(r"^Test Suite 'All tests' (passed|failed)")
+          xctest_executed = re.compile(r"^\s*Executed ([0-9]+) tests?\b")
+
+          swift_total = None
+          xctest_total = None
+          evidence = []
+
+          for index, line in enumerate(lines):
+              matched = swift_testing.search(line)
+              if matched:
+                  swift_total = (swift_total or 0) + int(matched.group(1))
+                  evidence.append(line.strip())
+                  continue
+              if all_tests_suite.match(line):
+                  for following in lines[index + 1:index + 3]:
+                      executed = xctest_executed.match(following)
+                      if executed:
+                          xctest_total = (xctest_total or 0) + int(executed.group(1))
+                          evidence.append(following.strip())
+                          break
+
+          total = (swift_total or 0) + (xctest_total or 0)
+          reason = ""
+          if swift_total is None and xctest_total is None:
+              reason = (
+                  "Swift Testing (`Test run with N tests`) と XCTest (`Executed N tests`) の"
+                  "どちらの件数行もログに無い (出力形式が変わった可能性がある)"
+              )
+          elif total == 0:
+              reason = "テストが 1 件も実行されていない (2 系統の合算が 0 件)"
+
+          report = [
+              f"## {title}",
+              "",
+              f"- Swift Testing: {'-' if swift_total is None else swift_total} 件",
+              f"- XCTest: {'-' if xctest_total is None else xctest_total} 件",
+              f"- 合算: **{total} 件**",
+          ]
+          if evidence:
+              report += ["", "```"] + evidence + ["```"]
+          if reason:
+              report += ["", "### 件数検査の失敗", "", f"- {reason}"]
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as f:
+                  f.write("\n".join(report) + "\n")
+          print("\n".join(report))
+
+          if reason:
+              print(f"::error::{title}: {reason}")
+              sys.exit(1)
+          PY

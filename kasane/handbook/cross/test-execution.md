@@ -2,10 +2,10 @@
 kind: rule
 applies-when:
   always: false
-  tasks: [テストの実行, テスト結果の報告, 変更の完了判定]
+  tasks: [テストの実行, テスト結果の報告, 変更の完了判定, CI の検証範囲の確認]
 title: テスト実行規約
-description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査
-timestamp: 2026-09-07
+description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査、CI が回す範囲と手元に残る範囲
+timestamp: 2026-09-08
 ---
 
 # テスト実行規約
@@ -32,7 +32,26 @@ timestamp: 2026-09-07
 
 android/ にはもう 1 つ、実行ではなく依存グラフを見る検査がある (後述の「本体の Compose 非依存の検証」)。こちらは上表の `./gradlew test` に含まれる。
 
-実行とは別軸で、**仕様の Scenario ID がテスト名に網羅されているか**を見る検査がある (後述の「仕様とテストの対応の検査」)。どのビルドルートのコマンドにも含まれず、手で回す。
+実行とは別軸で、**仕様の Scenario ID がテスト名に網羅されているか**を見る検査がある (後述の「仕様とテストの対応の検査」)。どのビルドルートのコマンドにも含まれず、CI の lint job と手元の実行で回す。
+
+## CI が回す範囲と手元に残る範囲
+
+`develop` への push と `main` 宛ての pull request で検証 CI (`.github/workflows/ci.yml`) が起動する (cross/ADR-0016)。CI は上表の実行を 5 つの job に分けて回し、どの job も終了コードだけでなく**実行件数を検査**して 0 件なら失敗させる。lint job は起動のたびに必ず走る。
+
+| CI の job | 回す範囲 |
+|---|---|
+| ios | 上表 ios/ の全件 |
+| android | 上表 android/ の全件 (後述の Compose 非依存の依存グラフ検査を含む) |
+| android-instrumented | 上表 android/ (instrumented) の全件。API 36 の Emulator 1 台 |
+| kmp | 上表 kmp/ の全件と、階層化 source set の metadata compile |
+| maui | 上表 maui/ と maui/android/native/ と maui/macios/native/ の全件、および platform TFM と binding のビルド |
+| lint | secret scan・ローカル絶対パス検査・個体情報検査・コメント規約検査・仕様とテストの対応の検査 |
+
+CI に載らない検証は**手元の完了判定に残る**。変更の完了を判定するときは CI の緑だけでは足りず、該当するものを手で回す。
+
+- **instrumented の API 29 (旧経路)** — CI が回すのは API 36 の 1 台だけ。API レベルで走り分ける Scenario (後述) の API 29 側は手元のエミュレータで回す
+- **負のコンパイル検証 62 本** (後述) — 「成功したら失敗」の判定を要し、フラグごとに 1 ビルドが要るため CI には載せない
+- **実行ホストを起動しての確認** — 判定手順は [実行時挙動の検証規約](runtime-behavior-verification.md) が持つ
 
 ## ios/
 
@@ -295,7 +314,7 @@ python3 scripts/scenario-id-coverage.py --selftest  # 正規化と判定が壊�
 - **ID を数えるのはテストの宣言 (関数名と直前の属性・注釈) だけ**。コメント・説明文・証跡ファイル名にしか ID が無いものは網羅と見なさない — ソース全文から拾うと、テストを 1 本も書かずにコメントへ ID を書くだけで「テストあり」と読めてしまう
 - 言語ごとのテスト名の表記差 (Swift `[PB-MD-01] …` / Kotlin・C# `PB_MD_01_…` / Kotlin のバッククォート名 `PB-KC-01 …`) は検査側が正規化する
 - 自動テストで受け止められない Scenario (Sample の通し確認など) は検査の除外 ID として登録してあり、除外は結果に理由つきで表示される
-- **実行契機はローカル** (本リポジトリに CI ワークフローは無い)。Scenario テストを足した後と、変更のレビュー前に手で回す。実行件数と同じく、結果の「未網羅なし」まで見る
+- **実行契機は CI の lint job と手元の 2 つ**。CI は起動のたびに回す。手元では Scenario テストを足した後と、変更のレビュー前に回す。実行件数と同じく、結果の「未網羅なし」まで見る
 
 ## 先例にある未実測の落とし穴
 
