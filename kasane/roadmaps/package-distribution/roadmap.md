@@ -76,7 +76,7 @@ phase-1 → 2 → 3 (public 化) → 4 (CI) の後、phase-5 / 6 / 7 は並行�
 | phase-1-skills-foundation | completed | change | [agenda](phases/phase-1-skills-foundation/agenda.md) | [adopt-docs-refresh](../../changes/archive/2026-09-04-adopt-docs-refresh/proposal.md) |
 | phase-2-docs-rollout | completed | change | [agenda](phases/phase-2-docs-rollout/agenda.md) | [rollout-user-docs](../../changes/archive/2026-09-05-rollout-user-docs/proposal.md) |
 | phase-3-public-readiness | completed | research | [agenda](phases/phase-3-public-readiness/agenda.md) | — |
-| phase-4-verification-ci | in-progress | change | [agenda](phases/phase-4-verification-ci/agenda.md) | — |
+| phase-4-verification-ci | in-progress | change | [agenda](phases/phase-4-verification-ci/agenda.md) | [add-verification-ci](../../changes/add-verification-ci/proposal.md) |
 | phase-5-native-packaging | pending | change | [agenda](phases/phase-5-native-packaging/agenda.md) | — |
 | phase-6-maui-packaging | pending | change | [agenda](phases/phase-6-maui-packaging/agenda.md) | — |
 | phase-7-kmp-packaging | pending | change | [agenda](phases/phase-7-kmp-packaging/agenda.md) | — |
