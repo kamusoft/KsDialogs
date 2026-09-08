@@ -31,3 +31,7 @@ LICENSE・phase-5 の POM 文言・KsSettingsView の props / csproj・原典 Ai
 ## 2026-09-08: 論点 7 — 検証範囲と文書追随の仕分け
 
 文書は 3 段仕分け (change 同梱: handbook local-development-setup の 1 ルールと README 絶対 URL 化 / 蒸留: concepts maui 2 本 + binding 構成の記述 + ADR-0004 昇格 / docs-refresh: README 互換表と skills) を表で確定。検証範囲は A: pack + 消費者 Release ビルド + 両 OS の起動確認 / B: 起動なし / C: pack のみ から A を採用。理由: phase-8 は起動を含まないため Android の NuGet 経由実行時は本 phase でしか見られず、ADR-0004 の未検証 3 点を全部埋めて蒸留で accepted に上げられる。全 7 論点が解消しフェーズ議論を終了。
+
+## 2026-09-08: ADR 捕捉 — maui/ADR-0004 の改訂
+
+論点 4 (下限 = workload 同梱版) と論点 5 (buildTransitive ガード) は将来の `global.json` 更新と facade パッケージの構成を縛るため ADR に残す。新規ではなく proposed のままの maui/ADR-0004 に本文ごと溶かした (Context の前提・Decision 2 項・却下案 4 件・Consequences・Revisit When を追記、date を 2026-09-08 に更新)。論点 3 の `ViewCreationFailed` は公開 API の詳細として concepts に任せ ADR 化しない。昇格は蒸留時。
