@@ -18,7 +18,7 @@ lint:
     # ソース 5 ルートも含める — Xcode の実機ビルドが DEVELOPMENT_TEAM を xcodeproj (samples/ios・samples/kmp/iosApp・
     # maui/macios/native) へ書き戻すため。実測 (2026-09-07) で誤検出 0 件。正当な UUID 定数が入ったら allow に足す
     scope: [kasane, skills, README.md, README_ja.md, samples, ios, android, maui, kmp]
-    allow: []                    # 正当な値 (名前空間 UUID・デモデータの @ドメイン 等) の列挙
+    allow: [repo.local]          # 正当な値 (名前空間 UUID・デモデータの @ドメイン 等) の列挙。repo.local は Maven のシステムプロパティ maven.repo.local の末尾 (ホスト名ではない、2026-09-08)
     disable: []                  # 無効化する検出群: device / developer / network / personal / secret
   internal-hosts: []             # 未公開サーバのホスト名 (列挙したものだけを検出)
   doc-structure:                 # 育つ文書の構造 lint (references/doc-structure.md)。hook には登録しない
