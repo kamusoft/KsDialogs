@@ -14,6 +14,7 @@
 | [docs-refresh-timing.md](docs-refresh-timing.md) | docs-refresh を走らせるとき・変更を蒸留するとき (`skills/.manifest.json` の concepts スナップショットを書く時点) | rule |
 | [user-skill-writing-style.md](user-skill-writing-style.md) | `skills/**` の references を新設・改稿するとき・ja から en へ同期するとき | rule |
 | [diagnostic-message-language.md](diagnostic-message-language.md) | ライブラリ本体 (4 形態) に失敗型の case・例外文言・警告ログを足すか変えるとき・Skills の診断表で実装文言を引用するとき | rule |
+| [ci-script-deletion.md](ci-script-deletion.md) | `scripts/**`・`.github/workflows/**`・`verification/**` のスクリプトを作る・翻案する・レビューするとき (削除操作を含むもの) | rule |
 | [aiforms-origin-reference.md](aiforms-origin-reference.md) | 未移植の Dialog / Loading 機能を実装するとき・Dialog / Loading の不具合や挙動差を調査するとき (移植完了で廃止する時限規約) | rule |
 
 外部参考リポジトリのローカルパスは規範ではなく記述のため、concepts 側の [参考リポジトリの在り処](../../concepts/cross/reference/reference-repositories.md) が持つ。comment-policy.md (配布物) が許容する「他リポジトリのコード識別子」の参照先 (移植元 AiForms.Maui.Dialogs・先例 KsSettingsView / KsAppKMP) の在り処も同文書が唯一の情報源。

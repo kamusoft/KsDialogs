@@ -3,7 +3,7 @@ type: concept
 title: Android の Loading 公開面
 description: Android Native (Kotlin) で Loading を使うときの公開名と署名 — 契約と既定エントリ・show / hide / setMessage / スコープ形の署名・進捗報告口と進捗受け口・従来 View 系と Compose の登録と表示・型指定 show / start と VM factory 登録・LoadingStyle と器メタ属性・配布モジュールと Context レシーバの注意
 tags: [android, loading, api, surface]
-timestamp: 2026-09-07
+timestamp: 2026-09-08
 ---
 
 # Android の Loading 公開面
@@ -48,7 +48,7 @@ timestamp: 2026-09-07
 | 従来 View 系 (`android.view.View`) | `register(...)` | `show(viewModel, placement)` / `start(viewModel, placement, action)` | `show(viewModel, placement, factory)` / `start(viewModel, placement, factory, action)` |
 | Compose | `registerCompose(...)` | `show(viewModel, placement)` / `start(viewModel, placement, action)` | `showCompose(viewModel, placement, content)` / `startCompose(viewModel, placement, content, action)` |
 
-**登録済みの表示はどちらの技術でも同じ `show` / `start`** で、型指定 show / start (`show(VM::class)` / `start(VM::class)`) も `register` / `registerCompose` のどちらで登録した中身にも同じに働く。別名になるのは中身を引数で渡す `registerCompose` / `showCompose` / `startCompose` で、事情は Dialog と同じ (`@Composable` 付きの関数型と通常の関数型を同名で並べると型推論が曖昧になる。中身を関数参照ではなくラムダで書く点も同じ — [Android の Dialog 公開面](dialog-surface.md))。これらは別モジュール `ksdialogs-compose` に入っており、これを依存に追加した消費者だけが使える。
+**登録済みの表示はどちらの技術でも同じ `show` / `start`** で、型指定 show / start (`show(VM::class)` / `start(VM::class)`) も `register` / `registerCompose` のどちらで登録した中身にも同じに働く。別名になるのは中身を引数で渡す `registerCompose` / `showCompose` / `startCompose` で、事情は Dialog と同じ (`@Composable` 付きの関数型と通常の関数型を同名で並べると型推論が曖昧になる。中身を関数参照ではなくラムダで書く点も同じ — [Android の Dialog 公開面](dialog-surface.md))。これらは Compose 系の配布物 `jp.kamusoft:ksdialogs` に入っており、これを依存に追加した消費者だけが使える。
 
 ```kotlin
 // 従来 View 系。factory のレシーバは提示先画面の Context

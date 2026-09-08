@@ -250,7 +250,7 @@ jobs:
       - name: Scenario ID coverage
         run: python3 scripts/scenario-id-coverage.py
 
-      # SwiftPM 配信リポジトリへのスナップショット同期スクリプトの自己テスト。
+      # SwiftPM 配信リポジトリへのスナップショット同期スクリプトの自己テスト (lint job の 6 検査目、cross/ADR-0020)。
       # 一時ディレクトリに配信リポジトリを模した git リポジトリを作り、配置内容・冪等性・
       # 誤指定の拒否・git 非操作を検査する (monorepo 側は読むだけ)。
       - name: SPM snapshot sync script test

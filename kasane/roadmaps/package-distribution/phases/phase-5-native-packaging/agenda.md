@@ -1,6 +1,6 @@
 # Native パッケージング (native-packaging)
 
-Native iOS (SwiftPM 配信リポジトリ `KsDialogs-SPM` へのスナップショット) と Native Android (Maven Central へ `ksdialogs` / `ksdialogs-compose` の 2 artifact) の発行機構を配線する change フェーズ。
+Native iOS (SwiftPM 配信リポジトリ `KsDialogs-SPM` へのスナップショット) と Native Android (Maven Central へ `ksdialogs-core` / `ksdialogs` の 2 artifact、cross/ADR-0019) の発行機構を配線する change フェーズ。
 
 ## 論点
 
@@ -66,8 +66,25 @@ KsSettingsView 方式 (同 cross/ADR-0020) を踏襲する。開発用既定値�
 
 - 却下: カタログの値そのものを CI が書き換える方式 (作業木を汚し、tag との一致が書き換え工程の正しさに依存する) / version 専用ファイルの新設 (カタログが既に同じ役で冗長)
 
+## 実装結果 (2026-09-08 反映)
+
+change [add-native-distribution](../../../../changes/archive/2026-09-08-add-native-distribution/proposal.md) (L 級) で実装完了。レビュー 2 周 + 相方レビュー 2 周 APPROVED、verify-001 VALID (22 Scenario)。配信リポジトリ `KsDialogs-SPM` へスナップショット (49fc0a8) を初回 push し、検証用 tag `0.1.0-alpha.1` で https 解決と iOS Simulator 向けビルドを確認して tag を削除済み。
+
+決定事項からの乖離は 2 点。instrumented test は API 36 のエミュレータではなく API 36 の実機で件数一致 (294 / 39) を確認した (手元にシステムイメージが無いため。エミュレータ条件は CI の instrumented job が担保)。同期スクリプトの `.git/` 以外の除去は `rm -rf` とした (オーナー裁定: 全体ルール「削除は trash」は人の操作環境向けで、CI スクリプトは対象外)。
+
+蒸留では cross/ADR-0019 を accepted に昇格し (cross/ADR-0005・android/ADR-0001 に amended-by)、同期テストの lint job 追加を cross/ADR-0020 (cross/ADR-0017 の amends) として起票した。版の導出式は新規 ADR にせず cross/ADR-0009 (proposed) に溶かし、phase-7 / phase-9 の蒸留で昇格する。
+
+### 申し送り
+
+| 項目 | 受け皿 |
+|---|---|
+| `skills/` 12 箇所と README 2 枚の旧座標 (`jp.kamusoft:ksdialogs-compose` / 本体としての `jp.kamusoft:ksdialogs`) の追随は docs-refresh の責務。初回リリース前に必ず走らせる | [phase-9 agenda](../phase-9-release-workflow/agenda.md) の TODO に追記 |
+| `verify-https-resolution.sh` は自動テストを持たない (`sync-snapshot.sh` の自己テストとの非対称。verify-001 の注記)。手動検証専用で release workflow から呼ばない | 見送り。phase-9 で同スクリプトを流用する判断が出たときに再考する |
+| `kmp/` の version 導出式の配線 (cross/ADR-0009 の式を kmp/build.gradle.kts に写す) | [phase-7 agenda](../phase-7-kmp-packaging/agenda.md) 決定事項 A5 |
+| phase-8 の Android 消費者の論点は旧座標で書かれていた | [phase-8 agenda](../phase-8-consumer-verification/agenda.md) の論点を新座標の表記に改めた |
+
 ## TODO
 
 - [x] 論点の解消 (2026-09-08 出尽くし)
-- [ ] ksn-roadmap でゴール文の Android 座標表記を `ksdialogs-core` / `ksdialogs` に改訂する
-- [ ] ksn-propose で変更提案を起こす
+- [x] ksn-roadmap でゴール文の Android 座標表記を `ksdialogs-core` / `ksdialogs` に改訂する (2026-09-08 蒸留時に roadmap.md のゴール文を追随)
+- [x] ksn-propose で変更提案を起こす (add-native-distribution、2026-09-08 完了)

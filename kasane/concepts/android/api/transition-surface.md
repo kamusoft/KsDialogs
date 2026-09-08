@@ -3,7 +3,7 @@ type: concept
 title: Android のトランジション公開面
 description: Android Native (Kotlin) でダイアログの出入りの演出を差し替えるときの公開名と署名 — 演出の型とフックの型・従来 View 系の拡張プロパティと Compose の宣言・プリセット factory と辺の綴り・duration と easing の型・ミリ秒に落ちる微小値の扱い
 tags: [android, transition, api, surface]
-timestamp: 2026-09-05
+timestamp: 2026-09-08
 ---
 
 # Android のトランジション公開面
@@ -67,7 +67,7 @@ Dialog.instance.registry.registerCompose(ConfirmViewModel::class) { viewModel, n
 }
 ```
 
-`KsDialogAttributes` は**初回の組み立てで通る位置に書く**。`LazyColumn` のような遅延評価されるスコープの中に書いた宣言は初回の組み立てで実行されず、その表示には効かない。この宣言は別モジュール `ksdialogs-compose` に入っており、これを依存に追加した消費者だけが使える ([Android のレイアウト公開面](layout-surface.md))。
+`KsDialogAttributes` は**初回の組み立てで通る位置に書く**。`LazyColumn` のような遅延評価されるスコープの中に書いた宣言は初回の組み立てで実行されず、その表示には効かない。この宣言は Compose 系の配布物 `jp.kamusoft:ksdialogs` に入っており、これを依存に追加した消費者だけが使える ([Android のレイアウト公開面](layout-surface.md))。
 
 ## プリセット factory
 

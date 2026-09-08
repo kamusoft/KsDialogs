@@ -3,6 +3,7 @@ id: 0001
 title: Compose 系 API は別モジュール ksdialogs-compose に分離し、本体は Compose 非依存を保つ
 status: accepted
 date: 2026-08-17
+amended-by: [cross/0019]
 ---
 
 ## Context

@@ -3,6 +3,7 @@ id: 0017
 title: 検証 CI は platform 別 reusable workflow 5 本と入口 1 本で構成し、緑の意味を「ロジック全件通過 + native 配線のコンパイル」に限り、トリガーはブランチの役割で分ける
 status: accepted
 date: 2026-09-08
+amended-by: [cross/0020]
 ---
 
 ## Context

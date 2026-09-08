@@ -8,7 +8,7 @@ library-foundation の phase-11-packaging / phase-9-docs を昇格して起案�
 
 ### ゴール
 
-- iOS (SwiftPM 配信リポジトリ `KsDialogs-SPM`)、Android (`jp.kamusoft:ksdialogs` / `ksdialogs-compose`)、MAUI (`KsDialogs.Maui`)、KMP (`jp.kamusoft:ksdialogs-kmp` + iOS アプリ側の SwiftPM 1 点) を公開レジストリから導入できる (cross/ADR-0008、maui/ADR-0004、kmp/ADR-0003)
+- iOS (SwiftPM 配信リポジトリ `KsDialogs-SPM`)、Android (`jp.kamusoft:ksdialogs-core` / `ksdialogs`)、MAUI (`KsDialogs.Maui`)、KMP (`jp.kamusoft:ksdialogs-kmp` + iOS アプリ側の SwiftPM 1 点) を公開レジストリから導入できる (cross/ADR-0008、maui/ADR-0004、kmp/ADR-0003)
 - 単一 version で全形態を 1 回の手動起動で一斉リリースでき、tag は publish 全成功後にのみ生まれる (cross/ADR-0009、KsSettingsView cross/ADR-0020 の踏襲)
 - 配布物を参照する消費者プロジェクト (`verification/`、4 形態) で配信経路が検証されている (publish 前の dry-run と publish 後の smoke)
 - ブランチの役割に合わせた検証 CI がある (KsSettingsView cross/ADR-0025・0026・0028 の踏襲)
@@ -77,7 +77,7 @@ phase-1 → 2 → 3 (public 化) → 4 (CI) の後、phase-5 / 6 / 7 は並行�
 | phase-2-docs-rollout | completed | change | [agenda](phases/phase-2-docs-rollout/agenda.md) | [rollout-user-docs](../../changes/archive/2026-09-05-rollout-user-docs/proposal.md) |
 | phase-3-public-readiness | completed | research | [agenda](phases/phase-3-public-readiness/agenda.md) | — |
 | phase-4-verification-ci | completed | change | [agenda](phases/phase-4-verification-ci/agenda.md) | [add-verification-ci](../../changes/archive/2026-09-08-add-verification-ci/proposal.md) |
-| phase-5-native-packaging | in-progress | change | [agenda](phases/phase-5-native-packaging/agenda.md) | [add-native-distribution](../../changes/add-native-distribution/proposal.md) |
+| phase-5-native-packaging | completed | change | [agenda](phases/phase-5-native-packaging/agenda.md) | [add-native-distribution](../../changes/archive/2026-09-08-add-native-distribution/proposal.md) |
 | phase-6-maui-packaging | in-progress | change | [agenda](phases/phase-6-maui-packaging/agenda.md) | [add-maui-nuget-distribution](../../changes/add-maui-nuget-distribution/proposal.md) |
 | phase-7-kmp-packaging | in-progress | change | [agenda](phases/phase-7-kmp-packaging/agenda.md) | [add-kmp-maven-distribution](../../changes/add-kmp-maven-distribution/proposal.md) |
 | phase-8-consumer-verification | pending | change | [agenda](phases/phase-8-consumer-verification/agenda.md) | — |

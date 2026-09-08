@@ -13,7 +13,7 @@ plugins {
     alias(libs.plugins.mavenPublish)
 }
 
-// Maven 座標は View 系本体を ksdialogs-core、Compose 系を ksdialogs とする写像に従う。
+// Maven 座標は View 系本体を ksdialogs-core、Compose 系を ksdialogs とする写像 (cross/ADR-0019) に従う。
 // group と version は全モジュール共通の事項なのでルート build.gradle.kts が一括で設定する。
 mavenPublishing {
     pom {

@@ -3,7 +3,7 @@ type: concept
 title: Android の Dialog 公開面
 description: Android Native (Kotlin) からダイアログを使うときの公開名と署名 — 既定エントリと登録の入口・真偽値の別名・従来 View 系と Compose の別名での呼び分けと配布モジュール・Compose の属性宣言・インライン show・結果報告口の取得・構成ミスの例外型・型指定 show
 tags: [android, dialog, api, surface]
-timestamp: 2026-09-06
+timestamp: 2026-09-08
 ---
 
 # Android の Dialog 公開面
@@ -41,7 +41,7 @@ Kotlin には型引数の既定値がないため、宣言を省く代わりに�
 
 **登録済みの表示はどちらの技術でも同じ `show`** である — 中身の作り方はレジストリのエントリが持つので、呼び出し側に技術の区別が要らない。別名になるのは中身を引数で渡す 2 つ (登録の `registerCompose` とインライン表示の `showCompose`) で、Kotlin では `@Composable` 付きの関数型と通常の関数型を同名で並べると呼び出し側の型推論が曖昧になるためである。片方だけ別名にすると覚えにくいので、両方を別名でそろえている。
 
-`registerCompose` / `showCompose` は別モジュール `ksdialogs-compose` に入っており、これを依存に追加した消費者だけが使える。本体 `ksdialogs` は Compose に依存しない — 従来 View 系しか使わない消費者 (特に MAUI Android がバインディング経由で Android 本体を取り込む経路) に Compose の依存を持ち込まないためである。
+`registerCompose` / `showCompose` は Compose 系の配布物 `jp.kamusoft:ksdialogs` (Gradle module `:ksdialogs`) に入っており、これを依存に追加した消費者だけが使える。View 系本体 `jp.kamusoft:ksdialogs-core` は Compose 系から `api` の推移的依存で自動的に届き、本体自身は Compose に依存しない — 従来 View 系しか使わない消費者 (特に MAUI Android がバインディング経由で Android 本体を取り込む経路) に Compose の依存を持ち込まないためである。
 
 `registerCompose` / `showCompose` に渡す中身は `@Composable` の**ラムダ**で書く。`@Composable` 関数への関数参照 (`::ConfirmContent` の形) は Compose コンパイラが受け付けないため、関数に切り出した中身もラムダから呼ぶ。
 

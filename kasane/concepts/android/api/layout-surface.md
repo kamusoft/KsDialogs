@@ -3,7 +3,7 @@ type: concept
 title: Android のレイアウト公開面
 description: Android Native (Kotlin) でダイアログの大きさと位置を指定するときの公開名と署名 — 属性の型とプロパティ・従来 View 系の拡張プロパティと Compose の宣言・show 引数での置き場所指定・論理単位と色の表現
 tags: [android, layout, api, surface]
-timestamp: 2026-09-05
+timestamp: 2026-09-08
 ---
 
 # Android のレイアウト公開面
@@ -78,7 +78,7 @@ Dialog.instance.registry.registerCompose(ConfirmViewModel::class) { viewModel, n
 
 `KsDialogAttributes` は**初回の組み立てで通る位置に書く**。`LazyColumn` のような遅延評価されるスコープの中に書いた宣言は初回の組み立てで実行されず、その表示には効かない。ダイアログの中身以外で呼び出しても何も起こらない。
 
-`KsDialogAttributes` は別モジュール `ksdialogs-compose` に入っており、これを依存に追加した消費者だけが使える。
+`KsDialogAttributes` は Compose 系の配布物 `jp.kamusoft:ksdialogs` (Gradle module `:ksdialogs`) に入っており、これを依存に追加した消費者だけが使える。
 
 ## show 引数での置き場所指定
 

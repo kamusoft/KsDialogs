@@ -3,7 +3,7 @@ type: concept
 title: Android の Toast 公開面
 description: Android Native (Kotlin) で Toast を使うときの公開名と署名 — 契約と既定エントリ・4 経路の show と durationMs 引数・従来 View 系と Compose の登録と表示・型指定 show と VM factory 登録・ToastStyle のプロパティ・持たない操作と OS の Toast API との違い
 tags: [android, toast, api, surface]
-timestamp: 2026-09-07
+timestamp: 2026-09-08
 ---
 
 # Android の Toast 公開面
@@ -48,7 +48,7 @@ Toast.instance.show("保存しました", durationMs = 2500)
 | 従来 View 系 (`android.view.View`) | `register(...)` | `show(viewModel, durationMs, placement)` | `show(viewModel, durationMs, placement, factory)` |
 | Compose | `registerCompose(...)` | `show(viewModel, durationMs, placement)` | `showCompose(viewModel, durationMs, placement, content)` |
 
-**登録済みの表示はどちらの技術でも同じ `show`** で、型指定 show (`show(VM::class)`) も `register` / `registerCompose` のどちらで登録した中身にも同じに働く。別名になるのは中身を引数で渡す `registerCompose` / `showCompose` で、事情は Dialog / Loading と同じ (中身を関数参照ではなくラムダで書く点も同じ)。これらは別モジュール `ksdialogs-compose` に入っている ([Android の Dialog 公開面](dialog-surface.md))。
+**登録済みの表示はどちらの技術でも同じ `show`** で、型指定 show (`show(VM::class)`) も `register` / `registerCompose` のどちらで登録した中身にも同じに働く。別名になるのは中身を引数で渡す `registerCompose` / `showCompose` で、事情は Dialog / Loading と同じ (中身を関数参照ではなくラムダで書く点も同じ)。これらは Compose 系の配布物 `jp.kamusoft:ksdialogs` に入っている ([Android の Dialog 公開面](dialog-surface.md))。
 
 ```kotlin
 Toast.instance.registry.registerCompose(NoticeViewModel::class) { viewModel ->

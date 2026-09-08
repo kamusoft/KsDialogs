@@ -4,7 +4,7 @@ KsSettingsView の `release.yml` をコピー + 固有値の差し替えで逆�
 
 ## 論点
 
-- 4 本化: package / dry-run / smoke の各段に KMP を足す (phase-7・8 の結論)。publish 段の順序 (Maven upload 保留 → NuGet push → Maven release → SPM tag → monorepo tag) に KMP の Maven artifact をどう並べるか (同じ Central deployment に `ksdialogs` / `ksdialogs-compose` / `ksdialogs-kmp` を同梱できるか)
+- 4 本化: package / dry-run / smoke の各段に KMP を足す (phase-7・8 の結論)。publish 段の順序 (Maven upload 保留 → NuGet push → Maven release → SPM tag → monorepo tag) に KMP の Maven artifact をどう並べるか (同じ Central deployment に `ksdialogs-core` / `ksdialogs` / `ksdialogs-kmp` を同梱できるか)
 - 初回リリースの version (KsSettingsView は `0.1.0-beta.1`) と GitHub Release の prerelease 扱い
 - README の version 置換 (`scripts/release/set-readme-version.py`) を置く位置はブランチモデル (phase-3 の結論) に従う。AGENTS.md の「README は docs-refresh 経由のみ」への例外 1 行
 - 初回リリース前の docs-refresh 依頼 (phase-2 で作った Skills / README を最新の concepts に追従させる) のタイミング
@@ -45,7 +45,14 @@ phase-4 の実装結果 (2026-09-08): 入口 `ci.yml` は変更検出 job `chang
 - concurrency group は `release`、cancel-in-progress は false
 - 却下済み: tag push トリガー / ファイルを version の正にして tag と照合 / `vX.Y.Z` 表記 / 開発ブランチから起動 / publish 済み version の再実行禁止 / smoke 成功後に tag / workflow が README をリリース対象ブランチに commit / 共有 workflow 化 (理由は cross/ADR-0020 と KsSettingsView phase-8 の Alternatives)
 
+### phase-5 からの申し送り (2026-09-08)
+
+利用者向け成果物 (`skills/{en,ja}/ksdialogs-android/**`・`skills/{en,ja}/ksdialogs-kmp/references/android-host.md`・`README.md`・`README_ja.md`) に旧座標 `jp.kamusoft:ksdialogs-compose` と本体としての `jp.kamusoft:ksdialogs` が計 16 箇所残る。cross/ADR-0019 の新座標 (Compose 側 `ksdialogs` / 本体 `ksdialogs-core`) への追随は docs-refresh の責務で、初回リリースより前に走らせる (release が先だと存在しない座標を案内する README が公開される)。「docs-refresh のタイミング」の論点はこの残存を潰す前提で決める。
+
+version の注入と SNAPSHOT ガードは android/ に配線済み (cross/ADR-0009 に記載)。release workflow は `-Pversion=` を android/ と kmp/ の両ビルドに渡す。SwiftPM のスナップショット同期は `scripts/spm-snapshot/sync-snapshot.sh` (配置まで。commit / tag / push は workflow 側)。検証用の `verify-https-resolution.sh` は手動検証専用で release から呼ばない。
+
 ## TODO
 
 - [ ] 論点の解消 (4 本化・初回 version・README 置換の位置・docs-refresh のタイミング)
+- [ ] 初回リリース前に docs-refresh を走らせ、skills / README の旧 Android 座標 (16 箇所) を cross/ADR-0019 の新座標へ追随させる (phase-5 申し送り)
 - [ ] ksn-propose で変更提案を起こす

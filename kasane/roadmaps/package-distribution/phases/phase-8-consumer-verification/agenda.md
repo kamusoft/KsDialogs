@@ -5,7 +5,7 @@
 ## 論点
 
 - KMP 消費者 (phase-7 の結論の実装): Android app + iOS の linkage package の 2 面を 1 つの `verification/kmp/` に置くか、iOS 面だけ別に切るか。macOS ランナーの所要時間
-- Android 消費者は `ksdialogs` と `ksdialogs-compose` の両方を参照するか (Compose コンテンツ利用時の推移的依存の検証)
+- Android 消費者は Compose 系 `jp.kamusoft:ksdialogs` 1 行だけを参照して本体 `ksdialogs-core` が推移的に届くことを検証するか、View 系本体だけの消費者も別に置くか (座標は cross/ADR-0019。phase-5 の Sample は Compose 系 1 行 + 推移で本体を解決する形)
 - MAUI 消費者の所要時間 (KsSettingsView は約 20 分、見込みを大幅超過) を踏まえた timeout と、消費者検証をどのトリガーに載せるか (phase-4 の結論)
 - README の最小コード例 (4 形態 + KMP の iOS 側) を消費者プロジェクトに逐語一致で同梱し lint で検査する範囲
 

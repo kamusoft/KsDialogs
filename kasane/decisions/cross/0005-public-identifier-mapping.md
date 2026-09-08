@@ -3,6 +3,7 @@ id: 0005
 title: 公開識別子の写像表 — 素の名前は Native へ、MAUI は namespace 素・NuGet ID 修飾
 status: accepted
 date: 2026-08-14
+amended-by: [cross/0019]
 ---
 
 ## Context
