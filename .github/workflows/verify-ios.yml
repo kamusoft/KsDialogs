@@ -83,6 +83,10 @@ jobs:
           )
           echo "KS_SIMULATOR_UDID=${udid}" >> "$GITHUB_ENV"
 
+      # スイート同士の並列実行は止める。ランナーは手元より CPU が少なく、並列に走る
+      # スイートが MainActor を取り合うと提示待ちのテストが時間切れになる
+      # (待ちの上限 5 秒に対して 28〜57 秒後に落ち、落ちるテストは回ごとに入れ替わる)。
+      # 手元の実行は既定 (並列) のままでよく、直列化は CI の実行条件の違いとして handbook に記す。
       - name: Run tests on iOS Simulator
         working-directory: ios
         run: |
@@ -90,6 +94,7 @@ jobs:
           xcodebuild test \
             -scheme KsDialogs \
             -destination "platform=iOS Simulator,id=${KS_SIMULATOR_UDID}" \
+            -parallel-testing-enabled NO \
             | tee "${RUNNER_TEMP}/xcodebuild.log"
 
       - name: Verify executed test count

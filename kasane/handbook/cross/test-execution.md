@@ -40,7 +40,7 @@ android/ にはもう 1 つ、実行ではなく依存グラフを見る検査�
 
 | CI の job | 回す範囲 |
 |---|---|
-| ios | 上表 ios/ の全件 |
+| ios | 上表 ios/ の全件。スイート同士の並列実行は止めて回す (`-parallel-testing-enabled NO`)。ランナーは CPU が少なく、並列のままだと提示待ちのテストが MainActor を取り合って時間切れになる。手元は既定の並列でよい |
 | android | 上表 android/ の全件 (後述の Compose 非依存の依存グラフ検査を含む) |
 | android-instrumented | 上表 android/ (instrumented) の全件。API 36 の Emulator 1 台 |
 | kmp | 上表 kmp/ の全件と、階層化 source set の metadata compile |
