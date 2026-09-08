@@ -35,3 +35,7 @@ LICENSE・phase-5 の POM 文言・KsSettingsView の props / csproj・原典 Ai
 ## 2026-09-08: ADR 捕捉 — maui/ADR-0004 の改訂
 
 論点 4 (下限 = workload 同梱版) と論点 5 (buildTransitive ガード) は将来の `global.json` 更新と facade パッケージの構成を縛るため ADR に残す。新規ではなく proposed のままの maui/ADR-0004 に本文ごと溶かした (Context の前提・Decision 2 項・却下案 4 件・Consequences・Revisit When を追記、date を 2026-09-08 に更新)。論点 3 の `ViewCreationFailed` は公開 API の詳細として concepts に任せ ADR 化しない。昇格は蒸留時。
+
+## 2026-09-08: 提案化 (ksn-propose) と相方スペックレビューの反映
+
+change `add-maui-nuget-distribution` (L 級) を起こした。相方 (codex) のスペックレビューは Major 9 / Minor 1 で NEEDS_DISCUSSION。採用 8 件 (Toast は呼び出し元へ返せない・ガードの「未設定」契約・aar 除去は SDK 内部ターゲット依存の意図的例外・README の相対参照は 12 件・Android の型消失は修正前再現が要る・iOS 互換面テストの最終実行・Sample 通しの項目別観測と Android 面の追加・ApiSurfaceCheck)、降格 1 件 (binding 依存の完全一致: SDK に標準手段が無く ADR-0004 の却下案そのもの、phase-8 の依存検査で検出)。設計判断 1 件はオーナー裁定: View fallback の resolver は利用者コードとして包まない (A)。論点 3 の決定事項をこの範囲に改め、maui/ADR-0004 の Consequences に aar 除去の例外と下限依存の受容を追記した。

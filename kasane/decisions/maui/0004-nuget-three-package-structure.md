@@ -54,11 +54,14 @@ MAUI 本体 (`Microsoft.Maui.Controls`) の下限版は、リポジトリが固�
 - 負: binding resource の manifest に発行マシンの絶対パスが記録される (SDK 標準挙動)。消費者ビルドでは無害だが、発行環境のパスが公開物に含まれることは認識しておく
 - 負: ライブラリ自身のビルドは workload 同梱版に留まり、それより新しい 10.0.x のバグ修正を自分の検証では使わない (利用者は上げてよい)
 - 負: facade パッケージに build 資産 (`buildTransitive/`) が入り、要件の数値を変えるときは同梱 props とガードの文面を併せて見直す
+- 負: .NET Android SDK が生成する自 assembly 用 aar を nupkg から除く後処理だけは、除外用の公開手段が SDK に無いため SDK 内部ターゲット (`_IncludeAarInNuGetPackage`) への接続として持つ (「自作 MSBuild を足さない」の意図的な例外)。pack 検算で aar の不在を毎回確かめ、SDK 更新で接続が外れたら気づく
+- 負: facade → binding の依存は SDK 標準の pack が書く下限指定 (`>= x.y.z`) で、完全一致にする標準手段が無い。lockstep の同時発行と最小適用版解決で利用者は同版を得るが、binding を直接参照すると版がずれ得る (Description で直接参照しないよう示す)
 
 ## Revisit When
 
 - MAUI テンプレートが版をリテラルで書くようになる、または workload set と `Microsoft.Maui.Controls` の版が独立に決まるようになったとき (下限ルールの前提)
 - facade が 10.0.x の途中で追加された MAUI API を使い始めたとき (下限を同梱版より上げる必要が出る)
 - .NET SDK が利用者側の最低 OS 版を自前で検査するようになったとき (ガードが重複する)
+- SDK が pack からの aar 除外の公開手段、または ProjectReference 依存の完全一致指定を持ったとき (内部ターゲットへの接続と下限依存の受容を見直す)
 
 出典: kasane/roadmaps/library-foundation/phases/phase-10-packaging-model/history.md (2026-08-17: 論点D PoC・決定) / kasane/roadmaps/package-distribution/phases/phase-6-maui-packaging/history.md (2026-09-08: 論点 4 MAUI 本体の下限版・論点 5 最低 OS 版のビルド時ガード)

@@ -58,13 +58,13 @@ facade は Package ID `KsDialogs.Maui` として pack でき、TFM group ごと�
 
 ### Requirement: 最低 OS 版のビルド時ガード
 
-facade パッケージは利用者のビルドに同梱される MSBuild 資産 (`buildTransitive/`) を持ち、platform TFM のビルドで利用者アプリの `SupportedOSPlatformVersion` が要件 (Android 24 / iOS 17.0、cross/ADR-0002) 未満または未設定なら、診断 ID `KSDLG0001` で要件と設定方法を示すエラーを出してビルドを止める SHALL。要件を満たす場合は何も出力しない SHALL。要件の数値はこの同梱資産が単一の宣言元であり、リポジトリ内の facade・binding 2 件の `SupportedOSPlatformVersion` も同じ宣言元から導かれる SHALL。
+facade パッケージは利用者のビルドに同梱される MSBuild 資産 (`buildTransitive/`) を持ち、platform TFM のビルドで利用者アプリの `SupportedOSPlatformVersion` の MSBuild 評価後の値 (未設定なら SDK の既定値が入る) が要件 (Android 24 / iOS 17.0、cross/ADR-0002) 未満なら、診断 ID `KSDLG0001` で要件と設定方法を示すエラーを出してビルドを止める SHALL。要件を満たす場合は何も出力しない SHALL。明示設定そのものは強制しない — Android の未設定は SDK 既定 21.0 のため止まり、iOS の未設定は SDK 既定値が要件以上のため通る。要件の数値はこの同梱資産が単一の宣言元であり、リポジトリ内の facade・binding 2 件の `SupportedOSPlatformVersion` も同じ宣言元から導かれる SHALL。
 
 #### Scenario: 要件未満の利用者アプリ
 
 - **GIVEN** ローカルフィードの facade を参照し、Android の `SupportedOSPlatformVersion` を 21、iOS を 15.0 に設定した利用者アプリ
 - **WHEN** それぞれの platform TFM でビルドする
-- **THEN** Android は manifest merger のエラーより先に、iOS はビルド成功に至る前に、`KSDLG0001` で KsDialogs の要件 (Android 24 / iOS 17.0) と `SupportedOSPlatformVersion` の設定を促す文面のエラーで失敗する
+- **THEN** Android は manifest merger のエラーより先に、iOS はビルド成功に至る前に、`KSDLG0001` で KsDialogs の要件 (Android 24 / iOS 17.0) と `SupportedOSPlatformVersion` の設定を促す文面のエラーで失敗する。`SupportedOSPlatformVersion` を両 platform とも未設定にすると、Android は SDK 既定 21.0 で同じエラーになり、iOS は SDK 既定値で通る
 
 #### Scenario: 要件を満たす利用者アプリとリポジトリ内のビルド
 
@@ -86,23 +86,29 @@ facade パッケージは利用者のビルドに同梱される MSBuild 資産 
 
 ### Requirement: package README の表示
 
-facade パッケージはルート `README.md` を package README として同梱する SHALL。`README.md` / `README_ja.md` のリンク参照は public リポジトリ上の絶対 URL であり相対パス参照が残らず、nuget.org と GitHub の両方で辿れる SHALL。
+facade パッケージはルート `README.md` を package README として同梱する SHALL。`README.md` / `README_ja.md` の画像とリンクの参照は public リポジトリ上の絶対 URL であり、anchor と mailto を除く非 HTTP(S) の参照は機械抽出で 0 件であり、nuget.org と GitHub の両方で辿れる SHALL。
 
 #### Scenario: README の同梱とリンク参照
 
 - **GIVEN** pack 設定を導入した facade
 - **WHEN** facade を pack し、`README.md` / `README_ja.md` の画像とリンクの参照を検査する
-- **THEN** nupkg のルートに `README.md` があり nuspec の readme がそれを指し、両 README の画像とリンクの参照がすべて `https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/` または `https://github.com/kamusoft/KsDialogs/` 配下の絶対 URL で相対パス参照が残っておらず、各 URL は取得に成功する
+- **THEN** nupkg のルートに `README.md` があり nuspec の readme がそれを指し、両 README から機械抽出した `](...)` の参照は anchor と mailto を除いてすべて `https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/` または `https://github.com/kamusoft/KsDialogs/` 配下の絶対 URL (非 HTTP(S) 参照 0 件) で、各 URL は取得に成功する
 
-### Requirement: MAUI iOS 面の Sample 通し
+### Requirement: MAUI Sample の両 OS 通しと MAUI テストルートの完了判定
 
-`samples/maui` の Sample は iOS Simulator でデモ駆動モードにより全デモ項目 (Model Dialog を含む) を通せ、各項目の観察可能な結果が Android 面の既存証跡と同じ形で得られる SHALL。
+`samples/maui` の Sample は、MAUI 本体 10.0.20 でビルドした状態で iOS Simulator と Android エミュレータの両方でデモ駆動モードにより安定デモ ID 14 件 (handbook `cross/sample-parity.md`) を通せ、各項目が同表の「起動直後の状態」を示す SHALL。`transition-dialog` / `layout-dialog` は開いた画面からダイアログを 1 回表示できる SHALL。結果を返す Dialog 系の項目は、閉じたときに結果表示が変化する SHALL。MAUI の 3 テストルート (facade の `dotnet test` / Android 互換面 / iOS 互換面) は本変更の完了時点で全件実行され失敗 0 である SHALL (handbook `cross/test-execution.md`)。
 
-#### Scenario: iOS 面の全デモ項目
+#### Scenario: 両 OS の全デモ項目
 
-- **GIVEN** `Microsoft.Maui.Controls` 10.0.20 でビルドした Sample と iOS Simulator
-- **WHEN** handbook `cross/sample-parity.md` の安定デモ ID を順に起動引数で渡して起動する
-- **THEN** 全デモ項目が表示され、結果表示の変化まで観察でき、証跡が evidence/ に残る
+- **GIVEN** `Microsoft.Maui.Controls` 10.0.20 でビルドした Sample と、iOS Simulator・Android エミュレータ
+- **WHEN** 安定デモ ID 14 件を順に起動引数で渡して起動し、`transition-dialog` / `layout-dialog` ではダイアログを 1 回表示し、Dialog 系の項目では閉じる
+- **THEN** 両 OS とも各項目が「起動直後の状態」を示し、Dialog 系は閉じた後の結果表示の変化まで観察でき、項目ごとの証跡 (両 OS × 14 件) が evidence/ に残る
+
+#### Scenario: 3 テストルートの全件実行
+
+- **GIVEN** 本変更の全実装が済んだ状態
+- **WHEN** facade の `dotnet test`、`maui/android/native` の Gradle テスト、`maui/macios/native` の `xcodebuild test` を実行する
+- **THEN** 3 ルートとも実行件数が記録され失敗 0 で、facade は変更前の件数 + 本変更で追加した件数になる
 
 ### Requirement: MAUI 本体の版の追随ルール
 

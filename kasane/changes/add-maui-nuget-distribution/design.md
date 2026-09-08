@@ -14,7 +14,7 @@ Goals: proposal.md の What Changes。Non-Goals: proposal.md の Non-Goals。
 
 ### Decision 1: 共通メタデータは `maui/Directory.Build.props`、同梱アイテムと後処理は `Directory.Build.targets` (翻案元 Decision 2 の踏襲)
 
-**採用案:** `maui/Directory.Build.props` に Authors `kamusoft` / Company `kamusoft LLC` / Copyright `Copyright (c) kamusoft` / `PackageLicenseExpression` `MIT` / `PackageProjectUrl` = `RepositoryUrl` = `https://github.com/kamusoft/KsDialogs` / `RepositoryType` `git` / `PackageIcon` `icon.png` / `Version` `0.0.0-dev` / `IsPackable` `false` / `PublishRepositoryUrl` `EmbedUntrackedSources` `IncludeSymbols` `true` / `SymbolPackageFormat` `snupkg` を置き、同梱 props (Decision 4) を import する。`maui/Directory.Build.targets` を新設し、同梱 targets の import・`IsPackable=true` のプロジェクトだけに `assets/icon.png` を `None Pack="true" PackagePath=""` で同梱するアイテム・.NET Android SDK が生成する自 assembly 用 aar を nupkg から除く後処理 (`_IncludeAarInNuGetPackage` の `AfterTargets`。中身が推移依存の native ライブラリ以外なら失敗させる検査つき、翻案元と同一) を置く。facade csproj の `Version` 直書きは削除する。`assets/icon.png` は原典 AiForms.Maui.Dialogs の `images/icon.png` (300×300 PNG、著作権者同一) をコピーする。
+**採用案:** `maui/Directory.Build.props` に Authors `kamusoft` / Company `kamusoft LLC` / Copyright `Copyright (c) kamusoft` / `PackageLicenseExpression` `MIT` / `PackageProjectUrl` = `RepositoryUrl` = `https://github.com/kamusoft/KsDialogs` / `RepositoryType` `git` / `PackageIcon` `icon.png` / `Version` `0.0.0-dev` / `IsPackable` `false` / `PublishRepositoryUrl` `EmbedUntrackedSources` `IncludeSymbols` `true` / `SymbolPackageFormat` `snupkg` を置き、同梱 props (Decision 4) を import する。`maui/Directory.Build.targets` を新設し、同梱 targets の import・`IsPackable=true` のプロジェクトだけに `assets/icon.png` を `None Pack="true" PackagePath=""` で同梱するアイテム・.NET Android SDK が生成する自 assembly 用 aar を nupkg から除く後処理 (`_IncludeAarInNuGetPackage` の `AfterTargets`。中身が推移依存の native ライブラリ以外なら失敗させる検査つき、翻案元と同一) を置く。この後処理は SDK 内部ターゲットへの接続であり、maui/ADR-0004 の「pack 内部構造に依存する自作 MSBuild を足さない」に対する**意図的な例外**として扱う: 除去用の公開プロパティが SDK に無く、除かなければ利用者の Android Release ビルドで `XA4301` が出る。検出は pack 検算 (Decision 8) が 3 パッケージに自 assembly 用 aar が無いことを毎回確かめることで行い (ターゲット名が変わって接続が外れると aar が混入して検算が落ちる)、見直し条件は「SDK が aar 除外の公開手段を持ったとき、または `global.json` の SDK を上げたとき」。ADR-0004 (proposed) の Consequences に同じ内容を書く。facade csproj の `Version` 直書きは削除する。`assets/icon.png` は原典 AiForms.Maui.Dialogs の `images/icon.png` (300×300 PNG、著作権者同一) をコピーする。
 
 **理由:** 3 プロジェクトに同じ値を書かず 1 か所に置く。`IsPackable=true` は csproj 本体で設定されるため props の評価時点では条件が成立せず、同梱アイテムは targets に置く (翻案元 deviation で実測)。自 assembly 用 aar は利用者の Android Release ビルドで `XA4301` を出す (翻案元実測) ため、公開前に写して除く。
 
@@ -22,6 +22,7 @@ Goals: proposal.md の What Changes。Non-Goals: proposal.md の Non-Goals。
 - **A: 各 csproj にメタデータを直書き (現状形)** — 3 か所に同じ値が並び URL 変更で 3 か所を触る。却下
 - **B: リポジトリルートに `Directory.Build.props` を置く** — `samples/maui/` にも効いて Sample が pack / CPM 対象になり、ビルドルートの境界 (cross/ADR-0004) を破る。却下
 - **C: 自 assembly 用 aar の除去は phase-8 の消費者検証で `XA4301` を観測してから** — 翻案元で原因と対処が確定済みで、観測を待つ理由がない。却下
+- **D: aar を除かず利用者に `XA4301` を案内する** — 利用者ごとに回避策が要り、公開初版から警告が出る。却下
 
 ### Decision 2: MAUI 本体の版は workload set 同梱の 10.0.20 に揃える (maui/ADR-0004 改訂)
 
@@ -37,15 +38,15 @@ Goals: proposal.md の What Changes。Non-Goals: proposal.md の Non-Goals。
 
 **採用案:** facade / binding 2 件の csproj に `IsPackable=true`。facade: `PackageId` `KsDialogs.Maui` (既存)、`Description` "A dialog UI library for .NET MAUI that presents dialogs, loading indicators, and toasts from anywhere in an application, with content written as MAUI views, on iOS and Android. Successor to AiForms.Maui.Dialogs."、`PackageTags` `maui dialog dialogs loading toast ios android`、`PackageReadmeFile` `README.md` (ルート README を `None Pack="true" PackagePath=""` で同梱。facade 固有のため csproj に置く)。binding: `PackageId` は既定 (アセンブリ名 `KsDialogs.Binding.iOS` / `.Android` = cross/ADR-0005 の写像表)、`Description` "iOS native bridge binding for KsDialogs.Maui. Referenced transitively by KsDialogs.Maui; do not reference this package directly." (Android は読み替え)、`PackageTags` なし。翻案元 PoC で確認済みの SDK 挙動 3 点 (iOS manifest の絶対パス → pack は CI で行う / facade → binding の依存は下限指定 → lockstep で同版 / API 版付き TFM `net10.0-android36.0` `net10.0-ios26.0`) はそのまま受け入れる。
 
-**理由:** maui/ADR-0004。翻案元で 3 パッケージが標準経路だけで成立している。
+**理由:** maui/ADR-0004。翻案元で 3 パッケージが標準経路だけで成立している。facade → binding の依存が下限指定 (`>= x.y.z`) になる点は、SDK 10.0.300 の pack targets が ProjectReference の版を `_GetProjectVersion` の `PackageVersion` から取り完全一致を書く標準手段を持たない (pack targets と `NuGet.Build.Tasks.Pack.dll` を確認) ため受け入れる。
 
 **代替案:**
-- **A: facade → binding の依存を完全一致 `[x.y.z]` にする自作ターゲット** — lockstep (cross/ADR-0009) と最小適用版解決で同版になり、内部構造依存を足す価値がない。却下
+- **A: facade → binding の依存を完全一致 `[x.y.z]` にする自作ターゲット** — SDK 内部アイテム (`_ProjectReferencesWithVersions`) を書き換える必要があり ADR-0004 の却下案そのもの。lockstep (cross/ADR-0009) と最小適用版解決で利用者は同版の binding を得る (binding は直接参照しない前提で、他に binding へ依存するパッケージも無い)。消費者側で facade と binding の版が一致することは phase-8 の依存検査 (`check-dependencies.py`) が検出する。却下 (相方スペックレビュー 2026-09-08 で再検討、結論不変)
 - **B: iOS manifest の絶対パスを消す後処理** — 公開物には CI ランナーの汎用パスしか載らない。却下
 
 ### Decision 4: 最低 OS 版は facade 同梱の `buildTransitive/` で検査、要件の数値は同梱 props を単一の宣言元にする (翻案元 Decision 5 の踏襲、maui/ADR-0004 改訂)
 
-**採用案:** facade に `buildTransitive/KsDialogs.Maui.props` (`KsDialogsMinAndroidApi=24` / `KsDialogsMinIOSVersion=17.0`、cross/ADR-0002) と `buildTransitive/KsDialogs.Maui.targets` を置き、両方を facade パッケージに同梱する。targets は `TargetFramework` が空でなく `TargetPlatformIdentifier` が `android` / `ios` のときだけ有効で、`SupportedOSPlatformVersion` が空または `VersionLessThan` で要件未満なら、要件と設定例を書いた `Error Code="KSDLG0001"` を `CoreCompile` の前に出す (Android では manifest merger より先)。リポジトリ側は `maui/Directory.Build.props` が同梱 props を import し、facade / binding 2 件の csproj は既存の TFM 条件を残して値だけを定数参照に置き換える。`maui/Directory.Build.targets` が同梱 targets を import して自分たちのビルドにも検査を当てる。Sample は別ビルドルートで直書き (24.0 / 17.0) を維持し、props のコメントで「変えるときは Sample も」と示す。
+**採用案:** facade に `buildTransitive/KsDialogs.Maui.props` (`KsDialogsMinAndroidApi=24` / `KsDialogsMinIOSVersion=17.0`、cross/ADR-0002) と `buildTransitive/KsDialogs.Maui.targets` を置き、両方を facade パッケージに同梱する。targets は `TargetFramework` が空でなく `TargetPlatformIdentifier` が `android` / `ios` のときだけ有効で、MSBuild 評価後の `SupportedOSPlatformVersion` (未設定なら SDK の既定値が入る: Android 21.0 / iOS はその SDK の最新版) が `VersionLessThan` で要件未満なら、要件と設定例を書いた `Error Code="KSDLG0001"` を `CoreCompile` の前に出す (Android では manifest merger より先)。空文字の分岐も持つが、通常の csproj では SDK 既定値が入るため到達しない (翻案元実測)。したがって Android の未設定は既定 21.0 で止まり、iOS の未設定は既定値が 17.0 以上のため止まらない (明示設定の強制はしない)。リポジトリ側は `maui/Directory.Build.props` が同梱 props を import し、facade / binding 2 件の csproj は既存の TFM 条件を残して値だけを定数参照に置き換える。`maui/Directory.Build.targets` が同梱 targets を import して自分たちのビルドにも検査を当てる。Sample は別ビルドルートで直書き (24.0 / 17.0) を維持し、props のコメントで「変えるときは Sample も」と示す。
 
 **理由:** agenda 論点 5。iOS は xcframework が iOS 17 目標でも利用者のテンプレート既定 (15.0) のままリンクが通り実行時に落ちる形で出荷できる。Android は manifest merger が止めるが要件を示さない。利用者ビルド資産の同梱は「pack 内部構造に依存する自作 MSBuild を足さない」の対象外 (ADR-0004 改訂で明文化)。
 
@@ -69,20 +70,22 @@ Goals: proposal.md の What Changes。Non-Goals: proposal.md の Non-Goals。
 
 **採用案:**
 - `DialogException` に `(string message, Exception innerException)` の private 基底コンストラクタを足し、入れ子型 `ViewCreationFailed` (`ViewTypeName` / `ViewModelTypeName` を持ち、元例外を InnerException に保持。メッセージは英語固定、cross/ADR-0015) を新設する
-- `KsDialogsServiceCollectionExtensions.CreateView` の `ActivatorUtilities.CreateInstance` と、`DialogResolution.ResolveViewFactory` の View fallback 呼び出しを try / catch で包み、`DialogException` 以外の例外を `ViewCreationFailed` に包み直す (`DialogException` 派生はそのまま通す。`ServiceProviderUnavailable` が先に立つ経路を変えない)。利用者が書いた factory (`Register` / インライン show) は包まない
+- `KsDialogsServiceCollectionExtensions.CreateView` の `ActivatorUtilities.CreateInstance` を try / catch で包み、`DialogException` 以外の例外を `ViewCreationFailed` に包み直す (`DialogException` 派生はそのまま通す。`ServiceProviderUnavailable` が先に立つ経路を変えない)。包むのは 1 行登録でライブラリ自身が View を組み立てる経路だけ。利用者が書いたコード — `Register` / インライン show の factory と `UseViewFallback` の resolver (`Func<Type, IServiceProvider, View?>`、`Hosting/KsDialogsOptions.cs`) — は包まない (resolver が View を返す前に投げた場合、ライブラリは View の型を知り得ず `ViewTypeName` を埋められない)
+- Toast の 1 行登録 (`RegisterForToast`) も同じ `CreateView` を通るが、Toast の `Show` は戻り値なし (core/ADR-0031) のため呼び出し元へは返せない。既存契約 (`BridgeContentSupply.CreateOrDiscard`: 警告 + その 1 枚だけ破棄、後続継続) のまま、警告に `ViewCreationFailed` (InnerException 付き) が原因として残る形にする
 - Android の `PlatformDialogGateway.ContentProvider` / `PlatformLoadingGateway.ContentProvider` を iOS と同じ `BridgeContentSupply.CreateOrFail(…, contentFailure)` 経由にし、`ClosureListener.OnFailed` / `CompletionListener.OnFailure` は `contentFailure.Cause ?? new InvalidOperationException(message)` を投げる。Kotlin 互換面の `MauiDialogContentProvider.createContent()` と `MauiLoadingContent.createContent()` の戻り値を Toast と同じ `MauiDialogContent?` にし、`createContentView()` は null を `error(...)` で既存の失敗経路 (`reportClosure` / `reportLoadingCompletion` の catch → `onFailed` / `onFailure`) に合流させる
-- 結果: 両 OS で `ViewCreationFailed` (InnerException 付き) が呼び出し元の Task の失敗として届く。ユニットテスト (fake gateway) では factory がその場で呼ばれ同じ型が届く
+- 結果: Dialog / Loading は両 OS で `ViewCreationFailed` (InnerException 付き) が呼び出し元の Task の失敗として届く。ユニットテスト (fake gateway) では factory がその場で呼ばれ同じ型が届く。修正前に Android エミュレータで現行の症状 (メッセージだけの `InvalidOperationException`、InnerException なし) を同じアプリ・同じ操作で再現して記録し、修正後に同一手順で `ViewCreationFailed` を確認する (handbook cross/runtime-behavior-verification.md の A/B)
 
 **理由:** agenda 論点 3。「factory は登録されているが View を組み立てられなかった」は「factory 未登録」と原因も直し方も違い、concepts の失敗種別表 (`maui/api/di-registration.md`) が 1 対 1 で読める形を保つ。Android の預かり口は core/ADR-0033 (accepted) の Decision そのもので、現状はその決定から乖離している (iOS のみ配線)。Kotlin の nullable 化は Toast (`MauiToastContent.createContent(): MauiDialogContent?`) と同じ形。
 
 **代替案:**
 - **A: 既存 `ViewFactoryNotRegistered` に包み直す** — 「未登録」と表示され原因を誤誘導する。却下
+- **A': View fallback の resolver の例外も包む (フェーズ議論時の案)** — resolver は利用者コードで、「利用者コードの例外は包まない」の 1 ルールに反し、`ViewTypeName` も埋められない。却下 (相方スペックレビュー 2026-09-08、オーナー裁定)
 - **B: 型は新設するが Android の預かり口は配線しない** — Android では JNI 境界で型が落ち、新設した型が届かない (`onFailed(message)` しか残らない)。core/ADR-0033 との乖離も残る。却下
 - **C: Android は Kotlin の `Throwable` を `JavaProxyThrowable` として C# へ戻して元例外を復元する** — 境界を生の例外が越える形で core/ADR-0033 の「例外を値に変えて渡す」に反し、Kotlin 側の catch-all と二重になる。却下
 
 ### Decision 7: package README はルート `README.md`、残る相対リンクを絶対 URL に改める (翻案元 Decision 6 の踏襲)
 
-**採用案:** facade の csproj で `PackageReadmeFile=README.md` とし、ルート `README.md` を同梱する。`README.md` / `README_ja.md` に残る相対リンク (`skills/README*.md` / `skills/` / `assets/` / `LICENSE`、各 5 箇所) を `https://github.com/kamusoft/KsDialogs/blob/develop/<path>` (ディレクトリは `tree/develop/`) の絶対 URL に改める (両枚同時)。画像は phase-3 で `raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/` に絶対 URL 化済みで変更なし。既定ブランチ `develop` は削除・force-push 禁止 (cross/ADR-0016)。
+**採用案:** facade の csproj で `PackageReadmeFile=README.md` とし、ルート `README.md` を同梱する。`README.md` / `README_ja.md` に残る非 HTTP(S) の参照 (anchor と mailto を除く。機械抽出で各 12 件: `skills/README*.md` / `skills/` / `assets/` / `LICENSE` / `ios/` / `android/` / `maui/` / `kmp/` / `kasane/` / `kasane/concepts/` / `AGENTS.md` / `.github/CONTRIBUTING*.md`) を `https://github.com/kamusoft/KsDialogs/blob/develop/<path>` (ディレクトリは `tree/develop/`) の絶対 URL に改める (両枚同時)。画像は phase-3 で `raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/` に絶対 URL 化済みで変更なし。既定ブランチ `develop` は削除・force-push 禁止 (cross/ADR-0016)。受け入れ条件は固定件数ではなく「機械抽出した非 HTTP(S) 参照が 0 件」。
 
 **理由:** README を新設せず cross/ADR-0012 (README はルート 2 枚) と docs-refresh 対象に触れない。package README として同梱されると相対リンクは nuget.org から到達できない (翻案元 review-001 で検出)。
 
@@ -92,7 +95,7 @@ Goals: proposal.md の What Changes。Non-Goals: proposal.md の Non-Goals。
 
 ### Decision 8: 消費者検証は一時プロジェクトで pack → restore → Release ビルド → 起動まで、iOS 面 Sample 通しを同梱
 
-**採用案:** 3 パッケージを Release で pack (Version 未指定と `-p:Version=0.1.0-alpha.1` の 2 回) してローカルフォルダフィードを作り、repo の `global.json` を複製した素の MAUI アプリ (`Microsoft.Maui.Controls` は workload 既定のまま = 10.0.20、`SupportedOSPlatformVersion` Android 24 / iOS 17.0) に `KsDialogs.Maui` の PackageReference 1 行を足す。`nuget.config` はローカルフィード + nuget.org 併記 (`<clear/>` + ローカルのみだとテンプレート依存が NU1101、翻案元実測) で `RestorePackagesPath` を隔離し、取得元を `.nupkg.metadata` で確認する。restore 警告 0 (`NU1605` / `NU1608` / `NU1107` を `WarningsAsErrors`)、両 OS Release ビルド (Android は trimming + R8 + AOT、iOS は Simulator)、`SupportedOSPlatformVersion` を Android 21 / iOS 15.0 に下げたときの `KSDLG0001`、`net10.0` のみのクラスライブラリと複数 TFM の outer build で無反応、Android エミュレータと iOS Simulator でダイアログを 1 回表示。加えて `samples/maui` を iOS Simulator で起動し、デモ駆動モード (cross/ADR-0010、config `ui.screenshot`) で全デモ項目 (Model Dialog 含む) を通す。証跡は evidence/ (ローカル絶対パスは置換)。
+**採用案:** 3 パッケージを Release で pack (Version 未指定と `-p:Version=0.1.0-alpha.1` の 2 回) してローカルフォルダフィードを作り、repo の `global.json` を複製した素の MAUI アプリ (`Microsoft.Maui.Controls` は workload 既定のまま = 10.0.20、`SupportedOSPlatformVersion` Android 24 / iOS 17.0) に `KsDialogs.Maui` の PackageReference 1 行を足す。`nuget.config` はローカルフィード + nuget.org 併記 (`<clear/>` + ローカルのみだとテンプレート依存が NU1101、翻案元実測) で `RestorePackagesPath` を隔離し、取得元を `.nupkg.metadata` で確認する。restore 警告 0 (`NU1605` / `NU1608` / `NU1107` を `WarningsAsErrors`)、両 OS Release ビルド (Android は trimming + R8 + AOT、iOS は Simulator)、`SupportedOSPlatformVersion` を Android 21 / iOS 15.0 に下げたときの `KSDLG0001`、`net10.0` のみのクラスライブラリと複数 TFM の outer build で無反応、Android エミュレータと iOS Simulator でダイアログを 1 回表示。加えて `samples/maui` を iOS Simulator と Android エミュレータの両方で起動し、デモ駆動モード (cross/ADR-0010、config `ui.screenshot`) で安定デモ ID 14 件を通す (iOS 面は add-model-binding-di で未回収だった分の回収、Android 面は MAUI 本体 10.0.20 への回帰確認)。項目ごとの観測は handbook `cross/sample-parity.md` の「起動直後の状態」列を期待値とし、`transition-dialog` / `layout-dialog` は画面が開いた後にダイアログを 1 回表示する操作を足す。結果表示の変化を撮るのは結果を持つ Dialog 系だけ (Toast / Loading は表示そのもの)。最後に MAUI の 3 テストルート (facade の `dotnet test` / Android 互換面 / iOS 互換面) を全件実行し件数と失敗 0 を記録する (handbook cross/test-execution.md の完了判定)。証跡は evidence/ (ローカル絶対パスは置換)。
 
 **理由:** agenda 論点 1・7。phase-8 は起動を含まないため Android の NuGet 経由実行時は本 change でしか見ない。maui/ADR-0004 の未検証 3 点を埋めて蒸留で accepted に上げる。
 
@@ -102,7 +105,9 @@ Goals: proposal.md の What Changes。Non-Goals: proposal.md の Non-Goals。
 
 ## Risks / Trade-offs
 
-- MAUI 本体を 10.0.20 に下げる回帰は facade テスト (155 件) と両 OS の Sample 通しで確認する。実機描画経路の版差は Sample 通しでしか見えない
+- MAUI 本体を 10.0.20 に下げる回帰は facade テスト (155 件) と両 OS の Sample 全項目通しで確認する。実機描画経路の版差は Sample 通しでしか見えない
+- facade → binding の依存が下限指定のため、利用者が binding を直接 (より新しい版で) 参照すると facade と版がずれ得る。binding は直接参照しない前提 (Description で明示) で、消費者側の版一致は phase-8 の依存検査が見る (受容リスク)
+- 自 assembly 用 aar の除去は SDK 内部ターゲットへの接続 (意図的な例外)。SDK 更新で接続が外れたら pack 検算 (aar 不在) が落ちて気づく
 - Android 預かり口の配線は Kotlin 互換面 (nullable 化) と C# gateway の両方を触る。bridge の Kotlin テストで null → 失敗経路の合流を、facade テストで `ViewCreationFailed` の型と InnerException を固定する。既存の失敗経路 (`PresentationHostUnavailable` / cancelled) は変えない
 - `buildTransitive/` は推移的な全消費者に import される。platform inner build 以外で無効なことを消費者検証で確認する
 - Kotlin 側で `Companion` を持つ public 型が増えると `BG8401` が再発する。Metadata.xml のコメントで示す (機械検査は持たない)
@@ -125,4 +130,4 @@ Goals: proposal.md の What Changes。Non-Goals: proposal.md の Non-Goals。
 
 ## ADR 候補
 
-- なし (新規)。maui/ADR-0004 (proposed、2026-09-08 改訂済み) が Decision 2・3・4 を既に含む。蒸留時に Consequences へ実装結果 (facade の `buildTransitive/`、自 assembly 用 aar の除去、消費者検証の `nuget.config` の形) を溶かして accepted へ昇格。core/ADR-0033 は Decision 6 で乖離が解消されるため現行照合 footer を更新 (蒸留時)
+- なし (新規)。maui/ADR-0004 (proposed、2026-09-08 改訂済み) が Decision 2・3・4 を既に含み、Decision 1 の aar 除去の例外は本提案時に Consequences へ書き足した。蒸留時に実装結果 (facade の `buildTransitive/`、消費者検証の `nuget.config` の形) を溶かして accepted へ昇格。core/ADR-0033 は Decision 6 で乖離が解消されるため現行照合 footer を更新 (蒸留時)

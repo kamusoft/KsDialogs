@@ -46,7 +46,7 @@ MAUI の NuGet 3 パッケージ (facade + binding 2 件) を nuget.org へ出�
 
 ### View 生成失敗は `DialogException.ViewCreationFailed` を新設して報告し、元例外を InnerException に保持、Android も iOS と同じ預かり口で型を届ける (2026-09-08)
 
-ライブラリ自身が View を組み立てる経路 (1 行登録の `CreateView` の `ActivatorUtilities` 生成と View fallback) の失敗を、生成失敗専用の入れ子型 `ViewCreationFailed` で報告する (「factory 未登録」とは原因も直し方も違うため既存型へ寄せない)。元の失敗 (どの依存が解決できなかったか) は InnerException に保持する (基底に message + inner のコンストラクタを足す)。利用者が書いた factory 本体が投げた例外は包まずそのまま通す。実機では View の生成は器に受理された後の UI スレッドで走り、iOS は預かり口 (`BridgeContentSupply`) が元例外を保持して呼び出し元へ返す一方、Android は Kotlin 側の `onFailed(message)` 経由で型が落ちてメッセージだけの `InvalidOperationException` になるため、Android の gateway にも同じ預かり口の形を入れて両 OS で同じ型が届くようにする。Native 側に対応する分類は無く (DI による生成が無い)、`ServiceProviderUnavailable` と同じ MAUI 固有の失敗として扱う。concepts `maui/api/dialog-surface.md` の失敗種別表への行追加は蒸留で行う。
+1 行登録でライブラリ自身が View を組み立てる経路 (`CreateView` の `ActivatorUtilities` 生成) の失敗を、生成失敗専用の入れ子型 `ViewCreationFailed` で報告する (「factory 未登録」とは原因も直し方も違うため既存型へ寄せない)。元の失敗 (どの依存が解決できなかったか) は InnerException に保持する (基底に message + inner のコンストラクタを足す)。利用者が書いたコード (`Register` / インライン show の factory、`UseViewFallback` の resolver) が投げた例外は包まずそのまま通す (2026-09-08 提案時の相方指摘で fallback を包む範囲から外した: resolver は利用者コードで、View の型名も知り得ない)。Toast は Show が戻り値を持たないため既存契約 (警告 + 1 枚破棄) のまま、警告に原因として残す。実機では View の生成は器に受理された後の UI スレッドで走り、iOS は預かり口 (`BridgeContentSupply`) が元例外を保持して呼び出し元へ返す一方、Android は Kotlin 側の `onFailed(message)` 経由で型が落ちてメッセージだけの `InvalidOperationException` になるため、Android の gateway にも同じ預かり口の形を入れて両 OS で同じ型が届くようにする。Native 側に対応する分類は無く (DI による生成が無い)、`ServiceProviderUnavailable` と同じ MAUI 固有の失敗として扱う。concepts `maui/api/dialog-surface.md` の失敗種別表への行追加は蒸留で行う。
 
 - 却下: 既存 `ViewFactoryNotRegistered` に包み直す (「未登録」と表示され原因を誤誘導する) / 現状維持 (種別が無く Android では型も失う)
 

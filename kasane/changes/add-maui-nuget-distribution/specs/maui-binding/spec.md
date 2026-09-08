@@ -4,31 +4,37 @@
 
 ### Requirement: View 生成失敗の構成ミスとしての報告
 
-ライブラリ自身が View を組み立てる経路 (1 行登録 `RegisterForDialog` / `RegisterForLoading` / `RegisterForToast` の factory による生成と、`AddKsDialogs` の View fallback) で View を生成できなかった場合、show は `DialogException.ViewCreationFailed` で失敗し、元の失敗を InnerException に保持する SHALL。`ViewCreationFailed` は生成しようとした View の型名と ViewModel の型名を公開する SHALL。利用者が書いた factory 本体 (`Register` の factory・インライン show の factory) が投げた例外は包まずそのまま届く SHALL。既存の `DialogException` (`ServiceProviderUnavailable` 等) が先に立つ経路は変わらない SHALL。iOS / Android の実機経路でも、ユニットテストの fake gateway 経路でも、呼び出し元へ届く例外型は同じである SHALL。
+1 行登録 (`RegisterForDialog` / `RegisterForLoading` / `RegisterForToast`) でライブラリ自身が View を組み立てる経路で View を生成できなかった場合、その失敗は `DialogException.ViewCreationFailed` として表され、元の失敗を InnerException に保持する SHALL。`ViewCreationFailed` は生成しようとした View の型名 (`ViewTypeName`) と ViewModel の型名 (`ViewModelTypeName`) を公開し、利用者アプリ (非 friend アセンブリ) から型・両プロパティ・InnerException を参照できる SHALL。Dialog / Loading では show (start) がこの例外で失敗する SHALL。Toast は Show が戻り値を持たないため呼び出し元へは返さず、既存契約 (警告 + その 1 枚だけの破棄、後続の表示は継続) のまま、警告に `ViewCreationFailed` が原因として残る SHALL。利用者が書いたコード (`Register` / インライン show の factory、`UseViewFallback` の resolver) が投げた例外は包まずそのまま届く SHALL。既存の `DialogException` (`ServiceProviderUnavailable` 等) が先に立つ経路は変わらない SHALL。Dialog / Loading は iOS / Android の実機経路でも、ユニットテストの fake gateway 経路でも、呼び出し元へ届く例外型が同じである SHALL。
 
 #### Scenario: [MB-MA-11] 依存を解決できない View は ViewCreationFailed で失敗する
 
 - **GIVEN** コンストラクタが DI に登録されていない依存を要求する TView を `RegisterForDialog<TView, TViewModel>` で 1 行登録したアプリ
 - **WHEN** その ViewModel を show する
-- **THEN** show は `DialogException.ViewCreationFailed` で失敗し、`ViewTypeName` が TView の型名、InnerException が DI の解決失敗の例外であり、View は生成も表示もされない
+- **THEN** show は `DialogException.ViewCreationFailed` で失敗し、`ViewTypeName` が TView の型名・`ViewModelTypeName` が TViewModel の型名、InnerException が DI の解決失敗の例外であり、View は生成も表示もされない。`RegisterForLoading` の 1 行登録でも start が同じ型で失敗する
 
-#### Scenario: [MB-MA-12] View fallback の失敗も ViewCreationFailed で失敗する
+#### Scenario: [MB-MA-12] Toast の 1 行登録の生成失敗は警告に残して 1 枚だけ破棄する
 
-- **GIVEN** `UseViewFallback` の resolver が例外を投げるアプリ
-- **WHEN** 明示登録の無い ViewModel を show する
-- **THEN** show は `DialogException.ViewCreationFailed` で失敗し、InnerException が resolver の投げた例外である (resolver が `null` を返した場合は従来どおり `ViewFactoryNotRegistered`)
+- **GIVEN** コンストラクタが DI に登録されていない依存を要求する TView を `RegisterForToast` で 1 行登録したアプリ
+- **WHEN** その ViewModel を Show し、続けて別の正常な Toast を Show する
+- **THEN** 最初の Show は例外を投げず、警告に `ViewCreationFailed` (InnerException 付き) が原因として記録され、その 1 枚は表示されず、後続の Toast は表示される
 
-#### Scenario: [MB-MA-13] 利用者 factory の例外は包まれない
+#### Scenario: [MB-MA-13] 利用者コードの例外は包まれない
 
-- **GIVEN** `Register` の factory が独自の例外を投げるアプリ
-- **WHEN** その ViewModel を show する
-- **THEN** show はその独自の例外で失敗し、`DialogException` には包まれない
+- **GIVEN** `Register` の factory が独自の例外を投げるアプリと、`UseViewFallback` の resolver が独自の例外を投げるアプリ
+- **WHEN** それぞれの ViewModel を show する
+- **THEN** show はその独自の例外で失敗し、`DialogException` には包まれない (resolver が `null` を返した場合は従来どおり `ViewFactoryNotRegistered`)
 
-#### Scenario: [MB-MA-14] Android の実機経路でも同じ型が届く
+#### Scenario: 公開例外面の compile 検査
+
+- **GIVEN** 利用者と同じ側から facade を参照する API 形状検査プロジェクト (`KsDialogs.Maui.ApiSurfaceCheck`)
+- **WHEN** `DialogException.ViewCreationFailed` を catch し、`ViewTypeName` / `ViewModelTypeName` / `InnerException` を読むコードをビルドする
+- **THEN** ビルドが成功する
+
+#### Scenario: [MB-MA-14] Android の実機経路でも同じ型が届く (修正前後の A/B)
 
 - **GIVEN** Android の Sample または消費者アプリで、依存を解決できない TView を 1 行登録したもの
-- **WHEN** その ViewModel を show する
-- **THEN** show は `DialogException.ViewCreationFailed` (InnerException 付き) で失敗し、メッセージだけの `InvalidOperationException` にはならない。iOS でも同じ
+- **WHEN** 修正前のビルドと修正後のビルドで、同じ操作でその ViewModel を show する
+- **THEN** 修正前はメッセージだけの `InvalidOperationException` (InnerException なし) で失敗することが記録され、修正後は `DialogException.ViewCreationFailed` (InnerException 付き) で失敗する。iOS でも修正後に同じ型が届く
 
 ### Requirement: Android の managed/native 境界での失敗の受け止め
 
