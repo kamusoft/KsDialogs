@@ -3,7 +3,7 @@ type: concept
 title: MAUI の Dialog 公開面
 description: .NET MAUI (C#) からダイアログを使うときの公開名と署名 — 既定エントリと登録の入口・真偽値の顔・中身は MAUI の View だけであること・インライン show・結果報告口の取得・構成ミスの例外型・型指定 show と非同期 configure・移植元の API 名との対応
 tags: [maui, dialog, api, surface]
-timestamp: 2026-09-06
+timestamp: 2026-09-08
 ---
 
 # MAUI の Dialog 公開面
@@ -83,6 +83,10 @@ show は `Task<DialogResult<TResult>>` を返し、結果は `DialogResult` の 
 | VM factory 未登録 (型指定 show) | `DialogException.ViewModelFactoryNotRegistered` |
 | 同一 ViewModel インスタンスの並行 show | `DialogException.ViewModelAlreadyShowing` |
 | 値型を ViewModel にした | `DialogException.ValueTypeViewModel` |
+| 1 行登録 (`RegisterForDialog`) が結び付けた View を組み立てられない | `DialogException.ViewCreationFailed` (元の失敗は `InnerException`、`ViewTypeName` / `ViewModelTypeName` を公開) |
+| DI 解決が要る経路を provider 確立前に呼んだ | `DialogException.ServiceProviderUnavailable` |
+
+`ViewCreationFailed` と `ServiceProviderUnavailable` は MAUI にだけある種別で、DI による View 生成を持たない Native 側に対応物は無い。`ViewCreationFailed` に包まれるのはライブラリ自身が View を生成する 1 行登録の経路だけで、利用者が書いた factory や fallback resolver が投げた例外は包まれずそのまま届く (経路の詳細は [MAUI の DI 連携と登録糖衣](di-registration.md))。
 
 例外名の末尾が `ValueTypeViewModel` なのは C# の語彙 (値型) に合わせたもので、Kotlin 側とは意図的に非対称である。並行 show の `ViewModelAlreadyShowing` と VM factory 未登録の `ViewModelFactoryNotRegistered` は Kotlin と同名である。
 

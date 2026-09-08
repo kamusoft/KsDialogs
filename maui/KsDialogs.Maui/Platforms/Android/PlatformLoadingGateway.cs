@@ -117,7 +117,7 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     /// <remarks>
     /// 供給元は互換面 (Java) から呼ばれる。失敗を例外のまま境界へ返すと未処理の障害になるため、
     /// 中身なしとして返し、表示そのものの失敗として完了の通知で受け取る。
-    /// 元の失敗は預かり口に残り、その通知を受けたときに呼び出し元へそのまま返る (core/ADR-0033)。
+    /// 元の失敗は預かり口に残り、その通知を受けたときに呼び出し元へそのまま返る (core/ADR-0033・core/ADR-0036)。
     /// </remarks>
     /// <param name="request">その表示の中身と供給値。</param>
     /// <param name="contentFailure">中身を作れなかった失敗の預かり口。</param>

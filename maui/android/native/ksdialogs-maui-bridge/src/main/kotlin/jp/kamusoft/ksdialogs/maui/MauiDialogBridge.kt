@@ -113,7 +113,7 @@ internal class MauiDialogViewModel(
      * 提示先が確保できた後に UI スレッドで呼ばれる。
      *
      * MAUI 側が中身を作れなかったときは失敗を投げる。その失敗は閉鎖の通知の失敗に合流し、
-     * MAUI 側が預かっている元の失敗が呼び出し元へ返る。
+     * MAUI 側が預かっている元の失敗が呼び出し元へ返る (core/ADR-0033・core/ADR-0036)。
      */
     fun createContentView(): View {
         val content = contentProvider.createContent()

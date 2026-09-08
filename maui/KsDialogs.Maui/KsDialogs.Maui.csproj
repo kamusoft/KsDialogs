@@ -10,7 +10,8 @@
   </PropertyGroup>
 
   <!--
-    NuGet パッケージとしての公開面。Package ID と namespace は公開識別子の写像表
+    NuGet パッケージとしての公開面 (facade + 輸送層 binding 2 件の 3 パッケージ構成、maui/ADR-0004)。
+    Package ID と namespace は公開識別子の写像表
     (cross/ADR-0005) に従い、ID は KsDialogs.Maui・namespace は KsDialogs で非対称になる。
   -->
   <PropertyGroup>

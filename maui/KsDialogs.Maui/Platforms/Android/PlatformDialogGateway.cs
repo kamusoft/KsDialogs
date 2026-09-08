@@ -49,7 +49,7 @@ internal sealed class PlatformDialogGateway : IDialogGateway
     /// <remarks>
     /// 供給元は互換面 (Java) から呼ばれる。失敗を例外のまま境界へ返すと未処理の障害になるため、
     /// 中身なしとして返し、提示そのものの失敗として閉鎖の通知で受け取る。
-    /// 元の失敗は預かり口に残り、その通知を受けたときに呼び出し元へそのまま返る (core/ADR-0033)。
+    /// 元の失敗は預かり口に残り、その通知を受けたときに呼び出し元へそのまま返る (core/ADR-0033・core/ADR-0036)。
     /// </remarks>
     /// <param name="request">その show が提示する内容。</param>
     /// <param name="mauiContext">platform view 化に使う文脈。</param>

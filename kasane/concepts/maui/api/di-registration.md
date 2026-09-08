@@ -3,7 +3,7 @@ type: concept
 title: MAUI の DI 連携と登録糖衣 (RegisterForDialog / RegisterForLoading / RegisterForToast と fallback resolver)
 description: MAUI 限定の登録・解決の公開契約 — 1行登録 RegisterForDialog / RegisterForLoading / RegisterForToast の配線 (View / VM factory の自動登録と BindingContext の同一性)・AddKsDialogs と fallback resolver の解決順序 (明示 → fallback → 失敗。Dialog 限定)・fallback 設定の合成と持続・構成ミスの失敗の種類
 tags: [maui, di, registration, fallback, contract]
-timestamp: 2026-09-06
+timestamp: 2026-09-08
 ---
 
 # MAUI の DI 連携と登録糖衣 (RegisterForDialog / RegisterForLoading / RegisterForToast と fallback resolver)
@@ -39,6 +39,8 @@ builder.Services
 ### View factory の配線
 
 show のたびに TView を生成する。生成は `ActivatorUtilities.CreateInstance` で行い (コンストラクタ依存はサービスから解決される)、**現在 show されている VM インスタンスを明示引数として渡す** — TView のコンストラクタが TViewModel を受ける構成なら show 対象の VM がそのまま注入され、**コンストラクタに渡る VM・BindingContext・show 対象は同一インスタンス、VM の追加生成はゼロ**になる。生成した View には BindingContext = 現在の VM が設定される。
+
+この生成に失敗した場合 (コンストラクタが要求する依存がサービスに無い等) は、`DialogException.ViewCreationFailed` として報告する。元の失敗は `InnerException` にそのまま残り、組み立てようとした View と ViewModel の型名を `ViewTypeName` / `ViewModelTypeName` で読める。「factory が登録されていない」とは原因も直し方も違うため、既存の `ViewFactoryNotRegistered` には寄せない。包むのはライブラリ自身が View を組み立てるこの経路だけで、利用者が書いた factory (`Register` / インライン show) や fallback resolver が投げた例外は包まずそのまま届く (resolver は利用者コードで、View の型名も知り得ない)。Dialog / Loading では show (start) がこの例外で失敗し、iOS / Android の実機経路でもユニットテストの fake gateway 経路でも同じ型が届く (Android 側の経路は [core/ADR-0036](../../../decisions/core/0036-maui-android-content-supply-symmetry.md))。Toast は Show が戻り値を持たないため呼び出し元へは返さず、既存の受理後の失敗モデル (警告 + その 1 枚だけ破棄、後続は継続) のまま、警告に `ViewCreationFailed` が原因として残る。
 
 ### VM factory の配線
 
@@ -98,6 +100,7 @@ fallback が解決できないことは呼んでみるまで分からないた�
 | `ViewModelAlreadyShowing` | 同一 VM インスタンスの並行 show |
 | `ValueTypeViewModel` | 値型 (struct) の VM が show に渡された — 登録・型指定 show はコンパイル時 (`where TViewModel : class`) に弾かれるため、実行時にここへ来るのはインスタンス渡し show だけ |
 | `ServiceProviderUnavailable` | DI 解決が要る経路を provider 確立前に呼んだ |
+| `ViewCreationFailed` | 1 行登録が結び付けた View をライブラリが組み立てられなかった (元の失敗は `InnerException`)。利用者コードが投げた例外は包まれない。Toast では呼び出し元へ返らず警告に原因として残る |
 
 ## 保証すること
 

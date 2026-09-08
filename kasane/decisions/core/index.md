@@ -36,6 +36,7 @@
 | [0030](0030-toast-container-implementation-form.md) | Toast の器は Loading の器の非モーダル派生とし、1 Toast 1器・重なりは追加順・Loading が常に前面とする | accepted | 2026-08-27 |
 | [0031](0031-toast-non-interactive-fire-and-forget.md) | Toast は完全非対話とし、時間経過でのみ消える fire-and-forget の表示とする | accepted | 2026-08-27 |
 | [0032](0032-toast-default-view-and-placement.md) | Toast の既定 View は OS 慣習寄せのピルとし、既定配置は下部中央 + ボトムバー回避オフセット、styling とアプリ既定配置は ToastStyle で受ける | accepted | 2026-08-27 |
-| [0033](0033-user-factory-failure-boundary.md) | 利用者 View factory の失敗は言語境界の内側で捕捉し、各機能の既存失敗契約へ合流させる | accepted | 2026-08-28 |
+| [0033](0033-user-factory-failure-boundary.md) | 利用者 View factory の失敗は言語境界の内側で捕捉し、各機能の既存失敗契約へ合流させる (一部改訂: 0036 — MAUI Android の Dialog / Loading も預かり口を通す) | accepted | 2026-08-28 |
 | [0034](0034-contract-type-name-singular-feature.md) | 契約の型名は「Ks + 機能名 (単数)」で揃え、Dialog の契約は KsDialogs から KsDialog へ改名する | accepted | 2026-09-06 |
 | [0035](0035-loading-toast-typed-show-vm-factory.md) | Loading / Toast のレジストリに VM factory スロットを追加し、型指定 show を Dialog と同型で提供する | accepted | 2026-09-06 |
+| [0036](0036-maui-android-content-supply-symmetry.md) | MAUI Android の Dialog / Loading の中身供給も managed 側の預かり口を通し、3 面を対称化する (0033 の amends — 却下案「Android は配線しない」を置き換え) | accepted | 2026-09-08 |

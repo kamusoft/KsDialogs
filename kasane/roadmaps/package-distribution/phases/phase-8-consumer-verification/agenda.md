@@ -13,6 +13,12 @@
 
 入口 `.github/workflows/ci.yml` に消費者検証 job の枠は無い (存在しない workflow を `uses:` できないため)。`verify-consumer-<platform>.yml` を作るときに入口へ job を足し、`if: github.event_name == 'pull_request'` で `main` 宛て PR に限る。job 名は phase-9 の必須 check 名 (`consumer-<platform> / verify`) に合わせる。reusable workflow の書き方 (Xcode 選択・`global.json` 参照・件数検査・SHA 固定) は本体検証 5 本 (cross/ADR-0017 / 0018) を写す。
 
+### phase-6 からの申し送り (2026-09-08)
+
+MAUI 消費者 (`verification/maui`) は phase-6 の一時消費者 (`kasane/changes/archive/2026-09-08-add-maui-nuget-distribution/evidence/consumer-verification/README.md`) の形を写す。`dotnet new maui` の生成物に足すのは `TargetFrameworks` / `RestorePackagesPath` (隔離) / `WarningsAsErrors` (NU1605・NU1608・NU1107) / `SupportedOSPlatformVersion` (Android 24 / iOS 17.0) / facade の PackageReference 1 行だけで、`Microsoft.Maui.Controls` の版は書かない。`nuget.config` は `<clear/>` + ローカルフィード + nuget.org の併記 (ローカルだけだとテンプレート依存が NU1101)。3 パッケージがローカルフィードから取得されたことは `pkgs/<id>/<ver>/.nupkg.metadata` の `source` で確かめる。Android Release で R8 を効かせるには消費者側で `AndroidLinkTool=r8` を明示する (SDK 既定は空)。
+
+確認事項: API 版付き TFM (`net10.0-android36.0` / `net10.0-ios26.0`) を下回る `TargetPlatformVersion` を固定した消費者では、警告なく platform 中立アセットにフォールバックし binding が入らない (既知の落とし穴)。`check-dependencies.py` で binding が facade と同版で解決されたことに加え、platform TFM で binding が実際に入ったことを検査対象にする。消費者ビルドで `XA4301` が 0 件であることも再確認する (phase-6 では自 assembly 用 aar が生成されず 0 件)。
+
 ## 決定事項
 
 踏襲 (解決済み論点)。出典は KsSettingsView phase-7 の決定事項と実測 (`../KsSettingsView/kasane/roadmaps/package-distribution/phases/phase-7-consumer-verification/agenda.md`)。

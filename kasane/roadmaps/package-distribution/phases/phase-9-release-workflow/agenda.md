@@ -51,8 +51,18 @@ phase-4 の実装結果 (2026-09-08): 入口 `ci.yml` は変更検出 job `chang
 
 version の注入と SNAPSHOT ガードは android/ に配線済み (cross/ADR-0009 に記載)。release workflow は `-Pversion=` を android/ と kmp/ の両ビルドに渡す。SwiftPM のスナップショット同期は `scripts/spm-snapshot/sync-snapshot.sh` (配置まで。commit / tag / push は workflow 側)。検証用の `verify-https-resolution.sh` は手動検証専用で release から呼ばない。
 
+### phase-6 からの申し送り (2026-09-08)
+
+| 項目 | 内容 |
+|---|---|
+| MAUI の発行版ガード | `maui/Directory.Build.props` の開発既定値 `0.0.0-dev` のまま pack した nupkg は成立する (pack 検算で実測)。release workflow 側で MAUI 3 パッケージの注入値の形式検査と `0.0.0-dev` 発行の禁止を持つ。android/ の SNAPSHOT ガード (cross/ADR-0009) に相当するものが MAUI 側には無い (review-001 Suggestion 2) |
+| facade nupkg の XML ドキュメント | `GenerateDocumentationFile` の指定がリポジトリに無く、.NET Android SDK の既定で `lib/net10.0-android36.0/KsDialogs.Maui.xml` だけが入る非対称 (`net10.0` / `net10.0-ios26.0` には無い)。初回発行前に「全 TFM で生成して同梱する (日本語 doc コメントが公開物に載る)」か「pack から外す」かを決め、`maui/Directory.Build.props` に明示して SDK 既定への暗黙依存を消す (review-001 Minor 2) |
+| docs-refresh の内容 (MAUI 分) | README 互換表と導入節、skills `ksdialogs-maui` / `ksdialogs-aiforms-migration` に、MAUI 10.0.20 以上 (同じ workload set なら版を書かなくてよい・古い版を書くと NU1605)・最低 OS 版 iOS 17 / Android 24 とガード `KSDLG0001`・API 版付き TFM の SDK 要件・失敗種別 `ViewCreationFailed` を反映する。phase-5 の Android 座標分と 1 回の依頼にまとめる |
+| 配布構成の concepts 化 | MAUI の 3 パッケージ構成・pack 経路・最低 OS ガード・SDK 更新時の再検証箇所 (manifest 絶対パス・API 版付き TFM・自 assembly 用 aar の有無) は、phase-5 の Native 配布経路 (SwiftPM スナップショット・Maven 発行・版の導出) と併せて phase-9 の蒸留で置き場 (`<platform>/api/` に収めるか新カテゴリか) を決める。現時点の記述は maui/ADR-0004 の現行照合 footer と handbook local-development-setup.md が持つ |
+
 ## TODO
 
 - [ ] 論点の解消 (4 本化・初回 version・README 置換の位置・docs-refresh のタイミング)
-- [ ] 初回リリース前に docs-refresh を走らせ、skills / README の旧 Android 座標 (16 箇所) を cross/ADR-0019 の新座標へ追随させる (phase-5 申し送り)
+- [ ] 初回リリース前に docs-refresh を走らせ、skills / README の旧 Android 座標 (16 箇所) を cross/ADR-0019 の新座標へ追随させる (phase-5 申し送り)。MAUI 分は「phase-6 からの申し送り」の表のとおり同じ依頼に含める
+- [ ] MAUI 3 パッケージの `0.0.0-dev` 発行ガードと XML ドキュメントの方針を release の change に含める (phase-6 申し送り)
 - [ ] ksn-propose で変更提案を起こす

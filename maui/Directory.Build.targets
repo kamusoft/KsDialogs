@@ -22,6 +22,8 @@
     pack の同梱物を組み立てる SDK ターゲット (_IncludeAarInNuGetPackage) の直後に aar を取り除く。
     TargetsForTfmSpecificContentInPackage への追記だと SDK の追記より前に並んでしまい、
     まだ同梱されていない段階で取り除くことになるため、実行順は AfterTargets で決める。
+    この接続は「pack 内部構造に依存する自作 MSBuild を足さない」(maui/ADR-0004) の意図的な例外で、
+    pack 検算で自 assembly 用 aar が nupkg に無いことを毎回確かめて接続の生存を見る。
 
     取り除く前に aar の中身を検査し、推移依存の native ライブラリ以外が入っていれば pack を失敗させる。
     自前のリソース・クラス・manifest を持つようになったら落としてはいけないので、

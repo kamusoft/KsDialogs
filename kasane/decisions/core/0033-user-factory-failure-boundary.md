@@ -3,6 +3,7 @@ id: 0033
 title: 利用者 View factory の失敗は言語境界の内側で捕捉し、各機能の既存失敗契約へ合流させる
 status: accepted
 date: 2026-08-28
+amended-by: 0036
 ---
 
 ## Context

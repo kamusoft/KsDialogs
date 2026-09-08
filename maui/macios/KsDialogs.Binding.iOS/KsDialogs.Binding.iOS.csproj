@@ -19,7 +19,7 @@
     <AssemblyName>KsDialogs.Binding.iOS</AssemblyName>
   </PropertyGroup>
 
-  <!-- PackageId はアセンブリ名の既定に任せる -->
+  <!-- 輸送層 binding は SDK 標準の pack 経路で単独パッケージにする (maui/ADR-0004)。PackageId はアセンブリ名の既定に任せる -->
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Description>iOS native bridge binding for KsDialogs.Maui. Referenced transitively by KsDialogs.Maui; do not reference this package directly.</Description>

@@ -99,6 +99,28 @@ maui/ADR-0004 が未検証のまま送った 3 点 (nuget.org 要件・Release /
 ## TODO
 
 - [x] 論点 1〜7 の解消 (2026-09-08 全件を決定事項へ)
-- [ ] **docs-refresh の明示依頼** (蒸留後): 内容は決定事項「文書追随は 3 段仕分け」の docs-refresh 行。phase-5 の Android 座標分と 1 回の依頼にまとめる
-- [ ] **phase-8 への申し送り**: API 版付き TFM (`net10.0-android36.0` / `net10.0-ios26.0`) を下回る消費者での解決要件の確認、MAUI 消費者の `nuget.config` (nuget.org 併記 + 隔離 packages path) は本 phase の消費者 PoC の形を写す
-- [ ] ksn-propose で変更提案を起こす
+- [x] **docs-refresh の明示依頼** (蒸留後): phase-9 agenda の TODO「初回リリース前に docs-refresh」へ統合 (2026-09-08 蒸留)
+- [x] **phase-8 への申し送り**: phase-8 agenda「phase-6 からの申し送り」へ記載 (2026-09-08 蒸留)
+- [x] ksn-propose で変更提案を起こす (add-maui-nuget-distribution、2026-09-08 実装完了・蒸留済み)
+
+## 実装結果 (2026-09-08 反映)
+
+change `add-maui-nuget-distribution` (L 級) を実装・レビュー (review-001 / 002 APPROVED、second-opinion-code-001 採用 2 件)・検証 (verify-002 VALID) して蒸留した。archive: `kasane/changes/archive/2026-09-08-add-maui-nuget-distribution/`。決定事項からの乖離 (deviation.md 3 件) と実装で確定した事実は次のとおり。
+
+| 項目 | 結果 |
+|---|---|
+| `BG8401` | 決定は入れ子型と static フィールドの両方を `remove-node`。実装は入れ子型を `visibility=private`、フィールドだけ `remove-node` のハイブリッド (両方 `remove-node` だと BG8A00 が 8 種に増える)。BG8A00 4 種は受容 (オーナー裁定) |
+| 自 assembly 用 aar | KsDialogs では .NET Android SDK が生成しない (翻案元と異なる)。除去の後処理は保険として残し休眠 (許可パターンは未評価)。利用者側の `XA4301` は 0 件 |
+| 消費者検証 | restore 警告 0・両 OS Release ビルド (Android は trimming + R8 + AOT)・両 OS 起動確認・`KSDLG0001` の発火 / 非発火をすべて実測。`nuget.config` はローカルフィード + nuget.org 併記でないとテンプレート依存が NU1101 |
+| Sample 通し | 両 OS × 安定デモ ID 14 件を MAUI 10.0.20 で通し、不具合なし (iOS 面の未回収分を回収) |
+| テスト | facade 160 / Android 互換面 34 / iOS 互換面 7、失敗 0。handbook test-execution.md の件数表を change 内で更新 (付随修正) |
+| 長命層 | maui/ADR-0004 を書き直して accepted へ。core/ADR-0036 (core/ADR-0033 の amends: Android の預かり口の対称化) を起票して accepted へ。concepts maui/api 4 本に `ViewCreationFailed` を追随。handbook diagnostic-message-language.md の対象に同梱 MSBuild 資産を追加 |
+
+### 申し送り
+
+| 受け皿 | 内容 |
+|---|---|
+| phase-8 (agenda「phase-6 からの申し送り」) | MAUI 消費者の `nuget.config` の形 (ローカルフィード + nuget.org 併記・隔離 packages path) と `.nupkg.metadata` による取得元確認 / API 版付き TFM (`net10.0-android36.0` / `net10.0-ios26.0`) を下回る消費者での解決要件の確認 / 消費者ビルドでの `XA4301` 不在の再確認 |
+| phase-9 (agenda「phase-6 からの申し送り」) | MAUI 3 パッケージの `0.0.0-dev` 発行ガードと注入値の形式検査 / facade nupkg の XML ドキュメントが `net10.0-android` の lib にだけ入る非対称の方針決定 / docs-refresh の MAUI 分 (10.0.20 以上と NU1605・最低 OS 版とガード `KSDLG0001`・API 版付き TFM・`ViewCreationFailed`) / MAUI 配布構成の concepts 化は phase-5 分と併せて phase-9 の蒸留で置き場を決める |
+| 見送り | aar 検査ターゲットの一度きりの手動発火 (review-001 Suggestion 1) — KsDialogs では aar が生成されず発火させる入力自体を作る必要がある。休眠のまま置き、SDK 更新で aar が現れたときの pack 検算 (aar 不在) を検出手段とする (deviation.md 記載) |
+| 見送り | `MB-MA-11` の原因検査がフレームワークの例外文言に依存する旨の assertion メッセージ (review-002 Suggestion) — 落ちたときの切り分けは deviation と review 記録で辿れるため対応しない |

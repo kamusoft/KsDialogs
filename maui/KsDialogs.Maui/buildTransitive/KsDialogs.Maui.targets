@@ -1,7 +1,7 @@
 <Project>
 
   <!--
-    利用者アプリのビルドで、最低 OS 版の要件 (KsDialogs.Maui.props の定数) を検査する。
+    利用者アプリのビルドで、最低 OS 版の要件 (KsDialogs.Maui.props の定数) を検査する (maui/ADR-0004)。
 
     有効になるのは android / ios の platform inner build だけに限る。この資産は推移的な全消費者へ
     import されるため、素の net10.0、複数 TFM プロジェクトの outer build (TargetFramework が空)、
