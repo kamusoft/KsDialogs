@@ -78,7 +78,7 @@ phase-1 → 2 → 3 (public 化) → 4 (CI) の後、phase-5 / 6 / 7 は並行�
 | phase-3-public-readiness | completed | research | [agenda](phases/phase-3-public-readiness/agenda.md) | — |
 | phase-4-verification-ci | completed | change | [agenda](phases/phase-4-verification-ci/agenda.md) | [add-verification-ci](../../changes/archive/2026-09-08-add-verification-ci/proposal.md) |
 | phase-5-native-packaging | in-progress | change | [agenda](phases/phase-5-native-packaging/agenda.md) | [add-native-distribution](../../changes/add-native-distribution/proposal.md) |
-| phase-6-maui-packaging | pending | change | [agenda](phases/phase-6-maui-packaging/agenda.md) | — |
+| phase-6-maui-packaging | in-progress | change | [agenda](phases/phase-6-maui-packaging/agenda.md) | — |
 | phase-7-kmp-packaging | pending | change | [agenda](phases/phase-7-kmp-packaging/agenda.md) | — |
 | phase-8-consumer-verification | pending | change | [agenda](phases/phase-8-consumer-verification/agenda.md) | — |
 | phase-9-release-workflow | pending | change | [agenda](phases/phase-9-release-workflow/agenda.md) | — |
