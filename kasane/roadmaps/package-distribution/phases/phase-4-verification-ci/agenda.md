@@ -72,4 +72,22 @@ phase-3 の申し送り「`develop` の必須 status check 登録は phase-4 で
 - [x] 論点 3: 実行件数の下限と CI に載せるテストルートの範囲 (2026-09-08)
 - [x] 論点 4: `develop` の必須 status check は登録しない、`main` の必須 check 名を phase-9 へ申し送り (2026-09-08)
 - [x] phase-9 の agenda に `main` の branch protection の申し送りを追記 (2026-09-08)
-- [ ] ksn-propose で変更提案を起こす
+- [x] ksn-propose で変更提案を起こす (2026-09-08、add-verification-ci)
+
+## 実装結果 (2026-09-08 反映)
+
+change: `kasane/changes/archive/2026-09-08-add-verification-ci/`。workflow 6 本 (`ci.yml` + reusable 5 本)・`global.json`・`maui/Directory.Packages.props`・`maui/nuget.config`・handbook 2 文書を新設・更新し、`develop` push で lint + 5 job が緑 (run 34184817756 以降)。決定事項からの乖離と補足:
+
+- Sample の MAUI 版: 「`samples/maui` は `MauiVersion` 直書きのまま」は「値を持たないまま」ではなく「プロパティで明示する形を保つ」の意味だった。Sample が版を持たないと workload set 既定の 10.0.20 が入り NU1605 で restore が失敗するため、csproj に 10.0.70 を明示した (deviation)
+- `paths-ignore` は使わず、lint は毎回・本体 5 job は変更検出 job で条件付け (提案段階の相方レビューで撤回)。変更検出 job (`changes`) が 7 本目の補助 check として報告される
+- CI の ios job はスイート同士の並列実行を止めて回す (ランナーで並列スイートが MainActor を取り合い提示待ちが時間切れ)。手元は並列のまま。見分け方は handbook cross/test-execution.md
+- toolchain: `global.json` に `rollForward: disable`、`maui/nuget.config` (nuget.org 単一 + source mapping) を対で置いた
+- 所要時間 (キャッシュなし): ios 5.5 分 / android 1.5 分 / instrumented 10 分 / kmp 7 分 / maui 9〜12 分。timeout は 20 / 10 / 30 / 25 / 35 分
+- 「metadata compile だけが失敗する状態」は現行 Kotlin では作れず、job の失敗と metadata compile 単体の検出で機構を確認 (deviation)
+
+申し送り:
+
+- `main` 宛て pull request の実動確認 (トリガー・head 制限・status check 名) と、`changes` を必須 check に含めないこと → phase-9 agenda「phase-4 からの申し送り」に追記済み
+- 消費者検証 job は入口 `ci.yml` に枠が無い。`if: github.event_name == 'pull_request'` 付きで足す → phase-8 agenda に追記済み
+- 実装レビューの Suggestion 6 件 (review-001 / review-002: kmp のターゲット導出・`fetch-depth`・Xcode グロブ・comment-policy の `.yml`・件数検査の条件化・NuGet キャッシュキー) → 見送り。実動 3 run で問題なし。必要になった時点で S 級として扱う
+- iOS テストの待ち補助が時間切れで実測値を出さない点 (KsSettingsView の教訓) → 見送り。CI の直列化で解消しており、再発時の入口は `kasane/changes/archive/2026-09-04-fix-ios-toast-presentation-wait-flake/exploration.md` のまま

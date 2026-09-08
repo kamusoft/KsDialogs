@@ -1,6 +1,6 @@
-# 検証 CI の入口
+# 検証 CI の入口 (cross/ADR-0017)
 #
-# トリガーはブランチの役割で分ける。
+# トリガーはブランチの役割で分ける (cross/ADR-0016)。
 # - develop への push: lint と 5 形態の検証。開発はローカルで develop へマージして
 #   直接 push する運用なので、develop 宛ての pull_request は起動条件に持たない
 # - main 宛ての pull_request (head は develop のみ。lint job が検査する): 同じ内容を

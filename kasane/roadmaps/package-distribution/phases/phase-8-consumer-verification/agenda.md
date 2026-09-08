@@ -9,6 +9,10 @@
 - MAUI 消費者の所要時間 (KsSettingsView は約 20 分、見込みを大幅超過) を踏まえた timeout と、消費者検証をどのトリガーに載せるか (phase-4 の結論)
 - README の最小コード例 (4 形態 + KMP の iOS 側) を消費者プロジェクトに逐語一致で同梱し lint で検査する範囲
 
+### phase-4 からの申し送り (2026-09-08)
+
+入口 `.github/workflows/ci.yml` に消費者検証 job の枠は無い (存在しない workflow を `uses:` できないため)。`verify-consumer-<platform>.yml` を作るときに入口へ job を足し、`if: github.event_name == 'pull_request'` で `main` 宛て PR に限る。job 名は phase-9 の必須 check 名 (`consumer-<platform> / verify`) に合わせる。reusable workflow の書き方 (Xcode 選択・`global.json` 参照・件数検査・SHA 固定) は本体検証 5 本 (cross/ADR-0017 / 0018) を写す。
+
 ## 決定事項
 
 踏襲 (解決済み論点)。出典は KsSettingsView phase-7 の決定事項と実測 (`../KsSettingsView/kasane/roadmaps/package-distribution/phases/phase-7-consumer-verification/agenda.md`)。

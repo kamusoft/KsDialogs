@@ -3,6 +3,7 @@ id: 0004
 title: モノレポは4形態分離のビルドルートとし、KMP→Android Native は composite build で接続する
 status: accepted
 date: 2026-08-14
+amended-by: 0018
 ---
 
 ## Context

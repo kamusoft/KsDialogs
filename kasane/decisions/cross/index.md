@@ -7,7 +7,7 @@
 | [0001](0001-rebrand-policy.md) | リブランド方針 — Native 主・互換 shim なし・独立ブランド | accepted | 2026-08-13 |
 | [0002](0002-tech-stack-2026-08.md) | 技術セット — 2026-08 最新安定セットで開始し、最低対象 OS は iOS 17 / Android minSdk 24 | accepted | 2026-08-13 |
 | [0003](0003-knowledge-intake-hybrid.md) | 既存資産知識の取り込みはハイブリッド型 — 原則系は即時翻案、機構系はオンデマンド参照 | accepted | 2026-08-13 |
-| [0004](0004-monorepo-four-build-roots.md) | モノレポは4形態分離のビルドルートとし、KMP→Android Native は composite build で接続する | accepted | 2026-08-14 |
+| [0004](0004-monorepo-four-build-roots.md) | モノレポは4形態分離のビルドルートとし、KMP→Android Native は composite build で接続する (一部改訂: 0018 — ルートの `global.json`) | accepted | 2026-08-14 |
 | [0005](0005-public-identifier-mapping.md) | 公開識別子の写像表 — 素の名前は Native へ、MAUI は namespace 素・NuGet ID 修飾 | accepted | 2026-08-14 |
 | [0006](0006-samples-aggregated-consumer-boundary.md) | Sample は集約 samples/ に置き、利用者と同じ側から公開 product を参照する | accepted | 2026-08-14 |
 | [0007](0007-sample-parity-demo-item-unit.md) | Sample は4ルートでパリティを保ち、一致単位は「デモ項目」とする | accepted | 2026-08-14 |
@@ -19,4 +19,6 @@
 | [0013](0013-contributions-via-issues-no-external-pull-requests.md) | 貢献は Issue Forms で受け、外部からの Pull Request は受け付けない (Platform は形態 × ホスト OS の 7 択) | accepted | 2026-09-04 |
 | [0014](0014-concepts-core-contract-platform-surface.md) | concepts は core に platform 非依存の契約だけを残し、公開名・署名・コード例は <platform>/api/ へ分離する | accepted | 2026-09-05 |
 | [0015](0015-diagnostic-messages-english-only.md) | ライブラリが外へ出す診断文言 (例外メッセージ・警告ログ) は英語固定とし、ローカライズしない | accepted | 2026-09-07 |
-| [0016](0016-branch-model-develop-main.md) | ブランチは develop / main の 2 本とし、develop へ直 push、main はリリース候補だけが PR で入り release は main からのみ起動する | proposed | 2026-09-07 |
+| [0016](0016-branch-model-develop-main.md) | ブランチは develop / main の 2 本とし、develop へ直 push、main はリリース候補だけが PR で入り release は main からのみ起動する | accepted | 2026-09-07 |
+| [0017](0017-verification-ci-structure-and-guarantee.md) | 検証 CI は platform 別 reusable workflow 5 本と入口 1 本で構成し、緑の意味を「ロジック全件通過 + native 配線のコンパイル」に限り、トリガーはブランチの役割で分ける | accepted | 2026-09-08 |
+| [0018](0018-toolchain-pinned-in-repo.md) | 検証に用いる toolchain の版はリポジトリ内で固定し、.NET SDK / workload set の固定は repo 直下の global.json で行う (0004 を一部改訂) | accepted | 2026-09-08 |

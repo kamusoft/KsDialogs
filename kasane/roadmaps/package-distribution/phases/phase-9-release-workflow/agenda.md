@@ -31,6 +31,8 @@ KsSettingsView の `release.yml` をコピー + 固有値の差し替えで逆�
 
 初回リリースの PR (`develop` → `main`) で、検証 CI の `main` 宛て PR に関する Scenario (pull_request トリガーでの起動・head 制限・status check 名の固定) を実動で確認する。phase-4 の change (add-verification-ci) では `main` が無いためステップ単体の確認までしか行えない (2026-09-08 申し送り)。
 
+phase-4 の実装結果 (2026-09-08): 入口 `ci.yml` は変更検出 job `changes` を持ち、7 本目の補助 check として報告される。必須 check は上表の 10 件のままで `changes` は含めない (cross/ADR-0017)。`develop` push の実動 (lint + 5 job の起動・記録だけの push でのスキップ・連続 push の打ち切り) は確認済みで、残るのは `main` 宛て PR 側だけ。
+
 ## 決定事項
 
 踏襲 (解決済み論点)。出典は cross/ADR-0009 (lockstep)、KsSettingsView cross/ADR-0019・cross/ADR-0020 (dispatch 起動・tag は最後・version 注入) と同 phase-8 の決定事項 (`../KsSettingsView/kasane/roadmaps/package-distribution/phases/phase-8-release-workflow/agenda.md`)。

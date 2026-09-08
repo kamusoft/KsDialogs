@@ -1,7 +1,7 @@
 ---
 id: 0016
 title: ブランチは develop / main の 2 本とし、develop へ直 push、main はリリース候補だけが PR で入り release は main からのみ起動する
-status: proposed
+status: accepted
 date: 2026-09-07
 ---
 
@@ -43,3 +43,4 @@ KsDialogs は git remote なし・CI なし・`main` 1 本への直コミット�
 
 ---
 出典: kasane/roadmaps/package-distribution/phases/phase-3-public-readiness/history.md (2026-09-07: ブランチモデル) / 同 agenda.md 決定事項「ブランチモデルは `develop` / `main` の 2 本を踏襲する」 / ../KsSettingsView/kasane/decisions/cross/0020-release-dispatch-tag-last-version-injection.md (却下案「`develop` から起動し `main` は作らない」) / ../KsSettingsView/kasane/decisions/cross/0028-ci-triggers-by-branch-role.md
+関連: cross/ADR-0017 (このブランチの役割に合わせた検証 CI のトリガーと保護設定)

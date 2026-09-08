@@ -1,7 +1,7 @@
 <Project>
 
   <!--
-    maui/ ビルドルート配下の PackageReference の版はここが単一の宣言元。各 csproj は Version を持たない。
+    maui/ ビルドルート配下の PackageReference の版はここが単一の宣言元 (cross/ADR-0018)。各 csproj は Version を持たない。
     samples/maui は別のビルドルートであり、利用者が真似する形 (MauiVersion の直書き) を保つため対象外。
   -->
   <PropertyGroup>
