@@ -26,12 +26,12 @@ KsDialogs も同じ構図にあり (`ios/Package.swift` は target 1 本・`path
 | 形態 | 消費者が手で入れるもの | 自動で付いてくるもの |
 |---|---|---|
 | Native iOS | SwiftPM 依存 1点 (`KsDialogs`) | — |
-| Native Android | Maven 依存 1点 (`jp.kamusoft:ksdialogs`) | — |
-| Native Android (Compose コンテンツ利用時) | Maven 依存 1点 (`jp.kamusoft:ksdialogs-compose`) | 本体 `ksdialogs` は Maven の推移的依存で自動 |
+| Native Android (View 系のみ) | Maven 依存 1点 (`jp.kamusoft:ksdialogs-core`) | — |
+| Native Android (Compose コンテンツ利用時) | Maven 依存 1点 (`jp.kamusoft:ksdialogs`) | 本体 `ksdialogs-core` は Maven の推移的依存で自動 |
 | MAUI | NuGet 1点 (facade) | binding 2件は NuGet の依存関係で自動 |
 | KMP | Maven 依存 1点 (`ksdialogs-kmp`) + iOS アプリ側に SwiftPM 依存 1点 | Android Native は `api` 宣言の Maven 推移的依存で自動 |
 
-Android の Compose 系 API を別モジュール `ksdialogs-compose` として配る分離判断は android/ADR-0001。バージョンは lockstep (cross/ADR-0009) に含める。
+Android の Compose 系 API を別モジュールとして配る分離判断は android/ADR-0001、座標名 (本体 `ksdialogs-core` / Compose 側 `ksdialogs`) は cross/ADR-0019。バージョンは lockstep (cross/ADR-0009) に含める。
 
 KMP iOS 側の手動1点は、static framework が Swift 実体を同梱しない構造 (kmp/ADR-0002) の帰結として受け入れる。
 

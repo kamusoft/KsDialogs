@@ -13,7 +13,7 @@ date: 2026-08-17
 
 ## Decision
 
-- 全 artifact (SwiftPM tag / Maven `jp.kamusoft:ksdialogs`・`jp.kamusoft:ksdialogs-compose`・`jp.kamusoft:ksdialogs-kmp` / MAUI NuGet) を**同一バージョン x.y.z で一斉リリース**し、モノレポの git tag と一致させる
+- 全 artifact (SwiftPM tag / Maven `jp.kamusoft:ksdialogs-core`・`jp.kamusoft:ksdialogs`・`jp.kamusoft:ksdialogs-kmp` / MAUI NuGet) を**同一バージョン x.y.z で一斉リリース**し、モノレポの git tag と一致させる
 - KMP→Swift パッケージは `swiftPackage(url(...), exact(x.y.z))`、KMP→Android Native は同版の厳密指定 Maven 依存で、版ズレを機械的に排除する
 - 版が異なる組み合わせは非サポートとし、互換表 (バージョンマトリクス) は作らない。消費者への案内は「全部同じ番号を入れる」の1行で済ませる
 - deployment target (iOS 17, cross/ADR-0002) の配布物での担保は「Swift パッケージの `platforms: .iOS(.v17)` 宣言 + KMP metadata の `iosMinimumDeploymentTarget=17.0`」を正とする (両方が消費者まで伝搬することを PoC で確認済み)。`-Xoverride-konan-properties` は klib (IR) には効かず、リポジトリ内で自らリンクする binary (テスト・Sample) 用の内部ビルド詳細であり、配布物の担保手段には数えない
