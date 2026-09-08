@@ -1,0 +1,137 @@
+# monorepo 内消費者の座標追随の確認 (2026-09-08)
+
+Android 座標のリネーム (jp.kamusoft:ksdialogs-core = View 系本体 / jp.kamusoft:ksdialogs = Compose 系) に
+消費者 4 面 (samples/android・samples/kmp・kmp/ksdialogs-kmp・maui/android) を追随させた結果の抜粋。
+
+## 1. samples/android — 直接依存 1 行と置換の解決先
+
+コマンド: cd samples/android && ./gradlew :app:assembleDebug
+> Task :app:assembleDebug
+BUILD SUCCESSFUL in 26s
+72 actionable tasks: 51 executed, 3 from cache, 18 up-to-date
+
+コマンド: cd samples/android && ./gradlew -q :app:dependencyInsight --configuration debugCompileClasspath --dependency jp.kamusoft
+(属性表は省略)
+
+project ':android:ksdialogs-core'
+\--- project ':android:ksdialogs'
+     \--- debugCompileClasspath (requested jp.kamusoft:ksdialogs:0.1.0-SNAPSHOT)
+
+jp.kamusoft:ksdialogs:0.1.0-SNAPSHOT -> project ':android:ksdialogs'
+\--- debugCompileClasspath
+
+app の直接依存は jp.kamusoft:ksdialogs の 1 行だけで、View 系本体は
+project ':android:ksdialogs-core' として推移的に解決されている。
+
+## 2. samples/kmp — 直接依存 1 行と置換の解決先
+
+コマンド: cd samples/kmp && ./gradlew :androidApp:assembleDebug
+> Task :androidApp:assembleDebug
+BUILD SUCCESSFUL in 33s
+100 actionable tasks: 58 executed, 1 from cache, 41 up-to-date
+
+コマンド: cd samples/kmp && ./gradlew -q :androidApp:dependencyInsight --configuration debugCompileClasspath --dependency jp.kamusoft
+(属性表は省略)
+
+jp.kamusoft:ksdialogs:0.1.0-SNAPSHOT -> project ':android:ksdialogs'
+\--- debugCompileClasspath
+
+jp.kamusoft:ksdialogs-core:0.1.0-SNAPSHOT -> project ':android:ksdialogs-core'
+\--- project ':kmp:ksdialogs-kmp'
+     \--- project ':shared' (requested jp.kamusoft:ksdialogs-kmp:0.1.0)
+          \--- debugCompileClasspath
+
+jp.kamusoft:ksdialogs-kmp:0.1.0 -> project ':kmp:ksdialogs-kmp'
+\--- project ':shared'
+     \--- debugCompileClasspath
+
+androidApp の直接依存も jp.kamusoft:ksdialogs の 1 行。本体の座標
+jp.kamusoft:ksdialogs-core は KMP facade の公開依存として現れ、明示置換が実際に働いている
+(samples/android では android/ ビルド内の project 依存で本体に届くため、本体側の置換行は
+公開済み成果物へ解決される経路を塞ぐ安全装置として置いてある)。
+
+## 3. 置換の実効 (本体ソースの変更が Sample に反映されるか)
+
+android/ksdialogs-core の DialogTransitionRunner.kt のログ文言に一時的な目印
+"KSDIALOGS_SUBSTITUTION_PROBE" を入れ、両 Sample を再ビルドして APK の dex を走査した。
+目印は元ファイルのコピーからの復元で取り除き、git diff が空であることを確認済み。
+
+samples/android (app/build/outputs/apk/debug/app-debug.apk):
+  classes.dex: 0
+  classes2.dex: 1
+  classes3.dex: 0
+  classes4.dex: 0
+  classes5.dex: 0
+  classes6.dex: 0
+  classes7.dex: 0
+
+samples/kmp (androidApp/build/outputs/apk/debug/androidApp-debug.apk):
+  classes.dex: 0
+  classes2.dex: 0
+  classes3.dex: 1
+  classes4.dex: 0
+  classes5.dex: 0
+  classes6.dex: 0
+  classes7.dex: 0
+  classes8.dex: 0
+
+どちらの APK にも目印が 1 件入っており、公開済み成果物ではなくローカルの本体ソースが
+使われている。
+
+## 4. kmp/ — テストと本体依存の解決先
+
+コマンド: cd kmp && ./gradlew allTests --rerun-tasks
+BUILD SUCCESSFUL in 56s
+47 actionable tasks: 47 executed
+
+件数 (ksdialogs-kmp/build/test-results/<ターゲット>/TEST-*.xml を集計):
+  iosSimulatorArm64Test: 75 tests / 0 failures
+  testAndroidHostTest: 76 tests / 0 failures
+  合計 151 tests / 0 failures (テスト実行規約の実測値と一致)
+
+## 5. maui/android/native — bridge の assembleRelease と本体依存の解決先
+
+コマンド: cd maui/android/native && ./gradlew :ksdialogs-maui-bridge:assembleRelease
+> Task :ksdialogs-maui-bridge:bundleReleaseAar
+> Task :ksdialogs-maui-bridge:assembleRelease
+BUILD SUCCESSFUL in 6s
+37 actionable tasks: 28 executed, 9 up-to-date
+
+コマンド: cd maui/android/native && ./gradlew -q :ksdialogs-maui-bridge:dependencyInsight --configuration releaseCompileClasspath --dependency jp.kamusoft
+(属性表は省略)
+
+jp.kamusoft:ksdialogs-core:0.1.0-SNAPSHOT -> project ':android:ksdialogs-core'
+\--- releaseCompileClasspath
+
+bridge は本体だけを参照し、Compose 系は依存グラフに現れない。
+
+コマンド: cd maui/android/native && ./gradlew :ksdialogs-maui-bridge:test --rerun-tasks
+  31 tests / 0 failures (テスト実行規約の実測値と一致)
+
+## 6. maui binding — aar パスと gradlew task 名の追随
+
+改名後の aar を必ず作り直す経路を通すため、android/ksdialogs-core/build/outputs/aar/ の
+ksdialogs-core-release.aar を削除してからビルドした。
+
+コマンド: dotnet build maui/android/KsDialogs.Binding.Android/KsDialogs.Binding.Android.csproj
+    30 個の警告 (BG8605 / BG8606 / BG8401。同梱するだけの aar に由来する既知の警告)
+    0 エラー
+
+生成された aar (ビルド後):
+  android/ksdialogs-core/build/outputs/aar/ksdialogs-core-release.aar   309884 bytes
+  maui/android/native/ksdialogs-maui-bridge/build/outputs/aar/ksdialogs-maui-bridge-release.aar   71114 bytes
+
+同梱された aar の中身 (obj/Debug/net10.0-android/lp/ に展開されたもの):
+  lp/4/jl/AndroidManifest.xml -> package="jp.kamusoft.ksdialogs"
+
+同梱先が View 系本体 (namespace jp.kamusoft.ksdialogs) であり、Compose 系
+(namespace jp.kamusoft.ksdialogs.compose) に入れ替わっていない。
+
+## 7. 影響範囲のテスト全件
+
+  android/            68 tests / 0 failures   (./gradlew test --rerun-tasks)
+  kmp/               151 tests / 0 failures   (./gradlew allTests --rerun-tasks)
+  maui/android/native/ 31 tests / 0 failures  (./gradlew :ksdialogs-maui-bridge:test --rerun-tasks)
+  maui/             155 tests / 0 failures   (dotnet test)
+
+いずれもテスト実行規約に記録された実測件数と一致する。

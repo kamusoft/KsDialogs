@@ -51,9 +51,9 @@ android {
 
 dependencies {
     // 利用者と同じ経路での参照。friend path を持たないため internal な宣言は見えない
-    implementation(project(":ksdialogs"))
+    implementation(project(":ksdialogs-core"))
     // 宣言的 UI で中身を書く消費者が追加する配布物。こちらも利用者と同じ経路で参照する
-    implementation(project(":ksdialogs-compose"))
+    implementation(project(":ksdialogs"))
 }
 
 /** 禁止形状ごとの検証プロパティと、そのときだけ加えるソースの置き場。 */

@@ -44,11 +44,10 @@ android {
 }
 
 dependencies {
-    // 公開 product。composite build により、公開済み成果物ではなくローカルの android/ ビルドへ解決される
+    // 公開 product。Compose でダイアログの中身を書く消費者が足す 1 行で、View 系の本体
+    // (jp.kamusoft:ksdialogs-core) は公開依存として推移的に付いてくる。
+    // composite build により、公開済み成果物ではなくローカルの android/ ビルドへ解決される
     implementation("jp.kamusoft:ksdialogs:${libs.versions.ksdialogs.get()}")
-
-    // Compose でダイアログの中身を書くための配布物。本体とは別に足す
-    implementation("jp.kamusoft:ksdialogs-compose:${libs.versions.ksdialogs.get()}")
 
     // 中身の composable を組み立てるための Compose 基盤 (レイアウト・文字・押下)
     implementation("androidx.compose.foundation:foundation:${libs.versions.androidx.compose.get()}")

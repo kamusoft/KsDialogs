@@ -1,0 +1,53 @@
+# version の単一ソースと注入の確認 (2026-09-08)
+
+実行場所: android/ (Gradle 9.7.0 / AGP 9.3.0 / Kotlin 2.4.10)
+導出式: android/build.gradle.kts の `providers.gradleProperty("version").orNull ?: カタログの ksdialogs`
+カタログ既定値: android/gradle/libs.versions.toml の `ksdialogs = "0.1.0-SNAPSHOT"`
+
+## 1. 注入なしの開発既定値
+
+$ ./gradlew publishToMavenLocal
+BUILD SUCCESSFUL
+
+ローカル Maven リポジトリ (<M2>/jp/kamusoft/) の配置:
+
+  ksdialogs-core/0.1.0-SNAPSHOT/
+  ksdialogs/0.1.0-SNAPSHOT/
+
+両 artifact の version は `0.1.0-SNAPSHOT`。
+
+## 2. リリース version の注入
+
+$ ./gradlew publishToMavenLocal -Pversion=0.1.0-beta.1
+BUILD SUCCESSFUL
+
+  ksdialogs-core/0.1.0-beta.1/
+  ksdialogs/0.1.0-beta.1/
+
+ksdialogs-0.1.0-beta.1.pom が記す本体依存:
+
+      <artifactId>ksdialogs-core</artifactId>
+      <version>0.1.0-beta.1</version>
+      <scope>compile</scope>
+
+自分の version と本体依存の version が同じ注入値になる。
+
+## 3. 不正な注入値の拒否
+
+`./gradlew help -Pversion=<値>` を値ごとに実行した結果:
+
+| -Pversion の値 | 結果 |
+|---|---|
+| (空文字) | BUILD FAILED |
+| `v1.0.0` | BUILD FAILED |
+| `1.0.0-pre` | BUILD FAILED |
+| `1.0.0 ` (末尾に空白) | BUILD FAILED |
+| `1.0.0-beta.1` | BUILD SUCCESSFUL |
+
+失敗時のメッセージ (値の部分だけが変わる。下は空文字の場合):
+
+* What went wrong:
+-Pversion に指定できるのは X.Y.Z または X.Y.Z-{alpha|beta|rc}.N の形式だけです (指定値: "")。注入しなければ開発用の既定値が使われます。
+
+いずれもタスク実行前のビルド設定の段階で失敗する (`help` タスクにも到達しない)。
+空文字が「注入あり」と解釈されて SNAPSHOT ガードを迂回する経路はここで塞がれている。

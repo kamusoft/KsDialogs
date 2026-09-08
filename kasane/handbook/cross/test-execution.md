@@ -20,7 +20,7 @@ timestamp: 2026-09-08
 |---|---|---|
 | ios/ | `xcodebuild test -scheme KsDialogs -destination 'platform=iOS Simulator,name=iPhone 17'` | 277 tests (2026-09-07) |
 | android/ | `./gradlew test --rerun-tasks` | 68 tests / 0 failures (2026-09-07) |
-| android/ (instrumented) | `./gradlew connectedDebugAndroidTest` | 333 tests / 0 failures (`:ksdialogs` 294 + `:ksdialogs-compose` 39。1 台分の件数。API レベルによる skip あり — 後述。2026-09-07) |
+| android/ (instrumented) | `./gradlew connectedDebugAndroidTest` | 333 tests / 0 failures (`:ksdialogs-core` 294 + `:ksdialogs` 39。1 台分の件数。API レベルによる skip あり — 後述。2026-09-07) |
 | kmp/ | `./gradlew allTests --rerun-tasks` | 151 tests / 0 failures (iosSimulatorArm64 75 + androidHostTest 76。2026-09-07) |
 | maui/ | `dotnet test` | 155 tests / 0 failures (2026-09-07) |
 | maui/android/native/ | `./gradlew :ksdialogs-maui-bridge:test --rerun-tasks` | 31 tests / 0 failures (2026-09-07) |
@@ -60,8 +60,8 @@ cd android
 
 - 実行されるのは `testDebugUnitTest` (release variant の単体テストタスクは現構成では走らない)
 - Gradle は up-to-date なテストタスクをスキップするため、**差分なしの再実行は「テスト 0 件で BUILD SUCCESSFUL」になり得る**。全件を確実に回し直すときは `--rerun-tasks` を付ける
-- 件数はコンソールに出ない。`ksdialogs/build/test-results/testDebugUnitTest/TEST-*.xml` の `tests` / `failures` 属性で確認する (unit test を持つのは `:ksdialogs` だけ。`:ksdialogs-compose` と `:api-surface-check` は `NO-SOURCE` になる)
-- この実行には、本体の Compose 非依存の検査 `:ksdialogs:verifyNoDeclarativeUiDependency` も乗る (後述の「本体の Compose 非依存の検証」)
+- 件数はコンソールに出ない。`ksdialogs-core/build/test-results/testDebugUnitTest/TEST-*.xml` の `tests` / `failures` 属性で確認する (unit test を持つのは `:ksdialogs-core` だけ。`:ksdialogs` と `:api-surface-check` は `NO-SOURCE` になる)
+- この実行には、本体の Compose 非依存の検査 `:ksdialogs-core:verifyNoDeclarativeUiDependency` も乗る (後述の「本体の Compose 非依存の検証」)
 - SDK の場所は `android/local.properties` の `sdk.dir` で指定する (VCS 管理外)。未作成だと `SDK location not found` でビルド自体が失敗する
 
 ## android/ (instrumented)
@@ -75,8 +75,8 @@ adb devices          # 実機かエミュレータが1台以上 device 状態で
 - 実 View のレイアウト・実入力の注入・実ウィンドウの見えを測るテストはここにしかない。**`./gradlew test` では 1 件も走らない**
 - 端末が 1 台も繋がっていないと `No connected devices!` でタスクが失敗する。複数台繋がっているときは `ANDROID_SERIAL=<serial>` で 1 台に絞る (指定しないと全台で回る)
 - 件数はコンソールに `Tests N/M completed` として流れるが、**モジュールごとに別々の行として流れる**。確定値は次の2か所の `tests` / `failures` 属性を合算して確認する — 片方だけを見ると全体件数を取り違える
-  - `ksdialogs/build/outputs/androidTest-results/connected/debug/TEST-*.xml` (従来 View 系)
-  - `ksdialogs-compose/build/outputs/androidTest-results/connected/debug/TEST-*.xml` (宣言的 UI)
+  - `ksdialogs-core/build/outputs/androidTest-results/connected/debug/TEST-*.xml` (従来 View 系)
+  - `ksdialogs/build/outputs/androidTest-results/connected/debug/TEST-*.xml` (宣言的 UI)
 - 端末の画面がロックされていると入力注入系が落ちるため、解除した状態で回す
 
 ### API レベルで走る / 走らない Scenario
@@ -95,8 +95,8 @@ adb devices          # 実機かエミュレータが1台以上 device 状態で
 
 ```
 cd android
-./gradlew :ksdialogs:assembleDebugAndroidTest
-adb -s <serial> install -r -t ksdialogs/build/outputs/apk/androidTest/debug/ksdialogs-debug-androidTest.apk
+./gradlew :ksdialogs-core:assembleDebugAndroidTest
+adb -s <serial> install -r -t ksdialogs-core/build/outputs/apk/androidTest/debug/ksdialogs-core-debug-androidTest.apk
 adb -s <serial> shell am instrument -w -e class <テストクラス> -e ksdialogsEvidence 1 \
   jp.kamusoft.ksdialogs.test/androidx.test.runner.AndroidJUnitRunner
 adb -s <serial> pull /sdcard/Android/data/jp.kamusoft.ksdialogs.test/files/evidence/
@@ -273,11 +273,11 @@ dotnet build KsDialogs.Maui.ApiSurfaceCheck -p:<フラグ>=true
 
 ## 本体の Compose 非依存の検証
 
-Android 本体 `jp.kamusoft:ksdialogs` は宣言的 UI (Compose) に依存しない。View 系だけを使う消費者 — 特にバインディング経由で本体を取り込む MAUI Android — へ compose-ui の推移的依存を持ち込まないための境界であり、**推移的な混入も含めて**依存グラフの走査で固定してある。
+Android 本体 `jp.kamusoft:ksdialogs-core` は宣言的 UI (Compose) に依存しない。View 系だけを使う消費者 — 特にバインディング経由で本体を取り込む MAUI Android — へ compose-ui の推移的依存を持ち込まないための境界であり、**推移的な混入も含めて**依存グラフの走査で固定してある。
 
 ```
 cd android
-./gradlew :ksdialogs:verifyNoDeclarativeUiDependency
+./gradlew :ksdialogs-core:verifyNoDeclarativeUiDependency
 ```
 
 - 検査対象は消費者へ配られる 4 つの classpath (`debug` / `release` それぞれの compile / runtime)。テスト専用の classpath は対象外なので、テスト側が Compose を使うことは妨げない

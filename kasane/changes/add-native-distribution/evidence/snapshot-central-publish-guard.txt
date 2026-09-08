@@ -1,0 +1,92 @@
+# SNAPSHOT の Central 発行ガードと発行対象モジュールの確認 (2026-09-08)
+
+## 1. ガードの実装
+
+android/build.gradle.kts の subprojects で、発行プラグインを適用した module の version が
+`-SNAPSHOT` で終わるとき、Central 向けタスクへ `doFirst` で例外を投げるアクションを付ける。
+`doFirst` はタスク自身のアクションより先に走るため、アップロードは 1 バイトも発生しない。
+
+対象はタスク名の述語で決める:
+
+    name.contains("MavenCentral") && name != "dropMavenCentralDeployment"
+
+名前を列挙するとプラグイン更新でタスクが増えたときに素通りし、名前が変わると列挙が死に名に
+なる。どちらも無音で穴が開くため述語で拾う。除外は後始末用の dropMavenCentralDeployment
+(誤って作った deployment の取り下げ用で発行経路ではない) の 1 本だけ。
+
+述語が拾う範囲と実在タスクの一致確認:
+
+$ ./gradlew :ksdialogs-core:tasks --all | grep -i mavencentral
+dropMavenCentralDeployment                       ← 除外
+publishAllPublicationsToMavenCentralRepository   ← 対象
+publishAndReleaseToMavenCentral                  ← 対象
+publishMavenPublicationToMavenCentralRepository  ← 対象
+publishToMavenCentral                            ← 対象
+enableAutomaticMavenCentralPublishing            ← 対象
+prepareMavenCentralPublishing                    ← 対象
+
+## 2. 実効確認 (version は注入なし = 0.1.0-SNAPSHOT)
+
+各エントリポイントをダミー認証情報つきで実行した (認証情報が無いと Gradle がタスク実行前に
+credentials 解決で落ち、ガードまで到達しないため)。
+
+$ ./gradlew --offline :ksdialogs-core:<task> \
+    -PmavenCentralUsername=<dummy> -PmavenCentralPassword=<dummy>
+
+| 実行したタスク | 結果 | 例外を投げたタスク |
+|---|---|---|
+| publishToMavenCentral | ガード発火 | prepareMavenCentralPublishing |
+| publishAndReleaseToMavenCentral | ガード発火 | enableAutomaticMavenCentralPublishing |
+| publishAllPublicationsToMavenCentralRepository | ガード発火 | prepareMavenCentralPublishing |
+| publishMavenPublicationToMavenCentralRepository | ガード発火 | prepareMavenCentralPublishing |
+| prepareMavenCentralPublishing | ガード発火 | prepareMavenCentralPublishing |
+| enableAutomaticMavenCentralPublishing | ガード発火 | enableAutomaticMavenCentralPublishing |
+| publish (集約タスク) | ガード発火 | prepareMavenCentralPublishing |
+
+エラーメッセージ:
+
+* What went wrong:
+Execution failed for task ':ksdialogs-core:prepareMavenCentralPublishing'
+> SNAPSHOT (0.1.0-SNAPSHOT) は Maven Central へ発行しない。リリース版の version は
+  -Pversion=<version> で注入する。ローカルでの発行物確認には publishToMavenLocal を使う。
+
+Compose 側の module も同じガードが効く (共通設定が 1 箇所にあることの実地確認):
+
+$ ./gradlew --offline :ksdialogs:publishToMavenCentral -PmavenCentralUsername=<dummy> ...
+Execution failed for task ':ksdialogs:prepareMavenCentralPublishing'
+> SNAPSHOT (0.1.0-SNAPSHOT) は Maven Central へ発行しない。(以下同文)
+
+除外した dropMavenCentralDeployment ではガード例外が出ないこと:
+
+$ ./gradlew --offline :ksdialogs-core:dropMavenCentralDeployment -PmavenCentralUsername=<dummy> ...
+* What went wrong:
+A problem was found with the configuration of task ':ksdialogs-core:dropMavenCentralDeployment'
+(type 'DropMavenCentralDeploymentTask').
+Value not set
+
+→ 失敗の理由はタスク自身が要求する入力 (取り下げ対象の deployment id) の未設定であり、
+  ガードの例外ではない。ガードはこのタスクを止めていない。
+
+ローカル発行は妨げないこと:
+
+$ ./gradlew publishToMavenLocal
+BUILD SUCCESSFUL
+
+判定: SNAPSHOT のあいだ Central へ向かう経路はすべて実行不能で、ローカル発行と発行物の
+検証は行える。リリース版の version を注入したときはガードが発火しない
+(evidence/version-injection.txt の `-Pversion=0.1.0-beta.1` の発行が成功している)。
+
+## 3. :api-surface-check に発行タスクが無いこと
+
+$ ./gradlew :api-surface-check:tasks --group publishing
+------------------------------------------------------------
+Tasks runnable from project ':api-surface-check'
+------------------------------------------------------------
+
+No tasks
+
+$ ./gradlew :api-surface-check:tasks --all | grep -i publish
+prepareLintJarForPublish
+
+→ AGP の lint jar 準備タスクのみ。publish / publishToMavenLocal / Central 向けの
+  Maven 発行タスクは存在しない (発行プラグインを適用していないため)。

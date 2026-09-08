@@ -34,7 +34,7 @@ dependencyResolutionManagement {
     }
 }
 
-// jp.kamusoft:ksdialogs への依存を、公開済み成果物ではなくローカルの Android ビルドへ解決する (cross/ADR-0004)
+// jp.kamusoft:ksdialogs-core への依存を、公開済み成果物ではなくローカルの Android ビルドへ解決する (cross/ADR-0004)
 includeBuild("../android")
 
 include(":ksdialogs-kmp")

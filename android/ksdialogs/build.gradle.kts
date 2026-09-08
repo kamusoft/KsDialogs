@@ -1,28 +1,43 @@
-import org.gradle.api.artifacts.component.ComponentIdentifier
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier
-import org.gradle.api.artifacts.result.ResolvedComponentResult
-import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-// Android Native のライブラリモジュール。
-// AGP 9 以降は Kotlin サポートが AGP に内蔵されたため org.jetbrains.kotlin.android は適用しない。
+// 宣言的 UI (Jetpack Compose) で中身を書くための配布物。
+//
+// 本体 :ksdialogs-core は Compose に依存しない。Compose でコンテンツを書く消費者だけがこのモジュールを追加し、
+// View 系だけを使う消費者 (バインディング経由で本体を取り込む MAUI Android など) には
+// compose-ui の推移的依存が届かない。
 plugins {
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.composeCompiler)
+    // Maven Central への発行。共通の発行設定 (variant / 署名 / POM の共通部) はルート build.gradle.kts が持ち、
+    // ここには artifact 固有の POM の name / description だけを置く
+    alias(libs.plugins.mavenPublish)
 }
 
-// Maven 座標は公開識別子の写像表 (cross/ADR-0005) に従う。
-// 発行の配線 (maven-publish) は行わず、座標の宣言のみを持つ。
-group = "jp.kamusoft"
-version = libs.versions.ksdialogs.get()
+// Maven 座標は View 系本体を ksdialogs-core、Compose 系を ksdialogs とする写像に従う。
+// group と version は全モジュール共通の事項なのでルート build.gradle.kts が一括で設定し、
+// 本体との同版配布はその共通設定から自動的に成り立つ。
+mavenPublishing {
+    pom {
+        name.set("KsDialogs")
+        description.set(
+            "A dialog UI library for Android that presents dialogs, loading indicators, and " +
+                "toasts from anywhere in an application, with content written in Jetpack Compose.",
+        )
+    }
+}
 
 android {
-    namespace = "jp.kamusoft.ksdialogs"
+    namespace = "jp.kamusoft.ksdialogs.compose"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        // 最低対象 OS は Android 7.0 (API 24) (cross/ADR-0002)
+        // 最低対象 OS は本体と揃える (cross/ADR-0002)
         minSdk = libs.versions.android.minSdk.get().toInt()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        compose = true
     }
 
     compileOptions {
@@ -34,26 +49,13 @@ android {
         getByName("androidTest") {
             // レイアウト共通ケース表 (core/ADR-0009) は両 Native 実装が参照する唯一の正。
             // 写しを作らず、リポジトリルートの置き場を instrumented test の asset として直接運ぶ
-            // パスはこのモジュールから見た相対位置 (android/ksdialogs → リポジトリルート)
             assets.directories.add("../../core/layout-spec")
-            // ケース表の読み込みと期待 rect の照合は :ksdialogs-compose の androidTest とも共通なので、
+            // ケース表の読み込みと期待 rect の照合は :ksdialogs-core の androidTest とも共通なので、
             // どちらのモジュールにも属さない置き場から双方が同じ物を取り込む
             kotlin.directories.add("../layout-case-fixtures/kotlin")
         }
     }
 
-    testOptions {
-        unitTests {
-            // ユニットテストで Android フレームワークの型 (View / Dialog 等) を素の JVM 上で扱えるようにする。
-            // 実際の描画・提示は行われないため、提示の実挙動は実環境での確認が受け持つ
-            isReturnDefaultValues = true
-            all {
-                it.useJUnitPlatform()
-            }
-        }
-    }
-
-    // AGP 内蔵 Kotlin の設定は android ブロック配下の kotlin ブロックで行う
     kotlin {
         // 公開ライブラリなので、公開面の可視性と戻り値型の明示を必須にする
         explicitApi()
@@ -64,80 +66,23 @@ android {
 }
 
 dependencies {
-    // suspend な show の UI スレッドマーシャリングに Android の Main ディスパッチャを使う
-    implementation(libs.kotlinx.coroutines.android)
+    // 公開面の型 (DialogViewRegistry / KsDialog / DialogNotifier ほか) がそのまま現れるため api で公開する
+    api(project(":ksdialogs-core"))
+    // 利用者が @Composable のコンテンツを書くため、runtime も公開面の一部として公開する
+    api(libs.androidx.compose.runtime)
 
-    // 公開 API の overlayColor に付けた @ColorInt を利用者側の lint に見せるため、api スコープで公開する
-    // (implementation だと利用者のコンパイル classpath に注釈が乗らず、誤用警告が働かない)
-    api(libs.androidx.annotation)
+    // ホスティングの実装 (ComposeView) と、その動作に要る owner 2種
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.lifecycle.runtime)
+    implementation(libs.androidx.savedstate)
 
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testRuntimeOnly(libs.junit.platform.launcher)
-
-    // 実 View のレイアウト結果を実機・エミュレータで測る検証は instrumented test で行う
+    // 宣言的 UI の中身が実際にどう置かれ、どう破棄されるかは実機・エミュレータでしか測れない
     androidTestImplementation(libs.junit4)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.kotlinx.coroutines.test)
-}
-
-// 本体は宣言的 UI (Compose) に依存しない (android/ADR-0001)。View 系だけを使う消費者 — 特に
-// バインディング経由で本体を取り込む MAUI Android — に compose-ui の推移的依存を持ち込まない
-// ための境界であり、推移的な混入も含めてビルドで固定する。
-val declarativeUiGroups = listOf("androidx.compose", "org.jetbrains.compose")
-
-val verifyNoDeclarativeUiDependency = tasks.register("verifyNoDeclarativeUiDependency") {
-    group = "verification"
-    description = "消費者へ配られる依存グラフに Compose 系 artifact が混ざっていないことを確かめる"
-
-    // 検査対象は消費者へ配られる classpath だけ。テスト専用の classpath は対象外
-    val classpaths = listOf(
-        "debugCompileClasspath",
-        "debugRuntimeClasspath",
-        "releaseCompileClasspath",
-        "releaseRuntimeClasspath",
-    ).associateWith { name ->
-        configurations.named(name).flatMap { it.incoming.resolutionResult.rootComponent }
-    }
-
-    doLast {
-        classpaths.forEach { (name, rootComponent) ->
-            val offenders = sortedSetOf<String>()
-            val visited = mutableSetOf<ComponentIdentifier>()
-
-            fun visit(component: ResolvedComponentResult) {
-                if (!visited.add(component.id)) {
-                    return
-                }
-                val id = component.id
-                if (id is ModuleComponentIdentifier &&
-                    declarativeUiGroups.any { id.group == it || id.group.startsWith("$it.") }
-                ) {
-                    offenders += "${id.group}:${id.module}"
-                }
-                component.dependencies
-                    .filterIsInstance<ResolvedDependencyResult>()
-                    .forEach { visit(it.selected) }
-            }
-
-            visit(rootComponent.get())
-            check(offenders.isEmpty()) {
-                "$name に Compose 系 artifact が混ざっています: ${offenders.joinToString()}"
-            }
-        }
-    }
-}
-
-tasks.named("check") {
-    dependsOn(verifyNoDeclarativeUiDependency)
-}
-
-// このリポジトリの android の全件テストは `./gradlew test` で回し、`check` は経由しない。
-// `check` だけに結線すると検査が日常の実行から漏れて混入を黙って通すため、`test` にも結線する。
-// `test` は variant の確定後に作られるので、遅延評価の live collection 経由で拾う
-tasks.matching { it.name == "test" }.configureEach {
-    dependsOn(verifyNoDeclarativeUiDependency)
+    androidTestImplementation(libs.kotlinx.coroutines.android)
+    // 内容サイズを持つ中身を組み立てるために使う
+    androidTestImplementation(libs.androidx.compose.foundation.layout)
 }
