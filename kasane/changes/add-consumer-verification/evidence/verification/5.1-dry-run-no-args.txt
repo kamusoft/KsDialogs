@@ -1,0 +1,121 @@
+# 5.1 4 形態の dry-run (引数なし) と副作用の確認 (2026-09-09)
+
+判定: **成立** (4 形態すべて成功。取得元はローカル参照先のみ、配信先に変化なし、
+`XA4301` 0 件、追跡物に差分なし)
+
+対応する Scenario
+- 引数なしで dry-run が動く
+- 本リポジトリ由来の座標はローカル参照先からのみ取得される
+- 配信先へ副作用を残さない
+- KMP の Swift 参照がローカル clone を指す
+- KMP の 3 段は順に通る
+- 追跡している生成物は実行で変化しない
+
+作業ディレクトリは `--work` を与えず既定 (`${TMPDIR}/ksdialogs-verification/<形態>`) を使った。
+Scenario が「引数を与えずに実行する」ことを求めるため、既定の解決も含めて確認している。
+以下ではこの既定の作業ディレクトリを `<work>` と書く。
+
+## 実行
+
+  $ verification/ios/build-consumer.sh          exit 0   14 秒
+  $ verification/android/build-consumer.sh      exit 0    6 秒
+  $ verification/maui/build-consumer.sh         exit 0    3 分 25 秒
+  $ verification/kmp/build-consumer.sh          exit 0    1 分 7 秒
+
+いずれも Android SDK は環境変数を持たない状態から本体 build root の設定で解決した。
+
+  ANDROID_HOME を <repo>/android/local.properties の sdk.dir から解決しました
+
+## 取得元 (ローカル参照先であること)
+
+iOS (生成した Package.swift の依存 1 行と、最終行の参照先)
+
+  .package(path: "<work>/ios/KsDialogs-SPM")
+  <work>/ios/KsDialogs-SPM
+  「dry-run の依存は path 参照だけで version constraint を持たないため、Package.resolved は生成されない」
+
+Android
+
+  参照先: <work>/android/maven
+  :app        +--- jp.kamusoft:ksdialogs:0.0.0-alpha.0
+              |    +--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+  :app-core   \--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+  :app-core の androidx.compose 座標: 0 件
+
+MAUI (パッケージ単位の取得元は `.nupkg.metadata` の source)
+
+  KsDialogs.Maui             0.0.0-alpha.0  <- <work>/maui/feed
+  KsDialogs.Binding.iOS      0.0.0-alpha.0  <- <work>/maui/feed
+  KsDialogs.Binding.Android  0.0.0-alpha.0  <- <work>/maui/feed
+  net10.0-android  KsDialogs.Binding.Android/0.0.0-alpha.0  lib/net10.0-android36.0/…
+  net10.0-ios      KsDialogs.Binding.iOS/0.0.0-alpha.0      lib/net10.0-ios26.0/…
+
+KMP
+
+  androidApp         jp.kamusoft:ksdialogs-kmp / -kmp-android / ksdialogs-core  0.0.0-alpha.0
+  iosArm64 / iosSimulatorArm64 / iosX64  それぞれの publication  0.0.0-alpha.0
+  metadata           Swift 参照の URL  file://<work>/kmp/KsDialogs-SPM
+  metadata           Swift 参照の exact  0.0.0-alpha.0
+  合成 package         Swift 参照  file://<work>/kmp/KsDialogs-SPM @ 0.0.0-alpha.0
+  ローカル package       Swift 参照  file://<work>/kmp/KsDialogs-SPM @ 0.0.0-alpha.0
+  xcodebuild         配信リポジトリの pin  1 件
+
+いずれの参照先も `~/.m2` ではなく作業ディレクトリの中である。ユーザーの `~/.m2` には
+`jp.kamusoft` の別 version (`ksdialogs` / `ksdialogs-core` の `0.1.0-SNAPSHOT`、
+`ksdialogs-kmp` の `0.1.0`) が置かれているが、参照先には現れない。
+
+## KMP の 3 段
+
+  ==== 1 段目: Android アプリの Release ビルド ====        BUILD SUCCESSFUL in 5s
+  ==== 2 段目: 合成 package の再生成と共有モジュールの framework リンク ====
+      :shared:integrateLinkagePackage                    BUILD SUCCESSFUL in 576ms
+      :shared:linkReleaseFrameworkIosSimulatorArm64       BUILD SUCCESSFUL in 18s
+  ==== 3 段目: iOS アプリの Release ビルド ====             ** BUILD SUCCEEDED **
+  ==== 依存検査 ====                                       検査 OK
+
+## MAUI Android の Release ビルドの XA4301
+
+  ==== XA4301 (native ライブラリの重複) ====
+  検出なし
+
+`grep -F XA4301` の一致 0 行 (0 件)。
+
+## 配信先への副作用
+
+実行前後で比較した (3 件とも実行前と同一)。
+
+  $ git ls-remote --tags https://github.com/kamusoft/KsDialogs-SPM.git
+    実行前 0 行 / 実行後 0 行 (差分なし)
+
+  $ dotnet package search KsDialogs --prerelease --source https://api.nuget.org/v3/index.json --format json
+    実行前 packages [] / 実行後 packages [] (差分なし)
+
+  Central Portal の deployments は認証が要るため直接照会していない。代わりに
+  「dry-run の実行経路に認証情報も配信先への publish タスクも無い」ことをスクリプトと
+  実行ログで確認した (この確認は Central 側の状態を観測したものではない)。
+
+    $ grep -rniE "git push|nuget push|--api-key|username|password|token|secret|signing|ORG_GRADLE_PROJECT" verification/
+      該当なし (一致するのは CODE_SIGNING_ALLOWED=NO と awk の変数名だけ)
+
+    実行ログに現れた publish 系タスクは Maven local 宛てだけ:
+      :ksdialogs-core:publishMavenPublicationToMavenLocal / :ksdialogs-core:publishToMavenLocal
+      :ksdialogs:publishMavenPublicationToMavenLocal / :ksdialogs:publishToMavenLocal
+      :ksdialogs-kmp:publishKotlinMultiplatformPublicationToMavenLocal
+      :ksdialogs-kmp:publishAndroidPublicationToMavenLocal
+      :ksdialogs-kmp:publishIosArm… / :publishIosSimulatorArm… / :publishIosX…
+      :ksdialogs-kmp:publishToMavenLocal
+    4 形態のログに `central.sonatype` / `publishToMavenCentral` / `nuget push` の
+    文字列は 0 件。
+
+## 追跡物に差分が出ないこと
+
+  $ git status --porcelain      実行前と同一 (差分なし)
+  $ git status --porcelain kmp/.swiftpm-locks/      出力なし
+
+`verification/kmp/` の追跡対象ファイル 28 本の shasum は実行前後で同一 (合成 package と
+`VerificationApp/Package.swift` は smoke 形の `https://github.com/kamusoft/KsDialogs-SPM` +
+`exact("0.0.0-alpha.0")` のまま)。KMP のフィード準備は kmp/ の発行の後に
+
+  本体側の合成 Swift マニフェスト 2 本を追跡状態へ戻した
+
+と出力し、`kmp/.swiftpm-locks/` を追跡状態へ戻す。

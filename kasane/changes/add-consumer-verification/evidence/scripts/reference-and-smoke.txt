@@ -1,0 +1,87 @@
+# 準備済みの参照先を渡した消費者ビルドと smoke の生成物 (2026-09-09)
+
+判定: **成功** (4 形態とも `--reference` でフィード準備が走らず同じ結果になる。
+smoke は参照先の設定が公開レジストリを指し、フィード準備を行わない)
+
+## 準備済みの参照先を渡した単独実行
+
+3.1 で準備した参照先を渡し、作業ディレクトリだけを別 (`<scratch>/work2/...`) にして
+`build-consumer.sh` を単独で実行した。
+
+  $ verification/ios/build-consumer.sh --reference <scratch>/work/.../ios/KsDialogs-SPM
+    成功。フィード準備のログ (「同期しました」) は 0 件
+
+  $ verification/android/build-consumer.sh --reference <scratch>/work/.../android/maven
+    成功。発行のログ (publishToMavenLocal) は 0 件。
+    検査結果は 3.1 の実行と同じ (ksdialogs と ksdialogs-core が 0.0.0-alpha.0 で一致、
+    -core 側に androidx.compose 0 件)
+
+  $ verification/maui/build-consumer.sh --reference <scratch>/work/.../maui/feed
+    成功 (3 分 6 秒)。pack のログ (「が正常に作成されました」) は 0 件
+
+  $ verification/kmp/build-consumer.sh --reference <scratch>/work/.../kmp/maven
+    成功 (1 分 5 秒)。出力の 5 行目:
+      準備済みの参照先を使うため、本体の Android ライブラリの発行は行わない: <scratch>/.../kmp/maven
+    kmp/ の発行は行う:
+      > Task :ksdialogs-kmp:publishToMavenLocal
+      本体側の合成 Swift マニフェスト 2 本を追跡状態へ戻した
+    スナップショット clone の tag は新しい作業ディレクトリ側に作られ、Swift 参照はその
+    file:// URL になる。検査結果は 3.1 と同じ (5 publication + core が同版、pin 1 件)
+
+  $ git status --porcelain   (4 形態の実行後)
+   M kasane/changes/add-consumer-verification/tasks.md
+  ?? kasane/changes/add-consumer-verification/deviation.md
+  ?? kasane/changes/add-consumer-verification/evidence/
+  ?? scripts/readme-example-lint.py
+  ?? verification/
+
+## smoke (version 0.1.0-rc.1)
+
+フィード準備は 4 形態とも何もしない。
+
+  $ verification/<形態>/prepare-feed.sh --mode smoke --version 0.1.0-rc.1
+  ios      smoke では公開レジストリ (配信リポジトリの tag) を参照するため、ローカル参照先は準備しない
+  android  smoke では公開レジストリ (Maven Central) を参照するため、ローカル参照先は準備しない
+  maui     smoke では公開レジストリ (nuget.org) を参照するため、ローカル参照先は準備しない
+  kmp      smoke では公開レジストリ (Maven Central と配信リポジトリの tag) を参照するため、ローカル参照先は準備しない
+  (4 件とも exit 0)
+
+`build-consumer.sh --mode smoke --version 0.1.0-rc.1` は、生成物とログから参照先が公開
+レジストリだけであることを確認できる。**解決は指定 version が公開されていないため失敗する
+(想定どおり)。公開レジストリからの解決成功は本変更の受け入れ条件に含めず、配布物が公開される
+初回リリースの変更で Scenario として立てて実証する。**
+
+  ios    生成した Package.swift:
+           .package(url: "https://github.com/kamusoft/KsDialogs-SPM", exact: "0.1.0-rc.1")
+         error: Dependencies could not be resolved because no versions of 'ksdialogs-spm'
+                match the requirement 0.1.0-rc.1
+         (スナップショットの同期は行われない)
+
+  android > Could not find jp.kamusoft:ksdialogs:0.1.0-rc.1.
+            Searched in the following locations:
+              - https://repo.maven.apache.org/maven2/jp/kamusoft/ksdialogs/0.1.0-rc.1/ksdialogs-0.1.0-rc.1.pom
+          (検索先は Maven Central だけ。発行は行われない)
+
+  maui    error NU1101: パッケージ KsDialogs.Maui が見つかりません。ソース nuget.org には、
+          この ID のパッケージが存在しません。PackageSourceMapping が有効になっています。
+          (pack は行われない)
+
+  kmp     生成した VerificationApp/Package.swift (作業コピー):
+            .package(url: "https://github.com/kamusoft/KsDialogs-SPM", exact: "0.1.0-rc.1")
+          > Could not find jp.kamusoft:ksdialogs-kmp:0.1.0-rc.1.
+          作業ディレクトリに maven / KsDialogs-SPM は作られない (consumer のみ):
+            $ ls <scratch>/work3/ksdialogs-verification/kmp/
+            consumer
+
+## 不正な入力
+
+4 形態とも、フィード準備・依存解決に入る前に失敗する (いずれも exit 1)。
+
+  $ verification/<形態>/prepare-feed.sh --mode bogus
+  エラー: mode は dry-run か smoke のいずれかです: bogus
+
+  $ verification/<形態>/build-consumer.sh --mode smoke
+  エラー: smoke では --version が必須です
+
+  $ verification/<形態>/build-consumer.sh --mode smoke --version 1.0.0 --reference <dir>
+  エラー: smoke では --reference を指定できません (参照先は公開レジストリで、準備済みの配布物は使いません)

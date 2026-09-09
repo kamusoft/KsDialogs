@@ -1,0 +1,39 @@
+// swift-tools-version: 6.3
+// KMP 消費者検証の iOS ホストが使うローカル Swift package。
+//
+// 依存の 1 行は Package.swift.template の差し込み口を mode に応じて置換して作る。
+// build-consumer.sh が作業ディレクトリのコピーに対して置換を行い、dry-run は tag を打った
+// ローカル clone の file:// URL、smoke は配信リポジトリの https URL で、どちらも exact 指定になる。
+//
+// 同じ URL を発行 metadata から再生成された合成 package も指すため、SwiftPM は
+// 配信リポジトリの pin を 1 つにまとめる。
+
+import PackageDescription
+
+let package = Package(
+    name: "VerificationApp",
+    platforms: [
+        // 本体ライブラリの最低対象 OS と同じ iOS 17 に合わせる (cross/ADR-0002)。
+        .iOS(.v17)
+    ],
+    products: [
+        .library(
+            name: "VerificationApp",
+            targets: ["VerificationApp"]
+        )
+    ],
+    dependencies: [
+        .package(
+            url: "https://github.com/kamusoft/KsDialogs-SPM",
+            exact: "0.0.0-alpha.0"
+        )
+    ],
+    targets: [
+        .target(
+            name: "VerificationApp",
+            dependencies: [
+                .product(name: "KsDialogs", package: "KsDialogs-SPM")
+            ]
+        )
+    ]
+)

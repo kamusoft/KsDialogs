@@ -1,0 +1,63 @@
+# 5.6 (手元分) 準備済みの参照先を渡した消費者ビルド (2026-09-09)
+
+判定: **手元分は成立** (4 形態ともフィード準備が再実行されず、5.1 と同じ結果になる)。
+**CI の `artifact` 入力の確認 (draft PR 上での upload → download) はオーナー実施待ちで、
+本証跡には含まれない。**
+
+対応する Scenario
+- 外部で準備した配布物を消費者に渡す
+
+`<work>` は 5.1 で作った参照先を含む作業ディレクトリ、`<work2>` は今回の実行の作業
+ディレクトリ (別ディレクトリを `--work` で指定した)。
+
+## iOS
+
+  $ verification/ios/build-consumer.sh --reference <work>/ios/KsDialogs-SPM --work <work2>/ios
+  exit 0
+  スナップショット同期のログ (「同期しました」) は 0 件
+
+## Android
+
+  $ verification/android/build-consumer.sh --reference <work>/android/maven --work <work2>/android
+  exit 0
+  発行のログ (`publishToMavenLocal`) は 0 件
+  参照先: <work>/android/maven
+  :app        +--- jp.kamusoft:ksdialogs:0.0.0-alpha.0
+              |    +--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+  :app-core   \--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+  :app-core の androidx.compose 座標: 0 件
+
+  5.1 の実行と同じ結果。
+
+## MAUI
+
+  $ verification/maui/build-consumer.sh --reference <work>/maui/feed --work <work2>/maui
+  exit 0 (3 分 21 秒)
+  pack のログ (`dotnet pack` / 「が正常に作成されました」) は 0 件
+  KsDialogs.Maui             0.0.0-alpha.0  <- <work>/maui/feed
+  KsDialogs.Binding.iOS      0.0.0-alpha.0  <- <work>/maui/feed
+  KsDialogs.Binding.Android  0.0.0-alpha.0  <- <work>/maui/feed
+
+## KMP
+
+  $ verification/kmp/build-consumer.sh --reference <work>/kmp/maven --work <work2>/kmp
+  exit 0
+  出力 5 行目:
+    準備済みの参照先を使うため、本体の Android ライブラリの発行は行わない: <work>/kmp/maven
+  android/ の発行タスク (`:ksdialogs-core:publishToMavenLocal` / `:ksdialogs:publishToMavenLocal`)
+  は 0 件。kmp/ の発行は行う:
+    > Task :ksdialogs-kmp:publishToMavenLocal
+    本体側の合成 Swift マニフェスト 2 本を追跡状態へ戻した
+
+  スナップショット clone の tag は今回の作業ディレクトリ側に作られ、Swift 参照はその
+  `file://` URL になる (発行 metadata・合成 package・ホスト側の 3 者で一致、pin 1 件)。
+
+    metadata / 合成 package / ローカル package  file://<work2>/kmp/KsDialogs-SPM @ 0.0.0-alpha.0
+    xcodebuild  配信リポジトリの pin  1 件
+
+  5 publication と `ksdialogs-core` の解決版はいずれも `0.0.0-alpha.0` で 5.1 と同じ。
+
+## オーナー実施待ち
+
+- CI の `artifact` 入力: `main` 宛ての draft PR で、package 段の成果物を upload し、
+  4 形態の workflow をそれぞれ 1 回 `artifact` 指定で呼んで download 経路を通すこと。

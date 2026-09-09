@@ -4,7 +4,7 @@ applies-when:
   always: false
   tasks: [CI の検証範囲の確認, CI の失敗の切り分け, workflow の変更, 変更の完了判定]
 title: 検証 CI の範囲と実行条件
-description: 検証 CI (`.github/workflows/ci.yml` と platform 別 reusable workflow 5 本) が回す範囲と手元に残る範囲、各 job が回すテストルートと実行件数の検査、CI の Swift テストをスイート直列で回す理由と待ち不足との見分け方、android-instrumented job の IME 系テストの既知の落ち方 2 型。決定の記録は cross/ADR-0017 (構成と保証範囲) / cross/ADR-0018 (toolchain の固定)
+description: 検証 CI (`.github/workflows/ci.yml` と platform 別 reusable workflow 5 本・消費者検証 4 本) が回す範囲と手元に残る範囲、各 job が回すテストルートと実行件数の検査、CI の Swift テストをスイート直列で回す理由と待ち不足との見分け方、android-instrumented job の IME 系テストの既知の落ち方 2 型。決定の記録は cross/ADR-0017 (構成と保証範囲) / cross/ADR-0018 (toolchain の固定) / cross/ADR-0022 (lint の 8 検査)
 timestamp: 2026-09-09
 ---
 
@@ -12,16 +12,33 @@ timestamp: 2026-09-09
 
 テストの実行コマンドと件数の得方は [テスト実行規約](test-execution.md) が持つ。本文書はそのうち CI が回す範囲と、CI だけの実行条件を定める。
 
-`develop` への push と `main` 宛ての pull request で検証 CI (`.github/workflows/ci.yml`) が起動する (cross/ADR-0016)。CI は上表の実行を 5 つの job に分けて回し、どの job も終了コードだけでなく**実行件数を検査**して 0 件なら失敗させる。lint job は起動のたびに必ず走る。
+`develop` への push と `main` 宛ての pull request で検証 CI (`.github/workflows/ci.yml`) が起動する (cross/ADR-0016)。CI は上表の実行を本体検証 5 job に分けて回し、どの job も終了コードだけでなく**実行件数を検査**して 0 件なら失敗させる。lint job は起動のたびに必ず走る。消費者検証 4 job は `main` 宛ての pull request でだけ起動し、`develop` への push では起動しない。
 
-| CI の job | 回す範囲 |
+| CI の job | 回す範囲 | 起動 |
+|---|---|---|
+| ios | 上表 ios/ の全件。スイート同士の並列実行は止めて回す (後述「CI の Swift テストはスイートを直列で回す」) | 常時 |
+| android | 上表 android/ の全件 (後述の Compose 非依存の依存グラフ検査を含む) | 常時 |
+| android-instrumented | 上表 android/ (instrumented) の全件。API 36 の Emulator 1 台 | 常時 |
+| kmp | 上表 kmp/ の全件と、階層化 source set の metadata compile | 常時 |
+| maui | 上表 maui/ と maui/android/native/ と maui/macios/native/ の全件、および platform TFM と binding のビルド。iOS 橋渡しは ios job と同じく直列で回す | 常時 |
+| consumer-ios | `verification/ios/` の消費者パッケージを dry-run で Release ビルド (SwiftPM の product 参照) | `main` 宛て PR のみ |
+| consumer-android | `verification/android/` の消費者アプリ 2 つを dry-run で release variant ビルドし、依存ツリーを検査 | `main` 宛て PR のみ |
+| consumer-maui | `verification/maui/` の消費者アプリを dry-run で net10.0-android / net10.0-ios の Release ビルドし、解決版と取得元とアセットを検査 | `main` 宛て PR のみ |
+| consumer-kmp | `verification/kmp/` の消費者を dry-run で 3 段 (Android release / 共有モジュールの iOS framework リンク / iOS アプリの Release) 通し、5 publication の解決と Swift 参照を検査 | `main` 宛て PR のみ |
+| lint | 8 検査 (下表) | 常時 |
+
+lint job の 8 検査は次のとおりで、いずれかの違反で job が失敗する。
+
+| 検査 | 見るもの |
 |---|---|
-| ios | 上表 ios/ の全件。スイート同士の並列実行は止めて回す (後述「CI の Swift テストはスイートを直列で回す」) |
-| android | 上表 android/ の全件 (後述の Compose 非依存の依存グラフ検査を含む) |
-| android-instrumented | 上表 android/ (instrumented) の全件。API 36 の Emulator 1 台 |
-| kmp | 上表 kmp/ の全件と、階層化 source set の metadata compile |
-| maui | 上表 maui/ と maui/android/native/ と maui/macios/native/ の全件、および platform TFM と binding のビルド。iOS 橋渡しは ios job と同じく直列で回す |
-| lint | secret scan・ローカル絶対パス検査・個体情報検査・コメント規約検査・仕様とテストの対応の検査・CI 限定スキップの許可リスト検査・SwiftPM スナップショット同期スクリプトの自己テスト |
+| secret scan (gitleaks) | 追跡中の内容を展開したディレクトリ。展開数が追跡ファイル数を下回れば検査対象不足として失敗 |
+| ローカル絶対パス検査 | 追跡ファイル中の `/Users/<名前>/` 等 |
+| 個体情報検査 | `kasane/config.yaml` の `lint.identity.scope` (`verification/` を含む) |
+| コメント規約検査 | [ソースコメント規約](comment-policy.md) の禁止参照 |
+| 仕様とテストの対応の検査 | 仕様の Scenario ID がテスト名に現れるか |
+| CI 限定スキップの許可リスト検査 | 承認の無い skip (自己テストを含む。cross/ADR-0021) |
+| SwiftPM スナップショット同期スクリプトの自己テスト | 同期スクリプトの検出器が退行していないか (cross/ADR-0020) |
+| README 最小例の一致検査 | ルート README (英語) の最小例 4 つと `verification/` の消費者ソースの完全一致 (自己テストを含む。cross/ADR-0022) |
 
 CI に載らない検証は**手元の完了判定に残る**。変更の完了を判定するときは CI の緑だけでは足りず、該当するものを手で回す。
 

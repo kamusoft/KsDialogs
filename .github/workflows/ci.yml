@@ -4,7 +4,16 @@
 # - develop への push: lint と 5 形態の検証。開発はローカルで develop へマージして
 #   直接 push する運用なので、develop 宛ての pull_request は起動条件に持たない
 # - main 宛ての pull_request (head は develop のみ。lint job が検査する): 同じ内容を
-#   マージ条件として実行する
+#   マージ条件として実行し、加えて配布物を利用者と同じ経路で解決する消費者検証 4 job を
+#   dry-run で実行する (develop への push では起動しない)
+#
+# status check の名前は次の 10 件に固定する (branch protection への登録先)。
+#   lint
+#   ios / verify                    android / verify
+#   android-instrumented / verify   kmp / verify
+#   maui / verify
+#   consumer-ios / verify           consumer-android / verify
+#   consumer-maui / verify          consumer-kmp / verify
 #
 # `paths-ignore` は使わない。lint (gitleaks / identity-lint / scenario-id-coverage /
 # ci-skip-lint 等) は `kasane/**` も入力にするため、起動のたびに必ず走らせる必要がある。本体検証 5 job だけを
@@ -110,8 +119,7 @@ jobs:
 
   # 再利用可能 workflow を呼ぶ job の status check 名は
   # 「呼び出し側の job 名 / 呼ばれた側の job 名」になる。branch protection に登録する名前を
-  # 固定するため、両側の job 名を明示する (ここでは ios / verify、android / verify、
-  # android-instrumented / verify、kmp / verify、maui / verify)。
+  # 固定するため、両側の job 名を明示する (冒頭の 10 件)。
   #
   # 5 job の起動条件は同じ式で揃える。pull_request では changes の判定を見ずに常に実行する。
   #
@@ -151,6 +159,43 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.changes.outputs.source != 'false') }}
     uses: ./.github/workflows/verify-maui.yml
+
+  # 消費者検証 4 job。配布物を利用者と同じ経路 (公開座標・パッケージ参照) で解決し、
+  # 利用者向けドキュメントの最小例を含む消費者を Release でビルドする。
+  #
+  # 起動は main 宛ての pull_request だけに限る。develop への push のたびに macOS ランナーを
+  # さらに 3 つ積み上げるのに見合わず、配布物の解決可否はマージ条件として押さえれば足りる。
+  # changes の判定は見ない (pull_request では本体検証と同じく常に実行する)。
+  #
+  # モードは dry-run 固定で、version と artifact は渡さない — 参照先はモノレポから
+  # その場で作るローカルの配布物になり、公開レジストリ・配信リポジトリへは触れない。
+  consumer-ios:
+    name: consumer-ios
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/verify-consumer-ios.yml
+    with:
+      mode: dry-run
+
+  consumer-android:
+    name: consumer-android
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/verify-consumer-android.yml
+    with:
+      mode: dry-run
+
+  consumer-maui:
+    name: consumer-maui
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/verify-consumer-maui.yml
+    with:
+      mode: dry-run
+
+  consumer-kmp:
+    name: consumer-kmp
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/verify-consumer-kmp.yml
+    with:
+      mode: dry-run
 
   lint:
     name: lint
@@ -265,3 +310,13 @@ jobs:
       # 誤指定の拒否・git 非操作を検査する (monorepo 側は読むだけ)。
       - name: SPM snapshot sync script test
         run: bash scripts/spm-snapshot/sync-snapshot-test.sh
+
+      # ルート README (英語) の最小例と、消費者検証がビルドするソースの完全一致の検査
+      # (cross/ADR-0022)。消費者検証 job は main 宛ての pull_request でしか起動しないため、
+      # 片側だけの変更は develop への push のたびにここで落とす。
+      # 自己テストも回す。検出器が退行して無音で素通りする経路は、規約の歯止めそのものを
+      # 無効にするため (同期スクリプトの自己テストと同じ理屈、cross/ADR-0020)。
+      - name: README example lint
+        run: |
+          python3 scripts/readme-example-lint.py --selftest
+          python3 scripts/readme-example-lint.py

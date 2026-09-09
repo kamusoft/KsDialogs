@@ -1,0 +1,33 @@
+# レビュー指摘の修正 3: Select Xcode の実体パス解決を 3 本に揃える (2026-09-09)
+
+判定: **成立** (consumer-ios / consumer-kmp の Select Xcode step が consumer-maui と
+逐語一致。actionlint に新規の指摘なし)
+
+## 変更
+
+.github/workflows/verify-consumer-ios.yml / verify-consumer-kmp.yml の Select Xcode step に、
+consumer-maui と同じ実体パス解決 (app=$(cd "${app}" && pwd -P)) と理由コメントを足した。
+
+## 3 本の step が同一であること
+
+  $ diff <(sed -n '/Select Xcode/,/GITHUB_ENV/p' .github/workflows/verify-consumer-maui.yml) \
+         <(sed -n '/Select Xcode/,/GITHUB_ENV/p' .github/workflows/verify-consumer-kmp.yml)
+  差分なし
+  $ diff <(sed -n '/Select Xcode/,/GITHUB_ENV/p' .github/workflows/verify-consumer-maui.yml) \
+         <(sed -n '/Select Xcode/,/GITHUB_ENV/p' .github/workflows/verify-consumer-ios.yml)
+  差分なし
+
+## actionlint
+
+  $ actionlint .github/workflows/verify-consumer-*.yml
+  verify-consumer-ios.yml:83:9   shellcheck SC2012:info (Use find instead of ls)
+  verify-consumer-kmp.yml:88:9   shellcheck SC2012:info
+  verify-consumer-maui.yml:82:9  shellcheck SC2012:info
+
+3 件とも変更前から同じ行 (Xcode の一覧を ls で取る行) に出ていた既存の指摘で、今回の変更で
+増えたものはない (未変更の consumer-maui にも同じものが出ている)。
+
+## 実行での確認について
+
+この解決が CI 上で効いていること (3 job とも Xcode 選択が通ること) は、実 Actions 起動が
+オーナー実施待ちのため未実測。手元実行は DEVELOPER_DIR を経由しないため、この差は再現しない。

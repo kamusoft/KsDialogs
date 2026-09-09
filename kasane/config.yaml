@@ -17,7 +17,8 @@ lint:
     # 検査範囲 (先頭セグメント)。skills/ とルート README 2 枚は公開する利用者向け成果物 (docs-refresh の更新対象) のため含める。
     # ソース 5 ルートも含める — Xcode の実機ビルドが DEVELOPMENT_TEAM を xcodeproj (samples/ios・samples/kmp/iosApp・
     # maui/macios/native) へ書き戻すため。実測 (2026-09-07) で誤検出 0 件。正当な UUID 定数が入ったら allow に足す
-    scope: [kasane, skills, README.md, README_ja.md, samples, ios, android, maui, kmp]
+    # verification/ (消費者検証) も同じ理由で含める — iOS / KMP の消費者は Xcode project を持つ
+    scope: [kasane, skills, README.md, README_ja.md, samples, ios, android, maui, kmp, verification]
     allow: [repo.local]          # 正当な値 (名前空間 UUID・デモデータの @ドメイン 等) の列挙。repo.local は Maven のシステムプロパティ maven.repo.local の末尾 (ホスト名ではない、2026-09-08)
     disable: []                  # 無効化する検出群: device / developer / network / personal / secret
   internal-hosts: []             # 未公開サーバのホスト名 (列挙したものだけを検出)

@@ -1,0 +1,88 @@
+# 5.3 version 0.1.0-rc.1 が 4 形態に同じ文字列で流れる (2026-09-09)
+
+判定: **成立** (4 形態とも `0.1.0-rc.1`。KMP の合成 package の subpackage が 2 つになる
+不具合を 1 件見つけ、`verification/kmp/build-consumer.sh` を直してから再実行した)
+
+対応する Scenario
+- version を与えると全形態に同じ文字列が流れる
+- 全 publication が解決される
+
+`<work>` は作業ディレクトリ。dry-run で実行した (iOS の dry-run は path 参照で version を
+持たないため、`exact:` を持つ smoke 形の生成物も併せて示す)。
+
+## iOS
+
+dry-run の生成物 (`Package.swift` の依存 1 行)
+
+  .package(path: "<work>/ios/KsDialogs-SPM")
+
+smoke 形の生成物 (`--mode smoke --version 0.1.0-rc.1`。解決は公開されていない version の
+ため失敗する。生成物だけを見る)
+
+  .package(url: "https://github.com/kamusoft/KsDialogs-SPM", exact: "0.1.0-rc.1")
+
+## Android
+
+  $ verification/android/build-consumer.sh --version 0.1.0-rc.1
+  exit 0
+  参照先: <work>/android/maven
+  :app        +--- jp.kamusoft:ksdialogs:0.1.0-rc.1
+              |    +--- jp.kamusoft:ksdialogs-core:0.1.0-rc.1
+  :app-core   \--- jp.kamusoft:ksdialogs-core:0.1.0-rc.1
+
+## KMP
+
+  $ verification/kmp/build-consumer.sh --version 0.1.0-rc.1
+  exit 0
+  androidApp         jp.kamusoft:ksdialogs-kmp  0.1.0-rc.1
+  androidApp         jp.kamusoft:ksdialogs-kmp-android  0.1.0-rc.1
+  androidApp         jp.kamusoft:ksdialogs-core  0.1.0-rc.1
+  iosArm64           jp.kamusoft:ksdialogs-kmp / -kmp-iosarm64  0.1.0-rc.1
+  iosSimulatorArm64  jp.kamusoft:ksdialogs-kmp / -kmp-iossimulatorarm64  0.1.0-rc.1
+  iosX64             jp.kamusoft:ksdialogs-kmp / -kmp-iosx64  0.1.0-rc.1
+  metadata           Swift 参照の exact  0.1.0-rc.1
+  合成 package         Swift 参照  file://<work>/kmp/KsDialogs-SPM @ 0.1.0-rc.1
+  ローカル package       Swift 参照  file://<work>/kmp/KsDialogs-SPM @ 0.1.0-rc.1
+  xcodebuild         配信リポジトリの pin  1 件
+
+参照先に置かれた kmp の POM が要求する本体の版も同じ文字列。
+
+  jp/kamusoft/ksdialogs-kmp-android/0.1.0-rc.1/ksdialogs-kmp-android-0.1.0-rc.1.pom
+    <artifactId>ksdialogs-core</artifactId> <version>0.1.0-rc.1</version>
+
+## MAUI
+
+  $ verification/maui/build-consumer.sh --version 0.1.0-rc.1
+  exit 0
+  KsDialogs.Maui             0.1.0-rc.1  <- <work>/maui/feed
+  KsDialogs.Binding.iOS      0.1.0-rc.1  <- <work>/maui/feed
+  KsDialogs.Binding.Android  0.1.0-rc.1  <- <work>/maui/feed
+  net10.0-android  KsDialogs.Binding.Android/0.1.0-rc.1  lib/net10.0-android36.0/…
+  net10.0-ios      KsDialogs.Binding.iOS/0.1.0-rc.1      lib/net10.0-ios26.0/…
+
+(解決版と取得元は `project.assets.json` の targets とパッケージ展開先の `.nupkg.metadata` から読む)
+
+## 見つかった不具合と修正
+
+最初の実行 (`--version 0.1.0-rc.1`) は 3 段のビルドがすべて成功したあと、依存検査が
+例外で落ちた。
+
+  LookupError: 合成 package の subpackage が 1 つではありません: 2 件
+               (<work>/kmp/consumer/iosApp/KotlinMultiplatformLinkedPackage)
+
+  $ ls <work>/kmp/consumer/iosApp/KotlinMultiplatformLinkedPackage/subpackages
+  jp_kamusoft_ksdialogs_kmp_0_0_0_alpha_0     (追跡している fixture を写したもの)
+  jp_kamusoft_ksdialogs_kmp_0_1_0_rc_1        (2 段目の再生成が作ったもの)
+
+合成 package の subpackage はディレクトリ名に version を含むため、追跡している fixture の
+version (`0.0.0-alpha.0`) と実行の version が違うと、作業コピーに写した古い方が残って
+2 つになる。ルートの manifest は再生成後に新しい subpackage だけを参照しており
+(`.package(path: "subpackages/jp_kamusoft_ksdialogs_kmp_0_1_0_rc_1")`)、ビルドは通るが、
+検査が Swift 参照を持つ manifest を 1 つに特定できない。
+
+修正: `verification/kmp/build-consumer.sh` の作業コピー (rsync) から
+`iosApp/KotlinMultiplatformLinkedPackage/subpackages/` を除外する。この subpackage は
+2 段目の再生成が作り直すもので、写す必要がない。
+
+再実行で依存検査まで成功 (上の表)。既定 version (`0.0.0-alpha.0`) の dry-run も
+修正後に再実行して成功し、`verification/kmp/` の追跡物に差分は出ない。

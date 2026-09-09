@@ -1,0 +1,47 @@
+# 1.1 iOS: path 参照でのスナップショット解決 (2026-09-09)
+
+判定: **成立**
+
+作業場所はスクラッチの `<scratch>/premise/`。同期先は `<scratch>/premise/KsDialogs-SPM`
+(`git init` 済み、origin を `https://github.com/kamusoft/KsDialogs-SPM.git` に設定)。
+
+## 実行
+
+$ scripts/spm-snapshot/sync-snapshot.sh <scratch>/premise/KsDialogs-SPM
+同期しました: <scratch>/premise/KsDialogs-SPM
+
+配置された 5 点: `Package.swift` / `Sources/` / `Tests/` / `LICENSE` / `README.md`。
+
+消費者 `<scratch>/premise/ios-consumer` は 1 target・`platforms: [.iOS(.v17)]`・
+swift-tools-version 6.3 で、依存宣言は次の 2 行だけ。
+
+    .package(path: "../KsDialogs-SPM")
+    .product(name: "KsDialogs", package: "KsDialogs-SPM")
+
+ソースは README `### iOS Native` の最小例を無編集で置いた。
+
+## 観測 1: identity はディレクトリ名から決まる
+
+$ swift package show-dependencies
+.
+└── ksdialogs-spm<<scratch>/premise/KsDialogs-SPM@unspecified>(traits: default)
+
+identity は `ksdialogs-spm` (ディレクトリ名の小文字化) で、`Package.swift` の
+`name: "KsDialogs"` ではない。`.product(package: "KsDialogs-SPM")` はこの identity に
+大文字小文字を無視して一致する。version は `unspecified` (path 参照のため)。
+
+## 観測 2: Release ビルドが通る
+
+$ xcodebuild -scheme VerificationConsumer \
+    -destination 'generic/platform=iOS Simulator' \
+    -configuration Release CODE_SIGNING_ALLOWED=NO build
+** BUILD SUCCEEDED **
+
+リンク時の target triple は `arm64-apple-ios17.0-simulator` / `x86_64-apple-ios17.0-simulator`
+で、消費者の `platforms` 宣言 (iOS 17) が効いている。
+
+## 観測 3: Package.resolved が残らない
+
+$ find <scratch>/premise/ios-consumer -name Package.resolved
+(0 件。`swift package show-dependencies` と `xcodebuild` の両方を通した後の状態。
+`.swiftpm/` は生成されるが `xcode/` と `configuration/` の空ディレクトリのみ)

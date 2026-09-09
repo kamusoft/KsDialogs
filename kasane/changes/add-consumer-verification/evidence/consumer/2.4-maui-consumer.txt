@@ -1,0 +1,48 @@
+# 2.4 MAUI 消費者プロジェクトの dry-run ビルドと解決結果 (2026-09-09)
+
+判定: **成功**
+
+作成物: `verification/maui/` (`VerificationApp.csproj`・`App.cs`・`MauiProgram.cs`・
+README 最小例 `Notifications.cs`・`Platforms/{Android,iOS}`・`nuget.dry-run.config`・
+`nuget.smoke.config`)。
+
+## README 最小例が無編集で置かれている
+
+$ diff <(README.md の `### .NET MAUI` コードブロック) verification/maui/Notifications.cs
+(差分なし)
+
+`App.cs` がこの `Notifications.ShowSaved` をボタンから呼ぶため、例はコンパイル対象に入る。
+
+## Release ビルド (Android)
+
+$ dotnet build verification/maui/VerificationApp.csproj -c Release -f net10.0-android \
+    -p:RestoreConfigFile=<repo>/verification/maui/nuget.dry-run.config \
+    -p:RestorePackagesPath=<scratch>/maui-packages \
+    -p:KsDialogsVersion=0.0.0-alpha.0
+ビルドに成功しました。
+    0 個の警告
+    0 エラー
+
+`KSV_LOCAL_FEED` にローカルフォルダフィードのパスを与え、`nuget.dry-run.config` の
+`%KSV_LOCAL_FEED%` がそれに展開された。警告 0 件のため XA4301 も 0 件。
+
+## Release ビルド (iOS Simulator RID)
+
+$ dotnet build ... -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 ...
+ビルドに成功しました。
+    0 個の警告
+    0 エラー
+
+署名情報は要求されなかった。
+
+## 解決結果 (project.assets.json の targets)
+
+  net10.0-android
+    KsDialogs.Binding.Android/0.0.0-alpha.0  lib/net10.0-android36.0/KsDialogs.Binding.Android.dll
+    KsDialogs.Maui/0.0.0-alpha.0             lib/net10.0-android36.0/KsDialogs.Maui.dll
+  net10.0-ios
+    KsDialogs.Binding.iOS/0.0.0-alpha.0      lib/net10.0-ios26.0/KsDialogs.Binding.iOS.dll
+    KsDialogs.Maui/0.0.0-alpha.0             lib/net10.0-ios26.0/KsDialogs.Maui.dll
+
+facade と binding の解決版が一致し、binding は API 版付き TFM のアセット (platform 固有)
+として入っている。RID 付きの target にも同じアセットが入る。

@@ -4,8 +4,8 @@ applies-when:
   always: false
   tasks: [環境構築, worktree での作業開始, Gradle ルートのビルド・テスト, Sample のビルドと実行, MAUI iOS の Sample ビルド, .NET SDK の解決]
 title: ローカル開発環境の準備
-description: Android SDK と Xcode のローカル環境を整え、repo 直下の global.json が固定する .NET SDK / workload set を確認し、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド
-timestamp: 2026-09-08
+description: Android SDK と Xcode のローカル環境を整え、repo 直下の global.json が固定する .NET SDK / workload set を確認し、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド。Gradle build root は本体・Sample の 5 つと消費者検証の 2 つ
+timestamp: 2026-09-09
 ---
 
 # ローカル開発環境の準備
@@ -14,15 +14,19 @@ timestamp: 2026-09-08
 
 ## Android SDK ロケーション
 
-MAUI の `dotnet build` は Android SDK を自身で解決するため、本節は Gradle を使うルートが対象である。このリポジトリの Gradle build root は 5 つあり、`includeBuild` で互いを巻き込む (`android/` は他の 4 つすべてから included build として使われる)。Android Gradle Plugin は build root ごとに `local.properties` を独立して解決するため、SDK は root ごとに見える状態にする。
+MAUI の `dotnet build` は Android SDK を自身で解決するため、本節は Gradle を使うルートが対象である。このリポジトリの Gradle build root は 7 つあり、Sample までの 5 つは `includeBuild` で互いを巻き込む (`android/` は他の 4 つすべてから included build として使われる)。Android Gradle Plugin は build root ごとに `local.properties` を独立して解決するため、SDK は root ごとに見える状態にする。
 
-| build root | 巻き込む included build |
-|---|---|
-| `android/` | なし |
-| `kmp/` | `android/` |
-| `maui/android/native/` | `android/` |
-| `samples/android/` | `android/` |
-| `samples/kmp/` | `kmp/` と `android/` |
+| build root | 巻き込む included build | SDK の解決 |
+|---|---|---|
+| `android/` | なし | `ANDROID_HOME` または自身の `local.properties` |
+| `kmp/` | `android/` | 同上 |
+| `maui/android/native/` | `android/` | 同上 |
+| `samples/android/` | `android/` | 同上 |
+| `samples/kmp/` | `kmp/` と `android/` | 同上 |
+| `verification/android/` | なし (配布物をローカル参照先から解決する) | `verification/lib/android-sdk.sh` |
+| `verification/kmp/` | なし (同上) | `verification/lib/android-sdk.sh` |
+
+消費者検証の 2 ルート (`verification/`) には `local.properties` を置かない。`verification/lib/android-sdk.sh` が `ANDROID_HOME` / `ANDROID_SDK_ROOT` を見て、どちらも無ければ `android/local.properties` の `sdk.dir` を読んで `ANDROID_HOME` として export する。本体 build root の設定だけで消費者検証が動くため、未追跡ファイルを増やす必要はない。どちらも無い環境ではフィード準備の前に失敗する。
 
 ### ANDROID_HOME を使う
 

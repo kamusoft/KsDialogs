@@ -1,0 +1,120 @@
+# 4.1〜4.4 の静的検査 (2026-09-09)
+
+判定: **成功** (workflow の静的検査・job 名と冒頭コメントの一致・lint 3 本が通る)
+
+作成物: `.github/workflows/verify-consumer-{ios,android,maui,kmp}.yml`
+変更: `.github/workflows/ci.yml` / `kasane/config.yaml` /
+      `kasane/handbook/cross/{verification-ci,local-development-setup}.md`
+
+実際の CI 起動 (draft PR) はこの範囲では行わない (tasks 5.5 でオーナーが実施)。
+
+## workflow の静的検査 (actionlint 1 本 + YAML パース)
+
+  $ actionlint .github/workflows/ci.yml .github/workflows/verify-consumer-*.yml
+
+  新規の指摘なし。出た 2 種はいずれも変更前から repo にある同型の指摘。
+
+  SC2001 (ci.yml:70 の changes job の sed)    HEAD の ci.yml に対しても同じ位置で出る
+  SC2012 (Select Xcode の `ls -d`)            verify-ios.yml / verify-kmp.yml /
+                                              verify-maui.yml の同名 step で 3 件出る
+                                              (consumer 側は同じ step を写したもの)
+
+  $ python3 -c "import yaml; ..."   4 本とも jobs は `verify` 1 つ
+
+## job 名と status check 名の一覧の一致
+
+ci.yml の jobs から機械的に組み立てた status check 名 (呼び出し側 job 名 / 呼ばれた側 job 名。
+`uses:` の参照先 workflow を読んで job 名を取る) と、冒頭コメントの一覧が 10 件で一致する。
+
+  ios / verify                    android / verify
+  android-instrumented / verify   kmp / verify
+  maui / verify
+  consumer-ios / verify           consumer-android / verify
+  consumer-maui / verify          consumer-kmp / verify
+  lint
+
+`changes` は補助 job で status check の一覧に含めない (前変更の判断を踏襲)。
+
+## `uses:` の参照先と SHA 固定
+
+  ci.yml の `uses: ./.github/workflows/...` 9 本はすべて実在するファイルを指す。
+
+  consumer 4 本が参照する外部 action は 5 種で、4 種は本体 workflow と同一の SHA。
+
+    actions/cache@55cc8345...          # v6.1.0   本体と同一
+    actions/checkout@3d3c42e5...       # v7.0.1   本体と同一
+    actions/setup-dotnet@a98b5685...   # v6.0.0   本体と同一
+    actions/setup-java@dd06d9cb...     # v6.0.0   本体と同一
+    actions/download-artifact@018cc2cf... # v6.0.0  本変更で初出
+
+  初出の download-artifact は SHA を上流のタグと突き合わせて確認した。
+
+    $ gh api repos/actions/download-artifact/git/ref/tags/v6.0.0 --jq '.object.sha,.object.type'
+    018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+    commit
+
+  上流の最新は v8.0.1、download-artifact に v7.0.1 は存在しない (v7.0.0 まで)。本体が
+  upload-artifact v7.0.1 を固定していることとは版が揃わないが、翻案元と同じ v6.0.0 のまま
+  据え置いた (bump する理由が無い)。
+
+## permissions と secrets
+
+  $ grep -n "permissions" -A1 .github/workflows/verify-consumer-*.yml
+  4 本とも `permissions:` は `contents: read` のみ。
+
+  $ grep -n "secrets" .github/workflows/verify-consumer-*.yml
+  出力なし (`secrets:` 入力・`inherit` のいずれも無い)。ci.yml の呼び出し側も `with:` に
+  `mode: dry-run` を渡すだけで `secrets:` を持たない。
+
+## timeout とランナー
+
+  consumer-ios    macos-26      30 分
+  consumer-android ubuntu-24.04 30 分
+  consumer-maui   macos-26      40 分
+  consumer-kmp    macos-26      30 分
+
+## lint (4.3 の scope 追加後)
+
+  $ python3 scripts/identity-lint.py        違反 0 件 (exit 0)
+  $ python3 scripts/local-path-lint.py      違反 0 件 (exit 0)
+
+走査対象に `verification/` が入っていることは、対象ファイル数と正の対照 (故意の違反を 1 件
+置いて検出されること) の 2 つで示す。
+
+  対象ファイル数 (git が追跡 + 未追跡・ignore 除外で数えた scope 別の件数)
+
+    kasane 773 / skills 69 / README.md 1 / README_ja.md 1 / samples 280 /
+    ios 214 / android 223 / maui 210 / kmp 114 / verification 65
+
+  正の対照 (検査後に trash で削除済み)
+
+    verification/ios/_scope-probe.pbxproj.txt に `DEVELOPMENT_TEAM = <team-id>;` を置く
+      → identity-lint.py が
+         `verification/ios/_scope-probe.pbxproj.txt:1: team-id: <team-id>` を報告し exit 1
+
+    verification/ios/_scope-probe2.txt に `/Users/<USER>/work/feed` を置く
+      → local-path-lint.py が
+         `verification/ios/_scope-probe2.txt:1: /Users/<USER>/work/feed` を報告し exit 1
+
+    2 本を trash で除去した後、両 lint とも 0 件 (exit 0) に戻る。
+
+`verification/` はまだ未追跡だが、両 lint とも `git grep --untracked` で走査するため
+commit 前から検査対象に入る。
+
+## lint job に足した検査 (4.2)
+
+  $ python3 scripts/readme-example-lint.py --selftest     exit 0
+  $ python3 scripts/readme-example-lint.py                exit 0
+  README の最小例 4 件が消費者検証のソースと一致する
+
+## handbook の追記 (4.4)
+
+  $ python3 scripts/doc-structure-lint.py
+  変更した 2 文書 (cross/verification-ci.md・cross/local-development-setup.md) の違反は
+  0 件 (--verbose でも該当行なし)。追記前も 0 件で、新規の違反を出していない。
+  exit 1 は他文書 (roadmaps / concepts) の既存違反によるもので、本変更の対象外。
+
+## その他の lint (影響の確認)
+
+  $ python3 scripts/comment-policy-lint.py    禁止 0 件 (検査対象 1004 ファイル)
+  $ python3 scripts/scenario-id-coverage.py   未網羅なし

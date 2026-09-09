@@ -1,0 +1,140 @@
+# レビュー指摘の修正 1: KMP フィード準備の合成 Swift マニフェスト復元の安全性 (2026-09-09)
+
+判定: **成立** (発行前の検査・成否によらない復元・Git 管理外での失敗の 3 点を実測。
+負ケースでは既存の変更が破棄されずに残り、KMP 発行を実際に失敗させても 2 本は実行前と同一)
+
+対象は本体側の合成 Swift マニフェスト 2 本 (以下 L1 / L2)。
+
+  L1 kmp/.swiftpm-locks/default/swiftImport/subpackages/_ksdialogs-kmp/Package.swift
+  L2 kmp/.swiftpm-locks/default/swiftImport/subpackages/_ksdialogs_kmp/Package.swift
+
+実装は verification/lib/gradle-publish.sh に置いた 4 関数。
+  ksv_require_pristine_swiftpm_locks  Git 管理下か・2 本が追跡されているか・HEAD からの
+                                      変更が無いか (git diff --quiet HEAD で作業ツリーと
+                                      index の両方を一度に見る) を発行前に確かめる
+  ksv_arm_swiftpm_lock_restore        EXIT trap を張る。呼び出し元が既に張っていた trap の
+                                      本体を控え、復元の後に実行する
+  ksv_disarm_swiftpm_lock_restore     成功経路の復元。控えた trap を戻して仕掛けを解く
+  ksv_restore_swiftpm_locks           git checkout HEAD -- で 2 本を戻す (index に依存しない)
+
+verification/kmp/prepare-feed.sh は同じ検査を 1 段目の前にも呼び、snapshot と Android 発行を
+走らせる前に理由が出るようにした。発行後の明示的な復元呼び出しは ksv_publish_kmp 側へ移した。
+
+## 負ケース (a) 対象ファイルに既存の変更がある
+
+作業ツリーの L1 に 1 行足した状態で dry-run を実行した。
+
+  $ git status --porcelain -- kmp/.swiftpm-locks/     (実行前) 出力なし
+  $ echo '// negative-case marker' >> <L1>
+  $ verification/kmp/prepare-feed.sh --mode dry-run --version 0.0.0-alpha.0 --work <work>
+  platform=kmp mode=dry-run version=0.0.0-alpha.0
+  ANDROID_HOME を <repo>/android/local.properties の sdk.dir から解決しました
+  エラー: 合成 Swift マニフェストに HEAD からの変更があります。発行はこの 2 本を書き換えて
+  HEAD の内容へ戻すため、変更を退避または commit してから実行してください: <L1> <L2>
+  exit=1
+
+  $ git status --porcelain -- kmp/.swiftpm-locks/     (実行後)
+   M kmp/.swiftpm-locks/default/swiftImport/subpackages/_ksdialogs-kmp/Package.swift
+  md5(L1) は実行前 (改変後) と一致 — 変更は破棄されていない
+
+snapshot の作成にも Android の発行にも入る前に落ちている (出力 2 行目までで終わっている)。
+確認後、git checkout HEAD -- kmp/.swiftpm-locks/ で作業ツリーを戻した (差分 0 件)。
+
+## 負ケース (b) KMP 発行が失敗する
+
+参照先 (ローカル Maven リポジトリ) を chmod -R a-w で書き込み不可にし、--reference で
+与えて実行した。発行タスクは書き込みで落ちる。
+
+  $ verification/kmp/prepare-feed.sh --mode dry-run --version 0.0.0-alpha.0 \
+      --reference <read-only maven> --work <work>
+  * What went wrong:
+  Execution failed for task ':ksdialogs-kmp:publishAndroidPublicationToMavenLocal' ...
+     > Failed to publish publication 'android' to repository 'mavenLocal'
+        > Could not write to resource 'file:<read-only maven>/jp/kamusoft/ksdialogs-kmp-android/
+          0.0.0-alpha.0/ksdialogs-kmp-android-0.0.0-alpha.0.aar'. ... (Permission denied)
+  BUILD FAILED in 5s
+  本体側の合成 Swift マニフェスト 2 本を追跡状態へ戻した      ← EXIT trap が動いた
+  exit=1
+
+  実行後: git status --porcelain -- kmp/ は出力なし。L1 / L2 の md5 は実行前と同一。
+
+この実行では発行タスクが先に落ちたため、2 本は書き換わる前に終わっている
+(0.2 秒間隔の md5 監視で書き換わりを検出せず)。「書き換わった後に失敗した」場合の復元は
+下の (d) で分けて確かめた。
+
+## 正ケース (c) 発行が成功する経路 (出力の順序を含む)
+
+書き込み可能な参照先で同じ呼び出しを行い、実行中の md5 を 0.2 秒間隔で監視した。
+
+  監視: 書き換わり検出 (実行前と異なる md5) を 91 回サンプル
+  出力の末尾 3 行:
+    本体側の合成 Swift マニフェスト 2 本を追跡状態へ戻した
+    file://<work>/KsDialogs-SPM
+    <maven>
+  exit=0
+  実行後: git status --porcelain -- kmp/ は出力なし。L1 / L2 の md5 は実行前と同一。
+
+発行の最中は確かに書き換わっており、復元は末尾 2 行 (Swift 参照の URL と参照先) より前に出る。
+呼び出し側の読み方 (kmp の build-consumer.sh は tail -n 2、android は tail -n 1) は変わらない。
+
+## (d) 書き換わった後に失敗しても戻ること / 既存 trap との連結 / Git 管理外
+
+実リポジトリでは「書き換えた直後に失敗させる」条件を狙って作れないため、
+スクラッチに fixture リポジトリ (L1 / L2 と、2 本を書き換えてから exit 1 する発行の代役の
+kmp/gradlew だけを持つ使い捨ての git リポジトリ) を作り、ksv_publish_kmp を直接呼ぶ足場で
+確かめた。足場は呼び出し元の EXIT trap を先に張ってから呼ぶ。
+(この fixture の git init / commit は本リポジトリの外で行っている)
+
+  実行前の L1: // HEAD の内容 (path 参照)
+  $ trap-harness.sh <fixture> <repo>
+  FAILURE: 発行に失敗しました (代役)                  ← 2 本を書き換えた後に失敗
+  本体側の合成 Swift マニフェスト 2 本を追跡状態へ戻した
+  呼び出し元の EXIT trap が動いた                     ← 控えた trap も実行される
+  exit=1
+  実行後の L1: // HEAD の内容 (path 参照)             ← 書き換えが残っていない
+  fixture の git status -- kmp/.swiftpm-locks/ は出力なし
+
+index に載せた変更 (作業ツリーはクリーン、git status が "M " の状態):
+
+  $ trap-harness.sh <fixture> <repo>
+  エラー: 合成 Swift マニフェストに HEAD からの変更があります。... exit=1
+  実行後の L1: // 手元の未 commit の変更              ← 破棄されていない
+
+  git checkout -- (index からの復元) では、この汚れた内容をそのまま戻して成功と報告する。
+  HEAD 比較の検査で発行前に止まるため、その経路に入らない。
+
+Git 管理外 (fixture から .git を外したコピー):
+
+  $ trap-harness.sh <fixture-nogit> <repo>
+  エラー: Git 管理下ではないため、発行で書き換わる合成 Swift マニフェストを戻せません: <dir>
+  exit=1                                             ← 黙って省略せず失敗する
+
+## 静的検査
+
+  $ shellcheck -x -e SC2034 -e SC1091 verification/lib/*.sh verification/kmp/prepare-feed.sh \
+      verification/android/*.sh
+  指摘なし (控えた trap 本体を展開して渡す 1 箇所だけ SC2064 を理由付きで disable)
+
+## 消費者検証の通し実行 (呼び出し側の契約が変わっていないこと)
+
+  $ verification/kmp/build-consumer.sh --reference <maven> --work <work>
+  ** BUILD SUCCEEDED **
+  ==== 依存検査 ====
+  全 5 publication と ksdialogs-core が 0.0.0-alpha.0 で解決され、Swift 参照は
+  合成 package・ホスト側・発行 metadata で一致し、pin は 1 つ
+  exit=0
+
+build-consumer.sh は prepare-feed.sh の出力の末尾 2 行 (Swift 参照の URL と参照先) を読む。
+復元の 1 行はその前に出るため、読み方は変わっていない。実行後の git status -- kmp/ は出力なし、
+verification/kmp/ の追跡予定の合成マニフェスト 2 本も smoke 形 (配信リポジトリの https URL +
+exact 0.0.0-alpha.0) のまま。
+
+## review-002 Minor 1 の追補 (2026-09-09): 呼び出し元 trap 本体に単一引用符がある場合
+
+控えの復号を文字列置換から eval による配列展開 (`declared_words=(<引用形式の本体> EXIT)`) に改めた。
+実測 (bash、呼び出し元が `trap "echo \"CALLER 'q' TRAP\"" EXIT` を張った状態で
+ksv_arm_swiftpm_lock_restore を呼ぶ):
+
+  captured=[echo "CALLER 'q' TRAP"]     ← 原文のまま (修正前は \'q\' に化けていた)
+
+shellcheck -x -e SC2034 -e SC1091 verification/lib/gradle-publish.sh: 指摘なし

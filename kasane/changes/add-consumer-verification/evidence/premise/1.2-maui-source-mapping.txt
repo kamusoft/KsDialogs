@@ -1,0 +1,74 @@
+# 1.2 MAUI: packageSourceMapping による取得元の固定 (2026-09-09)
+
+判定: **成立** (失敗コードだけ tasks.md の記述と異なる。下記「観測 3」)
+
+## 準備
+
+$ dotnet pack maui/KsDialogs.Maui/KsDialogs.Maui.csproj -c Release \
+    -p:Version=0.0.0-alpha.0 -o <scratch>/premise/nuget-feed
+(binding 2 件も同様。3 件とも成功)
+
+フォルダフィードに置かれたのは `KsDialogs.Maui` / `KsDialogs.Binding.Android` /
+`KsDialogs.Binding.iOS` の `.nupkg` と `.snupkg` (version はすべて `0.0.0-alpha.0`)。
+
+消費者は `dotnet new maui` の生成物を次のとおり変えたもの。
+
+- `TargetFrameworks` = `net10.0-android;net10.0-ios`
+- `SupportedOSPlatformVersion` android 24.0 / ios 17.0
+- `ApplicationId` = `jp.kamusoft.ksdialogs.verification.maui`、`RootNamespace` = `MyApp`
+- `PackageReference Include="KsDialogs.Maui" Version="$(KsDialogsVersion)"` 1 行
+- README `### .NET MAUI` の最小例を無編集で 1 ファイル追加
+
+`nuget.config` (dry-run 形) は `<clear/>` + ローカルフィード + nuget.org で、
+packageSourceMapping は `KsDialogs.*` をローカルフィード、`*` を nuget.org に割り当てた。
+
+## 観測 1: 取得元はローカルフィードだけ
+
+$ dotnet restore -p:RestoreConfigFile=<nuget.dry-run.config> \
+    -p:RestorePackagesPath=<scratch>/premise/nuget-packages \
+    -p:KsDialogsVersion=0.0.0-alpha.0
+
+展開先の `.nupkg.metadata` の `source` (3 件とも):
+
+  ksdialogs.maui             -> <scratch>/premise/nuget-feed
+  ksdialogs.binding.android  -> <scratch>/premise/nuget-feed
+  ksdialogs.binding.ios      -> <scratch>/premise/nuget-feed
+
+## 観測 2: binding は platform TFM の target に platform 固有アセットとして入る
+
+`project.assets.json` の targets (抜粋。compile と runtime は同じ値):
+
+  net10.0-android
+    KsDialogs.Binding.Android/0.0.0-alpha.0  lib/net10.0-android36.0/KsDialogs.Binding.Android.dll
+    KsDialogs.Maui/0.0.0-alpha.0             lib/net10.0-android36.0/KsDialogs.Maui.dll
+  net10.0-ios
+    KsDialogs.Binding.iOS/0.0.0-alpha.0      lib/net10.0-ios26.0/KsDialogs.Binding.iOS.dll
+    KsDialogs.Maui/0.0.0-alpha.0             lib/net10.0-ios26.0/KsDialogs.Maui.dll
+
+API 版付き TFM (`net10.0-android36.0` / `net10.0-ios26.0`) のアセットが選ばれており、
+platform 中立アセットへのフォールバックではない。RID 付きの target
+(`net10.0-android/android-arm64` ほか) にも同じアセットが入る。
+
+Release ビルドも通る。
+
+$ dotnet build -c Release -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 ...
+ビルドに成功しました。 0 個の警告 0 エラー (2 分 10 秒)
+
+## 観測 3: フィードに無い version はユーザーキャッシュがあっても失敗する
+
+ユーザーの global packages folder には phase-6 の検証で残った `0.1.0` が 3 件ある
+(`ksdialogs.maui` / `ksdialogs.binding.android` / `ksdialogs.binding.ios`)。
+その version をフィードに置かないまま、新しい空の `RestorePackagesPath` で restore する:
+
+$ dotnet restore -p:RestoreConfigFile=<nuget.dry-run.config> \
+    -p:RestorePackagesPath=<scratch>/premise/nuget-packages-neg \
+    -p:KsDialogsVersion=0.1.0
+error NU1102: バージョン (>= 0.1.0) のパッケージ KsDialogs.Maui が見つかりません
+error NU1102:   - 1 バージョンが verification-local に見つかりました。[ 最も近いバージョン: 0.0.0-alpha.0 ]
+error NU1102:   - /usr/local/share/dotnet/library-packs からのバージョンは考慮されませんでした。
+error NU1102:   - nuget.org からのバージョンは考慮されませんでした。
+
+失敗コードは NU1102 (パッケージ ID は mapping 先に在るが version が無い) で、
+tasks.md 1.2 が例示する NU1101 ではない。フォールバックが起きないという前提は成立する。
+検査 (3.3) と負ケース (5.2) は NU1101 に限定せず「復元が失敗し、公開レジストリと
+ユーザーキャッシュを取得元にしない」ことで判定する必要がある。

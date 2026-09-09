@@ -1,0 +1,194 @@
+# 5.2 負ケース (a)〜(i) (2026-09-09)
+
+判定: **9 件すべて成立** (いずれも失敗として報告され、理由が出力から分かる)
+
+対応する Scenario
+- ローカル参照先に無ければ公開済みの版でも失敗する ((a))
+- binding の version 不一致を検出する ((b))
+- platform 中立アセットへのフォールバックを検出する ((c))
+- 本体だけの消費者に Compose が届かない ((d))
+- 例の変更が消費者に追随していなければ失敗する ((e))
+- 不正な入力は早期に失敗する ((f))
+- KMP の 3 段は順に通る ((g))
+- 本体 build root の SDK 設定だけで消費者が動く ((h))
+- 検査は負の入力で失敗する ((i))
+
+`<work>` は作業ディレクトリ、`<repo>` はリポジトリのルート。
+リポジトリの追跡ファイルを一時改変した (d) (g) と `android/local.properties` を退避した (h) は、
+実行後に復元し、検証の最後に `git status --porcelain` が検証前と同一であること、
+`verification/` 配下のファイルの shasum が一致することを確認している。
+
+## (a) ローカル参照先に無い version は、公開レジストリ・ユーザーキャッシュにあっても失敗する
+
+前提: ユーザー環境のキャッシュには次が置かれている。
+  ~/.m2   jp.kamusoft:ksdialogs:0.1.0-SNAPSHOT / ksdialogs-core:0.1.0-SNAPSHOT / ksdialogs-kmp:0.1.0
+  ~/.nuget/packages   ksdialogs.maui:0.1.0 / ksdialogs.binding.ios:0.1.0 / ksdialogs.binding.android:0.1.0
+
+iOS — 参照先に package の実体が無い場合 (dry-run は path 参照で version を持たないため、
+参照先の欠落で確かめる)。
+
+  $ verification/ios/build-consumer.sh --reference <work>/KsDialogs-SPM   (空のディレクトリ)
+  exit 1
+  error: the package manifest at '<work>/KsDialogs-SPM/Package.swift' cannot be accessed
+
+Android — 参照先には `0.0.0-alpha.0` だけがあり、`~/.m2` に `0.1.0-SNAPSHOT` がある状態。
+
+  $ verification/android/build-consumer.sh --version 0.1.0-SNAPSHOT --reference <work>/android/maven
+  exit 1
+  > Could not find jp.kamusoft:ksdialogs:0.1.0-SNAPSHOT.
+    Searched in the following locations:
+      - file:<work>/android/maven/jp/kamusoft/ksdialogs/0.1.0-SNAPSHOT/maven-metadata.xml
+      - file:<work>/android/maven/jp/kamusoft/ksdialogs/0.1.0-SNAPSHOT/ksdialogs-0.1.0-SNAPSHOT.pom
+
+  検索先はローカル参照先の 2 URL だけで、Maven Central も `~/.m2` も現れない。
+
+KMP — スクリプト経由では、参照先に無い version はフィード準備の検証で先に落ちる。
+
+  $ verification/kmp/build-consumer.sh --version 0.1.0 --reference <work>/kmp/maven
+  exit 1
+  エラー: 要求した version が発行されていません: jp.kamusoft:ksdialogs-core:0.1.0
+
+  消費者側の解決が Central を検索しないことは、同じ参照先を与えた消費者の Gradle 実行で
+  確かめた (`~/.m2` には ksdialogs-kmp:0.1.0 がある)。
+
+  $ ./gradlew -Pksdialogs.mode=dry-run -Pksdialogs.reference=<work>/kmp/maven \
+              -Pksdialogs.version=0.1.0 :androidApp:assembleRelease
+  BUILD FAILED
+  > Could not find jp.kamusoft:ksdialogs-kmp:0.1.0.
+    Searched in the following locations:
+      - file:<work>/kmp/maven/jp/kamusoft/ksdialogs-kmp/0.1.0/ksdialogs-kmp-0.1.0.pom
+
+MAUI — 参照先には `0.0.0-alpha.0` だけがあり、ユーザーの global packages folder に `0.1.0` がある状態。
+
+  $ verification/maui/build-consumer.sh --version 0.1.0 --reference <work>/maui/feed
+  exit 1
+  error NU1102: バージョン (>= 0.1.0) のパッケージ KsDialogs.Maui が見つかりません
+  error NU1102:   - 1 バージョンが ksdialogs-local に見つかりました。 [ 最も近いバージョン: 0.0.0-alpha.0 ]
+  error NU1102:   - /usr/local/share/dotnet/library-packs からのバージョンは考慮されませんでした。
+  error NU1102:   - nuget.org からのバージョンは考慮されませんでした。
+
+  失敗コードは deviation のとおり NU1102 (ID は mapping 先にあり version だけが無い)。
+
+## (b) MAUI: binding だけ別 version のフィードで版一致検査が失敗する
+
+作業ディレクトリに facade `0.0.0-alpha.0` + binding 2 件 `0.1.0-rc.1` だけを置いたフィードを作り、
+`--version 0.0.0-alpha.0` で実行した (facade の依存は下限指定のため binding は rc.1 に解決される)。
+
+  $ verification/maui/build-consumer.sh --version 0.0.0-alpha.0 --reference <work>/work52b/feed
+  exit 1
+  warning NU1603: KsDialogs.Maui 0.0.0-alpha.0 は KsDialogs.Binding.Android (>= 0.0.0-alpha.0)
+                  によって異なりますが … 代わりに KsDialogs.Binding.Android 0.1.0-rc.1 が解決されました。
+  エラー: KsDialogs.Binding.iOS の解決版が要求と異なる: 要求 0.0.0-alpha.0 / 解決 0.1.0-rc.1
+  エラー: KsDialogs.Binding.Android の解決版が要求と異なる: 要求 0.0.0-alpha.0 / 解決 0.1.0-rc.1
+
+  facade と binding それぞれの解決版が証跡の表にも出る。
+
+## (c) MAUI: TargetPlatformVersion を下げるとアセット検査が失敗する
+
+消費者を作業ディレクトリへ写し、コピー側の `TargetFrameworks` を
+`net10.0-android;net10.0-ios` から `net10.0-android35.0;net10.0-ios18.0` に落として restore した
+(配布物の platform 固有アセットは `net10.0-android36.0` / `net10.0-ios26.0`)。
+
+  restore は成功する。facade は platform 中立の `lib/net10.0` に解決され、
+  binding への依存を持つ platform 別の依存グループが選ばれない。
+
+  $ python3 verification/maui/check-dependencies.py --assets <work>/obj/project.assets.json …
+  exit 1
+  エラー: KsDialogs.Binding.iOS が解決されていない
+  エラー: KsDialogs.Binding.Android が解決されていない
+  エラー: net10.0-android35.0 の解決結果に KsDialogs.Binding.Android が無い
+  エラー: net10.0-ios18.0 の解決結果に KsDialogs.Binding.iOS が無い
+  (RID 付き target を含め 10 件)
+
+  検査の `--selftest` は、binding が中立アセット (`lib/net10.0/…`) で入る形も
+  「platform 中立アセットへのフォールバックで exit 1」として持つ (10 項目すべて OK)。
+
+## (d) Android: -core 単独の app に Compose 依存を足すと混入検査が失敗する
+
+`verification/android/app-core/build.gradle.kts` の依存に `libs.androidx.compose.ui` を
+一時的に 1 行足して実行し、実行後に元へ戻した。
+
+  $ verification/android/build-consumer.sh --reference <work>/android/maven
+  exit 1
+  :app-core の androidx.compose 座標: 63 件
+  エラー: :app-core の release runtime classpath に androidx.compose の座標がある
+  エラー: Android 消費者の依存検査が 1 件失敗しました
+
+## (e) README 一致 lint は片側だけの変更で失敗する
+
+README.md と対応する 4 ソースを一時ディレクトリへ写し、そのコピーで検査した
+(リポジトリのファイルは改変していない)。
+
+  無改変のコピー          exit 0  「README の最小例 4 件が消費者検証のソースと一致する」
+  消費者ソース側だけ変更   exit 1  エラー: README.md の最小例と一致しない:
+                                 verification/maui/Notifications.cs (README 142 文字 / ソース 152 文字)
+  README 側だけ変更       exit 1  エラー: README.md の最小例と一致しない:
+                                 verification/android/readme-example/Notifications.kt
+                                 (README 100 文字 / ソース 91 文字)
+
+## (f) 不正な入力は早期に失敗する
+
+4 形態 × 2 スクリプト × 3 種 = 24 通りすべて exit 1。作業ディレクトリもフィードも作られない。
+
+  --mode bogus                             エラー: mode は dry-run か smoke のいずれかです: bogus
+  --mode smoke                             エラー: smoke では --version が必須です
+  --mode smoke --version 1.0.0 --reference <dir>
+                                           エラー: smoke では --reference を指定できません
+                                                 (参照先は公開レジストリで、準備済みの配布物は使いません)
+
+Android / KMP では Android SDK の解決より前にこの判定が出る。
+
+## (g) KMP: 前段が失敗すると後段に進まない
+
+1 段目を落とす — `androidApp` のソースに型不一致を一時的に入れた。
+
+  exit 1
+  ==== 1 段目: Android アプリの Release ビルド ====
+  e: file://<work>/consumer/androidApp/src/main/kotlin/KmpDialogRegistration.kt:23:17
+     Initializer type mismatch: expected 'Int', actual 'String'.
+  BUILD FAILED in 3s
+  → 「2 段目」「3 段目」「依存検査」の見出しは出力に現れない
+
+2 段目を落とす — 共有モジュールに iOS ターゲットだけがコンパイルするソース
+(`shared/src/iosMain/kotlin/Broken.kt`) を一時的に置いた。
+
+  exit 1
+  ==== 1 段目: Android アプリの Release ビルド ====        (成功)
+  ==== 2 段目: 合成 package の再生成と共有モジュールの framework リンク ====
+  e: file://<work>/consumer/shared/src/iosMain/kotlin/Broken.kt:1:20
+     Initializer type mismatch: expected 'Int', actual 'String'.
+  BUILD FAILED in 2s
+  → 「3 段目」「依存検査」の見出しは出力に現れない
+
+いずれも実行後に一時改変を取り消した (`shared/src/iosMain` は削除)。
+
+## (h) Android SDK の設定がどちらも無い環境では、フィード準備の前に失敗する
+
+`ANDROID_HOME` / `ANDROID_SDK_ROOT` を外し、`android/local.properties` を退避して実行した
+(実行後に復元し、内容が同一であることを確認)。
+
+  $ env -u ANDROID_HOME -u ANDROID_SDK_ROOT verification/android/prepare-feed.sh   exit 1
+  $ env -u ANDROID_HOME -u ANDROID_SDK_ROOT verification/android/build-consumer.sh exit 1
+  $ env -u ANDROID_HOME -u ANDROID_SDK_ROOT verification/kmp/prepare-feed.sh       exit 1
+  $ env -u ANDROID_HOME -u ANDROID_SDK_ROOT verification/kmp/build-consumer.sh     exit 1
+  エラー: Android SDK の場所が分かりません。ANDROID_HOME か ANDROID_SDK_ROOT を設定するか、
+         <repo>/android/local.properties に sdk.dir を書いてください
+
+  4 件とも `--work` に指定したディレクトリは作られない (フィード準備に入っていない)。
+
+## (i) KMP の依存検査の自己テスト
+
+  $ python3 verification/kmp/check-dependencies.py --selftest
+  exit 0
+  [正の入力]
+    OK   全 publication と Swift 参照が揃っていれば exit 0
+  [負の入力]
+    OK   iOS publication を 1 件欠けば exit 1 / 欠けた publication が理由として出る
+    OK   ksdialogs-core が別版なら exit 1 / 版の不一致が理由として出る
+    OK   metadata の exact が違えば exit 1
+    OK   metadata の URL が違えば exit 1
+    OK   metadata の deployment target が違えば exit 1
+    OK   合成 package とホスト側の URL が食い違えば exit 1 / URL の不一致が理由として出る
+    OK   pin が 0 件なら exit 1
+    OK   pin が 2 件なら exit 1 / pin の件数が理由として出る
+  失敗なし

@@ -1,0 +1,84 @@
+#!/bin/bash
+# iOS 消費者のビルド。
+#
+# Package.swift.template から mode に応じた Package.swift を作業ディレクトリに生成し、
+# 利用者向けドキュメントの iOS 最小例を含む Sources/ を並べて、iOS Simulator 向けの
+# Release ビルドを行う。署名情報は要求しない。
+#
+# 使い方:
+#   build-consumer.sh [--mode <dry-run|smoke>] [--version <version>]
+#                     [--reference <snapshot dir>] [--work <dir>]
+#
+# --reference を与えると、その参照先をそのまま使いフィード準備を行わない。
+# 与えない dry-run では prepare-feed.sh を呼んで参照先を用意する。
+#
+# 解決結果の証跡として、生成した Package.swift と依存グラフを標準出力に出す。
+# path 参照には version が無いため dry-run では Package.resolved が生成されない。
+# smoke では解決後の Package.resolved を出す。
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd -P)"
+
+KSV_PLATFORM="ios"
+KSV_DEFAULT_VERSION=""
+# shellcheck source=../lib/verification-args.sh
+. "${REPO_ROOT}/verification/lib/verification-args.sh"
+
+readonly DISTRIBUTION_URL="https://github.com/kamusoft/KsDialogs-SPM"
+
+ksv_parse_args "$@"
+
+work="$(ksv_prepare_work "${KSV_WORK}" "ios")"
+
+reference="${KSV_REFERENCE}"
+if [ "${KSV_MODE}" = "dry-run" ] && [ -z "${reference}" ]; then
+    # フィード準備の出力はコマンド置換で最終行 (参照先) だけを取るため、そのままでは準備の
+    # ログが残らず失敗理由が見えない。標準エラーにも流して CI のログに残す。
+    reference="$("${SCRIPT_DIR}/prepare-feed.sh" --mode "${KSV_MODE}" --work "${work}" | tee /dev/stderr | tail -n 1)"
+fi
+
+if [ "${KSV_MODE}" = "dry-run" ]; then
+    [ -d "${reference}" ] || ksv_fail "参照先がディレクトリではありません: ${reference}"
+    reference="$(cd "${reference}" && pwd -P)"
+    [ "$(basename "${reference}")" = "KsDialogs-SPM" ] \
+        || ksv_fail "参照先のディレクトリ名が KsDialogs-SPM ではありません (package identity が変わります): ${reference}"
+    dependency=".package(path: \"${reference}\")"
+else
+    dependency=".package(url: \"${DISTRIBUTION_URL}\", exact: \"${KSV_VERSION}\")"
+fi
+
+consumer="$(ksv_reset_dir "${work}" consumer)"
+mkdir -p "${consumer}/Sources"
+# ソースは毎回コピーし直す。作業ディレクトリを再利用しても前回の内容が残らないようにする。
+cp -R "${SCRIPT_DIR}/Sources/VerificationApp" "${consumer}/Sources/VerificationApp"
+
+python3 "${REPO_ROOT}/verification/lib/render-template.py" \
+    --template "${SCRIPT_DIR}/Package.swift.template" \
+    --output "${consumer}/Package.swift" \
+    --dependency "${dependency}"
+
+ksv_evidence "生成した Package.swift" < "${consumer}/Package.swift"
+
+(cd "${consumer}" && swift package show-dependencies) | ksv_evidence "依存グラフ"
+
+echo "==== Release ビルド (iOS Simulator 向け) ===="
+(cd "${consumer}" && xcodebuild \
+    -scheme VerificationApp \
+    -destination 'generic/platform=iOS Simulator' \
+    -configuration Release \
+    -derivedDataPath "${work}/DerivedData" \
+    CODE_SIGNING_ALLOWED=NO \
+    build)
+
+if [ -f "${consumer}/Package.resolved" ]; then
+    ksv_evidence "Package.resolved" < "${consumer}/Package.resolved"
+elif [ "${KSV_MODE}" = "smoke" ]; then
+    ksv_fail "smoke なのに Package.resolved が生成されていない: ${consumer}"
+else
+    echo "dry-run の依存は path 参照だけで version constraint を持たないため、Package.resolved は生成されない" \
+        | ksv_evidence "Package.resolved"
+fi
+
+echo "${reference:-${DISTRIBUTION_URL}}"

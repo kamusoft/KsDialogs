@@ -1,0 +1,51 @@
+# 1.5 前提の実測のまとめと design への申し送り (2026-09-09)
+
+| 前提 | 判定 | 証跡 |
+|---|---|---|
+| iOS: `path:` 参照の identity がディレクトリ名から決まり、解決・Release ビルドが通る。`Package.resolved` が残らない | 成立 | 1.1-ios-path-reference.txt |
+| MAUI: packageSourceMapping で取得元がローカルフィードに固定され、無い version はユーザーキャッシュがあっても失敗する。binding が platform TFM の target に platform 固有アセットとして入る | 成立 | 1.2-maui-source-mapping.txt |
+| Android / KMP: `-Dmaven.repo.local` で発行先が作業ディレクトリに隔離される。鍵なしで Sign が skip される。`exclusiveContent` で解決でき、無い version は Central を検索せず失敗する | 成立 | 1.3-maven-feed-isolation.txt |
+| KMP: `file://` 上書きでの発行、metadata の `file://` + exact、5 publication、iOS 3 ターゲットの依存解決 | 成立 | 1.4-kmp-file-url-reference.txt |
+| KMP: `linkReleaseFrameworkIosSimulatorArm64` で linkage package が再生成される | **覆った** | 1.4-kmp-file-url-reference.txt 観測 4 |
+
+## 覆った前提と、見直しが要る記述
+
+link タスクは linkage package を生成も更新もしない。再生成するのは
+`generateSyntheticLinkageSwiftPMImportProjectForLinkageForCli`
+(`integrateLinkagePackage` の依存タスク) で、いずれも環境変数 `XCODEPROJ_PATH` を要求する。
+
+見直しの対象は次の 2 箇所 (いずれも「作業コピーで再生成してから消費者ビルドを行う」という
+判断そのものは変わらず、その段に置くタスク名が変わる):
+
+- design Decision 4 の「(2) `linkReleaseFrameworkIosSimulatorArm64` による linkage package の
+  再生成とテンプレートからの `Package.swift` 生成を行い」
+- design Decision 5 の検証 3 段のうち (2) — framework の生成としては link タスクのままでよいが、
+  linkage package の再生成を担うタスクが別に要る
+
+tasks.md 3.1 (`build-consumer.sh` の KMP 3 段) と 1.4 の記述も同じ影響を受ける。
+
+## 実測中に見つかった、design に無い副作用
+
+kmp/ を `-Pksdialogs.swiftPackageUrl=file://...` で発行すると、**本体リポジトリの追跡ファイル**
+2 本が書き換わる。
+
+  M kmp/.swiftpm-locks/default/swiftImport/subpackages/_ksdialogs-kmp/Package.swift
+  M kmp/.swiftpm-locks/default/swiftImport/subpackages/_ksdialogs_kmp/Package.swift
+
+いずれも `url:` が `file://<work>/KsDialogs-SPM` (実行環境の絶対パス) に書き換わり、
+`scripts/identity-lint.py` がスクラッチのパスに含まれる UUID を検出して失敗する
+(本スパイクでは `git checkout --` で復元した)。
+
+design Decision 4 は「追跡している `verification/kmp/` は実行で変化しない」ことを
+作業コピーへの退避で担保しているが、`kmp/.swiftpm-locks/` は本体側の追跡物であり
+この退避の対象外。tasks 3.1 (KMP のフィード準備) と 5.1 (`git status` の確認範囲) は
+`verification/kmp/` だけでなく `kmp/.swiftpm-locks/` も対象に入れるか、フィード準備の後に
+復元する手当てが要る。CI では毎回 clean な checkout なので顕在化しないが、手元実行では
+毎回作業ツリーが汚れ、うっかり commit すると lint 違反になる。
+
+## 前提のうち、記述の訂正で足りるもの
+
+- MAUI の負ケースの失敗コードは NU1101 ではなく NU1102 (ID は mapping 先に在り version だけ
+  無い場合)。tasks.md 1.2 の例示のみの相違で、Scenario (「公開レジストリやキャッシュへ
+  フォールバックしない」) は満たす
+- Android の負ケースは `:app:dependencies` では build が成功で終わるため、判定にはビルドタスクを使う

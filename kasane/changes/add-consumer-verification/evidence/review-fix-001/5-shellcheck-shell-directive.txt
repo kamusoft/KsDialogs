@@ -1,0 +1,26 @@
+# レビュー指摘の修正 5: source 専用ライブラリへの shellcheck シェル指定 (2026-09-09)
+
+判定: **成立** (3 本の先頭に # shellcheck shell=bash を足し、単体検査の SC2148 が消えた)
+
+対象は shebang を持たない source 専用の 3 本。
+  verification/lib/verification-args.sh
+  verification/lib/android-sdk.sh
+  verification/lib/gradle-publish.sh
+
+## 追加前 (レビューの実測)
+
+  verification/lib/*.sh に SC2148 (error) のみ
+
+## 追加後
+
+  $ shellcheck verification/lib/verification-args.sh verification/lib/android-sdk.sh
+  In verification/lib/verification-args.sh line 155:
+                  KSV_WORK="$2"
+                  ^------^ SC2034 (warning): KSV_WORK appears unused. ...
+
+  SC2148 は出ない。残る SC2034 は source する側が使う変数への指摘で、レビューの実測でも
+  除外していた種類。
+
+  $ shellcheck -x -e SC2034 -e SC1091 verification/lib/*.sh verification/kmp/prepare-feed.sh \
+      verification/android/*.sh
+  指摘なし (exit 0)

@@ -1,0 +1,40 @@
+# 5.7 消費者の Kotlin 版がカタログの kotlin と一致する (2026-09-09)
+
+判定: **成立** (Android / KMP の消費者とも Kotlin Gradle plugin・stdlib が `2.4.10`)
+
+対応する Scenario
+- 消費者の Kotlin 版が本体と一致する
+
+カタログ (`android/gradle/libs.versions.toml`) の宣言
+
+  kotlin = "2.4.10"
+
+消費者はこのカタログを `versionCatalogs { create("libs") { from(files(…)) } }` で共有し、
+Kotlin の版を自分では宣言しない。
+
+## Android 消費者
+
+  $ ./gradlew -q … buildEnvironment
+  +--- org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin:2.4.10
+  |         \--- org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10
+
+  $ ./gradlew -q … :app:dependencies --configuration releaseRuntimeClasspath
+  +--- org.jetbrains.kotlin:kotlin-stdlib:2.4.10
+  (推移で現れる 1.6.21〜2.2.20 の宣言はすべて `-> 2.4.10` に解決される。
+   2.4.10 以外に解決された kotlin-stdlib の行は 0 件)
+
+## KMP 消費者
+
+  $ ./gradlew -q … buildEnvironment
+  +--- org.jetbrains.kotlin.multiplatform:org.jetbrains.kotlin.multiplatform.gradle.plugin:2.4.10
+  |    \--- org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.10
+
+  $ ./gradlew -q … :shared:dependencies --configuration iosSimulatorArm64CompileKlibraries
+  \--- org.jetbrains.kotlin:kotlin-stdlib:2.4.10
+  (推移の 2.2.0 / 2.2.20 の宣言も `-> 2.4.10`)
+
+## A4 (同 minor サポート) との関係
+
+この実測が示すのは「消費者が本体と同じ `2.4.10` で配布物を解決してビルドできる」ことだけで、
+確認済みの版はその 1 点である。同じ minor の別 patch (2.4.x) や別 minor での成立は
+ここでは測っていない。

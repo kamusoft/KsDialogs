@@ -1,0 +1,55 @@
+# 2.3 Android 消費者プロジェクトの dry-run ビルドと依存ツリー (2026-09-09)
+
+判定: **成功**
+
+作成物: `verification/android/` (settings / ルート build / gradle.properties / wrapper、
+`app` と `app-core` の 2 module、共有ソース `readme-example/Notifications.kt`)。
+
+## README 最小例が無編集で置かれている
+
+$ diff <(README.md の `### Android Native` コードブロック) \
+       verification/android/readme-example/Notifications.kt
+(差分なし)
+
+2 module とも `kotlin.srcDir("../readme-example")` でこのディレクトリを共有し、両方の
+release ビルドでコンパイルされる。
+
+$ find app/build app-core/build -name 'NotificationsKt.class'
+app/build/intermediates/built_in_kotlinc/release/compileReleaseKotlin/classes/NotificationsKt.class
+app-core/build/intermediates/built_in_kotlinc/release/compileReleaseKotlin/classes/NotificationsKt.class
+
+## Release ビルド (2 module)
+
+Android SDK は `ANDROID_HOME` 未設定の環境で `android/local.properties` の `sdk.dir` を
+export して渡した (`verification/lib/android-sdk.sh` と同じ手順)。
+
+$ ./gradlew -Pksdialogs.mode=dry-run -Pksdialogs.reference=<scratch>/premise/maven \
+    -Pksdialogs.version=0.0.0-alpha.0 :app:assembleRelease :app-core:assembleRelease
+BUILD SUCCESSFUL in 12s
+91 actionable tasks: 91 executed
+
+`verification/android/local.properties` は生成されていない。
+
+## 依存ツリー (releaseRuntimeClasspath)
+
+$ ./gradlew ... :app:dependencies --configuration releaseRuntimeClasspath
++--- jp.kamusoft:ksdialogs:0.0.0-alpha.0
+|    +--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+
+推移の本体が Compose 系と同版で解決される。
+
+$ ./gradlew ... :app-core:dependencies --configuration releaseRuntimeClasspath \
+    | grep -c 'androidx.compose'
+0
+$ (同じ出力の jp.kamusoft 行)
+\--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+
+`-core` 単独の消費者に Compose の座標は 1 つも現れない。
+
+## 消費者の Kotlin 版
+
+$ ./gradlew ... :app:dependencies --configuration releaseRuntimeClasspath | grep kotlin-stdlib
++--- org.jetbrains.kotlin:kotlin-stdlib:2.4.10
+|    \--- org.jetbrains.kotlin:kotlin-stdlib-common:2.4.10 (c)
+
+共有バージョンカタログの `kotlin` (2.4.10) と一致する。

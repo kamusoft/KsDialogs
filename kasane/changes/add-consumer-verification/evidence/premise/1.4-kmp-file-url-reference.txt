@@ -1,0 +1,110 @@
+# 1.4 KMP: `file://` 参照での発行と消費者側の解決 (2026-09-09)
+
+判定: **一部が覆った** — 発行・metadata・依存解決は成立。linkage package を再生成する
+タスクが design Decision 4 / 5 の記述 (`linkReleaseFrameworkIosSimulatorArm64`) と異なる
+(観測 4)。
+
+## 準備
+
+1.1 のスナップショット `<scratch>/premise/KsDialogs-SPM` に commit し、tag `0.0.0-alpha.0`
+を打った (push はしていない)。
+
+$ git add -A && git commit -m "snapshot 0.0.0-alpha.0" && git tag 0.0.0-alpha.0
+
+## 観測 1: 5 publication が 1.3 と同じディレクトリに置かれる
+
+$ ./gradlew -Pversion=0.0.0-alpha.0 \
+    "-Pksdialogs.swiftPackageUrl=file://<scratch>/premise/KsDialogs-SPM" \
+    -Dmaven.repo.local=<scratch>/premise/maven publishToMavenLocal   (実行場所: kmp/)
+BUILD SUCCESSFUL in 40s
+
+`<scratch>/premise/maven/jp/kamusoft/` の内容 (1.3 の 2 artifact と同居):
+
+  ksdialogs-core / ksdialogs                     (1.3 で発行済み)
+  ksdialogs-kmp / ksdialogs-kmp-android /
+  ksdialogs-kmp-iosarm64 /
+  ksdialogs-kmp-iossimulatorarm64 /
+  ksdialogs-kmp-iosx64                           (本実行で発行。5 publication)
+
+実行後の `~/.m2/repository/jp/kamusoft` の一覧は 1.3 実行前と完全一致 (diff 0 行)。
+`ksdialogs-kmp-android` の POM の `ksdialogs-core` 依存は `0.0.0-alpha.0` (同じ文字列)。
+
+## 観測 2: metadata の Swift 参照が `file://` + exact
+
+`ksdialogs-kmp-0.0.0-alpha.0-swiftpm-metadata.json` (抜粋):
+
+  "iosDeploymentVersion": "17.0"
+  dependencies[0].repository.value = "file://<scratch>/premise/KsDialogs-SPM"
+  dependencies[0].version          = Exact "0.0.0-alpha.0"
+  dependencies[0].products         = [ "KsDialogs" ]
+  dependencies[0].packageName      = "KsDialogs-SPM"
+
+## 観測 3: 最小の消費者から iOS 3 ターゲットの依存解決が通る
+
+消費者 `<scratch>/premise/kmp-consumer` は `samples/kmp` の `shared` と同形の module 1 つ
+(iOS 3 ターゲット、static framework `VerificationShared`、`commonMain` に
+`api("jp.kamusoft:ksdialogs-kmp:0.0.0-alpha.0")` 1 行と README `### Kotlin Multiplatform`
+の最小例)。`settings.gradle.kts` の `jp.kamusoft` 割り当ては 1.3 と同じ `exclusiveContent`。
+
+$ ./gradlew :shared:dependencies --configuration iosArm64CompileKlibraries
++--- jp.kamusoft:ksdialogs-kmp:0.0.0-alpha.0
+|    \--- jp.kamusoft:ksdialogs-kmp-iosarm64:0.0.0-alpha.0
+  (iosSimulatorArm64CompileKlibraries -> ksdialogs-kmp-iossimulatorarm64、
+   iosX64CompileKlibraries -> ksdialogs-kmp-iosx64 も同様)
+
+$ ./gradlew :shared:linkReleaseFrameworkIosSimulatorArm64
+BUILD SUCCESSFUL in 27s
+
+## 観測 4: linkage package を再生成するのは link タスクではない (design と相違)
+
+`linkReleaseFrameworkIosSimulatorArm64` の実行では linkage package は生成も更新も
+されない。生成されるのは環境変数 `XCODEPROJ_PATH` を与えたときの
+`generateSyntheticLinkageSwiftPMImportProjectForLinkageForCli`
+(`integrateLinkagePackage` が依存する) である。
+
+$ ./gradlew :shared:linkReleaseFrameworkIosSimulatorArm64      # XCODEPROJ_PATH なし
+  -> KotlinMultiplatformLinkedPackage は 1 つも生成されない
+
+$ XCODEPROJ_PATH=<consumer>/iosApp/VerificationKmp.xcodeproj \
+    ./gradlew :shared:integrateLinkagePackage
+> Task :shared:generateSyntheticLinkageSwiftPMImportProjectForLinkageForCli
+> Task :shared:integrateLinkagePackage FAILED
+  (合成 package は `<consumer>/iosApp/KotlinMultiplatformLinkedPackage/` に生成された。
+   FAILED は xcodeproj の実体がまだ無く plutil が pbxproj を読めないため。
+   実在する xcodeproj を置く 2.5 では起きない)
+
+Swift 参照は subpackage 側の manifest が持つ。
+`KotlinMultiplatformLinkedPackage/subpackages/jp_kamusoft_ksdialogs_kmp_0_0_0_alpha_0/Package.swift`:
+
+  .package(
+    url: "file://<scratch>/premise/KsDialogs-SPM",
+    exact: "0.0.0-alpha.0"
+  )
+  .product(name: "KsDialogs", package: "KsDialogs-SPM")
+
+ルートの `KotlinMultiplatformLinkedPackage/Package.swift` は subpackage を
+`.package(path: "subpackages/...")` で参照するだけで、URL を持たない。
+subpackage のディレクトリ名は座標と version から作られる
+(`jp_kamusoft_ksdialogs_kmp_0_0_0_alpha_0`)。
+
+再生成の効き目 (URL を書き戻すか) を、smoke 形に書き換えてから確かめた:
+
+  a. subpackage の URL を `https://github.com/kamusoft/KsDialogs-SPM` に手で書き換え
+  b. `./gradlew :shared:linkReleaseFrameworkIosSimulatorArm64`
+     -> URL は https のまま (UP-TO-DATE)
+  c. `./gradlew --rerun-tasks :shared:linkReleaseFrameworkIosSimulatorArm64`
+     -> URL は https のまま (実行された task は link 系 3 つのみ)
+  d. `XCODEPROJ_PATH=... ./gradlew
+      :shared:generateSyntheticLinkageSwiftPMImportProjectForLinkageForCli`
+     -> URL が `file://<scratch>/premise/KsDialogs-SPM` に戻る
+
+したがって「作業コピーで再生成してから消費者ビルドを行う」という design Decision 4 の
+組み立て自体は成立するが、その 2 段目に置くタスクは link タスクではなく
+`integrateLinkagePackage` (実在する xcodeproj が要る) または
+`generateSyntheticLinkageSwiftPMImportProjectForLinkageForCli` で、いずれも
+`XCODEPROJ_PATH` の指定が要る。
+
+## 未確認 (1.4 の範囲外)
+
+`xcodebuild` による 3 段目 (Decision 5 の (3)) と pin の重複解消は、Xcode project を
+用意する 2.5 の作業で初めて確かめられるため本スパイクでは踏んでいない。

@@ -1,0 +1,40 @@
+# 2.0 / 2.1 共有ライブラリと lint (2026-09-09)
+
+## verification/lib/android-sdk.sh (2.0)
+
+翻案元の `ksv_ensure_android_home` を写し、参照する本体 build root を `android/` のまま、
+説明を verification/android と verification/kmp の 2 build root に合わせた。
+`ANDROID_HOME` → `ANDROID_SDK_ROOT` → `android/local.properties` の `sdk.dir` の順で解決し、
+どれも無ければ失敗する。`verification/` 配下に `local.properties` は生成しない。
+
+手元の確認 (2.3 / 2.5 のビルド) は `ANDROID_HOME` 未設定の環境で `sdk.dir` を読んで export
+する同じ手順で通した。
+
+## verification/lib/verification-args.sh (2.1)
+
+翻案元を写し、次を変えた。
+
+- 検証用の合成 version `0.0.0-alpha.0` を `KSV_SYNTHETIC_VERSION` として 1 か所に持つ。
+  形態ごとの既定値は持たず、version を持たない iOS の dry-run だけが `KSV_DEFAULT_VERSION=""`
+  で上書きする (翻案元は形態ごとに既定値を定義させていた)
+- 変数の接頭辞を `KSSV_` から `KSV_` へ
+- `--work` の説明を「既定は形態ごと」に (Android でも作業ディレクトリを使うため)
+
+早期失敗の 3 条件 (許可値以外の mode / smoke で version 無し / smoke に `--reference`) と
+証跡出力 `ksv_evidence` は翻案元のまま。
+
+## lint
+
+$ python3 scripts/identity-lint.py --paths verification
+(違反 0 件。ただし `lint.identity.scope` に `verification` がまだ無く、走査対象外のため
+ この 0 件は適合の根拠にならない。scope への追加は CI のタスク)
+
+追跡予定のファイル一覧に対する手動走査 (UUID 形式・メールアドレス・`/Users/` `/Volumes/`
+`/private/tmp`) も 0 件。
+
+$ python3 scripts/local-path-lint.py --paths <verification の追跡予定ファイル 52 件>
+(違反 0 件。検査が届いていることは、同ディレクトリに置いた探り用ファイルが検出されることで
+ 確認した)
+
+$ python3 scripts/comment-policy-lint.py --summary
+合計: 0 ファイル / 禁止 0 件 (検査対象 1004 ファイル)

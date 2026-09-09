@@ -1,0 +1,50 @@
+# レビュー指摘の修正 2: Android 消費者のプラグイン版をカタログへ寄せる (2026-09-09)
+
+判定: **成立** (直書きの版と誤った説明コメントを除去。解決される版は共有カタログの
+agp / kotlin と一致し、dry-run のビルドと依存検査は通る)
+
+## 変更
+
+verification/android/build.gradle.kts の plugins ブロック
+
+  変更前  id("com.android.application") version "9.3.0" apply false
+          id("org.jetbrains.kotlin.plugin.compose") version "2.4.10" apply false
+          (「plugins ブロックはバージョンカタログの値を参照できないため … 直書きする」)
+
+  変更後  id("com.android.application") version libs.versions.agp.get() apply false
+          alias(libs.plugins.composeCompiler) apply false
+
+compose プラグインはカタログの alias (composeCompiler、version.ref = kotlin) をそのまま使う。
+AGP は共有カタログの [plugins] に application 用の alias が無いため id は書いたままで、
+版だけを libs.versions.agp から取る (カタログへの alias 追加は本体カタログの変更になるため
+行っていない。判断はオーナーへ)。誤った説明コメントは消し、id を書く理由を現在形で残した。
+
+## 解決される版 (共有カタログと一致すること)
+
+  $ grep '^agp\|^kotlin ' android/gradle/libs.versions.toml
+  agp = "9.3.0"
+  kotlin = "2.4.10"
+
+  $ verification/android/gradlew -q -Pksdialogs.mode=dry-run -Pksdialogs.reference=<maven> \
+      -Pksdialogs.version=0.0.0-alpha.0 buildEnvironment
+  +--- com.android.application:com.android.application.gradle.plugin:9.3.0
+  +--- org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin:2.4.10
+
+変更前の直書き (9.3.0 / 2.4.10) と同じ版に解決される。以後はカタログの agp / kotlin を
+上げると消費者も同時に上がる。
+
+## dry-run
+
+準備済み参照先を --reference で流用して実行した。
+
+  $ verification/android/build-consumer.sh --reference <maven> --work <work>
+  BUILD SUCCESSFUL in 1s
+  ==== 解決版と取得元 ====
+  参照先: <maven>
+  :app (releaseRuntimeClasspath の jp.kamusoft 行)
+  +--- jp.kamusoft:ksdialogs:0.0.0-alpha.0
+  |    +--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+  :app-core (releaseRuntimeClasspath の jp.kamusoft 行)
+  \--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+  :app-core の androidx.compose 座標: 0 件
+  exit=0

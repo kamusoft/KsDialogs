@@ -1,0 +1,90 @@
+# 2.5 KMP 消費者プロジェクトの dry-run 3 段ビルド (2026-09-09)
+
+判定: **成功**
+
+作成物: `verification/kmp/` (settings / ルート build / gradle.properties / wrapper /
+README、`shared`・`androidApp`・`iosApp`)。`iosApp` は `VerificationKmp.xcodeproj`
+(scheme `VerificationKmp`)、合成 package `KotlinMultiplatformLinkedPackage/`、ローカル
+package `VerificationApp/` の 3 点構成。
+
+## README 最小例が無編集で置かれている
+
+$ diff <(README.md の `### Kotlin Multiplatform` コードブロック) \
+       verification/kmp/shared/src/commonMain/kotlin/Confirm.kt
+(差分なし)
+
+例の `ConfirmViewModel` を、Android は `Dialog.instance.registry.register`、iOS は
+`Dialog.shared.kmp.register` で登録し、iOS 側は `show` まで呼ぶ。
+
+## Xcode project への合成 package の統合 (リポジトリ内で 1 回)
+
+$ XCODEPROJ_PATH="$PWD/iosApp/VerificationKmp.xcodeproj" ./gradlew \
+    -Pksdialogs.mode=dry-run -Pksdialogs.reference=<scratch>/premise/maven \
+    -Pksdialogs.version=0.0.0-alpha.0 :shared:integrateLinkagePackage
+BUILD SUCCESSFUL in 7s
+
+生成された subpackage の manifest の `url:` を配信リポジトリの https に書き換えて追跡した
+(smoke 形の非解決 fixture)。追跡している 2 ファイルの Swift 参照:
+
+  iosApp/VerificationApp/Package.swift                          https://github.com/kamusoft/KsDialogs-SPM
+  iosApp/KotlinMultiplatformLinkedPackage/subpackages/
+    jp_kamusoft_ksdialogs_kmp_0_0_0_alpha_0/Package.swift       https://github.com/kamusoft/KsDialogs-SPM
+
+subpackage のディレクトリ名は座標と version から作られるため、既定 version のものになる。
+
+注: `integrateLinkagePackage` は Xcode project にシェルスクリプトのビルドフェーズが 1 つも
+無いと「embedAndSign integration wasn't found」で失敗する (Kotlin Gradle Plugin 2.4.10 の
+実装は shellScript に "gradle" を含むフェーズを探す)。`VerificationKmp` の
+"Build shared framework" フェーズがこの条件を満たす。
+
+## 作業コピーでの再生成 (dry-run)
+
+`verification/kmp/` を作業ディレクトリへコピーし、コピーの中で再生成した。
+
+$ XCODEPROJ_PATH=... ./gradlew ... :shared:integrateLinkagePackage
+BUILD SUCCESSFUL in 2s
+  -> Product already referenced, nothing to do (pbxproj は変更なし)
+  -> subpackage の manifest は file:// の参照へ書き戻された
+
+テンプレートから生成した `VerificationApp/Package.swift` と合わせて、両者の依存 URL は
+同一 (`file://<scratch>/premise/KsDialogs-SPM` + exact `0.0.0-alpha.0`)。
+
+## 3 段
+
+$ ./gradlew ... :androidApp:assembleRelease
+BUILD SUCCESSFUL in 3s
+
+$ ./gradlew ... :shared:linkReleaseFrameworkIosSimulatorArm64
+BUILD SUCCESSFUL in 20s
+
+$ xcodebuild -project iosApp/VerificationKmp.xcodeproj -scheme VerificationKmp \
+    -configuration Release -destination 'generic/platform=iOS Simulator' \
+    CODE_SIGNING_ALLOWED=NO build
+Resolved source packages:
+  KsDialogs: <scratch>/premise/KsDialogs-SPM @ 0.0.0-alpha.0
+** BUILD SUCCEEDED **
+
+解決された配信リポジトリの pin は 1 つだけで、参照先はローカル clone。
+
+## リポジトリ側の追跡物は変化しない
+
+$ git status --porcelain
+ M kasane/changes/add-consumer-verification/tasks.md
+?? kasane/changes/add-consumer-verification/deviation.md
+?? kasane/changes/add-consumer-verification/evidence/
+?? verification/
+
+`verification/kmp/` の追跡予定ファイルは smoke 形のまま。`kmp/.swiftpm-locks/` にも差分なし
+(本 group では kmp/ の発行を行っていない)。
+
+## 実装で必要になった追加事項 (group 3 への申し送り)
+
+- 作業コピーではバージョンカタログの相対パス `../../android/gradle/libs.versions.toml` が
+  解決できないため、`settings.gradle.kts` に Gradle プロパティ `ksdialogs.catalog` の
+  上書き口を設けた。コピーの中で走らせる呼び出しはすべてこれを渡す必要がある
+- Xcode の "Build shared framework" フェーズは `KSDIALOGS_MODE` / `KSDIALOGS_REFERENCE` /
+  `KSDIALOGS_VERSION` / `KSDIALOGS_CATALOG` を環境変数から受け取る。`xcodebuild` を呼ぶ側が
+  export する
+- `generic/platform=iOS Simulator` は arm64 と x86_64 の両方を作るが、共有モジュールの
+  framework は arm64 simulator だけをリンクするため、Xcode project で
+  `EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64` を指定した

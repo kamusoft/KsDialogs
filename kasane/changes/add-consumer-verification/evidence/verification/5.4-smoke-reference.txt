@@ -1,0 +1,68 @@
+# 5.4 smoke の参照先とフィード準備の不実行 (2026-09-09)
+
+判定: **成立** (4 形態とも参照先の設定は公開レジストリだけを指し、ローカル参照先を含まず、
+フィード準備が走らない)
+
+対応する Scenario
+- 参照先が公開レジストリを指す
+- Swift 参照がモードと一致する
+- smoke はフィード準備を行わない
+
+**公開レジストリからの解決が成功すること (smoke の正ケース) は本変更の受け入れ条件に
+含めない。** 検証用の version も `0.1.0-rc.1` も配信リポジトリ・Maven Central・nuget.org に
+公開されていないため、以下の smoke 実行はいずれも解決の段階で失敗する (想定どおり)。
+解決成功の実証は、配布物が公開される初回リリース (phase-9 の release workflow) の変更で
+Scenario として立てる。
+
+`<work>` は作業ディレクトリ。version は `0.1.0-rc.1` を与えた。
+
+## フィード準備は何もしない
+
+  $ verification/<形態>/prepare-feed.sh --mode smoke --version 0.1.0-rc.1
+  ios      smoke では公開レジストリ (配信リポジトリの tag) を参照するため、ローカル参照先は準備しない
+  android  smoke では公開レジストリ (Maven Central) を参照するため、ローカル参照先は準備しない
+  maui     smoke では公開レジストリ (nuget.org) を参照するため、ローカル参照先は準備しない
+  kmp      smoke では公開レジストリ (Maven Central と配信リポジトリの tag) を参照するため、
+           ローカル参照先は準備しない
+  (4 件とも exit 0)
+
+`build-consumer.sh --mode smoke --version 0.1.0-rc.1` の後、作業ディレクトリに残るのは
+消費者側の生成物だけで、フィード準備の産物 (`feed` / `maven` / `KsDialogs-SPM`) は無い。
+
+  ios    consumer
+  android  (なし。参照先の準備も消費者の中間出力もディレクトリを作らない)
+  maui   obj  packages
+  kmp    consumer
+
+## 参照先の設定
+
+iOS — 生成した `Package.swift` の依存 1 行。ローカルの path 参照は現れない。
+
+  .package(url: "https://github.com/kamusoft/KsDialogs-SPM", exact: "0.1.0-rc.1")
+
+  error: Dependencies could not be resolved because no versions of 'ksdialogs-spm'
+         match the requirement 0.1.0-rc.1
+
+Android — `settings.gradle.kts` は smoke で `jp.kamusoft` を mavenCentral へ
+`exclusiveContent` で排他割り当てする。実行時の検索先も Central だけ。
+
+  > Could not find jp.kamusoft:ksdialogs:0.1.0-rc.1.
+    Searched in the following locations:
+      - https://repo.maven.apache.org/maven2/jp/kamusoft/ksdialogs/0.1.0-rc.1/ksdialogs-0.1.0-rc.1.pom
+
+MAUI — `nuget.smoke.config` は `<clear/>` + nuget.org のみで、packageSourceMapping は
+`*` を nuget.org に割り当てる (ローカルフィードの列挙が無い)。
+
+  error NU1101: パッケージ KsDialogs.Maui が見つかりません。ソース nuget.org には、
+                この ID のパッケージが存在しません。PackageSourceMapping が有効になっています。
+
+KMP — `settings.gradle.kts` の排他割り当ては Android と同じ形 (smoke は mavenCentral)。
+iOS ホスト側のローカル package は https + exact に生成される。
+
+  作業コピーの iosApp/VerificationApp/Package.swift:
+    .package(url: "https://github.com/kamusoft/KsDialogs-SPM", exact: "0.1.0-rc.1")
+
+  > Could not find jp.kamusoft:ksdialogs-kmp:0.1.0-rc.1.
+
+  合成 package は 2 段目に入る前に落ちるため再生成されない (作業コピーの
+  `KotlinMultiplatformLinkedPackage/` に `subpackages` は無い)。

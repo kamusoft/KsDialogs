@@ -1,0 +1,139 @@
+# 3.2〜3.5 依存検査と解決結果の証跡 (2026-09-09)
+
+判定: **成功** (Android / MAUI / KMP の検査が dry-run で通り、負の入力で失敗する)
+
+## 3.2 Android の依存検査 (build-consumer.sh 内)
+
+`:app` と `:app-core` の `releaseRuntimeClasspath` の依存ツリーから判定する。版が競合した
+ときの Gradle の表記 (「宣言 -> 解決」) は解決側を取る。
+
+  ==== 解決版と取得元 ====
+  参照先: <scratch>/work/ksdialogs-verification/android/maven
+
+  :app (releaseRuntimeClasspath の jp.kamusoft 行)
+  +--- jp.kamusoft:ksdialogs:0.0.0-alpha.0
+  |    +--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+
+  :app-core (releaseRuntimeClasspath の jp.kamusoft 行)
+  \--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+
+  :app-core の androidx.compose 座標: 0 件
+  ksdialogs と推移の ksdialogs-core が 0.0.0-alpha.0 で一致し、-core 単独の消費者に
+  androidx.compose は無い
+
+依存ツリーの取得は Gradle の失敗と「行が無い」を区別する (ツリーをファイルへ受けてから
+判定し、失敗時はツリーの内容を標準エラーへ出す)。
+
+## 3.3 MAUI の check-dependencies.py
+
+翻案元の版・取得元の検査に、platform TFM のアセット検査を足した。
+
+  $ python3 verification/maui/check-dependencies.py --selftest
+  [正の入力]
+    OK   版・取得元・アセットが揃っていれば exit 0
+  [負の入力]
+    OK   binding の版が facade と違えば exit 1
+    OK   版の不一致が理由として出る
+    OK   取得元が参照先と違えば exit 1
+    OK   取得元の不一致が理由として出る
+    OK   platform 中立アセットへのフォールバックで exit 1
+    OK   フォールバックが理由として出る
+    OK   binding が target に無ければ exit 1
+    OK   不在が理由として出る
+    OK   platform TFM の target が欠ければ exit 1
+  失敗なし
+
+dry-run の実出力 (build-consumer.sh から呼ばれた分。job summary にも同じ本文が出る):
+
+  ==== 解決版と取得元 ====
+  KsDialogs.Maui             0.0.0-alpha.0  <- <scratch>/work/ksdialogs-verification/maui/feed
+  KsDialogs.Binding.iOS      0.0.0-alpha.0  <- <scratch>/work/ksdialogs-verification/maui/feed
+  KsDialogs.Binding.Android  0.0.0-alpha.0  <- <scratch>/work/ksdialogs-verification/maui/feed
+
+  platform TFM のアセット
+    net10.0-android                     KsDialogs.Binding.Android/0.0.0-alpha.0  lib/net10.0-android36.0/KsDialogs.Binding.Android.dll
+    net10.0-android/android-arm64       KsDialogs.Binding.Android/0.0.0-alpha.0  lib/net10.0-android36.0/KsDialogs.Binding.Android.dll
+    net10.0-ios                         KsDialogs.Binding.iOS/0.0.0-alpha.0      lib/net10.0-ios26.0/KsDialogs.Binding.iOS.dll
+    net10.0-ios/iossimulator-arm64      KsDialogs.Binding.iOS/0.0.0-alpha.0      lib/net10.0-ios26.0/KsDialogs.Binding.iOS.dll
+  (RID 付きの target も同じアセット。抜粋)
+
+ビルド警告は失敗にしない。Android Release では `XA4301` の検出なし、`MSB6002` (R8 の
+コマンドラインが長い) の警告 1 件が出たがビルドは成功で終わる。
+
+## 3.4 KMP の check-dependencies.py
+
+  $ python3 verification/kmp/check-dependencies.py --selftest
+  [正の入力]
+    OK   全 publication と Swift 参照が揃っていれば exit 0
+  [負の入力]
+    OK   iOS publication を 1 件欠けば exit 1
+    OK   欠けた publication が理由として出る
+    OK   ksdialogs-core が別版なら exit 1
+    OK   版の不一致が理由として出る
+    OK   metadata の exact が違えば exit 1
+    OK   metadata の URL が違えば exit 1
+    OK   metadata の deployment target が違えば exit 1
+    OK   合成 package とホスト側の URL が食い違えば exit 1
+    OK   URL の不一致が理由として出る
+    OK   pin が 0 件なら exit 1
+    OK   pin が 2 件なら exit 1
+    OK   pin の件数が理由として出る
+  失敗なし
+
+dry-run の実出力:
+
+  ==== 解決版と取得元 ====
+  androidApp         jp.kamusoft:ksdialogs-kmp                    0.0.0-alpha.0
+  androidApp         jp.kamusoft:ksdialogs-kmp-android            0.0.0-alpha.0
+  androidApp         jp.kamusoft:ksdialogs-core                   0.0.0-alpha.0
+  iosArm64           jp.kamusoft:ksdialogs-kmp                    0.0.0-alpha.0
+  iosArm64           jp.kamusoft:ksdialogs-kmp-iosarm64           0.0.0-alpha.0
+  iosSimulatorArm64  jp.kamusoft:ksdialogs-kmp                    0.0.0-alpha.0
+  iosSimulatorArm64  jp.kamusoft:ksdialogs-kmp-iossimulatorarm64  0.0.0-alpha.0
+  iosX64             jp.kamusoft:ksdialogs-kmp                    0.0.0-alpha.0
+  iosX64             jp.kamusoft:ksdialogs-kmp-iosx64             0.0.0-alpha.0
+  metadata           iosDeploymentVersion    17.0
+  metadata           Swift 参照の URL        file://<scratch>/work/ksdialogs-verification/kmp/KsDialogs-SPM
+  metadata           Swift 参照の exact      0.0.0-alpha.0
+  合成 package        Swift 参照   file://<scratch>/.../kmp/KsDialogs-SPM @ 0.0.0-alpha.0
+  ローカル package     Swift 参照   file://<scratch>/.../kmp/KsDialogs-SPM @ 0.0.0-alpha.0
+  xcodebuild         配信リポジトリの pin  1 件
+  xcodebuild         pin  <scratch>/work/ksdialogs-verification/kmp/KsDialogs-SPM @ 0.0.0-alpha.0
+  全 5 publication と ksdialogs-core が 0.0.0-alpha.0 で解決され、Swift 参照は
+  合成 package・ホスト側・発行 metadata で一致し、pin は 1 つ
+
+合成 package の Swift 参照は subpackage 側のマニフェストにある。検査は
+`KotlinMultiplatformLinkedPackage/subpackages/*/Package.swift` がちょうど 1 件であることを
+要求して、その 1 件を読む (version が名前に入るディレクトリ名を組み立てない)。
+
+metadata の検査は参照先がローカルのディレクトリのときだけ行う (smoke は公開レジストリを
+参照するため metadata を読めない。その旨を出力に出す)。
+
+## 3.5 解決結果の証跡出力
+
+4 形態とも `ksv_evidence` で標準出力に `==== <見出し> ====` として出し、
+`GITHUB_STEP_SUMMARY` があれば同じ本文を見出し `### <形態>: <見出し>` 付きで追記する。
+手元で `GITHUB_STEP_SUMMARY` を与えて確認した (iOS の例。抜粋):
+
+  ### ios: 生成した Package.swift
+  ```
+  ...
+      dependencies: [
+          .package(path: "<scratch>/work/ksdialogs-verification/ios/KsDialogs-SPM")
+      ],
+  ...
+  ```
+
+  ### ios: 依存グラフ
+  ```
+  .
+  └── ksdialogs-spm<<scratch>/work/ksdialogs-verification/ios/KsDialogs-SPM@unspecified>(traits: default)
+  ```
+
+  ### ios: Package.resolved
+  ```
+  dry-run の依存は path 参照だけで version constraint を持たないため、Package.resolved は生成されない
+  ```
+
+形態ごとの証跡: iOS = 生成した `Package.swift` と `swift package show-dependencies`
+(smoke は `Package.resolved`)、Android = 上記 3.2、MAUI = 3.3、KMP = 3.4。

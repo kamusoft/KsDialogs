@@ -1,0 +1,41 @@
+# 2.2 iOS 消費者プロジェクトの dry-run ビルド (2026-09-09)
+
+判定: **成功**
+
+作成物: `verification/ios/Package.swift.template` /
+`verification/ios/Sources/VerificationApp/ContentView.swift`
+
+## README 最小例が無編集で置かれている
+
+$ diff <(README.md の `### iOS Native` コードブロック) \
+       verification/ios/Sources/VerificationApp/ContentView.swift
+(差分なし)
+
+## 生成した Package.swift (dry-run)
+
+テンプレートの差し込み口 `@KSV_DEPENDENCY@` を次の 1 行に置換して、作業ディレクトリへ
+`Package.swift` として書き出した (group 3 の build-consumer.sh が行う置換の手動再現)。
+
+    .package(path: "../../premise/KsDialogs-SPM")
+
+参照先は group 1 で作った同期済みスナップショット (tag `0.0.0-alpha.0` 済み)。
+
+## 依存解決
+
+$ swift package show-dependencies
+.
+└── ksdialogs-spm<<scratch>/premise/KsDialogs-SPM@unspecified>(traits: default)
+
+identity はディレクトリ名由来の `ksdialogs-spm`、version は path 参照のため `unspecified`。
+
+## Release ビルド
+
+$ xcodebuild -scheme VerificationApp \
+    -destination 'generic/platform=iOS Simulator' \
+    -configuration Release CODE_SIGNING_ALLOWED=NO build
+** BUILD SUCCEEDED **
+
+## Package.resolved
+
+$ find . -name Package.resolved
+(0 件。path 参照のみのため生成されない)

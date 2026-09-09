@@ -1,0 +1,43 @@
+# 3.6 README 最小例と消費者ソースの一致検査 (2026-09-09)
+
+判定: **成功**
+
+作成物: `scripts/readme-example-lint.py` (翻案元を写し、節見出しと対応表を差し替え)。
+
+節見出しは `## Minimal examples`。対応表は次の 4 件で、同じ fence 言語 (kotlin) の 2 件は
+小見出しで振り分ける。
+
+  ### iOS Native            swift    verification/ios/Sources/VerificationApp/ContentView.swift
+  ### Android Native        kotlin   verification/android/readme-example/Notifications.kt
+  ### .NET MAUI             csharp   verification/maui/Notifications.cs
+  ### Kotlin Multiplatform  kotlin   verification/kmp/shared/src/commonMain/kotlin/Confirm.kt
+
+## 検査
+
+  $ python3 scripts/readme-example-lint.py
+  README の最小例 4 件が消費者検証のソースと一致する
+  (exit 0)
+
+## 自己テスト
+
+  $ python3 scripts/readme-example-lint.py --selftest
+  [抽出ロジック]
+    OK   最小例の節のブロックだけを取る (実際 4 件)
+    OK   Installation 節の同名見出しを拾わない
+    OK   対応表の 4 件すべてが解決する
+    OK   同じ fence 言語の 2 件は小見出しで振り分ける
+  [検査の疎通]
+    OK   一致していれば exit 0
+    OK   片側だけの変更で exit 1
+    OK   不一致のファイルが出力される
+    OK   一致しているファイルは報告しない
+    OK   同じ見出し・言語の重複で exit 1
+    OK   重複した候補数が出力される
+    OK   対応先が無ければ exit 1
+    OK   不在の理由が出力される
+  失敗なし
+  (exit 0)
+
+Installation 節にも `### iOS Native` の swift ブロックがあるため、節の範囲を
+`## Minimal examples` から次の `## ` 見出しの直前までに限る抽出が要る。自己テストの
+1 件目がその判定を持つ。

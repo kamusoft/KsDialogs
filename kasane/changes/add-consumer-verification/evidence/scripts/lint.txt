@@ -1,0 +1,27 @@
+# lint (2026-09-09)
+
+対象は本グループで新設・変更した 27 ファイル (`verification/**` と `scripts/**` の
+`*.sh` / `*.py`)。
+
+  $ python3 scripts/local-path-lint.py --paths <27 ファイル>
+  (違反 0 件、exit 0)
+
+  $ python3 scripts/identity-lint.py --paths <27 ファイル>
+  (違反 0 件、exit 0。`lint.identity.scope` への `verification` の追加は CI のタスクで、
+   scope に入るまでこの 0 件は適合の根拠にならない)
+
+  $ python3 scripts/comment-policy-lint.py --summary
+  合計: 0 ファイル / 禁止 0 件 (検査対象 1004 ファイル)
+
+  $ python3 scripts/comment-policy-lint.py --paths <27 ファイル> --advisory
+  合計: 0 ファイル / 禁止 0 件 / 要確認 0 件 (検査対象 0 ファイル)
+
+**シェルスクリプトと Python は comment-policy-lint の既定の対象拡張子
+(`.swift` `.kt` `.kts` `.cs` `.java` `.xml` `.xaml` `.axml` `.gradle` `.pro`) に
+入らないため、検査対象 0 ファイルになる。** 本グループのスクリプトのコメントは規約本文から
+手で確認した (作業文書のパス参照・変更識別子・議論の通番・履歴記述は無く、外部参照は
+ADR ID `cross/ADR-0019` と URL のみ)。
+
+  $ grep -n "kasane/\|Decision\|phase-\|デルタスペック\|proposal\|review-0\|論点\|移植\|翻案" \
+      verification/*/*.sh verification/*/*.py scripts/readme-example-lint.py
+  (0 件)

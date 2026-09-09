@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    KsDialogs を利用者と同じ経路 (NuGet パッケージ 1 行) で参照する消費者アプリ。
+    利用者向けドキュメントの MAUI 最小例 (Notifications.cs) をそのままコンパイル対象に含める。
+    本体への ProjectReference は持たない。
+
+    解決する version は KsDialogsVersion プロパティで受け取る (build-consumer.sh が -p: で渡す)。
+    参照先は -p:RestoreConfigFile= で nuget.dry-run.config / nuget.smoke.config を選んで決める。
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-android;net10.0-ios</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 最小例のコードが宣言する namespace に合わせる -->
+    <RootNamespace>MyApp</RootNamespace>
+    <AssemblyName>KsDialogs.Verification.Maui</AssemblyName>
+    <ApplicationId>jp.kamusoft.ksdialogs.verification.maui</ApplicationId>
+    <ApplicationTitle>KsDialogs Verification</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+  </PropertyGroup>
+
+  <!-- 最低対象 OS はライブラリ本体と揃える (cross/ADR-0002) -->
+  <PropertyGroup Condition=" $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' ">
+    <SupportedOSPlatformVersion>17.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' ">
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <!-- Android の Release は既定の縮小ツールで通す -->
+    <AndroidLinkTool>r8</AndroidLinkTool>
+  </PropertyGroup>
+
+  <!--
+    依存解決の異常を警告のまま素通りさせない。ダウングレード・依存版範囲外・版競合は
+    配布物の依存宣言の欠陥であり、消費者ビルドが検出すべき失敗として扱う。
+    ビルド警告全般 (XA4301 等) はここに含めない。
+  -->
+  <PropertyGroup>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1605;NU1608;NU1107</WarningsAsErrors>
+  </PropertyGroup>
+
+  <!--
+    MAUI アプリの必須参照。UseMaui は NuGet 参照を自動で含めない。
+    版を書かず $(MauiVersion) のままにすることで、利用者と同じ「workload set 同梱版を使う」
+    形になる (maui/ADR-0004)。
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+  </ItemGroup>
+
+  <!-- 利用者が書くのと同じ 1 行。binding 2 件は推移参照で入る -->
+  <ItemGroup>
+    <PackageReference Include="KsDialogs.Maui" Version="$(KsDialogsVersion)" />
+  </ItemGroup>
+
+</Project>
