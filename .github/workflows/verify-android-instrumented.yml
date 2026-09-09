@@ -7,10 +7,24 @@
 # job の成否判定に含める。
 # 特定の API レベルでしか成立しない挙動のテストは自分を skip して結果 XML の skipped に
 # 数えられるため、実行数は tests から skipped を引いた数で見る。
+#
+# Toast 表示中の IME hide がこの job でだけ間欠的に失敗するため、Emulator が生きている
+# 間の logcat と実行環境の素性を常に採取し、失敗時は IME / ウィンドウの dumpsys も取って
+# 成果物に残す。手元 (arm64) では自然再現も強制再現も得られておらず、失敗した回の
+# ImeTracker / InsetsController の時系列が唯一の判別材料になる。
 name: verify android instrumented
 
 on:
   workflow_call:
+    inputs:
+      artifact-suffix:
+        # 同一 run から複数回呼ばれるときに成果物名を分けるための接尾辞。
+        # 成果物名は run 内で一意でなければならず、重複すると upload が失敗する。
+        # 既定は空文字で、1 回だけ呼ばれる通常の検証では名前が変わらない。
+        description: 成果物名に付ける接尾辞 (同一 run から複数回呼ぶときに一意化する)
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -74,6 +88,117 @@ jobs:
           fi
           printf 'sdk.dir=%s\n' "${ANDROID_HOME}" > android/local.properties
 
+      - name: Prepare instrumented run script
+        # Emulator 上でテストを回す手順を 1 本のシェルスクリプトとして書き出す。
+        # emulator-runner の `script` は行ごとに別々の `sh -c` へ渡されるため、背景で
+        # 始めた logcat の PID や gradle の終了コードを次の行へ持ち越せない。採取と
+        # 実行と後始末を 1 プロセスで完結させるには、単一のスクリプトを呼ぶ形にする。
+        run: |
+          set -euo pipefail
+          # 観測の採取物 (logcat・dumpsys・環境の素性) の置き場。スクリプトと upload の
+          # 両方が同じ場所を指す必要があるため、ここで 1 回だけ定義して以降の step に引き継ぐ
+          # (job 単位の env: では runner コンテキストを参照できない)。
+          KS_OBSERVATION_DIR="${RUNNER_TEMP}/ime-observation"
+          echo "KS_OBSERVATION_DIR=${KS_OBSERVATION_DIR}" >> "$GITHUB_ENV"
+          mkdir -p "${KS_OBSERVATION_DIR}"
+          cat > "${RUNNER_TEMP}/run-instrumented.sh" <<'SCRIPT'
+          set -euo pipefail
+
+          observation_dir="${KS_OBSERVATION_DIR}"
+          mkdir -p "$observation_dir"
+
+          # 実行環境の素性を残す。api-level: 36 の指定だけでは system image の実体
+          # (build fingerprint・revision) も IME の実装も固定されず、logcat を AOSP の
+          # ソースと突き合わせるときに照合対象を特定できない。
+          {
+            echo "## ro.build.fingerprint"
+            adb shell getprop ro.build.fingerprint || echo "(取得できなかった)"
+            echo "## ro.build.version.incremental"
+            adb shell getprop ro.build.version.incremental || echo "(取得できなかった)"
+            echo "## ro.build.version.sdk"
+            adb shell getprop ro.build.version.sdk || echo "(取得できなかった)"
+            echo "## ime list -s -a (有効な IME)"
+            adb shell ime list -s -a || echo "(取得できなかった)"
+            echo "## default_input_method"
+            adb shell settings get secure default_input_method || echo "(取得できなかった)"
+            echo "## emulator -version"
+            "${ANDROID_HOME}/emulator/emulator" -version 2>&1 | head -n 5 || echo "(取得できなかった)"
+            echo "## installed system images (sdkmanager --list_installed)"
+            # 座標 (api-level / target / arch) をここに重複して書くと、上の with: を変えたときに
+            # grep だけ取り残されて静かに空になる。導入済みの system-images 行を全部残す。
+            "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --list_installed 2>/dev/null \
+              | grep 'system-images;' \
+              || echo "(sdkmanager から system image の revision を取得できなかった)"
+          } > "$observation_dir/environment.txt" 2>&1
+
+          # 端末側の logcat リングバッファを広げてから採取を始める。既定のままだと
+          # テスト 300 件弱を流す間に、失敗の直前より前の行が押し出されて消える。
+          # -G はバッファごとに掛かる。要求は狙い (失敗の直前を main / system / events に残す)
+          # に絞り、実際に確保された容量を素性に追記して、後から「失敗の窓が押し出されて
+          # いないか」を判定できるようにする (-G が拒否された回と巻き戻った回を区別する)。
+          adb logcat -b main,system,events -G 64M || echo "logcat バッファの拡大に失敗した (既定サイズのまま採取する)"
+          {
+            echo "## logcat -b all -g (採取時のリング容量)"
+            adb logcat -b all -g || echo "(取得できなかった)"
+          } >> "$observation_dir/environment.txt" 2>&1
+          adb logcat -b all -c || echo "logcat バッファの消去に失敗した"
+
+          # タグのフィルタは掛けず、バッファも既定 (main,system,crash) に限定しない。
+          # 判別に要るのは ImeTracker / InsetsController / InputMethodManager(Service) /
+          # WindowManager と IME プロセスの行で、タグを絞ると交差してくる別プロセス起源の
+          # 要求が落ちる。入力方式まわりのイベントログは events バッファに出るので -b all
+          # で読む。-v threadtime は pid/tid を出すので、IME プロセスと Activity プロセスの
+          # 行を区別できる。
+          adb logcat -b all -v threadtime > "$observation_dir/logcat.txt" 2>&1 &
+          logcat_pid=$!
+
+          # 採取経路が端まで通っていることを gradle の前に確かめる。adb が即座に落ちていても
+          # テストは通常どおり走って成否を返すので、空振りに気づくのが成果物を開いた
+          # 後 (Emulator 1 台 × 最大 30 分を反復した後) になる。ここで落として無駄を省く。
+          # 「一定時間で非空」の判定は端末が静かな窓に当たると偽陽性になり、この workflow は
+          # 通常の検証 CI も共有するので、端末側に印を打ってそれが届くのを待つ形にする。
+          probe_tag="KsDialogsCiLogcatProbe"
+          adb shell log -p i -t "$probe_tag" "logcat capture started" || true
+          probe_deadline=$((SECONDS + 15))
+          probe_seen=0
+          while [ "$SECONDS" -lt "$probe_deadline" ]; do
+            if ! kill -0 "$logcat_pid" 2>/dev/null; then
+              echo "::error::logcat の採取プロセスが落ちた (adb の障害)"
+              cat "$observation_dir/logcat.txt" 2>/dev/null || true
+              exit 1
+            fi
+            if grep -q "$probe_tag" "$observation_dir/logcat.txt" 2>/dev/null; then
+              probe_seen=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$probe_seen" -ne 1 ]; then
+            echo "::error::端末に打った印が 15 秒以内に logcat の採取ファイルへ届かない (採取経路が通っていない)"
+            cat "$observation_dir/logcat.txt" 2>/dev/null || true
+            exit 1
+          fi
+
+          status=0
+          ./gradlew --no-daemon --console=plain connectedDebugAndroidTest || status=$?
+
+          # 失敗した回だけ、Emulator が生きているうちに IME とウィンドウの状態を残す。
+          # これは suite 全件が終わった後の最終状態であり、失敗の瞬間の状態ではない
+          # (失敗の後も残りのテストが走り、Activity は破棄・再生成される)。失敗の瞬間は
+          # logcat の時系列 (ImeTracker / InsetsController) から読み、dumpsys は補助に使う。
+          # 採取の失敗でテストの結果を塗り替えないよう、ここでは終了コードを拾わない。
+          if [ "$status" -ne 0 ]; then
+            adb shell dumpsys input_method > "$observation_dir/dumpsys-input-method.txt" 2>&1 || true
+            adb shell dumpsys window > "$observation_dir/dumpsys-window.txt" 2>&1 || true
+          fi
+
+          kill "$logcat_pid" 2>/dev/null || true
+          wait "$logcat_pid" 2>/dev/null || true
+
+          # gradle の終了コードで終える (採取のために握り潰さない)。
+          exit "$status"
+          SCRIPT
+
       - name: Run instrumented tests on emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
@@ -84,7 +209,28 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none
           working-directory: android
-          script: ./gradlew --no-daemon --console=plain connectedDebugAndroidTest
+          script: bash "${RUNNER_TEMP}/run-instrumented.sh"
+
+      - name: Upload IME observation artifacts
+        # テストが失敗した回の判別材料になるのは、その回に採取した logcat と dumpsys
+        # だけなので、成否によらず残す。
+        # 準備 step より前で落ちた回は置き場が未定義で、空の path が別の理由で赤くなるので除く。
+        if: always() && env.KS_OBSERVATION_DIR != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-instrumented-ime-observation${{ inputs.artifact-suffix }}
+          path: ${{ env.KS_OBSERVATION_DIR }}
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload instrumented test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-instrumented-test-results${{ inputs.artifact-suffix }}
+          path: android/**/build/outputs/androidTest-results/connected/**
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Verify executed test count
         # テストが失敗した場合も件数の内訳を残すため、常に実行する。

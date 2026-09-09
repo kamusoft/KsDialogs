@@ -1,0 +1,152 @@
+# Android instrumented の反復実行 (一時的な workflow)
+#
+# 目的: Toast 表示中の IME hide が検証 CI でだけ間欠的に失敗する件について、失敗した回の
+# 署名 (ImeTracker / InsetsController の時系列) を CI 環境で取る。手元 (arm64 Emulator) では
+# 自然再現も強制再現も得られておらず、x86_64 + swiftshader のランナー上で本物の suite を
+# 反復するしか観測の手立てがない。
+# 検証 CI の再利用 workflow (verify-android-instrumented.yml) をそのまま並列に N 回呼ぶ。
+# probe 用の一時テストは持ち込まない — 失敗は suite の文脈でしか出ていない。
+#
+# この workflow は一時的なもので、署名が取れた時点、または 16 run 回しても失敗が出なかった
+# 時点で削除する (残った失敗の切り分けは、観測付きの検証 CI が失敗した回の成果物で行う)。
+#
+# 起動は手動 (workflow_dispatch) のみ。push / pull_request では起動せず、ci.yml からも呼ばない。
+name: repeat android instrumented (temporary)
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: 反復回数 (1〜16)
+        required: false
+        type: string
+        default: '8'
+
+permissions:
+  contents: read
+
+# ci.yml とは別 group にして、検証 CI の実行を打ち切らない。
+# 反復は 1 回ごとの結果が観測対象なので、追い越しによる打ち切りもしない。
+concurrency:
+  group: repeat-android-instrumented-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # 反復回数を検証して matrix の配列に変換するだけの軽量 job。
+  plan:
+    name: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      indexes: ${{ steps.build.outputs.indexes }}
+
+    steps:
+      - name: Build matrix
+        id: build
+        # 入力はシェルへ直に展開せず環境変数で渡す (手入力の値がそのまま式に入るため)。
+        env:
+          KS_RUNS: ${{ inputs.runs }}
+        run: |
+          set -euo pipefail
+          # 値域はパターン照合で確定させる (1〜16 の整数だけを通す)。数値比較 (`[ -gt ]`) で
+          # 縛ると、整数に収まらない桁数の入力が比較の失敗 (status 2) で偽に倒れて素通りし、
+          # 続く seq が止まらなくなる。上限を置くのは、1 回あたり Emulator 1 台 × 30 分上限を
+          # 占有するため (手が滑って三桁の反復を投げるとランナーを食い潰す)。
+          case "${KS_RUNS}" in
+            [1-9]|1[0-6]) ;;
+            *)
+              echo "::error::runs は 1〜16 の整数で指定する (指定: '${KS_RUNS}')"
+              exit 1
+              ;;
+          esac
+          indexes="[$(seq 1 "${KS_RUNS}" | paste -sd, -)]"
+          echo "反復回数: ${KS_RUNS} (matrix: ${indexes})"
+          echo "indexes=${indexes}" >> "$GITHUB_OUTPUT"
+
+  # 検証 CI と同じ再利用 workflow を、同じ入力で N 回並列に呼ぶ。
+  # 1 回の失敗で他を打ち切ると採取できる回数が減るので fail-fast は切る。
+  # 成果物名は run 内で一意でなければならないため、回ごとの接尾辞を渡す。
+  repeat:
+    name: repeat
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        index: ${{ fromJSON(needs.plan.outputs.indexes) }}
+    uses: ./.github/workflows/verify-android-instrumented.yml
+    with:
+      artifact-suffix: -${{ matrix.index }}
+
+  # 何回中何回落ちたかを run の summary に残す。失敗した回があっても集計は出したいので
+  # 常に実行する。集計自体は観測の付帯物なので、取得に失敗しても run を赤くしない。
+  summary:
+    name: summary
+    needs: repeat
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # 同一 run の job 一覧から回ごとの結論を読むために要る。
+      actions: read
+
+    steps:
+      - name: Summarize repeated runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KS_AGGREGATE: ${{ needs.repeat.result }}
+        run: |
+          set -euo pipefail
+
+          summary_file="${GITHUB_STEP_SUMMARY}"
+          {
+            echo "## Android instrumented 反復実行"
+            echo
+            echo "matrix 全体の結論: **${KS_AGGREGATE}**"
+            echo
+          } >> "$summary_file"
+
+          jobs_json="${RUNNER_TEMP}/jobs.json"
+          if ! gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}/jobs?per_page=100" \
+              --jq '.jobs[] | {name: .name, conclusion: .conclusion}' > "$jobs_json"; then
+            echo "回ごとの結論を取得できなかった (job 一覧を見て判断する)" >> "$summary_file"
+            exit 0
+          fi
+
+          python3 - "$jobs_json" >> "$summary_file" <<'PY'
+          import json
+          import sys
+
+          rows = []
+          with open(sys.argv[1], encoding="utf-8") as f:
+              for line in f:
+                  line = line.strip()
+                  if line:
+                      rows.append(json.loads(line))
+
+          # 再利用 workflow を呼ぶ job の名前は「呼び出し側の job 名 / 呼ばれた側の job 名」。
+          # 集計 job 自身と plan を数えないよう、呼び出し側の job 名で絞る。
+          repeated = [r for r in rows if r["name"].startswith("repeat ")]
+          if not repeated:
+              print("回ごとの job を特定できなかった (job 一覧を見て判断する)")
+              sys.exit(0)
+
+          # 頻度の実測値として引用される数字なので、キャンセル・skip は失敗に数えず別枠に出す。
+          failed = [r for r in repeated if r["conclusion"] in ("failure", "timed_out")]
+          unfinished = [r for r in repeated if r["conclusion"] not in ("success", "failure", "timed_out")]
+          print(f"**{len(repeated)} 回中 {len(failed)} 回が失敗** (うち未完了・打ち切り {len(unfinished)} 回は分母から除いて読む)")
+          print()
+          print("| 回 | 結論 |")
+          print("|---|---|")
+          import re
+
+          def run_index(row):
+              # 「repeat (N) / verify」の N で数値順に並べる (辞書順だと 10 が 2 の前に来る)。
+              # 取り出せない名前は末尾に回す。
+              matched = re.search(r"\((\d+)\)", row["name"])
+              return (0, int(matched.group(1))) if matched else (1, row["name"])
+
+          for r in sorted(repeated, key=run_index):
+              print(f"| {r['name']} | {r['conclusion'] or '(未完了)'} |")
+          PY
