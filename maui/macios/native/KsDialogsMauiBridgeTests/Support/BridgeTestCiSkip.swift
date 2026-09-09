@@ -12,7 +12,7 @@ import Testing
 /// テストの実行体はビルドを起こす側とは別プロセスで動き、`TEST_RUNNER_` を冠した環境変数だけが
 /// 接頭辞を外して渡るため、CI 側は `TEST_RUNNER_KSDIALOGS_CI` として設定する。
 ///
-/// 印はオーナーの承認 (リポジトリ設定の許可リスト `lint.ci-skip.allow`) があってはじめて置ける。
+/// 印はオーナーの承認 (リポジトリ設定の許可リスト `lint.ci-skip.allow`) があってはじめて置ける (cross/ADR-0021)。
 /// 許可リストに対応する項目が無い印と、根拠を欠いた理由は `scripts/ci-skip-lint.py` が違反として落とす。
 enum BridgeTestCiSkip {
     /// CI 側が渡す環境変数の名前 (テストの実行体から見える形)。

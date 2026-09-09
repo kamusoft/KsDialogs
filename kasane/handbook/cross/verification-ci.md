@@ -4,7 +4,7 @@ applies-when:
   always: false
   tasks: [CI の検証範囲の確認, CI の失敗の切り分け, workflow の変更, 変更の完了判定]
 title: 検証 CI の範囲と実行条件
-description: 検証 CI (`.github/workflows/ci.yml` と platform 別 reusable workflow 5 本) が回す範囲と手元に残る範囲、各 job が回すテストルートと実行件数の検査、CI の Swift テストをスイート直列で回す理由と待ち不足との見分け方。決定の記録は cross/ADR-0017 (構成と保証範囲) / cross/ADR-0018 (toolchain の固定)
+description: 検証 CI (`.github/workflows/ci.yml` と platform 別 reusable workflow 5 本) が回す範囲と手元に残る範囲、各 job が回すテストルートと実行件数の検査、CI の Swift テストをスイート直列で回す理由と待ち不足との見分け方、android-instrumented job の IME 系テストの既知の落ち方 2 型。決定の記録は cross/ADR-0017 (構成と保証範囲) / cross/ADR-0018 (toolchain の固定)
 timestamp: 2026-09-09
 ---
 
@@ -41,6 +41,17 @@ CI で `xcodebuild test` を回す job (ios と、maui job の iOS 橋渡し) �
 | 落ちるテスト | 回ごとに入れ替わり、Toast / Dialog / Loading / ModelBinding など無関係な領域に散る | 同じテストが同じ箇所で落ち続ける |
 
 直列化を外してよいのは、ランナーの容量が上がるか、提示・待ち合わせの構造が変わって並列で 2 回以上連続して全件が通ることを実測で示したときだけ。戻すときは同じ表で失敗の形を見てから判断する。
+
+## android-instrumented job の IME 系テストの既知の落ち方
+
+IME の出し入れを観測するテストが落ちたときは、job の成果物 (logcat と失敗時の `dumpsys input_method`) の `ImeTracker` / `InsetsController` 行で、次のどちらの型かを先に見分ける。要求 ID (`ksdialogs.test:<id>`) で show / hide の各要求と `onShown` / `onHidden` / `onCancelled` の対応を追う。
+
+| 型 | 署名 | 意味 |
+|---|---|---|
+| hide が捨てられる | 前の hide が show のアニメーション中に出て保留になり、保留の適用で `requestedVisibleTypes` が一瞬 hidden へ振れて戻る。本命の hide が `onCancelled at PHASE_CLIENT_ALREADY_HIDDEN` になり、待ちの窓に `onHidden` が 1 件も無い | テストが遷移途中の一瞬を終端と読んだ (偽の合格)。観測を終端状態の合意 (見え・枠・非進行・安定) で待つ形へ直す。[状態遷移の観測と CI 限定スキップ](ci-flaky-test-policy.md) |
+| 最初の show が潰される | Activity 起動に伴う server 起源の `onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW` がテスト最初の show と交差し、show が `PHASE_WM_ABORT_SHOW_IME_POST_LAYOUT` で中止される。IME は一度も出ず、枠 (`bottom`) は 0 のまま | 起動直後の要求の交差。テスト最初の要求の前に、この画面が入力の宛先になった状態の落ち着き待ちを置く |
+
+どちらも Toast の器 (ウィンドウ) は引き金ではない。Toast のウィンドウ追加が誘発する `CONTROLS_CHANGED` の show 要求は成功回にも現れ、要求可視性が非表示なら `PHASE_CLIENT_ON_CONTROLS_CHANGED` で取り消される。
 
 ## 関連
 

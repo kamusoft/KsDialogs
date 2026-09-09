@@ -4,6 +4,7 @@ title: 検証 CI の lint job に SwiftPM スナップショット同期スク�
 status: accepted
 date: 2026-09-08
 amends: [cross/0017]
+amended-by: [cross/0021]
 ---
 
 ## Context

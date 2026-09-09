@@ -23,4 +23,5 @@
 | [0017](0017-verification-ci-structure-and-guarantee.md) | 検証 CI は platform 別 reusable workflow 5 本と入口 1 本で構成し、緑の意味を「ロジック全件通過 + native 配線のコンパイル」に限り、トリガーはブランチの役割で分ける (一部改訂: 0020 — lint job の検査の集合) | accepted | 2026-09-08 |
 | [0018](0018-toolchain-pinned-in-repo.md) | 検証に用いる toolchain の版はリポジトリ内で固定し、.NET SDK / workload set の固定は repo 直下の global.json で行う (0004 を一部改訂) | accepted | 2026-09-08 |
 | [0019](0019-android-maven-coordinates-core-suffix.md) | Android の Maven 座標は View 系本体を ksdialogs-core、Compose 側を素の ksdialogs とする (0005 と android/0001 を一部改訂) | accepted | 2026-09-08 |
-| [0020](0020-lint-job-includes-spm-sync-script-selftest.md) | 検証 CI の lint job に SwiftPM スナップショット同期スクリプトの自己テストを加え、6 検査とする (0017 を一部改訂) | accepted | 2026-09-08 |
+| [0020](0020-lint-job-includes-spm-sync-script-selftest.md) | 検証 CI の lint job に SwiftPM スナップショット同期スクリプトの自己テストを加え、6 検査とする (0017 を一部改訂。一部改訂: 0021 — lint job の検査の集合) | accepted | 2026-09-08 |
+| [0021](0021-ci-only-skip-owner-allowlist-and-lint.md) | CI 上だけのテスト skip はオーナーが書く許可リスト (`lint.ci-skip.allow`) と `scripts/ci-skip-lint.py` で統制し、検証 CI の lint job に許可リスト検査を加えて 7 検査とする (0020 を一部改訂) | accepted | 2026-09-09 |

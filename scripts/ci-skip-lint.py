@@ -3,7 +3,7 @@
 
 CI でだけ実行しないテストの印 (Android instrumented の `@SkipOnCi`、Swift の trait `.skipOnCi`) は、
 オーナーが `kasane/config.yaml` の `lint.ci-skip.allow` に列挙することで承認される。本検査は
-コード側の印と許可リストを突き合わせ、承認の無い印を落とす。規約は handbook cross の
+コード側の印と許可リストを突き合わせ、承認の無い印を落とす (cross/ADR-0021)。規約は handbook cross の
 「状態遷移の観測と CI 限定スキップ」。
 
 使い方:
@@ -29,7 +29,8 @@ CI でだけ実行しないテストの印 (Android instrumented の `@SkipOnCi`
 NUnit の `[Ignore(...)]` / `Assert.Ignore(...)` / `Assert.Inconclusive(...)`)。
 承認された印より安く痕跡も残らないため、許可リストとの突き合わせを持たず一律で違反にする。
 検査は CI が回すテストルートすべて (SCAN_ROOTS) に掛ける — 正規の印を置ける 3 つと、
-印の仕組みを持たない 4 つ (Android のローカル単体テスト・kmp・MAUI の NUnit) の両方。
+印の仕組みを持たない 4 つ (Android のローカル単体テスト・kmp・MAUI の NUnit・MAUI Android 橋渡しの
+Kotlin JVM テスト) の両方。
 前提条件の表現 (JUnit の `Assume` / `assumeTrue`、Swift の `#require` による早期打ち切り) は
 「その環境では検証が成立しない」ことの宣言であり、赤を消す出口ではないので対象にしない。
 

@@ -251,8 +251,8 @@ jobs:
         run: python3 scripts/scenario-id-coverage.py
 
       # CI 上だけ実行しないテストの印 (@SkipOnCi / .skipOnCi) が、オーナー承認の許可リスト
-      # (kasane/config.yaml の lint.ci-skip.allow) に載っているかの検査。承認の無い skip と、
-      # 切り分けの根拠を欠いた理由を落とす。
+      # (kasane/config.yaml の lint.ci-skip.allow) に載っているかの検査 (cross/ADR-0021)。
+      # 承認の無い skip と、切り分けの根拠を欠いた理由を落とす。
       # 自己テストも回す。検出器が退行して無音で素通りする経路は、規約の歯止めそのものを
       # 無効にするため (同期スクリプトの自己テストと同じ理屈、cross/ADR-0020)。
       - name: CI skip allowlist lint

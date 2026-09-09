@@ -15,7 +15,7 @@ import org.junit.runners.model.Statement
  *
  * 印を付けても手元では通常どおり実行される。CI 側だけが [SkipOnCiRule] の判定材料を渡す。
  *
- * 印はオーナーの承認 (リポジトリ設定の許可リスト `lint.ci-skip.allow`) があってはじめて置ける。
+ * 印はオーナーの承認 (リポジトリ設定の許可リスト `lint.ci-skip.allow`) があってはじめて置ける (cross/ADR-0021)。
  * 許可リストに対応する項目が無い印と、根拠を欠いた [reason] は `scripts/ci-skip-lint.py` が違反として落とす。
  */
 @Retention(AnnotationRetention.RUNTIME)
