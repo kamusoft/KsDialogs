@@ -24,4 +24,5 @@
 | [0018](0018-toolchain-pinned-in-repo.md) | 検証に用いる toolchain の版はリポジトリ内で固定し、.NET SDK / workload set の固定は repo 直下の global.json で行う (0004 を一部改訂) | accepted | 2026-09-08 |
 | [0019](0019-android-maven-coordinates-core-suffix.md) | Android の Maven 座標は View 系本体を ksdialogs-core、Compose 側を素の ksdialogs とする (0005 と android/0001 を一部改訂) | accepted | 2026-09-08 |
 | [0020](0020-lint-job-includes-spm-sync-script-selftest.md) | 検証 CI の lint job に SwiftPM スナップショット同期スクリプトの自己テストを加え、6 検査とする (0017 を一部改訂。一部改訂: 0021 — lint job の検査の集合) | accepted | 2026-09-08 |
-| [0021](0021-ci-only-skip-owner-allowlist-and-lint.md) | CI 上だけのテスト skip はオーナーが書く許可リスト (`lint.ci-skip.allow`) と `scripts/ci-skip-lint.py` で統制し、検証 CI の lint job に許可リスト検査を加えて 7 検査とする (0020 を一部改訂) | accepted | 2026-09-09 |
+| [0021](0021-ci-only-skip-owner-allowlist-and-lint.md) | CI 上だけのテスト skip はオーナーが書く許可リスト (`lint.ci-skip.allow`) と `scripts/ci-skip-lint.py` で統制し、検証 CI の lint job に許可リスト検査を加えて 7 検査とする (0020 を一部改訂。一部改訂の提案: 0022 — lint job の検査の集合) | accepted | 2026-09-09 |
+| [0022](0022-lint-job-includes-readme-example-lint.md) | 検証 CI の lint job に README 最小例と消費者ソースの一致検査 (`scripts/readme-example-lint.py`) を加え、8 検査とする (0021 を一部改訂) | proposed | 2026-09-09 |

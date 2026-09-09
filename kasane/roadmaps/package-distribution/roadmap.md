@@ -80,5 +80,5 @@ phase-1 → 2 → 3 (public 化) → 4 (CI) の後、phase-5 / 6 / 7 は並行�
 | phase-5-native-packaging | completed | change | [agenda](phases/phase-5-native-packaging/agenda.md) | [add-native-distribution](../../changes/archive/2026-09-08-add-native-distribution/proposal.md) |
 | phase-6-maui-packaging | completed | change | [agenda](phases/phase-6-maui-packaging/agenda.md) | [add-maui-nuget-distribution](../../changes/archive/2026-09-08-add-maui-nuget-distribution/proposal.md) |
 | phase-7-kmp-packaging | completed | change | [agenda](phases/phase-7-kmp-packaging/agenda.md) | [add-kmp-maven-distribution](../../changes/archive/2026-09-09-add-kmp-maven-distribution/proposal.md) |
-| phase-8-consumer-verification | pending | change | [agenda](phases/phase-8-consumer-verification/agenda.md) | — |
+| phase-8-consumer-verification | in-progress | change | [agenda](phases/phase-8-consumer-verification/agenda.md) | [add-consumer-verification](../../changes/add-consumer-verification/proposal.md) |
 | phase-9-release-workflow | pending | change | [agenda](phases/phase-9-release-workflow/agenda.md) | — |
