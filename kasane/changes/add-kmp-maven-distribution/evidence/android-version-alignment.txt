@@ -1,0 +1,59 @@
+# kmp/ と android/ を同じ注入 version で発行したときの一致の確認 (2026-09-09)
+
+同じ空の一時 Maven local repository `<scratch>/case-4` へ、両ビルドルートを同じ
+`-Pversion=0.1.0-beta.1` で発行した。
+
+$ cd kmp    && ./gradlew publishToMavenLocal -Pversion=0.1.0-beta.1 \
+                -Pksdialogs.swiftPackageUrl=file://<scratch>/spm-clone \
+                -Dmaven.repo.local=<scratch>/case-4
+BUILD SUCCESSFUL in 18s
+$ cd android && ./gradlew publishToMavenLocal -Pversion=0.1.0-beta.1 \
+                -Dmaven.repo.local=<scratch>/case-4
+BUILD SUCCESSFUL in 1s
+
+同じ repository に並んだ artifact:
+
+  jp/kamusoft/ksdialogs-kmp/0.1.0-beta.1/
+  jp/kamusoft/ksdialogs-kmp-android/0.1.0-beta.1/
+  jp/kamusoft/ksdialogs-kmp-iosarm64/0.1.0-beta.1/
+  jp/kamusoft/ksdialogs-kmp-iossimulatorarm64/0.1.0-beta.1/
+  jp/kamusoft/ksdialogs-kmp-iosx64/0.1.0-beta.1/
+  jp/kamusoft/ksdialogs-core/0.1.0-beta.1/   ← android/ が発行
+  jp/kamusoft/ksdialogs/0.1.0-beta.1/        ← android/ が発行
+
+## 1. 依存版と artifact version の同一文字列
+
+`ksdialogs-kmp-android-0.1.0-beta.1.pom` が記す本体依存:
+
+      <groupId>jp.kamusoft</groupId>
+      <artifactId>ksdialogs-core</artifactId>
+      <version>0.1.0-beta.1</version>
+      <scope>compile</scope>
+
+android/ が発行した本体 artifact のディレクトリ:
+
+      jp/kamusoft/ksdialogs-core/0.1.0-beta.1/ksdialogs-core-0.1.0-beta.1.pom
+        → <artifactId>ksdialogs-core</artifactId>
+          <version>0.1.0-beta.1</version>
+
+→ 依存が要求する version と、実際に発行された artifact の version が同一文字列。
+  `.module` 側 (`androidApiElements-published` / `androidRuntimeElements-published`) の
+  依存も `jp.kamusoft:ksdialogs-core:0.1.0-beta.1` で一致する。
+
+## 2. POM 共通部の同一性
+
+url / inceptionYear / licenses / developers / scm を要素ごとに突き合わせた結果
+(空白を正規化した文字列比較):
+
+| POM | kmp root POM の共通部と同一か |
+|---|---|
+| ksdialogs-kmp | (基準) |
+| ksdialogs-kmp-android | 同一 |
+| ksdialogs-kmp-iosarm64 | 同一 |
+| ksdialogs-kmp-iossimulatorarm64 | 同一 |
+| ksdialogs-kmp-iosx64 | 同一 |
+| ksdialogs-core (android/) | 同一 |
+| ksdialogs (android/) | 同一 |
+
+→ 別ビルドルートに複製した POM 共通部 (design Decision 1 の複製) は、現時点で
+  android/ 側と 1 文字も違わない。取り残しがあればこの比較で検出できる。

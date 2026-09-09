@@ -1,0 +1,132 @@
+# KMP 発行物の配置と Gradle Module Metadata の検証 (2026-09-09)
+
+実行場所: kmp/。発行先は空の一時 Maven local repository `<scratch>/case-4`
+(実行前にファイル数 0 を確認)。
+
+$ ./gradlew publishToMavenLocal -Pversion=0.1.0-beta.1 \
+    -Pksdialogs.swiftPackageUrl=file://<scratch>/spm-clone \
+    -Dmaven.repo.local=<scratch>/case-4
+BUILD SUCCESSFUL in 18s
+
+URL 上書きを使っている理由 (既定 URL では配信リポジトリに当該 tag が無く cinterop klib の
+生成が完了しないため) は evidence/swiftpm-reference-derivation.txt に記録した。URL の値が
+他の成果物に影響しないことは root publication の突き合わせ (POM は同一、`.module` は SwiftPM 連携
+メタデータのファイル項目の size / チェックサムだけが異なる) までしか実証していない (klib / aar は既定 URL で発行が完了せず未確認。同証跡を参照)。したがって本ファイルの
+検算結果は「`file://` の tag 付きローカル clone を指した発行物」についてのもので、公開 URL での
+全 publication の発行物が同一であることは phase-8 (smoke) の確認に委ねる。
+
+## 1. 発行物の配置 (design Decision 1 の表との照合)
+
+`<scratch>/case-4/jp/kamusoft/` 配下 (`maven-metadata-local.xml` を除く。すべて version は
+`0.1.0-beta.1`):
+
+  ksdialogs-kmp/                    .jar (commonMain metadata) / .pom / .module /
+                                    -sources.jar / -javadoc.jar /
+                                    -swiftpm-metadata.json /
+                                    -kotlin-tooling-metadata.json
+  ksdialogs-kmp-android/            .aar / .pom / .module / -sources.jar / -javadoc.jar
+  ksdialogs-kmp-iosarm64/           .klib / -cinterop-swiftPMImport.klib / .pom / .module /
+                                    -sources.jar / -javadoc.jar / -metadata.jar
+  ksdialogs-kmp-iossimulatorarm64/  同上
+  ksdialogs-kmp-iosx64/             同上
+
+→ 表の項目はすべて存在する。root に
+  `ksdialogs-kmp-0.1.0-beta.1-swiftpm-metadata.json` があり、**vanniktech 経由でも
+  KGP の SwiftPM 連携メタデータは落ちない** (design のリスク ① は解消。素の
+  `maven-publish` へ戻す判断は不要)。
+
+表に無い成果物が 2 種類ある (欠落ではなく追加):
+  - root の `-kotlin-tooling-metadata.json` (KGP が常に付ける環境メタデータ)
+  - iOS 各ターゲットの `-metadata.jar` (source set metadata。
+    `.module` の `iosXxxMetadataElements-published` variant の実体)
+
+## 2. javadoc jar が空であること
+
+$ unzip -Z1 <各 publication>-0.1.0-beta.1-javadoc.jar
+META-INF/
+META-INF/MANIFEST.MF
+
+→ 5 publication すべて 2 エントリのみ (中身のドキュメントなし)。
+
+## 3. sources jar の代表ファイル
+
+| publication | 含まれる source set | 代表 `.kt` |
+|---|---|---|
+| ksdialogs-kmp (root) | commonMain + iosMain | `commonMain/jp/kamusoft/ksdialogs/kmp/KsDialog.kt` |
+| ksdialogs-kmp-android | commonMain + androidMain | `androidMain/jp/kamusoft/ksdialogs/kmp/Dialog.android.kt` (actual 宣言) |
+| ksdialogs-kmp-iosarm64 | commonMain + iosMain | `iosMain/jp/kamusoft/ksdialogs/kmp/Dialog.ios.kt` (actual 宣言) |
+| ksdialogs-kmp-iossimulatorarm64 | 同上 | 同上 |
+| ksdialogs-kmp-iosx64 | 同上 | 同上 |
+
+いずれも commonMain の 21 ファイル (`KsDialog.kt` / `KsLoading.kt` / `KsToast.kt` ほか) を含む。
+
+## 4. 5 つの POM
+
+共通項目は 5 publication で同一の要素・同一の値:
+
+  url             https://github.com/kamusoft/KsDialogs
+  inceptionYear   2026
+  licenses        MIT License / https://opensource.org/licenses/MIT / distribution repo
+  developers      id・name とも kamusoft / https://github.com/kamusoft
+  scm             url は上記 GitHub リポジトリ、connection は https の scm:git、
+                  developerConnection は同リポジトリの ssh 形式の scm:git
+
+name / description も 5 つとも同一 (KMP artifact は 1 つの成果物のターゲット別 publication のため):
+
+  <name>KsDialogs KMP</name>
+  <description>The Kotlin Multiplatform facade of KsDialogs: shared-code contracts for typed
+  dialogs, loading indicators, and toasts that delegate to the native iOS and Android libraries.
+  The iOS app links the KsDialogs Swift package alongside this artifact.</description>
+
+packaging: root は既定 (jar)、android は `aar`、iOS 3 つは `klib`。
+
+## 5. Gradle Module Metadata (`.module`)
+
+### root `ksdialogs-kmp-0.1.0-beta.1.module` の variant (15)
+
+  metadataApiElements                          commonMain metadata jar + kotlin-stdlib /
+                                               kotlinx-coroutines-core
+  metadataSourcesElements                      sources jar
+  swiftPMDependenciesMetadataElements          org.gradle.usage = swiftPMDependenciesMetadata、
+                                               files[0].url = ksdialogs-kmp-0.1.0-beta.1-swiftpm-metadata.json
+  androidApiElements-published                 available-at jp.kamusoft:ksdialogs-kmp-android:0.1.0-beta.1
+  androidRuntimeElements-published             同上
+  androidSourcesElements-published             同上
+  iosArm64ApiElements-published                available-at jp.kamusoft:ksdialogs-kmp-iosarm64:0.1.0-beta.1
+  iosArm64SourcesElements-published            同上
+  iosArm64MetadataElements-published           同上
+  iosSimulatorArm64{Api,Sources,Metadata}Elements-published
+                                               available-at jp.kamusoft:ksdialogs-kmp-iossimulatorarm64:0.1.0-beta.1
+  iosX64{Api,Sources,Metadata}Elements-published
+                                               available-at jp.kamusoft:ksdialogs-kmp-iosx64:0.1.0-beta.1
+
+→ ターゲット publication へ委譲する variant と、SwiftPM 連携メタデータを artifact に持つ
+  専用 variant の双方がある。
+
+### android `ksdialogs-kmp-android-0.1.0-beta.1.module`
+
+  androidApiElements-published      files=[ksdialogs-kmp.aar]
+                                    deps=[jp.kamusoft:ksdialogs-core:0.1.0-beta.1,
+                                          org.jetbrains.kotlin:kotlin-stdlib:2.4.10]
+  androidRuntimeElements-published  同じ deps
+  androidSourcesElements-published  files=[...-sources.jar]
+
+### iOS 各ターゲット (下は iosarm64。他 2 つも同形)
+
+  iosArm64ApiElements-published       files=[ksdialogs-kmp-iosArm64Main-0.1.0-beta.1.klib,
+                                             ksdialogs-kmp-iosArm64Cinterop-swiftPMImportMain-0.1.0-beta.1.klib]
+                                      deps=[org.jetbrains.kotlin:kotlin-stdlib:2.4.10,
+                                            org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0]
+  iosArm64SourcesElements-published   files=[...-sources.jar]
+  iosArm64MetadataElements-published  files=[...-metadata.jar]、同じ deps
+
+→ 本体 klib と cinterop klib の双方を artifact として参照し、`kotlinx-coroutines-core` を持つ。
+
+### テスト専用ライブラリの不在
+
+$ grep -l -E 'kotlin-test|coroutines-test' <case-4 の全 .module>
+(ヒットなし)
+$ grep -l -E 'kotlin-test|coroutines-test' <case-4 の全 .pom>
+(ヒットなし)
+
+→ `kotlin-test` / `kotlinx-coroutines-test` はどの publication の POM / `.module` にも現れない。

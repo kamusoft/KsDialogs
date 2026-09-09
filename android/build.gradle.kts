@@ -43,6 +43,49 @@ val ksDialogsVersion = if (injectedVersion == null) {
     injectedVersion
 }
 
+// SNAPSHOT を Sonatype Central へ発行しない。
+//
+// 発行プラグインは version が `-SNAPSHOT` で終わるとき、mavenCentral リポジトリの URL を
+// Central の snapshot リポジトリへ向ける。そのため認証情報がある環境で Central 向けタスクを
+// 実行すると、開発版がそのまま公開される。SNAPSHOT のあいだは Central 向けタスクを失敗させ、
+// リリース版の version を注入したときだけ通す。ローカル発行 (`publishToMavenLocal`) は
+// 開発と発行物の検証に使うため妨げない。
+//
+// 対象はタスク名で判定する。個々の名前を列挙すると、プラグインが Central 向けタスクを
+// 増やしたときに素通りし、名前を変えたときに列挙が死に名になって、どちらも無音で穴が開く。
+// 名前に `MavenCentral` を含むタスクを一律で対象とし、除外は 1 つだけ挙げる —
+// `dropMavenCentralDeployment` は誤って作った deployment を取り下げる後始末用で、
+// 発行の経路ではないため止めない。
+//
+// 発火はタスクの実行前に済ませる。タスクの `doFirst` に置くと、Gradle が Central リポジトリの
+// 認証情報を task graph の確定時に解決するため、認証情報の無い環境では「認証情報が足りない」で
+// 先に落ちてガードに届かず、SNAPSHOT を止めているのか認証が無いだけなのかが診断から読めない。
+// そこで 2 段で掛ける —
+//   1. 設定段階: 実行を要求されたタスク名が対象なら、発行プラグインが認証情報を組み立てる前に落とす。
+//      名前を直接指定した経路はここで止まり、失敗の理由が SNAPSHOT だけになる
+//   2. task graph の確定時: 集約タスク (`publish`) 経由や名前の省略形で間接的に含まれた対象を捕まえる。
+//      こちらが対象判定の正で、1. は診断を読みやすくするための前倒しにすぎない
+val isCentralPublishTaskName: (String) -> Boolean = { taskName ->
+    taskName.contains("MavenCentral") && taskName != "dropMavenCentralDeployment"
+}
+val snapshotCentralPublishRefusal = "SNAPSHOT ($ksDialogsVersion) は Maven Central へ発行しない。" +
+    "リリース版の version は -Pversion=<version> で注入する。" +
+    "ローカルでの発行物確認には publishToMavenLocal を使う。"
+
+if (ksDialogsVersion.endsWith("-SNAPSHOT")) {
+    // 要求されたタスク名はプロジェクトパス付き (`:ksdialogs-core:publishToMavenCentral`) で
+    // 渡りうるため、最後のセグメントだけをタスク名として見る
+    if (gradle.startParameter.taskNames.any { isCentralPublishTaskName(it.substringAfterLast(':')) }) {
+        throw GradleException(snapshotCentralPublishRefusal)
+    }
+
+    gradle.taskGraph.whenReady {
+        if (allTasks.any { isCentralPublishTaskName(it.name) }) {
+            throw GradleException(snapshotCentralPublishRefusal)
+        }
+    }
+}
+
 subprojects {
     // Maven Central の groupId (cross/ADR-0005)
     group = "jp.kamusoft"
@@ -108,33 +151,6 @@ subprojects {
         plugins.withId("signing") {
             extensions.configure<SigningExtension> {
                 setRequired(providers.gradleProperty("signingInMemoryKey").isPresent)
-            }
-        }
-
-        // SNAPSHOT を Sonatype Central へ発行しない。
-        //
-        // 発行プラグインは version が `-SNAPSHOT` で終わるとき、mavenCentral リポジトリの URL を
-        // Central の snapshot リポジトリへ向ける。そのため認証情報がある環境で Central 向けタスクを
-        // 実行すると、開発版がそのまま公開される。SNAPSHOT のあいだは Central 向けタスクを失敗させ、
-        // リリース版の version を注入したときだけ通す。ローカル発行 (`publishToMavenLocal`) は
-        // 開発と発行物の検証に使うため妨げない。
-        //
-        // 対象はタスク名で判定する。個々の名前を列挙すると、プラグインが Central 向けタスクを
-        // 増やしたときに素通りし、名前を変えたときに列挙が死に名になって、どちらも無音で穴が開く。
-        // 名前に `MavenCentral` を含むタスクを一律で対象とし、除外は 1 つだけ挙げる —
-        // `dropMavenCentralDeployment` は誤って作った deployment を取り下げる後始末用で、
-        // 発行の経路ではないため止めない
-        if (ksDialogsVersion.endsWith("-SNAPSHOT")) {
-            tasks.configureEach {
-                if (name.contains("MavenCentral") && name != "dropMavenCentralDeployment") {
-                    doFirst {
-                        throw GradleException(
-                            "SNAPSHOT ($ksDialogsVersion) は Maven Central へ発行しない。" +
-                                "リリース版の version は -Pversion=<version> で注入する。" +
-                                "ローカルでの発行物確認には publishToMavenLocal を使う。",
-                        )
-                    }
-                }
             }
         }
     }

@@ -1,0 +1,107 @@
+# KMP の SNAPSHOT Central 発行ガードと発行対象モジュールの確認 (2026-09-09)
+
+実行場所: kmp/。version は注入なし = `0.1.0-SNAPSHOT`。
+
+## 1. ガードが拾う範囲と実在タスクの一致
+
+kmp/build.gradle.kts のガードは、タスク名が `MavenCentral` を含み
+`dropMavenCentralDeployment` でないものを対象に、タスクの実行前に例外を投げる
+(プラグインの型は参照しない)。発火点は 2 つ —
+設定段階での `gradle.startParameter.taskNames` の照合 (名前を直接指定した経路) と、
+`gradle.taskGraph.whenReady` での task graph の走査 (集約タスク経由の間接的な経路)。
+
+$ ./gradlew :ksdialogs-kmp:tasks --all | grep -i mavencentral
+dropMavenCentralDeployment                                      ← 除外
+publishAllPublicationsToMavenCentralRepository                  ← 対象
+publishAndReleaseToMavenCentral                                 ← 対象
+publishAndroidPublicationToMavenCentralRepository               ← 対象
+publishIosArm64PublicationToMavenCentralRepository              ← 対象
+publishIosSimulatorArm64PublicationToMavenCentralRepository     ← 対象
+publishIosX64PublicationToMavenCentralRepository                ← 対象
+publishKotlinMultiplatformPublicationToMavenCentralRepository   ← 対象
+publishToMavenCentral                                           ← 対象
+enableAutomaticMavenCentralPublishing                           ← 対象
+prepareMavenCentralPublishing                                   ← 対象
+
+## 2. 実効確認
+
+各エントリポイントを `--offline` で、**認証情報のプロパティを一切渡さずに**実行した。
+
+$ ./gradlew --offline :ksdialogs-kmp:<task>
+
+| 実行したタスク | 結果 | 失敗の内訳 |
+|---|---|---|
+| publishToMavenCentral | ガード発火 | SNAPSHOT 診断のみ |
+| publishAndReleaseToMavenCentral | ガード発火 | SNAPSHOT 診断のみ |
+| publishAllPublicationsToMavenCentralRepository | ガード発火 | SNAPSHOT 診断のみ |
+| publishKotlinMultiplatformPublicationToMavenCentralRepository | ガード発火 | SNAPSHOT 診断のみ |
+| publishAndroidPublicationToMavenCentralRepository | ガード発火 | SNAPSHOT 診断のみ |
+| publishIosArm64PublicationToMavenCentralRepository | ガード発火 | SNAPSHOT 診断のみ |
+| publishIosSimulatorArm64PublicationToMavenCentralRepository | ガード発火 | SNAPSHOT 診断のみ |
+| publishIosX64PublicationToMavenCentralRepository | ガード発火 | SNAPSHOT 診断のみ |
+| prepareMavenCentralPublishing | ガード発火 | SNAPSHOT 診断のみ |
+| enableAutomaticMavenCentralPublishing | ガード発火 | SNAPSHOT 診断のみ |
+| publish (集約タスク) | ガード発火 | SNAPSHOT 診断 + 認証情報未解決 (下記) |
+
+名前を直接指定した 10 経路のエラーメッセージ (同一。下は publishToMavenCentral の場合):
+
+* What went wrong:
+Refusing to publish a SNAPSHOT version to Maven Central: 0.1.0-SNAPSHOT. リリース版の version は -Pversion=<version> で注入する。ローカルでの発行物確認には publishToMavenLocal を使う。
+
+→ 失敗の理由は SNAPSHOT であることだけで、ネットワーク不通 (`--offline`) でも認証不足でもない。
+  タスクの実行は始まっておらず、設定段階で落ちている。
+
+集約タスク `publish` は名前に `MavenCentral` を含まないため設定段階の照合には掛からず、
+task graph の確定時に捕まる。この時点は Gradle が Central リポジトリの認証情報を解決する
+時点と同じで、Gradle は両方のリスナの失敗をまとめて報告する:
+
+$ ./gradlew --offline :ksdialogs-kmp:publish
+* What went wrong:
+Failed to notify task execution graph listener.
+> Credentials required for this build could not be resolved.
+   > The following Gradle properties are missing for 'mavenCentral' credentials:
+       - mavenCentralUsername
+       - mavenCentralPassword
+> Refusing to publish a SNAPSHOT version to Maven Central: 0.1.0-SNAPSHOT. リリース版の version は -Pversion=<version> で注入する。ローカルでの発行物確認には publishToMavenLocal を使う。
+
+→ この経路でも SNAPSHOT の診断は必ず出る (認証情報を揃えても発行は始まらない) が、
+  認証情報の未解決も同時に報告されるため、失敗の理由は 1 つに絞られない。
+  Gradle の認証情報の検査は task graph 確定時に走るリスナで、同じ時点のリスナは
+  例外がまとめて集められるため、ガード側だけを先に効かせる手段は無い。
+  実行前に止まる点と、SNAPSHOT を理由とする診断が出る点は満たしている。
+
+除外した dropMavenCentralDeployment ではガード例外が出ないこと:
+
+$ ./gradlew --offline :ksdialogs-kmp:dropMavenCentralDeployment
+* What went wrong:
+A problem was found with the configuration of task ':ksdialogs-kmp:dropMavenCentralDeployment' (type 'DropMavenCentralDeploymentTask').
+Value not set
+
+→ 失敗の理由はタスク自身が要求する入力 (取り下げ対象の deployment id) の未設定であり、
+  ガードの例外ではない。ガードはこのタスクを止めていない。
+
+ローカル発行は妨げないこと:
+
+$ ./gradlew publishToMavenLocal -Dmaven.repo.local=<scratch>/guard-case-1
+BUILD SUCCESSFUL in 1s
+$ ls <scratch>/guard-case-1/jp/kamusoft/
+ksdialogs-kmp  ksdialogs-kmp-android  ksdialogs-kmp-iosarm64
+ksdialogs-kmp-iossimulatorarm64  ksdialogs-kmp-iosx64
+
+判定: SNAPSHOT のあいだ Central へ向かう経路はすべて実行不能で、ローカル発行と
+発行物の検証は行える。
+
+## 3. :api-surface-check に発行タスクが無いこと
+
+$ ./gradlew :api-surface-check:tasks --group publishing
+------------------------------------------------------------
+Tasks runnable from project ':api-surface-check'
+------------------------------------------------------------
+
+No tasks
+
+$ ./gradlew :api-surface-check:tasks --all | grep -i publish
+prepareLintJarForPublish
+
+→ AGP の lint jar 準備タスクのみ。publish / publishToMavenLocal / Central 向けの
+  Maven 発行タスクは存在しない (発行プラグインを適用していないため)。

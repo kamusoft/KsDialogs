@@ -46,7 +46,7 @@ kotlin {
         commonMain.dependencies {
             // 公開 product。composite build により、公開済み成果物ではなくローカルの kmp/ ビルドへ解決される。
             // ViewModel 契約が公開面の型そのものになるため、利用者へも見える依存として公開する
-            api("jp.kamusoft:ksdialogs-kmp:0.1.0")
+            api("jp.kamusoft:ksdialogs-kmp:${libs.versions.ksdialogs.get()}")
             // 進捗を段階的に見せるための待ちに使う。利用者アプリと同じ側から足す依存
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.kotlinx.coroutines.get()}")
         }

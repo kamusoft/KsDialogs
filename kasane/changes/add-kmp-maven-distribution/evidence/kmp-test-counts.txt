@@ -1,0 +1,23 @@
+# kmp/ の全件テストと件数 (2026-09-09)
+
+検証 CI の kmp job と同じコマンドを手元で実行した。
+
+$ cd kmp
+$ ./gradlew allTests compileCommonMainKotlinMetadata compileIosMainKotlinMetadata --rerun-tasks
+BUILD SUCCESSFUL in 44s
+66 actionable tasks: 66 executed
+
+件数は `ksdialogs-kmp/build/test-results/<ターゲット>/TEST-*.xml` の
+`tests` / `failures` / `errors` / `skipped` 属性を合算して確認した:
+
+| ターゲット | tests | failures | errors | skipped |
+|---|---|---|---|---|
+| testAndroidHostTest | 78 | 0 | 0 | 0 |
+| iosSimulatorArm64Test | 75 | 0 | 0 | 0 |
+| 合計 | 153 | 0 | 0 | 0 |
+
+本変更の前 (kasane/handbook/cross/test-execution.md の 2026-09-07 実測) は
+151 件 (androidHostTest 76 + iosSimulatorArm64 75)。androidHostTest の +2 件は
+`SwiftBoundaryThrowsTests` の 2 本 (`@Throws` の肯定側と否定側)。
+
+kasane/handbook/cross/test-execution.md の kmp/ の行を 153 件 (2026-09-09) に更新した。

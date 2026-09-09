@@ -5,7 +5,7 @@ applies-when:
   tasks: [テストの実行, テスト結果の報告, 変更の完了判定]
 title: テスト実行規約
 description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査 (CI が回す範囲は verification-ci.md)
-timestamp: 2026-09-08
+timestamp: 2026-09-09
 ---
 
 # テスト実行規約
@@ -21,7 +21,7 @@ timestamp: 2026-09-08
 | ios/ | `xcodebuild test -scheme KsDialogs -destination 'platform=iOS Simulator,name=iPhone 17'` | 277 tests (2026-09-07) |
 | android/ | `./gradlew test --rerun-tasks` | 68 tests / 0 failures (2026-09-07) |
 | android/ (instrumented) | `./gradlew connectedDebugAndroidTest` | 333 tests / 0 failures (`:ksdialogs-core` 294 + `:ksdialogs` 39。1 台分の件数。API レベルによる skip あり — 後述。2026-09-07) |
-| kmp/ | `./gradlew allTests --rerun-tasks` | 151 tests / 0 failures (iosSimulatorArm64 75 + androidHostTest 76。2026-09-07) |
+| kmp/ | `./gradlew allTests --rerun-tasks` | 153 tests / 0 failures (iosSimulatorArm64 75 + androidHostTest 78。2026-09-09) |
 | maui/ | `dotnet test` | 160 tests / 0 failures (2026-09-08) |
 | maui/android/native/ | `./gradlew :ksdialogs-maui-bridge:test --rerun-tasks` | 34 tests / 0 failures (2026-09-08) |
 | maui/macios/native/ | `xcodebuild test -project KsDialogsMauiBridge.xcodeproj -scheme KsDialogsMauiBridge -destination 'platform=iOS Simulator,name=iPhone 17'` | 7 tests / 4 suites (2026-09-07) |

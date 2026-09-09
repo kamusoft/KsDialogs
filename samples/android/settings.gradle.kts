@@ -35,8 +35,9 @@ dependencyResolutionManagement {
 }
 
 // 公開座標への依存を、公開済み成果物ではなくローカルの Android ビルドへ解決する。
-// AGP のライブラリモジュールは Maven publication を生成せず自動置換が発火しないため、
-// 利用側であるこの Sample で GAV → included build の project への置換を明示する (cross/ADR-0006)。
+// 明示しないと、解決が公開済みの版へ無音でフォールバックし、手元の変更を反映しない Sample が
+// そのまま成功してしまうため、利用側であるこの Sample で GAV → included build の project への
+// 置換を明示する (cross/ADR-0006)。
 // 置換は本体と Compose 系の 2 座標とも書く。アプリが直接書く依存は Compose 系の 1 行だけだが、
 // 座標の列挙は直接依存の数ではなく置換対象の網羅であり、本体が公開座標として現れる経路が
 // できても公開済み成果物へ静かにフォールバックしないための安全装置になる。

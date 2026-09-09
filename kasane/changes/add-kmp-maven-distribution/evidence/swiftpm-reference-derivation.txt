@@ -1,0 +1,136 @@
+# Swift パッケージ参照の version 導出の確認 (2026-09-09)
+
+実行場所: kmp/。参照の実体は root publication の成果物
+`ksdialogs-kmp-<version>-swiftpm-metadata.json` に載る。以下は各ケースで発行した
+実ファイルを読み直して転記したもの (整形のみ、値は無改変。ローカル絶対パスは
+プレースホルダに置換)。
+
+## 1. 開発既定 (SNAPSHOT・URL プロパティなし。case-1)
+
+$ ./gradlew publishToMavenLocal -Dmaven.repo.local=<scratch>/case-1
+
+  "iosDeploymentVersion": "17.0",
+  "dependencies": [{
+    "type": "...SwiftPMDependency.Local",
+    "absolutePath": "<repo>/ios",
+    "products": [{ "name": "KsDialogs" }],
+    "packageName": "ios"
+  }]
+
+→ monorepo の `ios/` を指すローカル参照。deployment target は `17.0`。
+  `absolutePath` は発行者マシンの絶対パスがそのまま入る (design の既知の限界どおり)。
+
+Sample のソース参照が変わらないことの確認 (samples/kmp):
+
+$ ./gradlew :androidApp:assembleDebug
+BUILD SUCCESSFUL in 4s
+$ ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+BUILD SUCCESSFUL in 7s
+$ git status --short samples/kmp/iosApp/KotlinMultiplatformLinkedPackage/
+(出力なし)
+
+→ 追跡されている 6 ファイル (`Package.swift` / `Sources/...` / `subpackages/_ksdialogs_kmp/...`)
+  に差分は出ない。
+
+## 2. リリース版・URL 上書きなし (case-3)
+
+$ ./gradlew :ksdialogs-kmp:publishKotlinMultiplatformPublicationToMavenLocal \
+    -Pversion=0.1.0-beta.1 -Dmaven.repo.local=<scratch>/case-3
+BUILD SUCCESSFUL
+
+  "iosDeploymentVersion": "17.0",
+  "dependencies": [{
+    "type": "...SwiftPMDependency.Remote",
+    "repository": { "type": "...Remote.Repository.Url",
+                    "value": "https://github.com/kamusoft/KsDialogs-SPM" },
+    "version":    { "type": "...Remote.Version.Exact", "value": "0.1.0-beta.1" },
+    "products": [{ "name": "KsDialogs" }],
+    "packageName": "KsDialogs-SPM"
+  }]
+
+→ 既定の配信リポジトリ URL + exact = version + deployment target `17.0` のリモート参照。
+  ファイル全文に発行者環境のローカルパス (`/Users/` `/Volumes/` `/private/tmp/`) は現れない。
+
+このケースだけ全 publication ではなく root publication だけを発行している。理由は次節。
+
+### 発見: リリース版の全 publication 発行は、参照先の tag が実在しないと完了しない
+
+$ ./gradlew publishToMavenLocal -Pversion=0.1.0-beta.1 -Dmaven.repo.local=<scratch>/case-2
+> Task :api-surface-check:fetchUmbrellaPackageIdentifierForDefault FAILED
+Updating https://github.com/kamusoft/KsDialogs-SPM
+Computing version for https://github.com/kamusoft/KsDialogs-SPM
+error: Dependencies could not be resolved because no versions of 'ksdialogs-spm' match the requirement 0.1.0-beta.1 and '_ksdialogs_kmp' depends on 'ksdialogs-spm' 0.1.0-beta.1.
+
+* What went wrong:
+Execution failed for task ':api-surface-check:fetchUmbrellaPackageIdentifierForDefault' (registered by plugin 'org.jetbrains.kotlin.multiplatform').
+> Process 'command '/usr/bin/swift'' finished with non-zero exit value 1
+
+KGP はビルド全体で 1 つの umbrella SwiftPM パッケージを解決し (このビルドでは
+`:api-surface-check` 側に登録される)、`:ksdialogs-kmp` の cinterop klib 生成タスクが
+その解決に依存する。したがって cinterop klib を含む発行では、参照先の Swift パッケージが
+**その version で実際に解決できる**必要がある。配信リポジトリ `KsDialogs-SPM` には
+まだ `0.1.0-beta.1` の tag が無いため、既定 URL のままでは全 publication の発行が
+完了しない (失敗はネットワークではなく tag 不在)。
+
+root publication の成果物 (metadata jar・POM・`.module`・sources / javadoc jar・
+SwiftPM 連携メタデータ) は cinterop klib を必要としないため、上のとおり単独で発行できる。
+全 publication を伴う検証 (evidence/publish-to-maven-local.txt) は、解決できる
+`file://` の tag 付きローカル clone を指して行った。
+
+URL の違いが成果物へ与える影響として実証できたのは root publication までである。
+同じ version `0.1.0-beta.1` で root publication だけを 2 通りの URL で発行し、突き合わせた:
+
+$ ./gradlew :ksdialogs-kmp:publishKotlinMultiplatformPublicationToMavenLocal \
+    -Pversion=0.1.0-beta.1 -Dmaven.repo.local=<scratch>/url-case-default
+$ ./gradlew :ksdialogs-kmp:publishKotlinMultiplatformPublicationToMavenLocal \
+    -Pversion=0.1.0-beta.1 -Pksdialogs.swiftPackageUrl=file://<scratch>/spm-clone \
+    -Dmaven.repo.local=<scratch>/url-case-file
+
+- POM: 差分なし
+- `.module`: 差分は SwiftPM 連携メタデータのファイル項目 (`swiftPMDependenciesMetadata`) の
+  size と 4 種のチェックサムだけで、他の variant とファイル項目は同一。URL 文字列の長さが
+  メタデータのサイズに出るため、`.module` は完全同一にはならない
+- SwiftPM 連携メタデータ: `repository` の URL と、URL 末尾から導出される `packageName`
+  (`KsDialogs-SPM` / `spm-clone`) が変わる。他の値 (deployment target・exact・product) は同一
+
+klib と aar は、既定 URL のケースでは発行自体が完了しない (上記の tag 不在) ため
+比較対象が存在せず、URL の違いによる影響は未確認である。公開 URL と実在 tag での
+全 publication の突き合わせは phase-8 に残る。
+
+これは実装の不具合ではなく発行順序の制約であり、phase-9 の release workflow が
+「SPM の tag を先に push してから Maven へ発行する」順序を要求することを意味する。
+
+## 3. リリース版・URL 上書きあり (`file://` のローカル clone。case-4)
+
+配信リポジトリ配置のローカル clone を用意した:
+
+$ git init -b main <scratch>/spm-clone && git remote add origin <配信リポジトリの URL>
+$ scripts/spm-snapshot/sync-snapshot.sh <scratch>/spm-clone
+同期しました: <scratch>/spm-clone
+$ git add -A && git commit -m "snapshot for local publish verification" && git tag 0.1.0-beta.1
+(push はしていない)
+
+$ ./gradlew publishToMavenLocal -Pversion=0.1.0-beta.1 \
+    -Pksdialogs.swiftPackageUrl=file://<scratch>/spm-clone \
+    -Dmaven.repo.local=<scratch>/case-4
+BUILD SUCCESSFUL in 18s
+
+  "iosDeploymentVersion": "17.0",
+  "dependencies": [{
+    "type": "...SwiftPMDependency.Remote",
+    "repository": { "type": "...Remote.Repository.Url",
+                    "value": "file://<scratch>/spm-clone" },
+    "version":    { "type": "...Remote.Version.Exact", "value": "0.1.0-beta.1" },
+    "products": [{ "name": "KsDialogs" }],
+    "packageName": "spm-clone"
+  }]
+
+→ `file://` URL は KGP の `swiftPackage(url(...))` に通り、スキームを理由にビルドは
+  失敗しない (design のリスク ③ は解消)。exact は上書きされず version と同じ値。
+  deployment target は `17.0`。cinterop klib の生成 (=Swift パッケージの実解決) まで
+  この URL で通っている。
+
+`packageName` は URL / パスの末尾から導出される (`ios` / `KsDialogs-SPM` / `spm-clone`)。
+公開時の値は既定 URL のケース (2 節) の `KsDialogs-SPM` になる。
+
+確認後、`<scratch>/spm-clone` は trash で片付けた。

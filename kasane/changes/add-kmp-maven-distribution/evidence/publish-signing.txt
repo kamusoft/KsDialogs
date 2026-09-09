@@ -1,0 +1,56 @@
+# KMP 発行物の署名の確認 (2026-09-09)
+
+実行場所: kmp/。version は注入なし = `0.1.0-SNAPSHOT` (署名は version に依存しない)。
+発行先はケースごとの空の一時 Maven local repository (実行前にファイル数 0 を確認)。
+
+## 1. 鍵なし (case-1)
+
+$ ./gradlew publishToMavenLocal -Dmaven.repo.local=<scratch>/case-1
+BUILD SUCCESSFUL
+
+  > Task :ksdialogs-kmp:signKotlinMultiplatformPublication SKIPPED
+  > Task :ksdialogs-kmp:signAndroidPublication SKIPPED
+  > Task :ksdialogs-kmp:signIosArm64Publication SKIPPED
+  > Task :ksdialogs-kmp:signIosSimulatorArm64Publication SKIPPED
+  > Task :ksdialogs-kmp:signIosX64Publication SKIPPED
+
+$ find <scratch>/case-1 -name '*.asc' | wc -l
+0
+
+→ 署名鍵が無いとき Sign タスクは skip され、`.asc` は 1 つも生成されずに発行が成功する。
+
+## 2. 鍵あり (case-5)
+
+検証用の鍵を一時的な GnuPG ホームで生成し (パスフレーズなし・有効期限 1 日・
+アドレスは example.com のダミー)、armored な秘密鍵を環境変数
+`ORG_GRADLE_PROJECT_signingInMemoryKey` で渡した。鍵の本文・指紋・利用者 ID は
+本証跡に写していない。
+
+$ ./gradlew publishToMavenLocal -Dmaven.repo.local=<scratch>/case-5
+BUILD SUCCESSFUL
+
+`<scratch>/case-5` の内訳 (`maven-metadata-local.xml` を除く):
+
+  成果物 33 件 / `.asc` 33 件 (成果物と 1 対 1)
+
+publication ごとの署名対象:
+
+| publication | `.asc` が付いた成果物 |
+|---|---|
+| ksdialogs-kmp (root) | `.jar` / `.pom` / `.module` / `-sources.jar` / `-javadoc.jar` / `-swiftpm-metadata.json` / `-kotlin-tooling-metadata.json` (7) |
+| ksdialogs-kmp-android | `.aar` / `.pom` / `.module` / `-sources.jar` / `-javadoc.jar` (5) |
+| ksdialogs-kmp-iosarm64 | `.klib` / `-cinterop-swiftPMImport.klib` / `-metadata.jar` / `.pom` / `.module` / `-sources.jar` / `-javadoc.jar` (7) |
+| ksdialogs-kmp-iossimulatorarm64 | 同上 (7) |
+| ksdialogs-kmp-iosx64 | 同上 (7) |
+
+「`.asc` を持たない成果物」を機械的に走査した結果は 0 件 (33 件すべてに対応する
+`.asc` が存在する)。SwiftPM 連携メタデータ
+`ksdialogs-kmp-0.1.0-SNAPSHOT-swiftpm-metadata.json.asc` も含まれる。
+
+署名そのものの検証 (SwiftPM 連携メタデータで実施):
+
+$ gpg --verify ksdialogs-kmp-0.1.0-SNAPSHOT-swiftpm-metadata.json.asc ksdialogs-kmp-0.1.0-SNAPSHOT-swiftpm-metadata.json
+gpg: <日時>に施された署名
+gpg: 「<検証用の一時鍵>」からの正しい署名
+
+確認後、一時的な GnuPG ホームと export した秘密鍵ファイルを trash で破棄した。

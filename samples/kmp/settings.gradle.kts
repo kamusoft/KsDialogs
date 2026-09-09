@@ -35,16 +35,17 @@ dependencyResolutionManagement {
 }
 
 // 公開座標 jp.kamusoft:ksdialogs-kmp への依存を、公開済み成果物ではなくローカルの KMP ビルドへ解決する。
-// KMP facade は Maven publication を生成しないため、利用側であるこの Sample で
-// GAV → included build の project への置換を明示する (cross/ADR-0006)。
+// Sample は手元のソースの状態を映す役目なので、置換を明示して常にローカルソースへ向ける —
+// 明示しないと、解決が公開済みの版へ無音でフォールバックし、手元の変更を反映しない Sample が
+// そのまま成功してしまう (cross/ADR-0006)。
 includeBuild("../../kmp") {
     dependencySubstitution {
         substitute(module("jp.kamusoft:ksdialogs-kmp")).using(project(":ksdialogs-kmp"))
     }
 }
 
-// Android Native の配布物も、同じくローカルの Android ビルドへ解決する。
-// AGP のライブラリモジュールは Maven publication を生成せず自動置換が発火しないため、置換を明示する
+// Android Native の配布物も、同じく公開済み成果物への無音フォールバックを避けるため、
+// 置換を明示してローカルの Android ビルドへ解決する
 includeBuild("../../android") {
     dependencySubstitution {
         // 宣言的 UI (Jetpack Compose) で中身を書く消費者が足す配布物
