@@ -73,8 +73,34 @@ KMP 消費者 (Android app + iOS app、実装は phase-8) の dry-run で、Mave
 
 前提として確定済みのもの: 配布単位は Maven 1 点 + iOS アプリ側 SwiftPM 1 点 (cross/ADR-0008)、Swift 向け登録 API は Swift パッケージ側 (kmp/ADR-0003・0004)、KMP → Swift は `exact(同版)` (cross/ADR-0009)、Swift 参照先は配信リポジトリ (cross/ADR-0008 (2026-09-04 改訂))。PoC (library-foundation phase-10 `artifacts/poc-swiftpm-remote-distribution.md`) でリモート参照時の Kotlin SwiftPM 連携は全 4 項目成立、スパイクブランチ `spike/phase-10-packaging-poc` は参考実装 (本実装は書き直す)。
 
+## 実装結果 (2026-09-09 反映)
+
+change [add-kmp-maven-distribution](../../../../changes/archive/2026-09-09-add-kmp-maven-distribution/proposal.md) (L 級) で実装完了。レビュー 3 周 (review-003 APPROVED) + 相方レビュー 2 周 (second-opinion-code-002 APPROVED)、verify-001 VALID (Requirement 6 / Scenario 15)。発行検証は `publishToMavenLocal` の 4 通り (注入なし / 注入あり / `file://` 上書き / android/ との同版発行) と署名・`.module` の内容検査で行い、証跡 7 本を evidence/ に残した。実測: kmp 153 件 / android 68 件、失敗 0。
+
+決定事項からの乖離 (deviation.md 8 件) のうち判断に関わるもの:
+
+| 項目 | 結果 |
+|---|---|
+| ルートの plugin 宣言 (A1) | 決定は「ルートに発行プラグイン / KGP の型参照も `apply false` も置かない」。実装は `alias(libs.plugins.kotlinMultiplatform) apply false` の 1 行だけをルートに置いた — 発行プラグインを 1 モジュールにだけ適用すると Gradle が KGP を 2 つの classloader に読み込み、共有する Kotlin/Native の build service が型不一致で構成に失敗する。vanniktech / AGP はルートに無く、ガードはタスク名のみで判定 (オーナー承認済み。android/ のルートと形を揃える) |
+| SNAPSHOT ガードの発火点 (A5) | 決定の `doFirst` では Gradle の認証情報検証が先に走り、認証情報の無い環境でガードに届かない。設定段階の要求タスク名照合 + task graph 確定時の 2 段に変更し、android/ も同じ形へ揃えた (相方レビュー Major)。集約タスク `publish` 経由だけは SNAPSHOT 診断と認証情報未解決が同時に報告される |
+| リリース版参照の検証範囲 (A2) | 既定 URL (`https://github.com/kamusoft/KsDialogs-SPM`) でのリリース版発行は root publication 単独でしか実証していない。KGP は発行時に SwiftPM パッケージを解決するため、cinterop klib を伴う iOS publication の発行には配信リポジトリに同版の tag が実在する必要がある (未 push のため失敗)。全 publication の検証は tag 付きローカル clone の `file://` URL で行った |
+| `@Throws` 検査の形 (B) | 肯定側を「`DialogException` を含む」から期待例外型の集合の完全一致 (suspend 3 経路は `CancellationException` も) に拡張。`CancellationException` の宣言だけが落ちる退行も検出する (review-001 Minor) |
+
+蒸留では cross/ADR-0008 を実装後の視点で書き直して accepted に昇格し (Swift 参照の version 導出 (A2) と Kotlin サポート範囲 (A4) を Decision に統合)、cross/ADR-0009 (版の導出式、A5) も accepted に昇格した。concepts は kmp/api/ios-host-integration.md に発行 metadata の Swift 参照が version で決まること・Kotlin サポート範囲を追随。KMP の配布構成そのものの概念化は phase-5 / 6 分と併せて phase-9 の蒸留で置き場を決める。
+
+### 申し送り
+
+| 項目 | 受け皿 |
+|---|---|
+| 既定 URL でリリース版の iOS publication を発行するには配信リポジトリに同版の SPM tag が要る。C3 の package 段 (`-Pversion=` で `publishToMavenLocal`、Swift 参照は既定の https + exact) は tag が無い時点では成立せず、publish 順序 (Maven release → SPM tag) の却下理由と併せて見直しが要る | [phase-9 agenda](../phase-9-release-workflow/agenda.md)「phase-7 からの申し送り」の論点 |
+| SNAPSHOT ガードは集約タスク `publish` 経由だけ認証情報未解決と同時に報告される。release workflow は名前を直接指定した発行タスクを呼ぶ前提で書く | [phase-9 agenda](../phase-9-release-workflow/agenda.md)「phase-7 からの申し送り」 |
+| docs-refresh の KMP 分: Skill の依存スコープ (`implementation` → `api`)・Kotlin サポート範囲 (A4) と確認済み版・「予定している公開 coordinate」の状態表記・SNAPSHOT を Maven local へ発行した成果物が同一マシンでしか動かない旨 | [phase-9 agenda](../phase-9-release-workflow/agenda.md) の TODO (phase-5 / 6 分と同じ依頼にまとめる) |
+| KMP の配布構成 (5 publication の内容・version 導出・Swift 参照導出・`@Throws` 回帰検査) の concepts 化 | [phase-9 agenda](../phase-9-release-workflow/agenda.md)「phase-6 からの申し送り」の配布構成 concepts 化の行 (KMP 分を追記) |
+| `file://` URL が KGP の `swiftPackage(url(...))` に通ることは実測で再確認済み (C1 の前提)。全 publication の POM / `.module` / klib / aar が URL に依存しないことは root publication の突き合わせまでしか実証していない | [phase-8 agenda](../phase-8-consumer-verification/agenda.md)「phase-7 からの申し送り」 (dry-run = `file://`、smoke = https で全 publication を実解決する) |
+| 動作確認済み Kotlin 版はカタログ値 (現在 2.4.10)。消費者検証の KGP 版で走る段 (C2 (2)) が確認済み版の実証を兼ねる | [phase-8 agenda](../phase-8-consumer-verification/agenda.md)「phase-7 からの申し送り」 |
+
 ## TODO
 
 - [x] 論点の解消 (publication の形・参照切替・Kotlin 範囲・`@Throws` 検査・消費者検証の形)
-- [ ] change 完了後に docs-refresh を明示依頼し、KMP Skill の依存スコープ (`api`)・Kotlin サポート範囲 (A4)・coordinate の状態表記を追従させる
-- [ ] ksn-propose で変更提案を起こす
+- [x] ksn-propose で変更提案を起こす (add-kmp-maven-distribution、2026-09-09 完了)
+- [x] change 完了後の docs-refresh 依頼は phase-9 の TODO (初回リリース前の docs-refresh) に KMP 分として統合した (2026-09-09)

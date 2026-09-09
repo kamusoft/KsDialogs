@@ -19,6 +19,12 @@ MAUI 消費者 (`verification/maui`) は phase-6 の一時消費者 (`kasane/cha
 
 確認事項: API 版付き TFM (`net10.0-android36.0` / `net10.0-ios26.0`) を下回る `TargetPlatformVersion` を固定した消費者では、警告なく platform 中立アセットにフォールバックし binding が入らない (既知の落とし穴)。`check-dependencies.py` で binding が facade と同版で解決されたことに加え、platform TFM で binding が実際に入ったことを検査対象にする。消費者ビルドで `XA4301` が 0 件であることも再確認する (phase-6 では自 assembly 用 aar が生成されず 0 件)。
 
+### phase-7 からの申し送り (2026-09-09)
+
+KMP の発行設定は実装済み (`kasane/changes/archive/2026-09-09-add-kmp-maven-distribution/`)。dry-run が前提にする機構は次のとおり確認済み: `-Pversion=` の注入で Swift 参照が `https://github.com/kamusoft/KsDialogs-SPM` + exact(version) のリモート参照になる / `-Pksdialogs.swiftPackageUrl=file:///<tag 付きローカル clone>` で `file://` URL + exact のリモート参照になる (C1 の前提、KGP 2.4.10 で実測) / `swiftpm-metadata.json` の deployment target は参照種別によらず `17.0`。
+
+確認事項: 既定 URL でのリリース版発行は root publication 単独でしか実証していない (iOS publication の発行は配信リポジトリに同版 tag が要るため)。全 publication (root / android / iOS 3 ターゲット) の POM・`.module`・klib・aar が Swift 参照の URL に依存しないことは root の突き合わせまでの実証なので、dry-run (`file://`) と smoke (https) の両方で全 publication を実解決し、Android app の `assembleRelease` と iOS の framework リンクまで通す (C2)。消費者の KGP 版で走る段 (C2 (2)) は動作確認済み Kotlin 版 (カタログ値、現在 2.4.10) の実証を兼ねる。
+
 ## 決定事項
 
 踏襲 (解決済み論点)。出典は KsSettingsView phase-7 の決定事項と実測 (`../KsSettingsView/kasane/roadmaps/package-distribution/phases/phase-7-consumer-verification/agenda.md`)。

@@ -11,8 +11,8 @@
 | [0005](0005-public-identifier-mapping.md) | 公開識別子の写像表 — 素の名前は Native へ、MAUI は namespace 素・NuGet ID 修飾 (一部改訂: 0019 — Android の配布上の識別子) | accepted | 2026-08-14 |
 | [0006](0006-samples-aggregated-consumer-boundary.md) | Sample は集約 samples/ に置き、利用者と同じ側から公開 product を参照する | accepted | 2026-08-14 |
 | [0007](0007-sample-parity-demo-item-unit.md) | Sample は4ルートでパリティを保ち、一致単位は「デモ項目」とする | accepted | 2026-08-14 |
-| [0008](0008-distribution-model-standard-channels.md) | 配布は標準3チャネルのみとし、SwiftPM は配信リポジトリ (KsDialogs-SPM) で配る (SwiftPM 節は 2026-09-04 改訂) | proposed | 2026-08-16 |
-| [0009](0009-lockstep-single-version.md) | 全形態は lockstep 単一バージョンで一斉リリースし、版間互換を提供しない | proposed | 2026-08-17 |
+| [0008](0008-distribution-model-standard-channels.md) | 配布は標準3チャネルのみとし、SwiftPM は配信リポジトリ (KsDialogs-SPM) で配り、KMP の Swift 参照は version から導出する (サポートする Kotlin 範囲は同 minor) | accepted | 2026-09-08 |
+| [0009](0009-lockstep-single-version.md) | 全形態は lockstep 単一バージョンで一斉リリースし、版間互換を提供しない (版の単一ソースはカタログ、リリース版は `-Pversion=` で注入、SNAPSHOT は Central へ発行しない) | accepted | 2026-08-17 |
 | [0010](0010-sample-capture-demo-driven-mode.md) | Sample 撮影はデモ駆動モード (起動引数) で行い、専用撮影スクリプトは持たない | accepted | 2026-08-27 |
 | [0011](0011-user-docs-as-agent-skills.md) | 利用者向けドキュメントは Agent Skills (skills/、en/ja 2 版・5 Skill) として提供し、docs-refresh で concepts から追従させる | accepted | 2026-09-04 |
 | [0012](0012-readme-root-only-and-developer-knowledge-in-handbook-concepts.md) | README はルート 2 枚 (英語 + README_ja) に集約し、samples/ 配下 README は廃止して開発者向け知識は handbook / concepts に一本化する | accepted | 2026-09-04 |

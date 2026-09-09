@@ -33,6 +33,23 @@ KsSettingsView の `release.yml` をコピー + 固有値の差し替えで逆�
 
 phase-4 の実装結果 (2026-09-08): 入口 `ci.yml` は変更検出 job `changes` を持ち、7 本目の補助 check として報告される。必須 check は上表の 10 件のままで `changes` は含めない (cross/ADR-0017)。`develop` push の実動 (lint + 5 job の起動・記録だけの push でのスキップ・連続 push の打ち切り) は確認済みで、残るのは `main` 宛て PR 側だけ。
 
+### phase-7 からの申し送り (2026-09-09)
+
+KMP の発行設定は実装済み (`kasane/changes/archive/2026-09-09-add-kmp-maven-distribution/`、cross/ADR-0008 / 0009 は accepted)。phase-7 の C3 (release の 4 本目) に対して、実装で判明した制約を論点として足す。
+
+**SPM tag の先行 (論点)**: KGP は発行時に SwiftPM パッケージを解決するため、既定 URL (`https://github.com/kamusoft/KsDialogs-SPM`) でリリース版の iOS publication (cinterop klib 付き) を `publishToMavenLocal` するには、配信リポジトリに同版の tag が実在する必要がある (未 push だと `no versions of 'ksdialogs-spm' match the requirement` で失敗。root publication だけなら通る)。C3 の package 段「kmp/ を `-Pversion=` で publishToMavenLocal (Swift 参照は既定の https + exact)」は publish 段より前では成立しない。どの形でも「SPM tag が KMP の Maven artifact より先に存在する」ことが必須になる。
+
+| 取りうる形 | 影響 |
+|---|---|
+| (a) package 段の kmp は `file://` のスナップショット clone で発行し、publish 段で SPM tag push 後に既定 URL で発行し直す | 再ビルドの同一性検査 (`compare-maven-artifacts.sh`) の対象と、dry-run 用成果物との関係を決め直す |
+| (b) publish 順序を SPM tag → Maven upload にする | C3 が却下した「Maven release が失敗すると配信リポジトリに tag だけが残る」を、tag の削除運用か prerelease tag で受ける |
+
+| 項目 | 内容 |
+|---|---|
+| SNAPSHOT ガードの経路 | ガードは設定段階の要求タスク名照合 + task graph 確定時の 2 段で、名前を直接指定した Central 向けタスクは SNAPSHOT 診断のみで止まる。集約タスク `publish` 経由だけは認証情報未解決と同時に報告される。workflow は発行タスクを名前で直接呼ぶ |
+| docs-refresh の KMP 分 | Skill `ksdialogs-kmp` の依存スコープを `implementation` から `api` へ / Kotlin サポート範囲 (同 minor 2.4.x、確認済み版はカタログの `kotlin`) / 「予定している公開 coordinate」の状態表記 / SNAPSHOT を Maven local へ発行した成果物は同一マシンでしか動かない旨。phase-5 / 6 分と同じ依頼にまとめる |
+| 配布構成の concepts 化 (KMP 分) | 5 publication (root + android + iOS 3 ターゲット) の内容と SwiftPM 連携メタデータ・version 導出と Swift 参照導出・`@Throws` 回帰検査の位置づけは、「phase-6 からの申し送り」の配布構成 concepts 化の行に含めて置き場を決める |
+
 ## 決定事項
 
 踏襲 (解決済み論点)。出典は cross/ADR-0009 (lockstep)、KsSettingsView cross/ADR-0019・cross/ADR-0020 (dispatch 起動・tag は最後・version 注入) と同 phase-8 の決定事項 (`../KsSettingsView/kasane/roadmaps/package-distribution/phases/phase-8-release-workflow/agenda.md`)。
@@ -62,7 +79,7 @@ version の注入と SNAPSHOT ガードは android/ に配線済み (cross/ADR-0
 
 ## TODO
 
-- [ ] 論点の解消 (4 本化・初回 version・README 置換の位置・docs-refresh のタイミング)
-- [ ] 初回リリース前に docs-refresh を走らせ、skills / README の旧 Android 座標 (16 箇所) を cross/ADR-0019 の新座標へ追随させる (phase-5 申し送り)。MAUI 分は「phase-6 からの申し送り」の表のとおり同じ依頼に含める
+- [ ] 論点の解消 (4 本化・SPM tag の先行 (phase-7 申し送り)・初回 version・README 置換の位置・docs-refresh のタイミング)
+- [ ] 初回リリース前に docs-refresh を走らせ、skills / README の旧 Android 座標 (16 箇所) を cross/ADR-0019 の新座標へ追随させる (phase-5 申し送り)。MAUI 分 (phase-6 申し送りの表) と KMP 分 (phase-7 申し送りの表) は同じ依頼に含める
 - [ ] MAUI 3 パッケージの `0.0.0-dev` 発行ガードと XML ドキュメントの方針を release の change に含める (phase-6 申し送り)
 - [ ] ksn-propose で変更提案を起こす

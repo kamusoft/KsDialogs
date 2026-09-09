@@ -3,7 +3,7 @@ type: concept
 title: KMP 利用者の iOS ホスト統合
 description: KMP 共有モジュールから KsDialogs を使う iOS アプリの依存経路と初回統合手順、および Sample の合成 Swift package 再生成手順
 tags: [kmp, ios, swiftpm, integration, distribution]
-timestamp: 2026-09-07
+timestamp: 2026-09-09
 ---
 
 # KMP 利用者の iOS ホスト統合
@@ -48,7 +48,20 @@ XCODEPROJ_PATH="$PWD/iosApp/MyApp.xcodeproj" \
 
 生成された `KotlinMultiplatformLinkedPackage/` は Xcode project が参照するため VCS に含める。以後の依存変更では Gradle build が合成 package を更新する。
 
-発行時の KMP artifact は Swift package の URL と同じ version を metadata に記録する。ローカル開発では `kmp/ksdialogs-kmp/build.gradle.kts` が `localSwiftPackage(../ios)` を使い、公開 artifact ではリモートの `KsDialogs-SPM` を使う。`localSwiftPackage` のまま発行すると発行者環境の絶対パスが metadata に残るため、発行工程はリモート参照へ切り替える必要がある。
+## 発行 metadata の Swift 参照は version で決まる
+
+KMP artifact の発行 metadata に載る Swift package 参照は、`kmp/ksdialogs-kmp/build.gradle.kts` が artifact の version から導出する。専用の切替スイッチは無い ([cross/ADR-0008](../../../decisions/cross/0008-distribution-model-standard-channels.md))。
+
+| version | Swift 参照 | 用途 |
+|---|---|---|
+| `-SNAPSHOT` (カタログの開発既定値) | `localSwiftPackage(../ios)` — monorepo 内の `ios/` をそのまま指す | 日常開発。`../ios` のライブ編集が即座に効き、Sample の合成 package も変わらない |
+| リリース版 (`-Pversion=` で注入) | `swiftPackage(url, exact(<version>))` — 配信リポジトリ `KsDialogs-SPM` の同じ version の tag | 公開 artifact。exact は version と同じ値で、上書きできない |
+
+リモート参照の URL だけは Gradle プロパティ `ksdialogs.swiftPackageUrl` で上書きでき、公開前の検証はスナップショットを同期して commit + tag したローカル clone の `file://` URL を渡して行う (SNAPSHOT では参照に URL が無いため無視される)。metadata の deployment target `17.0` は参照の種別によらず載る。
+
+SNAPSHOT のまま Maven local へ発行した成果物には発行者の絶対パスが載り、同一マシンでしか解決できない。SNAPSHOT の消費はリポジトリ内 Sample の composite build が担い、リポジトリ外での検証はリリース版の version を注入して行う。
+
+消費者側の Kotlin Gradle Plugin は本ライブラリと同じ minor (2.4.x) をサポートし、動作確認済みの版はリポジトリのバージョンカタログ (`android/gradle/libs.versions.toml` の `kotlin`) が固定する値である。SwiftPM import は Alpha 機能で消費側の最低版と metadata 形式の互換に公式の記述が無いため、これより広い範囲は約束しない。
 
 ## Swift 側で登録するもの
 
@@ -139,7 +152,7 @@ XCODEPROJ_PATH="$PWD/samples/kmp/iosApp/KsDialogsSampleKmp.xcodeproj" \
 
 ## してはいけないこと
 
-- 公開 artifact の発行 metadata に `localSwiftPackage` のローカルパスを残さない。消費者環境ではそのパスを解決できない。
+- 公開 artifact の発行 metadata に `localSwiftPackage` のローカルパスを残さない。消費者環境ではそのパスを解決できない。リリース版の version を注入した発行ではビルドファイルの導出が local 参照を選ばないため、これを崩すのは導出の分岐を書き換えたときだけである。
 - `KotlinMultiplatformLinkedPackage/` を生成物として無視しない。Xcode project が参照する統合物であり、clone 後にも必要になる。
 - KMP 側に View factory の別のレジストリ実体を作らない。iOS Native と KMP の登録キーが分裂する (共有コード側にあるのは ViewModel factory の表だけで、View の登録は Swift 側の 1 か所)。
 - 共有モジュールの iosMain で commonMain の interface が `@Throws` を宣言したメンバを override するとき (`KsDialog` / `KsLoading` / `KsToast` の差し替え等)、override に `@Throws` を書かない。Kotlin 2.4.x では metadata compile が失敗する (次段落)。
@@ -151,7 +164,8 @@ XCODEPROJ_PATH="$PWD/samples/kmp/iosApp/KsDialogsSampleKmp.xcodeproj" \
 - [KMP の Dialog 公開面](dialog-surface.md) — 共有コードの呼び出し面と、iOS ホスト側の型付き入口の位置づけ
 - [KMP の Loading 公開面](loading-surface.md) — 共有コードの Loading 操作と、登録が各 OS 側にあること
 - [KMP の Toast 公開面](toast-surface.md) — 共有コードの Toast 操作と、登録が各 OS 側にあること
-- [cross/ADR-0008](../../../decisions/cross/0008-distribution-model-standard-channels.md) — 4 形態の配布単位と `KsDialogs-SPM`
+- [cross/ADR-0008](../../../decisions/cross/0008-distribution-model-standard-channels.md) — 4 形態の配布単位と `KsDialogs-SPM`、KMP の Swift 参照を version から導出する決定と Kotlin サポート範囲
+- [cross/ADR-0009](../../../decisions/cross/0009-lockstep-single-version.md) — lockstep 単一バージョンと、KMP artifact の version・本体依存版・exact の共通の入力になる版の導出式
 - [kmp/ADR-0002](../../../decisions/kmp/0002-thin-facade-native-registry.md) — static framework と View レジストリの Native 委譲
 - [kmp/ADR-0006](../../../decisions/kmp/0006-common-vm-factory-typed-show.md) — ViewModel factory の表は共有コード側に持ち、Swift 向け面に型指定 show を設けない決定
 - [登録と表示の呼び出し面](../../core/api/registration-show-semantics.md) — ViewModel 登録と show の共通契約

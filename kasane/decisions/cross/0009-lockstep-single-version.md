@@ -1,7 +1,7 @@
 ---
 id: 0009
 title: 全形態は lockstep 単一バージョンで一斉リリースし、版間互換を提供しない
-status: proposed
+status: accepted
 date: 2026-08-17
 ---
 
@@ -21,7 +21,7 @@ date: 2026-08-17
 - KMP→Swift パッケージは `swiftPackage(url(...), exact(x.y.z))`、KMP→Android Native は同版の厳密指定 Maven 依存で、版ズレを機械的に排除する
 - 版が異なる組み合わせは非サポートとし、互換表 (バージョンマトリクス) は作らない。消費者への案内は「全部同じ番号を入れる」の1行で済ませる
 
-**deployment target の担保**: iOS 17 (cross/ADR-0002) の配布物での担保は「Swift パッケージの `platforms: .iOS(.v17)` 宣言 + KMP metadata の `iosMinimumDeploymentTarget=17.0`」を正とする (両方が消費者まで伝搬することを PoC で確認済み)。`-Xoverride-konan-properties` は klib (IR) には効かず、リポジトリ内で自らリンクする binary (テスト・Sample) 用の内部ビルド詳細であり、配布物の担保手段には数えない。
+**deployment target の担保**: iOS 17 (cross/ADR-0002) の配布物での担保は「Swift パッケージの `platforms: .iOS(.v17)` 宣言 + KMP metadata の `iosMinimumDeploymentTarget=17.0`」を正とする。`-Xoverride-konan-properties` は klib (IR) には効かず、リポジトリ内で自らリンクする binary (テスト・Sample) 用の内部ビルド詳細であり、配布物の担保手段には数えない。
 
 **版の単一ソースと注入**: 開発用の既定値はバージョンカタログ `android/gradle/libs.versions.toml` の `ksdialogs` (`X.Y.Z-SNAPSHOT`) だけが持つ。Gradle のビルドルート (android/ と kmp/) は同じ導出式 — Gradle プロパティ `version` (`-Pversion=`) の注入値があればそれ、無ければカタログ値 — で自分の `version` と本体への依存版を決め、module ごとの直書きは持たない。注入値は `X.Y.Z` または `X.Y.Z-{alpha|beta|rc}.N` に限り、空文字・空白を含む値・形式外の値はビルド設定で失敗させる。version が `-SNAPSHOT` のあいだは Maven Central へ向く発行タスクを失敗させ、ローカル発行は妨げない。リリース時は dispatch 入力 = `-Pversion=` の注入値 = tag = 各レジストリの version が同一文字列で流れる。
 
@@ -50,5 +50,6 @@ date: 2026-08-17
 - 前提 (Context) が崩れたとき。特に形態ごとに別々の release workflow で発行するようになったとき、または Gradle 以外のビルドルートが版の値を必要とするようになったとき
 
 ---
-出典: kasane/roadmaps/archive/2026-09-04-library-foundation/phases/phase-10-packaging-model/history.md (2026-08-17: 論点B) / kasane/roadmaps/package-distribution/phases/phase-5-native-packaging/agenda.md (決定事項: バージョンの単一ソースとリリース version の注入) / kasane/changes/archive/2026-09-08-add-native-distribution/design.md (Decision 3)
+出典: kasane/roadmaps/archive/2026-09-04-library-foundation/phases/phase-10-packaging-model/history.md (2026-08-17: 論点B) / kasane/roadmaps/package-distribution/phases/phase-5-native-packaging/agenda.md (決定事項: バージョンの単一ソースとリリース version の注入) / kasane/changes/archive/2026-09-08-add-native-distribution/design.md (Decision 3) / kasane/roadmaps/package-distribution/phases/phase-7-kmp-packaging/agenda.md (決定事項 A5) / kasane/changes/archive/2026-09-09-add-kmp-maven-distribution/design.md (Decision 2)
+現行照合: 2026-09-09 確認。`android/build.gradle.kts` と `kmp/build.gradle.kts` が同じ導出式 (`-Pversion=` 優先・形式検査・カタログ既定値) と SNAPSHOT ガード (名前に `MavenCentral` を含むタスクを設定段階の要求タスク名照合と task graph 確定時の 2 段で失敗させ、`dropMavenCentralDeployment` と `publishToMavenLocal` は通す) を持つ。kmp の android publication の POM の `ksdialogs-core` 依存版は同じ `-Pversion=` で発行した android artifact の version と同一文字列 (add-kmp-maven-distribution evidence/android-version-alignment.txt)。集約タスク `publish` 経由だけは Gradle の認証情報検査が同じ時点で走り、SNAPSHOT 診断と認証情報未解決が同時に報告される (診断は必ず出て実行前に止まる)。deployment target の伝搬 (Swift パッケージの宣言と KMP metadata の 17.0) は PoC で消費者側まで確認済み。判定: 維持
 関連: cross/ADR-0008 (配布モデル。SwiftPM tag と KMP の Swift 参照を version から導出する切り替え) / cross/ADR-0019 (Android の Maven 座標名)

@@ -14,8 +14,8 @@ plugins {
     alias(libs.plugins.mavenPublish)
 }
 
-// Maven 座標は公開識別子の写像表 (cross/ADR-0005) に従う。
-// version はルートビルドファイルが導出した 1 つの値を使う (`-Pversion=` の注入値、無ければカタログの既定値)
+// Maven 座標は公開識別子の写像表 (cross/ADR-0005) に従い、配布単位は Maven 1 点 (cross/ADR-0008)。
+// version はルートビルドファイルが導出した 1 つの値を使う (`-Pversion=` の注入値、無ければカタログの既定値。cross/ADR-0009)
 group = "jp.kamusoft"
 version = rootProject.extra["ksdialogsVersion"] as String
 
@@ -137,7 +137,7 @@ kotlin {
 
     // iOS ターゲットは iOS Native ライブラリ (Swift パッケージ) の ObjC 互換面へ委譲する (kmp/ADR-0002)。
     //
-    // 参照の種別は version から導出する。開発中 (SNAPSHOT) は monorepo 内の ios/ をそのまま指し、
+    // 参照の種別は version から導出する (cross/ADR-0008)。開発中 (SNAPSHOT) は monorepo 内の ios/ をそのまま指し、
     // `../ios` のライブ編集が即座に効く。リリース版の version が注入されたときだけ、配信リポジトリを
     // 同じ version の tag で厳密指定するリモート参照になる。
     // 明示のモード切替スイッチを置かないのは、リリース版でローカル参照を選べる余地を残すと、

@@ -22,10 +22,10 @@ plugins {
 // 対象サブプロジェクトの拡張として解決されるため参照できない。
 val catalogVersion = libs.versions.ksdialogs.get()
 
-// リリース時は `-Pversion=` で version を注入する。注入があればそれを優先し、無ければ
+// リリース時は `-Pversion=` で version を注入する (cross/ADR-0009)。注入があればそれを優先し、無ければ
 // カタログの開発用既定値 (SNAPSHOT) を使う。この 1 つの導出式に集めることで、注入値・tag・
-// Android の 2 artifact の version が同じ文字列のまま流れる (kmp/ が同じ式で自分の version と
-// 本体依存版を導出するようになれば、全形態が同じ version 文字列で配布される)。
+// Android の 2 artifact の version が同じ文字列のまま流れる (kmp/ も同じ式で自分の version と
+// 本体依存版を導出するため、全形態が同じ version 文字列で配布される)。
 val injectedVersion: String? = providers.gradleProperty("version").orNull
 
 // 注入値として受け付ける形式。リリース版 `X.Y.Z` と prerelease `X.Y.Z-{alpha|beta|rc}.N` に限る。
@@ -43,7 +43,7 @@ val ksDialogsVersion = if (injectedVersion == null) {
     injectedVersion
 }
 
-// SNAPSHOT を Sonatype Central へ発行しない。
+// SNAPSHOT を Sonatype Central へ発行しない (cross/ADR-0009)。
 //
 // 発行プラグインは version が `-SNAPSHOT` で終わるとき、mavenCentral リポジトリの URL を
 // Central の snapshot リポジトリへ向ける。そのため認証情報がある環境で Central 向けタスクを

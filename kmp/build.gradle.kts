@@ -16,7 +16,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
 }
 
-// リリース時は `-Pversion=` で version を注入する。注入があればそれを優先し、無ければ
+// リリース時は `-Pversion=` で version を注入する (cross/ADR-0009)。注入があればそれを優先し、無ければ
 // カタログの開発用既定値 (SNAPSHOT) を使う。android/ のルートビルドファイルと同じ導出式で、
 // KMP artifact の version・本体 `jp.kamusoft:ksdialogs-core` への依存版・Swift パッケージ参照の
 // exact がすべてこの 1 つの値から出るため、形態をまたいだ版の突き合わせを手で揃える箇所が無い
@@ -42,7 +42,7 @@ val ksDialogsVersion = if (injectedVersion == null) {
 // 公開 API 形状の検査モジュール `:api-surface-check` は発行しないため座標を持たせない
 extra["ksdialogsVersion"] = ksDialogsVersion
 
-// SNAPSHOT を Sonatype Central へ発行しない。
+// SNAPSHOT を Sonatype Central へ発行しない (cross/ADR-0009)。
 //
 // 発行プラグインは version が `-SNAPSHOT` で終わるとき、mavenCentral リポジトリの URL を
 // Central の snapshot リポジトリへ向ける。そのため認証情報がある環境で Central 向けタスクを
