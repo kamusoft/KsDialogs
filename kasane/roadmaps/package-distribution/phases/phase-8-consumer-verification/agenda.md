@@ -77,6 +77,8 @@ KMP 消費者は利用者と同じ 1 つの Gradle プロジェクト (`shared` 
 
 - README に KMP のホスト側の登録例 (iOS / Android) を載せるかは初回リリース前の docs-refresh の論点に含める。載せるなら `readme-example-lint.py` の対応表に 2 行足す
 - `main` 宛て PR で macOS の job が 6 つ並ぶ (本体 3 + 消費者 3)。同時実行上限 5 の待ちを含めた PR 全体の壁時計を実測で記録し、phase-9 の release workflow の段構成 (dry-run 段の並走数) の参考にする
+- 実測 (2026-09-09、draft PR #1 → 一時 `main`、コールドキャッシュ): 消費者 job の所要は ios 46 秒 / android 2 分 50 秒 / kmp 9 分 20 秒 / maui 15 分 26 秒 (timeout 30 / 30 / 30 / 40 分に対して余裕あり、詰める余地は kmp 20 分・maui 30 分程度)。PR 全体の壁時計は 19 分 46 秒で、macOS 6 job のうち本体の ios / maui が約 7 分 40 秒待ちに入った (消費者側は待ちなし)。artifact 経路 (package 段の upload → `artifact` 指定) は一時 workflow で 4 形態とも成功 (kmp 8 分 10 秒 / maui 13 分 24 秒)。証跡は change の evidence/verification/5.5・5.6
+- `main` は phase-4 の決定どおり未作成のまま。5.5 の確認は 36ed37c から一時的に作った `main` で行い、確認後に削除した (add-consumer-verification の deviation)。phase-9 で `main` を作るときは branch protection と併せて必須 status check 10 件を登録する
 
 ## TODO
 

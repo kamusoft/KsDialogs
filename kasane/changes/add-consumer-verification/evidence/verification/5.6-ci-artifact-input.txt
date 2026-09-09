@@ -1,0 +1,41 @@
+# 5.6 (CI 側) `artifact` 入力での消費者 workflow 呼び出し (2026-09-09)
+
+対応 Scenario: 外部で準備した配布物を消費者に渡す / artifact を与えた呼び出し / 別 workflow からの呼び出し
+
+## 手順
+
+一時 workflow `.github/workflows/tmp-consumer-artifact-check.yml` (workflow_dispatch のみ、確認後に削除) を
+develop (ef3daba) で dispatch (run 34357961864)。package job 3 つが各形態の `prepare-feed.sh --mode dry-run` の
+出力 (design Decision 3 の表の構造) を upload-artifact し、消費者 workflow 4 本を `mode: dry-run` /
+`version: 0.0.0-alpha.0` / `artifact: <package job の artifact 名>` で呼ぶ (KMP は Android の artifact)。
+
+## 結果 (全 job 成功)
+
+  | job | 所要 |
+  |---|---|
+  | package-ios (macos) | 10 秒 |
+  | package-android (ubuntu) | 1 分 35 秒 |
+  | package-maui (macos) | 6 分 26 秒 |
+  | consumer-ios-artifact / verify | 1 分 13 秒 |
+  | consumer-android-artifact / verify | 2 分 11 秒 |
+  | consumer-kmp-artifact / verify | 8 分 10 秒 |
+  | consumer-maui-artifact / verify | 13 分 24 秒 |
+
+## 観測: download → `--reference` の経路
+
+  consumer-ios-artifact:     download 先 <runner-temp>/reference/KsDialogs-SPM (末尾ディレクトリ名が identity)、
+                             ログに sync-snapshot の実行なし。Resolved source packages に KsDialogs @ local
+  consumer-android-artifact: download 先 <runner-temp>/reference、参照先: <runner-temp>/reference、
+                             android/ の publishToMavenLocal の実行なし。版一致と Compose 非混入の検査が通過
+  consumer-maui-artifact:    download 先 <runner-temp>/reference、dotnet pack の実行なし。版一致・取得元・
+                             platform 固有アセットの検査が通過
+  consumer-kmp-artifact:     download 先 <runner-temp>/reference。ログ「準備済みの参照先を使うため、本体の Android
+                             ライブラリの発行は行わない」の後、:ksdialogs-kmp:publishToMavenLocal (file:// 上書き) と
+                             clone の tag だけ実行。全 5 publication と ksdialogs-core が 0.0.0-alpha.0 で解決、
+                             Swift 参照は合成 package・ホスト側・発行 metadata で一致、pin は 1 つ
+
+  4 job とも GITHUB_TOKEN は Contents: read / Metadata: read、secrets の受け渡しなし。
+
+## 判定
+
+成立。手元分 (5.6-prepared-reference.txt) と合わせて tasks 5.6 は完了。

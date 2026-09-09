@@ -1,0 +1,71 @@
+# 5.5 `main` 宛ての draft PR での CI 起動 (2026-09-09)
+
+対応 Scenario: main 宛ての PR で起動する / develop への push で本体検証と lint が起動する /
+消費者検証は dry-run で動く / 解決版と取得元が読める / 配信先への書き込み経路を持たない /
+status check 名が固定される
+
+## 前提 (deviation 参照)
+
+リモートに `main` は無かった (cross/ADR-0016: 初回リリースの PR で作る)。実装前の commit 36ed37c から
+一時的に `main` を作成 (オーナーが push)、develop → main の draft PR #1 を作成。確認後に PR をクローズし
+`main` を削除する。branch protection は付けていない。
+
+## 観測 1: `develop` への push (cfa6033 / ef3daba) — 消費者 4 job は起動しない
+
+  run (push, develop): changes / lint 成功、consumer-ios / -android / -kmp / -maui は skipped、
+  本体 5 job (ios / android / android-instrumented / kmp / maui) は実行。lint job の README 一致検査
+  (8 検査目) も通過。
+
+## 観測 2: `main` 宛て draft PR #1 — 消費者 4 job が起動し成功 (run 34357952236、ef3daba)
+
+status check 名 (ci.yml 冒頭コメントの 10 件と一致):
+  changes / lint / ios / verify / android / verify / android-instrumented / verify / kmp / verify /
+  maui / verify / consumer-ios / verify / consumer-android / verify / consumer-maui / verify /
+  consumer-kmp / verify
+
+所要時間 (job の started → completed。フィード準備込み、コールドキャッシュ):
+
+  | job | 所要 | 備考 |
+  |---|---|---|
+  | consumer-ios / verify | 46 秒 | timeout 30 分 |
+  | consumer-android / verify | 2 分 50 秒 | timeout 30 分 |
+  | consumer-kmp / verify | 9 分 20 秒 | timeout 30 分 |
+  | consumer-maui / verify | 15 分 26 秒 | timeout 40 分 |
+  | ios / verify | 6 分 19 秒 | 開始が 7 分 48 秒待ち (macOS 同時実行上限) |
+  | maui / verify | 12 分 10 秒 | 開始が 7 分 33 秒待ち (同上) |
+  | PR 全体の壁時計 | 19 分 46 秒 | macOS job 6 本のうち 2 本が待ちに入った |
+
+  消費者 4 job のうち待ちに入ったものは無し (先に enqueue された順で本体の ios / maui が待った)。
+
+## 観測 3: 解決版と取得元 (各 job のログ末尾。同じ内容が GITHUB_STEP_SUMMARY へも書かれる実装)
+
+  consumer-ios:   Resolved source packages:
+                    KsDialogs: <runner-temp>/consumer/KsDialogs-SPM @ local
+                    VerificationApp: <runner-temp>/consumer/consumer
+  consumer-android: 参照先: <runner-temp>/consumer/maven
+                    +--- jp.kamusoft:ksdialogs:0.0.0-alpha.0
+                    |    +--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+                    \--- jp.kamusoft:ksdialogs-core:0.0.0-alpha.0
+  consumer-maui:  facade と binding 2 件が 0.0.0-alpha.0 で一致し、取得元も参照先と一致し、
+                  binding は platform 固有アセットとして入っている
+                  (net10.0-ios: lib/net10.0-ios26.0/KsDialogs.Binding.iOS.dll)
+                  XA4301 (native ライブラリの重複): 検出なし
+  consumer-kmp:   androidApp  jp.kamusoft:ksdialogs-kmp-android / ksdialogs-core  0.0.0-alpha.0
+                  iosArm64 / iosSimulatorArm64 / iosX64  jp.kamusoft:ksdialogs-kmp と各 iOS publication  0.0.0-alpha.0
+
+  job summary の描画は GitHub の run ページで目視する (REST に summary の取得口が無く、
+  匿名の閲覧では表示されない)。
+
+## 観測 4: permissions と secrets (4 job とも同じ)
+
+  ##[group]GITHUB_TOKEN Permissions
+  Contents: read
+  Metadata: read
+  ##[endgroup]
+
+  workflow_call に secrets の受け渡しは無く、4 job のログに配信先 (KsDialogs-SPM / Central / nuget.org)
+  への push・publish・tag の実行は無い。
+
+## 判定
+
+成立 (job summary の描画のみオーナーの目視で補う)。所要時間は agenda (phase-8) の申し送りへ記録。
