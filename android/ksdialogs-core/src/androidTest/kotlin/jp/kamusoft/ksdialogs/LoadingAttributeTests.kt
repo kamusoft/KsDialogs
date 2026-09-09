@@ -13,6 +13,7 @@ import jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity
 import jp.kamusoft.ksdialogs.support.DialogTouchInjection
 import jp.kamusoft.ksdialogs.support.FixedContentSizeView
 import jp.kamusoft.ksdialogs.support.InstrumentedDialogWaiting
+import jp.kamusoft.ksdialogs.support.InstrumentedStateSettling
 import jp.kamusoft.ksdialogs.support.LoadingLayoutObservation
 import jp.kamusoft.ksdialogs.support.LoadingTestGate
 import jp.kamusoft.ksdialogs.support.LoadingTestHarness
@@ -25,7 +26,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -129,6 +129,11 @@ class LoadingAttributeTests {
 
         harness.loading.show(LoadingTestViewModel())
         val contentRect = settledContentRectOnScreen(harness)
+        // 器のウィンドウが入力の宛先になるまで待つ。切り替わる前に注入したタップは背後へ抜ける
+        InstrumentedStateSettling.assertWindowFocused(
+            requireNotNull(harness.container).layoutHost,
+            "前提: Loading の器が入力の宛先になっている",
+        )
 
         val (x, y) = outsidePointOf(contentRect)
         DialogTouchInjection.tap(x, y)
@@ -147,6 +152,12 @@ class LoadingAttributeTests {
         val dialogSession = presentDialog(dialogTaps)
 
         try {
+            // ダイアログのウィンドウが入力の宛先になるまで待つ。宛先が切り替わる前に注入した
+            // タップは背後の画面が受け取ってしまい、前提そのものが成立しない
+            InstrumentedStateSettling.assertWindowFocused(
+                dialogSession.contentView,
+                "前提: ダイアログが入力の宛先になっている",
+            )
             val dialogContentRect = LoadingLayoutObservation.readOnMain {
                 LoadingLayoutObservation.rectOnScreen(dialogSession.contentView)
             }
@@ -156,6 +167,10 @@ class LoadingAttributeTests {
 
             harness.loading.show()
             settledContentRect(harness)
+            InstrumentedStateSettling.assertWindowFocused(
+                requireNotNull(harness.container).layoutHost,
+                "前提: Loading の器が入力の宛先になっている",
+            )
 
             DialogTouchInjection.tap(dialogContentRect.exactCenterX(), dialogContentRect.exactCenterY())
             assertEquals("ダイアログへのタップも遮られる", 1, dialogTaps.get())
@@ -163,6 +178,10 @@ class LoadingAttributeTests {
 
             // Loading を閉じると、遮っていた入力はダイアログ側へ戻る
             harness.loading.hide()
+            InstrumentedStateSettling.assertWindowFocused(
+                dialogSession.contentView,
+                "前提: 入力の宛先がダイアログへ戻っている",
+            )
             DialogTouchInjection.tap(dialogContentRect.exactCenterX(), dialogContentRect.exactCenterY())
             assertEquals("閉じたあとはダイアログが受け取る", 2, dialogTaps.get())
         } finally {
@@ -238,15 +257,18 @@ class LoadingAttributeTests {
 
                 rotate(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
 
+                // 向きの要求を出した時点ではまだ前の器が載っている。再生成の完了 (器の載せ直し)
+                // を待たずに読むと、回転前の器をそのまま「回転後」として読んでしまう
+                assertTrue(
+                    "前提: 画面の再生成をまたいで器が載せ直されている",
+                    InstrumentedDialogWaiting.waitUntil {
+                        harness.container.let { it != null && it !== containerBeforeRotation }
+                    },
+                )
                 assertTrue("画面の変化をまたいで表示は継続する", harness.waitUntilPresenting())
                 assertSame("中身は作り直されない", contentView, harness.contentView)
                 val containerAfterRotation = requireNotNull(harness.container)
                 LoadingLayoutObservation.awaitSettled(containerAfterRotation)
-                assertNotSame(
-                    "前提: 画面の再生成をまたいで器が載せ直されている",
-                    containerBeforeRotation,
-                    containerAfterRotation,
-                )
                 assertNotEquals(
                     "前提: 画面の寸法が実際に変わっている",
                     sizeBeforeRotation,

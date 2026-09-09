@@ -12,11 +12,21 @@ extension MauiBridgeSuite {
     @Suite("中身なしの供給")
     @MainActor
     struct ContentSupplyTests {
-        /// 観察の途中で期限が来ないだけの長さ (ミリ秒)。
-        private static let toastDuration = NSNumber(value: 3000)
+        /// 検証の間ずっと残っていてほしい表示時間 (ミリ秒)。
+        ///
+        /// 「先に表示した Toast の器はそのまま残る」は、観察を終えるまで 1 枚目が期限切れに
+        /// ならないことが前提になる。実行機の速さで観察の所要は変わるので、期限に余裕を積むのではなく
+        /// **観察の所要と関係の無い長さ**にして、片付けは期限切れを待たずに撤去で行う。
+        private static let toastDuration = NSNumber(value: 60_000)
 
         /// 追加の通知が来ないことを見届けるための待ち。
         private static let settleTimeout = Duration.milliseconds(300)
+
+        /// 重なりが落ち着くのを待つ上限。
+        ///
+        /// 落ち着き待ちは成立した時点で抜けるので、上限は実行機が遅い回の余裕として置く
+        /// (使い切るのは落ち着かなかった回だけで、そのときは観測履歴が説明文に載る)。
+        private static let settleWaitTimeout = Duration.seconds(2)
 
         @Test("[BV-MA-01] Dialog は提示されず閉鎖の通知が失敗としてちょうど1回届く")
         func BV_MA_01_dialogContentUnavailable() async throws {
@@ -119,10 +129,23 @@ extension MauiBridgeSuite {
                     "後続の Toast は受理も表示もされる"
                 )
                 // 枚数が 2 に達した瞬間は、「中身なしの1枚が器を作り、後続がまだ取り付いていない」
-                // 途中の並びとも一致する。落ち着くまで待ってから枚数と同一性を見る。
-                _ = await BridgeTestWaiting.waitUntil(timeout: Self.settleTimeout) {
-                    overlays.added.count > 2
+                // 途中の並びとも一致する。独立した 4 つの観測 — 今の枚数・一度でも取り付いた数・
+                // 中身の供給が呼ばれ切ったこと・先頭が最初の器のままであること — が揃って
+                // 落ち着くまで待ってから、枚数と同一性を見る。
+                let settled = await BridgeTestWaiting.awaitSettled(timeout: Self.settleWaitTimeout) {
+                    let attachedEver = overlays.attachedEver
+                    return BridgeTestWaiting.Reading(
+                        settled: overlays.added.count == 2
+                            && attachedEver?.count == 2
+                            && overlays.added.first === firstContainer
+                            && failingSupply.count == 1,
+                        "added=\(overlays.added.count)"
+                            + " attachedEver=\(attachedEver.map { "\($0.count)" } ?? "読めない")"
+                            + " failingSupply=\(failingSupply.count)"
+                            + " firstKept=\(overlays.added.first === firstContainer)"
+                    )
                 }
+                try #require(settled.settled, settled.message("重なった器が 2 枚で落ち着く"))
 
                 #expect(failingSupply.count == 1, "中身の供給は1回だけ呼ばれる")
                 let attached = try #require(overlays.attachedEver, "器の取り付けを観測できる")
@@ -133,8 +156,16 @@ extension MauiBridgeSuite {
                     "先に表示した Toast の器はそのまま残る"
                 )
             } cleanup: {
-                // Toast は期限が来れば自分で消える。次のテストの観測点を汚さないよう全部消えるまで待つ。
-                await BridgeTestWaiting.waitUntil(timeout: .seconds(10)) { overlays.added.isEmpty }
+                // 表示時間は観察の所要から独立させてあるので、期限切れを待つと試験時間が伸びる。
+                // 次のテストの観測点を汚さないよう、重なった器をここで画面から外す。
+                // 器を直接外すため橋渡しの側は「表示中」のまま残るが、表示時間の期限タイマーは
+                // 橋渡しを保持しないので、このテストが終われば発火してもどこにも作用しない。
+                for container in overlays.added {
+                    container.removeFromSuperview()
+                }
+                return await BridgeTestWaiting.waitUntil(timeout: Self.settleTimeout) {
+                    overlays.added.isEmpty
+                }
             }
         }
 

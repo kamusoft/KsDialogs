@@ -243,15 +243,23 @@ jobs:
           )
           echo "KS_SIMULATOR_UDID=${udid}" >> "$GITHUB_ENV"
 
+      # スイート同士の並列実行は止める。ランナーは手元より CPU が少なく、並列に走る
+      # スイートが MainActor を取り合うと提示待ちのテストが時間切れになる。
+      # 環境のタイミングでだけ揺らぐと切り分けられたテストは CI 上でのみ skip できる
+      # (テスト側の skipOnCi)。その判定材料を TEST_RUNNER_ を冠した環境変数で渡す —
+      # テストの実行体は別プロセスで動き、この接頭辞の付いた変数だけが接頭辞を外して届く。
       - name: Run iOS bridge tests on iOS Simulator
         id: ios-bridge-tests
         working-directory: maui/macios/native
+        env:
+          TEST_RUNNER_KSDIALOGS_CI: '1'
         run: |
           set -o pipefail
           xcodebuild test \
             -project KsDialogsMauiBridge.xcodeproj \
             -scheme KsDialogsMauiBridge \
             -destination "platform=iOS Simulator,id=${KS_SIMULATOR_UDID}" \
+            -parallel-testing-enabled NO \
             | tee "${RUNNER_TEMP}/xcodebuild-bridge.log"
 
       - name: Verify iOS bridge test count

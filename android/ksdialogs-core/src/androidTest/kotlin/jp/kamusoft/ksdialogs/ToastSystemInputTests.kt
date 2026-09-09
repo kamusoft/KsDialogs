@@ -2,12 +2,12 @@ package jp.kamusoft.ksdialogs
 
 import android.accessibilityservice.AccessibilityService
 import android.os.Build
-import android.view.WindowInsets
-import android.view.inputmethod.InputMethodManager
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import jp.kamusoft.ksdialogs.support.DialogScreenshotEvidence
+import jp.kamusoft.ksdialogs.support.ImeSettleWaiting
+import jp.kamusoft.ksdialogs.support.ImeWindowCleanup
 import jp.kamusoft.ksdialogs.support.InstrumentedDialogWaiting
 import jp.kamusoft.ksdialogs.support.ToastInputTestActivity
 import jp.kamusoft.ksdialogs.support.ToastTestHarness
@@ -42,96 +42,114 @@ class ToastSystemInputTests {
     fun Toast_表示中でも_IME_を出し入れできる() = runBlocking<Unit> {
         // IME が出ているかどうかを直接読めるのは API 30 以降。それ以前は判定材料が無い
         assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-        val harness = ToastTestHarness(currentActivity())
+        val activity = currentActivity()
+        val harness = ToastTestHarness(activity)
+        val ime = ImeSettleWaiting(activity, activity.inputField)
+        ime.attach()
+        try {
+            // 画面の起動に伴うシステム側の要求が最初の表示要求と交差しないよう、先に落ち着かせる
+            ime.assertIdleBeforeFirstRequest("画面の起動に伴う IME の出し入れが落ち着かない")
 
-        // Toast を出す前の振る舞いを基準にする
-        showSoftInput()
-        assertTrue("Toast を出す前から IME が出ない", awaitImeVisible(true))
-        hideSoftInput()
-        assertTrue(awaitImeVisible(false))
+            // Toast を出す前の振る舞いを基準にする
+            ime.requestShow()
+            ime.assertSettled(true, "Toast を出す前から IME が出ない")
+            ime.requestHide()
+            ime.assertSettled(false, "Toast を出す前から IME が引っ込まない")
 
-        harness.toast.show("IME と併存", durationMs = LONG_DURATION_MILLIS)
-        assertTrue(harness.waitUntilPresenting())
-        DialogScreenshotEvidence.capture("toast-ime-idle")
+            harness.toast.show("IME と併存", durationMs = LONG_DURATION_MILLIS)
+            assertTrue(harness.waitUntilPresenting())
+            DialogScreenshotEvidence.capture("toast-ime-idle")
 
-        showSoftInput()
-        assertTrue("Toast 表示中に IME が出ない", awaitImeVisible(true))
-        DialogScreenshotEvidence.capture("toast-ime-shown")
-        assertTrue("IME の表示で Toast が消えている", harness.isPresenting)
-        assertTrue("入力欄がフォーカスを失っている", currentActivity().inputField.hasFocus())
+            ime.requestShow()
+            ime.assertSettled(true, "Toast 表示中に IME が出ない")
+            DialogScreenshotEvidence.capture("toast-ime-shown")
+            assertTrue("IME の表示で Toast が消えている", harness.isPresenting)
+            assertTrue("入力欄がフォーカスを失っている", currentActivity().inputField.hasFocus())
 
-        hideSoftInput()
-        assertTrue("Toast 表示中に IME が引っ込まない", awaitImeVisible(false))
-        DialogScreenshotEvidence.capture("toast-ime-hidden")
-        assertTrue("IME の消滅で Toast が消えている", harness.isPresenting)
+            ime.requestHide()
+            ime.assertSettled(false, "Toast 表示中に IME が引っ込まない")
+            DialogScreenshotEvidence.capture("toast-ime-hidden")
+            assertTrue("IME の消滅で Toast が消えている", harness.isPresenting)
 
-        assertTrue(harness.waitUntilEmpty())
+            detachToasts(harness)
+            assertTrue("後始末で Toast の器が画面に残っている", awaitContainersDetached(harness))
+        } finally {
+            // 途中で落ちた回もウィンドウ・観測の口・IME の見えを残さない。
+            // IME が出たまま抜けると、次のテストが最初に起こす操作をその IME が横取りする
+            ime.restoreHidden()
+            detachToasts(harness)
+            ime.detach()
+        }
     }
 
     @Test
     fun Toast_表示中でも戻るとホームが通る() = runBlocking<Unit> {
         val harness = ToastTestHarness(currentActivity())
+        // 前のテストが IME を出したまま抜けていると、最初の戻るを IME が食べる。
+        // 順序への依存を受け側でも切る
+        ImeWindowCleanup.ensureHidden(currentActivity(), currentActivity().inputField)
         val backPressesBefore = currentActivity().backPressCount
 
-        harness.toast.show("ジェスチャと併存", durationMs = LONG_DURATION_MILLIS)
-        assertTrue(harness.waitUntilPresenting())
-        assertTrue(
-            InstrumentedDialogWaiting.waitUntil {
-                harness.contentViews.single().let { it.isAttachedToWindow && it.alpha == 1f }
-            },
-        )
-        DialogScreenshotEvidence.capture("toast-gesture-before")
+        try {
+            harness.toast.show("ジェスチャと併存", durationMs = LONG_DURATION_MILLIS)
+            assertTrue(harness.waitUntilPresenting())
+            assertTrue(
+                InstrumentedDialogWaiting.waitUntil {
+                    harness.contentViews.single().let { it.isAttachedToWindow && it.alpha == 1f }
+                },
+            )
+            DialogScreenshotEvidence.capture("toast-gesture-before")
 
-        performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-        assertTrue(
-            "Toast 表示中に戻るが画面へ届かない",
-            InstrumentedDialogWaiting.waitUntil {
-                currentActivity().backPressCount == backPressesBefore + 1
-            },
-        )
-        assertTrue("戻るで Toast が消えている", harness.isPresenting)
-        DialogScreenshotEvidence.capture("toast-back-delivered")
+            performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+            assertTrue(
+                "Toast 表示中に戻るが画面へ届かない",
+                InstrumentedDialogWaiting.waitUntil {
+                    currentActivity().backPressCount == backPressesBefore + 1
+                },
+            )
+            assertTrue("戻るで Toast が消えている", harness.isPresenting)
+            DialogScreenshotEvidence.capture("toast-back-delivered")
 
-        val stopsBefore = currentActivity().stopCount
-        performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
-        assertTrue(
-            "Toast 表示中にホームが通らない",
-            InstrumentedDialogWaiting.waitUntil {
-                currentActivity().stopCount == stopsBefore + 1
-            },
-        )
+            val stopsBefore = currentActivity().stopCount
+            performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
+            assertTrue(
+                "Toast 表示中にホームが通らない",
+                InstrumentedDialogWaiting.waitUntil {
+                    currentActivity().stopCount == stopsBefore + 1
+                },
+            )
 
-        assertEquals(
-            "ホームで戻るが余分に届いている",
-            backPressesBefore + 1,
-            currentActivity().backPressCount,
-        )
-        assertTrue(harness.waitUntilEmpty())
-    }
+            assertEquals(
+                "ホームで戻るが余分に届いている",
+                backPressesBefore + 1,
+                currentActivity().backPressCount,
+            )
 
-    /** ソフトキーボードを出す。 */
-    private suspend fun showSoftInput() = withContext(Dispatchers.Main) {
-        val activity = currentActivity()
-        activity.inputField.requestFocus()
-        val manager = activity.getSystemService(InputMethodManager::class.java)
-        manager.showSoftInput(activity.inputField, 0)
-    }
-
-    /** ソフトキーボードを引っ込める。 */
-    private suspend fun hideSoftInput() = withContext(Dispatchers.Main) {
-        val activity = currentActivity()
-        val manager = activity.getSystemService(InputMethodManager::class.java)
-        manager.hideSoftInputFromWindow(activity.inputField.windowToken, 0)
-    }
-
-    /** IME の見えが目的の状態になるまで待つ。 */
-    private suspend fun awaitImeVisible(visible: Boolean): Boolean =
-        InstrumentedDialogWaiting.waitUntil(IME_TIMEOUT_MILLIS) {
-            val insets = readOnMain {
-                currentActivity().window.decorView.rootWindowInsets
-            }
-            insets != null && insets.isVisible(WindowInsets.Type.ime()) == visible
+            detachToasts(harness)
+            assertTrue("後始末で Toast の器が画面に残っている", awaitContainersDetached(harness))
+        } finally {
+            detachToasts(harness)
         }
+    }
+
+    /**
+     * 検証を終えた Toast を画面から撤去する。
+     *
+     * 表示時間は IME の待ちの上限から独立させてあるので、期限切れを待つと試験時間が伸びる。
+     * 提示先を外すと、表示は coordinator の中に残ったまま器のウィンドウだけが取り外される。
+     */
+    private suspend fun detachToasts(harness: ToastTestHarness) = withContext(Dispatchers.Main) {
+        harness.changeHost(null)
+    }
+
+    /**
+     * 器が画面から外れるまで待つ。
+     *
+     * 見るのは器の取り外しだけで、表示そのものが期限で終わることは見ない
+     * (期限切れでの消滅は Toast の期限を扱う別のテストが担保する)。
+     */
+    private suspend fun awaitContainersDetached(harness: ToastTestHarness): Boolean =
+        InstrumentedDialogWaiting.waitUntil { harness.containers.isEmpty() }
 
     /** 支援技術の全体操作を起こす。システムが受け取る戻る・ホームと同じ入口。 */
     private fun performGlobalAction(action: Int) {
@@ -143,13 +161,6 @@ class ToastSystemInputTests {
         instrumentation.waitForIdleSync()
     }
 
-    private fun <T> readOnMain(read: () -> T): T {
-        val value = AtomicReference<T>()
-        InstrumentationRegistry.getInstrumentation().runOnMainSync { value.set(read()) }
-        @Suppress("UNCHECKED_CAST")
-        return value.get() as T
-    }
-
     private fun currentActivity(): ToastInputTestActivity {
         val activity = AtomicReference<ToastInputTestActivity>()
         activityRule.scenario.onActivity { activity.set(it) }
@@ -158,9 +169,6 @@ class ToastSystemInputTests {
 
     private companion object {
         /** 検証の間ずっと残っていてほしい表示時間 (ミリ秒)。 */
-        const val LONG_DURATION_MILLIS = 8_000
-
-        /** IME の出し入れを待つ上限 (ミリ秒)。 */
-        const val IME_TIMEOUT_MILLIS = 8_000L
+        const val LONG_DURATION_MILLIS = 60_000
     }
 }

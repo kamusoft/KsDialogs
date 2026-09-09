@@ -6,8 +6,8 @@
 # - main 宛ての pull_request (head は develop のみ。lint job が検査する): 同じ内容を
 #   マージ条件として実行する
 #
-# `paths-ignore` は使わない。lint (gitleaks / identity-lint / scenario-id-coverage) は
-# `kasane/**` も入力にするため、起動のたびに必ず走らせる必要がある。本体検証 5 job だけを
+# `paths-ignore` は使わない。lint (gitleaks / identity-lint / scenario-id-coverage /
+# ci-skip-lint 等) は `kasane/**` も入力にするため、起動のたびに必ず走らせる必要がある。本体検証 5 job だけを
 # 軽量な変更検出 job (changes) の出力で絞り、ビルド・テストのどちらにも入力されない
 # ファイル (開発ハーネスの記録・Issue テンプレート・貢献案内) だけの push ではスキップする。
 # main 宛ての pull_request では絞り込みを行わず常に全 job を実行する — 必須 status check
@@ -250,7 +250,17 @@ jobs:
       - name: Scenario ID coverage
         run: python3 scripts/scenario-id-coverage.py
 
-      # SwiftPM 配信リポジトリへのスナップショット同期スクリプトの自己テスト (lint job の 6 検査目、cross/ADR-0020)。
+      # CI 上だけ実行しないテストの印 (@SkipOnCi / .skipOnCi) が、オーナー承認の許可リスト
+      # (kasane/config.yaml の lint.ci-skip.allow) に載っているかの検査。承認の無い skip と、
+      # 切り分けの根拠を欠いた理由を落とす。
+      # 自己テストも回す。検出器が退行して無音で素通りする経路は、規約の歯止めそのものを
+      # 無効にするため (同期スクリプトの自己テストと同じ理屈、cross/ADR-0020)。
+      - name: CI skip allowlist lint
+        run: |
+          python3 scripts/ci-skip-lint.py --selftest
+          python3 scripts/ci-skip-lint.py
+
+      # SwiftPM 配信リポジトリへのスナップショット同期スクリプトの自己テスト (cross/ADR-0020)。
       # 一時ディレクトリに配信リポジトリを模した git リポジトリを作り、配置内容・冪等性・
       # 誤指定の拒否・git 非操作を検査する (monorepo 側は読むだけ)。
       - name: SPM snapshot sync script test

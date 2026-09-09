@@ -28,6 +28,14 @@ lint:
     nest-depth: 3                # 違反となるネスト段数 (3 なら 2 段まで許す)
     heading-chars: 1200          # 見出しあたり散文字数の警告閾値 (表・コード・図は数えない)
     file-chars: 10000            # 1 ファイルの散文字数の警告閾値 (分割の検討トリガー)
+  ci-skip:                       # CI 限定スキップの許可リスト (scripts/ci-skip-lint.py が検査。規約は handbook/cross/ci-flaky-test-policy.md)
+    # skip はオーナーがこの列挙に足すことで承認する。**エージェントは自分で足さない** —
+    # 切り分けの実測を change の evidence に残して判断を仰ぎ、ここに載ってから印を付ける。
+    # 項目の形: - test: <クラス名.テスト名 (Swift は suite 名.テスト名)>
+    #             mechanism: <失敗の機構の一言>
+    #             approved: <YYYY-MM-DD (オーナーが承認した日)>
+    #             review-by: <YYYY-MM-DD (再評価の期限。既定は approved + 90 日)>
+    allow: []
   comment-policy:                # ソースコメント規約の lint / hook (opt-in — この節の定義が採用宣言。規約本文は handbook/cross/comment-policy.md、配布元は ksn-init templates/)
     exclude: [skills]            # 利用者向けドキュメント置き場は規約対象外 (kasane/ .claude/ build/ .git/ は常に対象外)
     ext: []                      # 検査対象に追加する拡張子 (既定は scripts/comment-policy-lint.py 冒頭の列挙)

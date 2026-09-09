@@ -8,23 +8,18 @@
 # 特定の API レベルでしか成立しない挙動のテストは自分を skip して結果 XML の skipped に
 # 数えられるため、実行数は tests から skipped を引いた数で見る。
 #
-# Toast 表示中の IME hide がこの job でだけ間欠的に失敗するため、Emulator が生きている
-# 間の logcat と実行環境の素性を常に採取し、失敗時は IME / ウィンドウの dumpsys も取って
-# 成果物に残す。手元 (arm64) では自然再現も強制再現も得られておらず、失敗した回の
-# ImeTracker / InsetsController の時系列が唯一の判別材料になる。
+# この job だけは Emulator が生きている間の logcat と実行環境の素性を常に採取し、失敗時は
+# IME / ウィンドウの dumpsys も取って成果物に残す。instrumented のテストは IME・ウィンドウ・
+# 入力の宛先といった OS 側の状態遷移に触れており、失敗した回の状態遷移 (ImeTracker /
+# InsetsController の時系列) は事後には読めないため、その回の採取物だけが判別材料になる。
+# 実行機の速さで並びが変わる領域なので、手元で再現しない落ち方をここで切り分ける。
+#
+# 環境のタイミングでだけ揺らぐと切り分けられたテストは、CI 上でのみ skip できる。
+# その判定材料として、実行引数 ksdialogsCi をこの job から渡す (テスト側の SkipOnCi)。
 name: verify android instrumented
 
 on:
   workflow_call:
-    inputs:
-      artifact-suffix:
-        # 同一 run から複数回呼ばれるときに成果物名を分けるための接尾辞。
-        # 成果物名は run 内で一意でなければならず、重複すると upload が失敗する。
-        # 既定は空文字で、1 回だけ呼ばれる通常の検証では名前が変わらない。
-        description: 成果物名に付ける接尾辞 (同一 run から複数回呼ぶときに一意化する)
-        required: false
-        type: string
-        default: ''
 
 permissions:
   contents: read
@@ -121,8 +116,12 @@ jobs:
             adb shell ime list -s -a || echo "(取得できなかった)"
             echo "## default_input_method"
             adb shell settings get secure default_input_method || echo "(取得できなかった)"
-            echo "## emulator -version"
-            "${ANDROID_HOME}/emulator/emulator" -version 2>&1 | head -n 5 || echo "(取得できなかった)"
+            echo "## emulator version (sdkmanager --list_installed)"
+            # `emulator -version` はランナーに libpulse.so.0 が無いため起動段階で失敗する。
+            # 版は導入済みパッケージの一覧の emulator 行から取る。
+            "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --list_installed 2>/dev/null \
+              | grep -E '^[[:space:]]*emulator[[:space:]]' \
+              || echo "(sdkmanager から emulator の版を取得できなかった)"
             echo "## installed system images (sdkmanager --list_installed)"
             # 座標 (api-level / target / arch) をここに重複して書くと、上の with: を変えたときに
             # grep だけ取り残されて静かに空になる。導入済みの system-images 行を全部残す。
@@ -153,10 +152,10 @@ jobs:
           logcat_pid=$!
 
           # 採取経路が端まで通っていることを gradle の前に確かめる。adb が即座に落ちていても
-          # テストは通常どおり走って成否を返すので、空振りに気づくのが成果物を開いた
-          # 後 (Emulator 1 台 × 最大 30 分を反復した後) になる。ここで落として無駄を省く。
-          # 「一定時間で非空」の判定は端末が静かな窓に当たると偽陽性になり、この workflow は
-          # 通常の検証 CI も共有するので、端末側に印を打ってそれが届くのを待つ形にする。
+          # テストは通常どおり走って成否を返すので、空振りに気づくのが成果物を開いた後
+          # (Emulator 1 台 × 最大 30 分を使い切った後) になる。ここで落として無駄を省く。
+          # 「一定時間で非空」の判定は端末が静かな窓に当たると偽陽性になるため、
+          # 端末側に印を打ってそれが届くのを待つ形にする。
           probe_tag="KsDialogsCiLogcatProbe"
           adb shell log -p i -t "$probe_tag" "logcat capture started" || true
           probe_deadline=$((SECONDS + 15))
@@ -179,8 +178,11 @@ jobs:
             exit 1
           fi
 
+          # 環境のタイミングでだけ揺らぐと切り分けられたテスト (SkipOnCi) を skip させる印。
+          # 汎用の CI 環境変数ではなくこの引数で判定させることで、手元では skip されない。
           status=0
-          ./gradlew --no-daemon --console=plain connectedDebugAndroidTest || status=$?
+          ./gradlew --no-daemon --console=plain connectedDebugAndroidTest \
+            -Pandroid.testInstrumentationRunnerArguments.ksdialogsCi=true || status=$?
 
           # 失敗した回だけ、Emulator が生きているうちに IME とウィンドウの状態を残す。
           # これは suite 全件が終わった後の最終状態であり、失敗の瞬間の状態ではない
@@ -218,7 +220,7 @@ jobs:
         if: always() && env.KS_OBSERVATION_DIR != ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: android-instrumented-ime-observation${{ inputs.artifact-suffix }}
+          name: android-instrumented-ime-observation
           path: ${{ env.KS_OBSERVATION_DIR }}
           if-no-files-found: warn
           retention-days: 14
@@ -227,7 +229,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: android-instrumented-test-results${{ inputs.artifact-suffix }}
+          name: android-instrumented-test-results
           path: android/**/build/outputs/androidTest-results/connected/**
           if-no-files-found: warn
           retention-days: 14

@@ -10,6 +10,7 @@ import jp.kamusoft.ksdialogs.support.LoadingTestGate
 import jp.kamusoft.ksdialogs.support.LoadingTestHarness
 import jp.kamusoft.ksdialogs.support.LoadingTestViewModel
 import jp.kamusoft.ksdialogs.support.LoadingTestViewRecorder
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
@@ -328,31 +329,64 @@ class LoadingCoalescingTests {
     @Test
     fun LD_CO_13_出の途中の新しい開始は出の完了後に新世代として表示される() = runBlocking<Unit> {
         val harness = newHarness()
+        // ライブラリ既定の出の演出はアニメーションの実行時間に従うため、端末側でアニメーションを
+        // 無効にした環境では「出の途中」が一瞬で終わり、そこへ新しい開始を差し込めない。
+        // 出の完了を関門で押さえる添付演出を持つカスタム View を第1世代にして、途中の窓を作る。
+        // 押さえを時限にすると、実行機がその間だけ止まった回に窓を取り逃がして
+        // 「新しい開始が撤去済みの状態から始まった」回が混じるため、開けるまで完了しない形にする
+        val dismissalGate = LoadingTestGate()
+        harness.registry.register(LoadingTestViewModel::class) { _ ->
+            FixedContentSizeView(this, CONTENT_WIDTH_PIXELS, CONTENT_HEIGHT_PIXELS).apply {
+                ksDialogTransition = DialogTransition(
+                    dismissal = { dismissalGate.await() },
+                )
+            }
+        }
 
-        harness.loading.show(message = "A")
+        harness.loading.show(LoadingTestViewModel())
         val firstContainer = requireNotNull(harness.container)
+        val firstContentView = requireNotNull(harness.contentView)
+        // 第1世代にメッセージを持たせる (合流1件を重ねる)。新世代がこれを引き継がないことを見る。
+        // 合流が成立していないと引き継ぐ元のメッセージが無く、最後の検査が何も見ずに通る
+        harness.loading.show(message = "A")
+        assertTrue(
+            "前提: メッセージ付きの表示が第1世代へ合流している",
+            InstrumentedDialogWaiting.waitUntil { harness.coalescedUseCount == 2 },
+        )
         // 入りの演出を終えてから閉じる。実効値が固まる前に閉じると出の演出は走らず即時に撤去され、
         // 「出の途中」という状況そのものが成立しない
+        val shown = InstrumentedDialogWaiting.waitUntil {
+            firstContainer.containerState == DialogContainerState.SHOWN
+        }
         assertTrue(
-            InstrumentedDialogWaiting.waitUntil {
-                firstContainer.containerState == DialogContainerState.SHOWN
-            },
+            "前提: 入りの演出が終わっている。器の状態: ${firstContainer.containerState}",
+            shown,
         )
 
         coroutineScope {
             val hiding = async { harness.loading.hide() }
             // 出の演出が始まっていることを器の段階で確かめてから、新しい表示を開始する
+            val dismissing = InstrumentedDialogWaiting.waitUntil {
+                firstContainer.containerState == DialogContainerState.DISMISSING
+            }
             assertTrue(
-                InstrumentedDialogWaiting.waitUntil {
-                    firstContainer.containerState == DialogContainerState.DISMISSING
-                },
+                "前提: 出の演出が始まっている。器の状態: ${firstContainer.containerState}" +
+                    " (関門を開けていないので、この状態を通り過ぎることはない)",
+                dismissing,
             )
-            harness.loading.show()
+            // 新しい開始は進行中の撤去の完了を待って中断する。関門を開ける前にこの要求を
+            // 受理列へ載せておくことで、「出の途中に差し込まれた開始」であることが実行機の
+            // 速さに依らず確定する。UNDISPATCHED で始めると、要求が受理列に載って中断するまで
+            // この行で進むため、次の行の解放より先に並ぶ
+            val showing = async(start = CoroutineStart.UNDISPATCHED) { harness.loading.show() }
+            dismissalGate.open()
+            showing.await()
             hiding.await()
         }
 
         val secondContainer = requireNotNull(harness.container)
         assertNotSame("新世代として器が作り直される", firstContainer, secondContainer)
+        assertNotSame("旧世代の中身を引き継がない", firstContentView, harness.contentView)
         assertEquals("旧世代は撤去されている", DialogContainerState.REMOVED, firstContainer.containerState)
         assertNull("旧世代のメッセージを引き継がない", harness.builtinText)
 
