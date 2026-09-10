@@ -4,6 +4,7 @@ title: 検証に用いる toolchain の版はリポジトリ内で固定し、.N
 status: accepted
 date: 2026-09-08
 amends: 0004
+amended-by: [cross/0023]
 ---
 
 ## Context

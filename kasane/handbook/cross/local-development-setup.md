@@ -2,10 +2,10 @@
 kind: guide
 applies-when:
   always: false
-  tasks: [環境構築, worktree での作業開始, Gradle ルートのビルド・テスト, Sample のビルドと実行, MAUI iOS の Sample ビルド, .NET SDK の解決]
+  tasks: [環境構築, worktree での作業開始, Gradle ルートのビルド・テスト, Sample のビルドと実行, MAUI iOS の Sample ビルド, .NET SDK の解決, 消費者検証を手元で回す]
 title: ローカル開発環境の準備
-description: Android SDK と Xcode のローカル環境を整え、repo 直下の global.json が固定する .NET SDK / workload set を確認し、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド。Gradle build root は本体・Sample の 5 つと消費者検証の 2 つ
-timestamp: 2026-09-09
+description: Android SDK と Xcode のローカル環境を整え、repo 直下の global.json が固定する .NET SDK / workload set を確認し、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド。Gradle build root は本体・Sample の 5 つと消費者検証の 2 つ。消費者検証 (`verification/`) を手元で回す手順を含む
+timestamp: 2026-09-10
 ---
 
 # ローカル開発環境の準備
@@ -179,6 +179,23 @@ xcrun simctl launch <UDID> jp.kamusoft.ksdialogs.samples.kmp.ios
 ```
 
 KMP iOS アプリがリンクする 3 点と `KotlinMultiplatformLinkedPackage` の再生成手順は [KMP 利用者の iOS ホスト統合](../../concepts/kmp/api/ios-host-integration.md#sample-で合成-package-を再生成する) を参照する。
+
+## 消費者検証を手元で回す
+
+配布物を利用者と同じ経路で解決する消費者検証 (`verification/`、仕組みは concepts の [消費者検証](../../concepts/cross/architecture/consumer-verification.md)) は、形態ごとの `build-consumer.sh` を引数なしで実行すると dry-run が通しで動く (フィード準備 → 消費者ビルド → 検査)。
+
+```bash
+verification/ios/build-consumer.sh
+verification/android/build-consumer.sh
+verification/maui/build-consumer.sh
+verification/kmp/build-consumer.sh
+```
+
+- 作業ディレクトリは `${TMPDIR:-/tmp}/ksdialogs-verification/<形態>` (`--work` で変更可。リポジトリ内は拒否される)。フィード準備の出力を再利用するときは `prepare-feed.sh` の最終行が出す参照先を `--reference` に渡す
+- `--version` を省くと合成 version `0.0.0-alpha.0` で発行・解決する。`--mode smoke` は version 必須で、公開レジストリを参照する (未公開の version では解決に失敗する)
+- KMP はフィード準備が本体側の `kmp/.swiftpm-locks/` 配下の合成 Swift マニフェスト 2 本を書き換えて復元する。2 本に未 commit の変更があると発行前に失敗するので、先に commit するか戻してから回す
+- 実行後は `git status` で `verification/` と `kmp/.swiftpm-locks/` に差分が無いことを確かめる。差分が出たら消費者検証の欠陥として扱う (追跡物は実行で変化しない契約)
+- Android / KMP の SDK は「Android SDK ロケーション」節のとおり本体 build root の設定から引き継がれる。MAUI は repo 直下の `global.json` が固定する SDK をそのまま使う
 
 ## 関連
 

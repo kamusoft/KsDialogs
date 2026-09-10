@@ -80,7 +80,33 @@ KMP 消費者は利用者と同じ 1 つの Gradle プロジェクト (`shared` 
 - 実測 (2026-09-09、draft PR #1 → 一時 `main`、コールドキャッシュ): 消費者 job の所要は ios 46 秒 / android 2 分 50 秒 / kmp 9 分 20 秒 / maui 15 分 26 秒 (timeout 30 / 30 / 30 / 40 分に対して余裕あり、詰める余地は kmp 20 分・maui 30 分程度)。PR 全体の壁時計は 19 分 46 秒で、macOS 6 job のうち本体の ios / maui が約 7 分 40 秒待ちに入った (消費者側は待ちなし)。artifact 経路 (package 段の upload → `artifact` 指定) は一時 workflow で 4 形態とも成功 (kmp 8 分 10 秒 / maui 13 分 24 秒)。証跡は change の evidence/verification/5.5・5.6
 - `main` は phase-4 の決定どおり未作成のまま。5.5 の確認は 36ed37c から一時的に作った `main` で行い、確認後に削除した (add-consumer-verification の deviation)。phase-9 で `main` を作るときは branch protection と併せて必須 status check 10 件を登録する
 
+## 実装結果 (2026-09-10 反映)
+
+change [add-consumer-verification](../../../../changes/archive/2026-09-10-add-consumer-verification/proposal.md) (L 級) で実装完了。レビュー 3 周 (review-003 APPROVED) + 相方レビュー (second-opinion-code-001 の Major 1 / Minor 1 を採用)、verify-001 VALID (Requirement 16 / Scenario 48)。手元で 4 形態の dry-run と負ケース 9 種、CI 側は一時 `main` への draft PR #1 と一時 workflow で 10 job と artifact 経路を実測 (証跡は change の evidence/verification/5.5・5.6)。
+
+決定事項からの乖離 (deviation.md 9 件) のうち判断に関わるもの:
+
+| 項目 | 結果 |
+|---|---|
+| KMP の合成 package の再生成 (決定 1 の 3 段) | link タスクは合成 package を生成も更新もしない。再生成は `XCODEPROJ_PATH` 付きの `integrateLinkagePackage` が担い、2 段目は「再生成 → link」の 2 手。追跡している fixture は smoke 形の非解決 fixture で、消費者ビルドは作業コピーで再生成する (design Decision 4) |
+| 本体側 `kmp/.swiftpm-locks/` の書き換え | kmp/ のリリース版発行が本体側の合成 Swift マニフェスト 2 本を `file://` の絶対パスへ書き換える。フィード準備は発行前に未変更を検査し、成否によらず復元する (オーナー判断 A) |
+| `main` 宛て PR の実証 | リモートに `main` が無いため、実装前 commit から一時的に `main` を作って draft PR で確認し、確認後に PR をクローズして `main` を削除 (branch protection なし。オーナー判断 A)。phase-9 の計画は変えない |
+| KMP ホスト側の登録コードの置き場 | ローカル package からは共有モジュールの framework を import できないため、登録と show はアプリ target に置き、`VerificationApp` は公開面と View を持つ |
+
+蒸留では cross/ADR-0022 (lint job の 8 検査化、0021 を amends) を accepted に昇格し、cross/ADR-0018 と maui/ADR-0004 の衝突は cross/ADR-0023 (MAUI 本体の版は maui/ADR-0004 に従う、0018 を amends) で解消した。concepts に [消費者検証](../../../../concepts/cross/architecture/consumer-verification.md) を新設 (cross/architecture)、kmp/api/ios-host-integration.md に発行の副作用を追記、handbook local-development-setup.md に手元で回す手順を追加した。
+
+### 申し送り
+
+| 項目 | 受け皿 |
+|---|---|
+| README に KMP のホスト側の登録例を載せるか (載せるなら `readme-example-lint.py` の対応表に 2 行) | [phase-9 agenda](../phase-9-release-workflow/agenda.md)「phase-8 からの申し送り」 |
+| 消費者 4 job の所要と PR 全体の壁時計の実測 (上の「申し送り (phase-9 へ)」の実測行) | 同上 (release の dry-run 段の並走数の参考) |
+| `main` 作成時に branch protection と必須 status check 10 件を登録する (5.5 は一時 `main` で確認済み、`main` は未作成のまま) | [phase-9 agenda](../phase-9-release-workflow/agenda.md)「phase-4 からの申し送り: `main` の branch protection」 |
+| release の package 段が upload する artifact の配置 (形態別のルート構造) と KMP は Android 分だけ渡す契約 | concepts [消費者検証](../../../../concepts/cross/architecture/consumer-verification.md)「フィード準備と artifact の配置」を phase-9 の実装入力にする |
+| MAUI 消費者の `WarningsAsErrors` (NU1605 / NU1608 / NU1107) を故意に起こす負ケースの実行証跡が無い (verify-001 ✅※) | 見送り: 宣言は spec どおりで乖離ではない。release の smoke で警告が表面化する経路は実測済み (5.2 (b) の NU1603)。必要になれば phase-9 の change で 1 ケース足す |
+| README lint の fence 判定の非対称 (review-002 Suggestion)・MAUI 消費者の `<uses-sdk>` の三重持ち (review-001 Suggestion) | 見送り: 現行 README に該当記法が無く、`<uses-sdk>` は翻案元と同形で挙動に影響しない |
+
 ## TODO
 
 - [x] 論点の解消 (KMP 消費者の置き方・Android の参照形・timeout とトリガー・最小例の範囲、2026-09-09)
-- [ ] ksn-propose で変更提案を起こす
+- [x] ksn-propose で変更提案を起こす (add-consumer-verification、2026-09-09 完了・2026-09-10 蒸留)

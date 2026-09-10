@@ -50,6 +50,18 @@ KMP の発行設定は実装済み (`kasane/changes/archive/2026-09-09-add-kmp-m
 | docs-refresh の KMP 分 | Skill `ksdialogs-kmp` の依存スコープを `implementation` から `api` へ / Kotlin サポート範囲 (同 minor 2.4.x、確認済み版はカタログの `kotlin`) / 「予定している公開 coordinate」の状態表記 / SNAPSHOT を Maven local へ発行した成果物は同一マシンでしか動かない旨。phase-5 / 6 分と同じ依頼にまとめる |
 | 配布構成の concepts 化 (KMP 分) | 5 publication (root + android + iOS 3 ターゲット) の内容と SwiftPM 連携メタデータ・version 導出と Swift 参照導出・`@Throws` 回帰検査の位置づけは、「phase-6 からの申し送り」の配布構成 concepts 化の行に含めて置き場を決める |
 
+### phase-8 からの申し送り (2026-09-10)
+
+消費者検証は実装済み (`kasane/changes/archive/2026-09-10-add-consumer-verification/`、仕組みは concepts [消費者検証](../../../../concepts/cross/architecture/consumer-verification.md))。release からは `verify-consumer-{ios,android,maui,kmp}.yml` を dry-run (package 段の artifact を `artifact` 入力で渡す) と smoke (`version` 必須) で呼ぶ。
+
+| 項目 | 内容 |
+|---|---|
+| artifact の配置 | package 段が upload するルート構造は concepts「フィード準備と artifact の配置」の表のとおり。KMP は Android 分のローカル Maven リポジトリだけを渡し、kmp/ の発行とスナップショット clone の tag は消費者 job 内で行う (package 段で作る kmp/ の成果物は Swift 参照が既定の https + exact で、tag が無い dry-run では解決できない) |
+| 所要時間の実測 (2026-09-09、コールドキャッシュ) | 消費者 job: ios 46 秒 / android 2 分 50 秒 / kmp 9 分 20 秒 / maui 15 分 26 秒 (timeout 30 / 30 / 30 / 40 分)。artifact 入力時: kmp 8 分 10 秒 / maui 13 分 24 秒。`main` 宛て PR の壁時計は 19 分 46 秒で、macOS 6 job のうち本体の ios / maui が約 7 分 40 秒待った。release の dry-run 段の並走数はこの待ちを見込んで決める |
+| `main` の作成 | 一時 `main` で `main` 宛て PR の Scenario (10 job の起動・status check 名・consumer job の dry-run) は確認済み。phase-9 で `main` を作るときは branch protection と必須 status check 10 件 (「phase-4 からの申し送り」の表) を併せて登録する |
+| README の KMP ホスト側の例 | README に KMP のホスト側 (iOS / Android) の登録例を載せるかは初回リリース前の docs-refresh の論点に含める。載せるなら `scripts/readme-example-lint.py` の対応表に 2 行足す (cross/ADR-0022 の Revisit When) |
+| MAUI の依存警告の負ケース | `WarningsAsErrors` (NU1605 / NU1608 / NU1107) を故意に起こす実行証跡は無い (宣言のみ)。smoke で警告が表面化する経路は実測済み。必要なら release の change で 1 ケース足す |
+
 ## 決定事項
 
 踏襲 (解決済み論点)。出典は cross/ADR-0009 (lockstep)、KsSettingsView cross/ADR-0019・cross/ADR-0020 (dispatch 起動・tag は最後・version 注入) と同 phase-8 の決定事項 (`../KsSettingsView/kasane/roadmaps/package-distribution/phases/phase-8-release-workflow/agenda.md`)。

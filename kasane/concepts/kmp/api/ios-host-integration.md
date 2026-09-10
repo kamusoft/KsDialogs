@@ -3,7 +3,7 @@ type: concept
 title: KMP 利用者の iOS ホスト統合
 description: KMP 共有モジュールから KsDialogs を使う iOS アプリの依存経路と初回統合手順、および Sample の合成 Swift package 再生成手順
 tags: [kmp, ios, swiftpm, integration, distribution]
-timestamp: 2026-09-09
+timestamp: 2026-09-10
 ---
 
 # KMP 利用者の iOS ホスト統合
@@ -58,6 +58,8 @@ KMP artifact の発行 metadata に載る Swift package 参照は、`kmp/ksdialo
 | リリース版 (`-Pversion=` で注入) | `swiftPackage(url, exact(<version>))` — 配信リポジトリ `KsDialogs-SPM` の同じ version の tag | 公開 artifact。exact は version と同じ値で、上書きできない |
 
 リモート参照の URL だけは Gradle プロパティ `ksdialogs.swiftPackageUrl` で上書きでき、公開前の検証はスナップショットを同期して commit + tag したローカル clone の `file://` URL を渡して行う (SNAPSHOT では参照に URL が無いため無視される)。metadata の deployment target `17.0` は参照の種別によらず載る。
+
+リリース版の発行は、発行の副作用として本体側の合成 Swift マニフェスト 2 本 (`kmp/.swiftpm-locks/default/swiftImport/subpackages/` 配下の `Package.swift`) を、そのとき解決した Swift 参照の URL へ書き換える。`file://` の上書き付きで手元から発行すると追跡ファイルにローカル絶対パスが残るため、消費者検証のフィード準備は発行前に 2 本が未変更であることを検査し、成否によらず復元する ([消費者検証](../../cross/architecture/consumer-verification.md))。
 
 SNAPSHOT のまま Maven local へ発行した成果物には発行者の絶対パスが載り、同一マシンでしか解決できない。SNAPSHOT の消費はリポジトリ内 Sample の composite build が担い、リポジトリ外での検証はリリース版の version を注入して行う。
 
@@ -164,6 +166,7 @@ XCODEPROJ_PATH="$PWD/samples/kmp/iosApp/KsDialogsSampleKmp.xcodeproj" \
 - [KMP の Dialog 公開面](dialog-surface.md) — 共有コードの呼び出し面と、iOS ホスト側の型付き入口の位置づけ
 - [KMP の Loading 公開面](loading-surface.md) — 共有コードの Loading 操作と、登録が各 OS 側にあること
 - [KMP の Toast 公開面](toast-surface.md) — 共有コードの Toast 操作と、登録が各 OS 側にあること
+- [消費者検証](../../cross/architecture/consumer-verification.md) — 配布物を利用者と同じ経路で解決する消費者プロジェクトと、KMP の dry-run の組み立て (合成 version・tag 付きローカル clone・smoke 形 fixture)
 - [cross/ADR-0008](../../../decisions/cross/0008-distribution-model-standard-channels.md) — 4 形態の配布単位と `KsDialogs-SPM`、KMP の Swift 参照を version から導出する決定と Kotlin サポート範囲
 - [cross/ADR-0009](../../../decisions/cross/0009-lockstep-single-version.md) — lockstep 単一バージョンと、KMP artifact の version・本体依存版・exact の共通の入力になる版の導出式
 - [kmp/ADR-0002](../../../decisions/kmp/0002-thin-facade-native-registry.md) — static framework と View レジストリの Native 委譲

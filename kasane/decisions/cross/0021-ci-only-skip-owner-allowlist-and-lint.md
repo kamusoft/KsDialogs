@@ -4,6 +4,7 @@ title: CI 上だけのテスト skip はオーナーが書く許可リストと 
 status: accepted
 date: 2026-09-09
 amends: [cross/0020]
+amended-by: [cross/0022]
 ---
 
 ## Context
