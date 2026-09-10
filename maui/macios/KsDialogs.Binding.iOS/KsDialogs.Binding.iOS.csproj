@@ -23,6 +23,11 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Description>iOS native bridge binding for KsDialogs.Maui. Referenced transitively by KsDialogs.Maui; do not reference this package directly.</Description>
+    <!--
+      XML ドキュメントは生成しない。この assembly は輸送層で、利用者が直接読む公開契約を
+      持たない。SDK の既定に任せず明示するのは、既定が変わっても nupkg の中身が動かないようにするため
+    -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,0 +1,62 @@
+Central Portal への実 upload での前提確認 (tasks 1.1。実行日 2026-09-10、オーナーの資格情報で手元から)
+
+手順: verification/kmp/prepare-feed.sh --mode dry-run --version 0.0.0-alpha.1 で tag 付き
+スナップショット clone とローカル Maven を作り、kmp/ を
+  ./gradlew publishToMavenCentral -Pversion=0.0.0-alpha.1 -Pksdialogs.swiftPackageUrl=file://<clone>
+で upload (automaticRelease = false のため USER_MANAGED で保留)。公開はしていない。
+
+# KMP 枠
+
+upload ログからの deployment ID 抽出 (workflow と同じ正規表現):
+  $ grep -oiE 'deployment id: [0-9a-f-]{36}' <upload log> | tail -n 1 | awk '{print $3}'
+  <uuid>
+→ 抽出できた。ログの行の形は翻案元と同じ。
+
+central-portal.sh の応答 (順に status / wait-validated / drop / status):
+  $ scripts/release/central-portal.sh status <uuid>
+  VALIDATED
+  $ scripts/release/central-portal.sh wait-validated <uuid>
+  VALIDATED
+  $ scripts/release/central-portal.sh drop <uuid>
+  drop した (VALIDATED): <uuid>
+  $ scripts/release/central-portal.sh status <uuid>
+  NOT_FOUND
+
+確認できたこと:
+  - KMP の 5 publication (cinterop klib・SwiftPM 連携メタデータ JSON を含む) が署名つきで
+    Portal の検証を通り VALIDATED になる (upload 後に自動公開されない = 3.0 の裏取り)
+  - status / wait-validated の状態語、drop の成功、drop 後の NOT_FOUND が
+    スクリプトの契約 (冒頭コメント) どおり
+  - 発行タスク名 publishToMavenCentral と -Pversion= の注入で 1 deployment が作られる
+
+# Android 枠
+
+  $ (cd android && ./gradlew --no-daemon --console=plain publishToMavenCentral -Pversion=0.0.0-alpha.1)
+  ...
+  Uploaded bundle to Central Portal as USER_MANAGED, deployment id: <uuid>
+  Skipping deployment validation!
+
+  BUILD SUCCESSFUL in 6s
+  61 actionable tasks: 8 executed, 53 up-to-date
+
+upload ログからの deployment ID 抽出 (workflow と同じ正規表現):
+  <uuid>
+
+central-portal.sh の応答 (順に status / wait-validated / drop / status):
+  VALIDATED
+  VALIDATED
+  drop した (VALIDATED): <uuid>
+  NOT_FOUND
+
+確認できたこと:
+  - ログの行の形は「Uploaded bundle to Central Portal as USER_MANAGED, deployment id: <uuid>」で
+    翻案元と同じ。USER_MANAGED (自動公開なし) が文字どおり出る
+  - 「Skipping deployment validation!」はプラグインが Portal の検証結果を待たないという定型で、
+    検証は Portal 側で行われ VALIDATED になる (workflow は upload 直後に wait-validated で待つ)
+  - Android 枠 (ksdialogs-core / ksdialogs の aar / pom / sources / javadoc / module + .asc) も
+    検証を通る
+
+# 結論
+
+1.1 の前提 (発行タスク名・ログ形式・ID 抽出・status / wait-validated / drop の応答) はすべて
+机上の想定どおりで、design Decision 1 / 2 の見直しは不要。両 deployment とも公開せず drop 済み。

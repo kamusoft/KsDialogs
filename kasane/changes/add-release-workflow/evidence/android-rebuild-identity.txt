@@ -1,0 +1,31 @@
+Android の発行物が同じ commit の 2 回のビルドで一致すること
+(手元の macOS = publish job と同じランナー系統。実行日 2026-09-10。抜粋)
+
+# 手順
+
+1 回目 (作業ディレクトリ配下の a/ をローカル Maven リポジトリに指定):
+
+  $ cd android
+  $ ./gradlew publishToMavenLocal -Pversion=0.0.0-alpha.1 -Dmaven.repo.local=<作業ディレクトリ>/a
+
+2 回目 (clean を挟み、b/ へ):
+
+  $ ./gradlew clean
+  $ ./gradlew publishToMavenLocal -Pversion=0.0.0-alpha.1 -Dmaven.repo.local=<作業ディレクトリ>/b
+
+比較:
+
+  $ scripts/release/compare-maven-artifacts.sh <作業ディレクトリ>/a/jp <作業ディレクトリ>/b/jp
+  発行物 10 件が一致します (署名を除く比較): <作業ディレクトリ>/a/jp / <作業ディレクトリ>/b/jp
+  exit=0
+
+# 結果
+
+10 成果物 (ksdialogs-core / ksdialogs の pom・module・aar・sources jar・javadoc jar) が
+署名を除く比較で一致した。Decision 3 の前提 (package 段と publish 段を同じ OS で作れば
+同一性検査が意味を持つ) は成立する。
+
+なお「一致した」だけでは検査が何も見ていない状態と区別が付かないため、この比較が
+止めたい差異で実際に失敗することは compare-maven-artifacts.sh --selftest が示す
+(pom の内容差 / アーカイブの中身の差 / エントリの増減 / 片側にしか無い成果物で失敗し、
+署名・checksum・maven-metadata・zip の更新時刻の差では失敗しない)。

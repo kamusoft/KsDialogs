@@ -1,0 +1,100 @@
+発行タスクの実在と名前、KMP の publication 一覧、automaticRelease の task graph
+(手元の macOS。実行日 2026-09-10。抜粋。全文は手元保管)
+
+# 1. Android の発行タスク (android/ で `./gradlew tasks --all`)
+
+ksdialogs:publishToMavenCentral - Publishes to Maven Central
+ksdialogs-core:publishToMavenCentral - Publishes to Maven Central
+ksdialogs:publishAllPublicationsToMavenCentralRepository - Publishes all Maven publications produced by this project to the mavenCentral repository.
+ksdialogs-core:publishAllPublicationsToMavenCentralRepository - Publishes all Maven publications produced by this project to the mavenCentral repository.
+ksdialogs:publishAndReleaseToMavenCentral - Publishes to Maven Central and automatically triggers release
+ksdialogs-core:publishAndReleaseToMavenCentral - Publishes to Maven Central and automatically triggers release
+ksdialogs:dropMavenCentralDeployment - Drops the deployment with the supplied id
+ksdialogs-core:dropMavenCentralDeployment - Drops the deployment with the supplied id
+
+# 2. KMP の発行タスク (kmp/ で `./gradlew tasks --all`)
+
+ksdialogs-kmp:publishToMavenCentral - Publishes to Maven Central
+ksdialogs-kmp:publishAllPublicationsToMavenCentralRepository - Publishes all Maven publications produced by this project to the mavenCentral repository.
+ksdialogs-kmp:publishAndReleaseToMavenCentral - Publishes to Maven Central and automatically triggers release
+ksdialogs-kmp:dropMavenCentralDeployment - Drops the deployment with the supplied id
+
+# 3. KMP の 5 publication (task graph と発行物の両方で確認)
+
+`./gradlew publishToMavenCentral -Pversion=0.0.0-alpha.1 --dry-run` の task graph:
+
+:ksdialogs-kmp:publishKotlinMultiplatformPublicationToMavenCentralRepository SKIPPED
+:ksdialogs-kmp:publishAndroidPublicationToMavenCentralRepository SKIPPED
+:ksdialogs-kmp:publishIosArm64PublicationToMavenCentralRepository SKIPPED
+:ksdialogs-kmp:publishIosSimulatorArm64PublicationToMavenCentralRepository SKIPPED
+:ksdialogs-kmp:publishIosX64PublicationToMavenCentralRepository SKIPPED
+
+publication 名 → artifactId (ローカルの Maven リポジトリに残っていた発行物の一覧で確認):
+
+kotlinMultiplatform  jp.kamusoft:ksdialogs-kmp
+android              jp.kamusoft:ksdialogs-kmp-android
+iosArm64             jp.kamusoft:ksdialogs-kmp-iosarm64
+iosSimulatorArm64    jp.kamusoft:ksdialogs-kmp-iossimulatorarm64
+iosX64               jp.kamusoft:ksdialogs-kmp-iosx64
+
+発行物のファイル種別 (checksum の 4 種を除く。署名検査の対象拡張子の根拠):
+
+ksdialogs-kmp                  .pom .module .jar -sources.jar
+                               -swiftpm-metadata.json -kotlin-tooling-metadata.json
+ksdialogs-kmp-android          .pom .module .aar -sources.jar
+ksdialogs-kmp-ios<ターゲット>  .pom .module .klib -cinterop-swiftPMImport.klib
+                               -metadata.jar -sources.jar
+(Android 本体の 2 座標は .pom .module .aar -sources.jar -javadoc.jar)
+
+# 4. automaticRelease = false の効き (自動公開に倒れないこと)
+
+判別の道具: 発行設定の automaticRelease が真になると、plugin は publish タスクに
+`enableAutomaticMavenCentralPublishing` タスクを依存として足す。task graph にこの名前が
+出るかどうかが「自動公開に倒れているか」の印になる。
+
+## 4-1. 印に判別力があることの確認 (作業木の外の probe プロジェクト)
+
+同じ plugin 版 (com.vanniktech.maven.publish 0.37.0) を当てただけの最小プロジェクトを
+作業木の外 (一時ディレクトリ) に作り、`mavenPublishing` の書き方だけを変えて比べた。
+どちらの実行にも `-PmavenCentralAutomaticPublishing=true` を渡している。
+
+  (a) publishToMavenCentral()                        引数を書かない
+      $ ./gradlew publishToMavenCentral -PmavenCentralAutomaticPublishing=true --dry-run
+      :emptyJavadocJar SKIPPED
+      :enableAutomaticMavenCentralPublishing SKIPPED      <- 自動公開に倒れている
+      :compileJava SKIPPED
+      ... (中略)
+      :publishToMavenCentral SKIPPED
+      BUILD SUCCESSFUL
+
+  (b) publishToMavenCentral(automaticRelease = false)  本リポジトリと同じ書き方
+      $ ./gradlew publishToMavenCentral -PmavenCentralAutomaticPublishing=true \
+          -PksExplicitFalse=1 --dry-run
+      :emptyJavadocJar SKIPPED
+      :compileJava SKIPPED
+      ... (中略)
+      :publishToMavenCentral SKIPPED
+      BUILD SUCCESSFUL
+      (`enableAutomaticMavenCentralPublishing` は出ない)
+
+同じ入力 (property = true) で観測が (a) と (b) に分かれるので、この grep には
+「指定が効いているか」を判別する力がある。probe プロジェクトは作業木には残していない。
+
+plugin 本体の実装とも一致する: 引数を書かない呼び出しの既定値は Gradle プロパティ
+`mavenCentralAutomaticPublishing` / `SONATYPE_AUTOMATIC_RELEASE` (既定 false) から読まれ、
+真のとき publish タスクに `enableAutomaticMavenCentralPublishing` が依存として足される。
+
+## 4-2. 本リポジトリの android/ と kmp/ の観測
+
+  $ ./gradlew publishToMavenCentral -Pversion=0.0.0-alpha.1 \
+      -PmavenCentralAutomaticPublishing=true --dry-run
+  ...
+  BUILD SUCCESSFUL
+
+  $ (上の出力を grep) enableAutomaticMavenCentralPublishing
+  android/ の一致件数: 0
+  kmp/ の一致件数:     0
+
+どちらも task graph に `prepareMavenCentralPublishing` は入っており (publish の graph を
+見ていることの確認)、`enableAutomaticMavenCentralPublishing` だけが入らない。
+upload は保留 (USER_MANAGED) で止まり、公開の可否は release workflow が枠ごとに決める。

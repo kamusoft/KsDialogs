@@ -27,6 +27,8 @@ timestamp: 2026-09-09
 | consumer-kmp | `verification/kmp/` の消費者を dry-run で 3 段 (Android release / 共有モジュールの iOS framework リンク / iOS アプリの Release) 通し、5 publication の解決と Swift 参照を検査 | `main` 宛て PR のみ |
 | lint | 8 検査 (下表) | 常時 |
 
+release workflow (`.github/workflows/release.yml`) は上表の本体検証 5 本と消費者検証 4 本を同じ再利用可能 workflow の呼び出しとして使う (消費者検証は dry-run で 1 回、公開後の smoke で 1 回)。lint job は release からは呼ばず、publish job が `develop` へインストール例を反映する前に同じ検査のうち 3 つ (ローカル絶対パス・個体情報・README 最小例の一致) を掛ける (cross/ADR-0024)。手順は [リリース手順](release-procedure.md)。
+
 lint job の 8 検査は次のとおりで、いずれかの違反で job が失敗する。
 
 | 検査 | 見るもの |
@@ -75,4 +77,5 @@ IME の出し入れを観測するテストが落ちたときは、job の成果
 - [状態遷移の観測と CI 限定スキップ](ci-flaky-test-policy.md) — 間欠失敗の切り分けフローと、CI 上だけ skip してよい条件
 - [テスト実行規約](test-execution.md) — 各ビルドルートの実行コマンドと件数の得方、手元の完了判定
 - [ローカル開発環境の準備](local-development-setup.md) — `global.json` による SDK / workload set の固定と Xcode の版
+- [リリース手順](release-procedure.md) — 必須 status check の登録とリリースの起動
 - cross/ADR-0017 (検証 CI の構成と保証範囲・トリガー) / cross/ADR-0018 (toolchain の固定境界)

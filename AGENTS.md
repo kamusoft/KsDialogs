@@ -10,3 +10,4 @@ AiForms.Maui.Dialogs の Native + MAUI + KMP 対応リブランドプロジェ�
 - 他の SDD 系スキル (openspec-* 等) はこのプロジェクトでは使用しない
 - `skills/` は利用者向けドキュメント (Agent Skills) であり、エージェントは開発時の知識参照先にしない
 - `skills/` と README 群の継続的な追従更新は docs-refresh 経由のみ (自動発動禁止)。初期生成・構成の見直しは承認済み change の実装として行う。スキル本体は `.agents/skills/docs-refresh/SKILL.md`
+- 例外: インストール例の version の置換だけは release workflow が行う (docs-refresh を経ない)。手で書き換えない

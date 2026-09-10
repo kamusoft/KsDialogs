@@ -139,8 +139,6 @@ internal static class PlatformDialogContent
     /// 寸法を伝える手立てが無く大きさ 0 のままになる。この入れ物が測定結果を寸法として器へ伝え、
     /// 器が決めた領域へ MAUI の配置を流し込む。
     /// </remarks>
-    /// <param name="content">提示する中身と、その提示に効くメタ属性。</param>
-    /// <param name="platformView">その View の platform view。</param>
     private sealed class DialogContentView : UIView
     {
         private readonly View _contentView;
@@ -151,6 +149,8 @@ internal static class PlatformDialogContent
         private MauiDialogTransitionRunner? _presentationRunner;
         private MauiDialogTransitionRunner? _dismissalRunner;
 
+        /// <param name="content">提示する中身と、その提示に効くメタ属性。</param>
+        /// <param name="platformView">その View の platform view。</param>
         public DialogContentView(DialogPresentationContent content, UIView platformView)
         {
             _contentView = content.ContentView;

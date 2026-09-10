@@ -1,0 +1,69 @@
+MAUI の XML ドキュメント同梱の実測 (実行日 2026-09-10。抜粋)
+
+# 1. facade を GenerateDocumentationFile=true で pack
+
+  $ dotnet pack maui/KsDialogs.Maui/KsDialogs.Maui.csproj -c Release -p:Version=0.0.0-alpha.1 -o <出力先>
+  rc=0
+
+nupkg の lib/ (`unzip -Z1` の抜粋):
+
+  lib/net10.0/KsDialogs.Maui.dll
+  lib/net10.0/KsDialogs.Maui.xml
+  lib/net10.0-ios26.0/KsDialogs.Maui.dll
+  lib/net10.0-ios26.0/KsDialogs.Maui.xml
+  lib/net10.0-android36.0/KsDialogs.Maui.dll
+  lib/net10.0-android36.0/KsDialogs.Maui.xml
+
+3 TFM すべてに KsDialogs.Maui.xml が入る。
+
+# 2. 警告の内訳 (`dotnet build -t:Rebuild -v:n` の警告コード別の件数)
+
+  CS1591 (未記載メンバ)  0 件
+  CS1572 (存在しない引数への param タグ)  2 件 (同じ 2 件が要約にも出るため出力上は 4 行)
+  BG8605 / BG8606 / BG8A00 (Android binding の既知の警告)  従来どおり
+
+CS1591 が 0 件なのは、公開面の doc コメントが揃っているため。design の Open Questions
+「CS1591 が出た場合の扱い」は、出なかったため判断不要。
+
+CS1572 の 2 件は XML ドキュメントの生成を有効にして初めて表に出た既存の不備で、
+非公開の入れ子クラス DialogContentView の型宣言に、コンストラクタの引数を説明する
+param タグが付いていたもの (maui/KsDialogs.Maui/Platforms/iOS/PlatformDialogContent.cs)。
+param タグをコンストラクタへ移して解消した (付随修正)。移動後の再 pack で警告 0 件。
+
+# 3. binding 2 件の XML ドキュメント
+
+iOS binding (KsDialogs.Binding.iOS): nupkg に .xml は無い (期待どおり)。
+
+Android binding (KsDialogs.Binding.Android): GenerateDocumentationFile=false を明示しても
+nupkg に lib/net10.0-android36.0/KsDialogs.Binding.Android.xml が入る。
+
+原因: .NET Android の binding 用 targets が、共通 SDK の解決の後で DocumentationFile を
+出力先へ設定し直す (束縛した Java API の Javadoc を IntelliSense へ運ぶため)。
+
+  Xamarin.Android.Bindings.Core.targets(30,5):
+    <DocumentationFile Condition=" '$(DocumentationFile)' == '' and ... ">
+      $([MSBuild]::EnsureTrailingSlash('$(OutputPath)'))$(AssemblyName).xml</DocumentationFile>
+
+  ビルドの詳細ログ (プロパティの再代入):
+    Microsoft.Common.CurrentVersion.targets(185,5): $(_DocumentationFileProduced)="false" (以前の値: "true")
+    Xamarin.Android.Bindings.Core.targets(30,5): $(DocumentationFile)="bin/Release/net10.0-android/KsDialogs.Binding.Android.xml" (以前の値: "")
+
+  最終的な評価値: GenerateDocumentationFile = false / DocumentationFile = (上の値)
+
+生成される .xml の中身は Android の Resource designer クラスの説明だけで、束縛面の説明は無い:
+
+  <?xml version="1.0"?>
+  <doc>
+      <assembly><name>KsDialogs.Binding.Android</name></assembly>
+      <members>
+          <member name="T:KsDialogs.Bridge.Resource">
+              <summary>
+              Android Resource Designer class.
+              Exposes the Android Resource designer assembly into the project Namespace.
+              </summary>
+          </member>
+      </members>
+  </doc>
+
+`AllowedOutputExtensionsInPackageBuildOutputFolder` から .xml を外しても同梱は止まらなかった
+(pack への取り込みがこのプロパティの経路ではない)。csproj への指定だけでは解消できない。

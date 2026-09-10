@@ -36,8 +36,14 @@ mavenPublishing {
     )
 
     // Sonatype Central Portal へ発行する。認証は
-    // `ORG_GRADLE_PROJECT_mavenCentralUsername` / `mavenCentralPassword` で渡す
-    publishToMavenCentral()
+    // `ORG_GRADLE_PROJECT_mavenCentralUsername` / `mavenCentralPassword` で渡す。
+    //
+    // 自動 release は明示的に切る。既定値は Gradle プロパティ
+    // `mavenCentralAutomaticPublishing` から読まれるため、無指定のままだと
+    // プロパティを渡した環境で upload がそのまま公開まで進む。公開の可否は
+    // release workflow が枠 (Android / KMP) ごとに順序を決めて判断するので、
+    // upload は必ず保留 (USER_MANAGED) で止める
+    publishToMavenCentral(automaticRelease = false)
 
     // Central の必須要件。署名鍵は `ORG_GRADLE_PROJECT_signingInMemoryKey` 系で渡す。
     // 署名の必須/任意は下の signing ブロックで鍵の有無に連動させる

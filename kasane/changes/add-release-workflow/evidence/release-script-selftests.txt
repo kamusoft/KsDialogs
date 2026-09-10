@@ -1,0 +1,285 @@
+release スクリプトの自己テスト (実行日 2026-09-10)
+
+すべて手元で実行。ネットワークにも実レジストリにも出ない。
+各行の括弧内の詳細 (診断の全文・期待した終了コード) は長いため落とし、判定行だけを残した抜粋。
+
+### scripts/release/central-portal.sh --selftest  (exit 0)
+[URL の組み立て]
+  OK   status の URL
+  OK   deployment の URL
+  OK   Maven Central の pom の URL (既定は Android 枠)
+  OK   Maven Central の pom の URL (KMP 枠)
+[状態の解釈]
+  OK   status が deploymentState を返す
+  OK   status は認証つきの POST 1 件
+  OK   deploymentState が無い応答で失敗する
+  OK   200 以外の状態照会で失敗する
+  OK   404 は NOT_FOUND を返す (失敗にしない)
+[wait-validated]
+  OK   PENDING / VALIDATING を経て VALIDATED を返す
+  OK   決着まで照会を繰り返す
+  OK   FAILED は失敗にせず状態として返す
+  OK   PUBLISHING は失敗にせず状態として返す
+  OK   PUBLISHED は失敗にせず状態として返す
+  OK   存在しない deployment は NOT_FOUND を返す (失敗にしない)
+  OK   上限を過ぎれば失敗する
+[release]
+  OK   VALIDATED なら release する
+  OK   release は deployment へ POST する
+  OK   VALIDATED 以外は release しない
+  OK   release しないときは状態照会だけで止まる
+  OK   release が 204 以外なら失敗する
+[drop の状態分岐]
+  OK   VALIDATED は drop する
+  OK   VALIDATED の drop は DELETE を送る
+  OK   FAILED は drop する
+  OK   FAILED の drop は DELETE を送る
+  OK   PUBLISHING は DELETE を送らない
+  OK   PUBLISHING は理由を出力する
+  OK   PUBLISHED は DELETE を送らない
+  OK   PUBLISHED は理由を出力する
+  OK   PENDING は DELETE を送らない
+  OK   PENDING は理由を出力する
+  OK   VALIDATING は DELETE を送らない
+  OK   VALIDATING は理由を出力する
+  OK   drop 済みの ID には DELETE を送らない
+  OK   drop 済みの ID は存在しない旨を出力する
+  OK   存在しない deployment の公開待ちは失敗する
+  OK   存在しない deployment は release しない
+  OK   release しないときは状態照会だけで止まる (NOT_FOUND)
+[wait-published]
+  OK   PUBLISHING を経て PUBLISHED になれば成功する
+  OK   PUBLISHED まで照会を繰り返す
+  OK   FAILED になれば失敗する
+  OK   上限を過ぎれば失敗する
+[published]
+  OK   200 なら公開済み
+  OK   published は認証なしの HEAD 1 件 (既定は Android 枠)
+  OK   KMP 枠も 200 なら公開済み
+  OK   artifactId 引数が判定対象の座標を切り替える
+  OK   404 なら未公開
+  OK   判定できない応答は exit 2
+[認証情報]
+  OK   認証情報が空なら止まる
+  OK   片方だけでも止まる
+  OK   両方あれば通る
+  OK   Bearer は user:token の base64
+失敗なし
+
+### scripts/release/central-resume.sh --selftest  (exit 0)
+[状態から動作への対応]
+  OK   NONE -> upload
+  OK   NOT_FOUND -> upload
+  OK   FAILED -> drop-and-upload
+  OK   VALIDATED -> skip-upload
+  OK   PUBLISHING -> wait-published
+  OK   PUBLISHED -> skip-all
+  OK   PENDING -> settle-first
+  OK   VALIDATING -> settle-first
+  OK   6 状態が 5 種の動作へ分かれる (NONE と NOT_FOUND だけが同じ)
+[未知の状態]
+  OK   知らない状態は失敗にする (既定の動作へ丸めない)
+  OK   空の状態は失敗にする
+[resume]
+  OK   ID ファイルが無ければ upload
+  OK   ID ファイルが無ければ状態を照会しない
+  OK   ID ファイルが空でも upload
+  OK   ID ファイルが空なら状態を照会しない
+  OK   ID があれば照会した状態で決める
+  OK   改行を落とした ID で照会する
+  OK   PUBLISHING の枠は release を送り直さない
+  OK   経緯は標準エラーへ出す (標準出力は動作 1 語だけ)
+  OK   照会した状態が未知なら失敗する
+失敗なし
+
+### scripts/release/check-distribution-tag.sh --selftest  (exit 0)
+[tag が無い]
+  OK   remote に tag が無ければ absent
+[tag の内容が一致する]
+  OK   内容が同じ tag は match
+[未追跡ファイルもツリーに含める]
+  OK   未追跡ファイルが増えていれば失敗する
+  OK   食い違った version を出力する
+[内容が違う tag]
+  OK   remote の tag が別の内容を指していれば失敗する (手元の tag が古くても)
+[remote から消えた tag]
+  OK   remote から消えていれば absent
+  OK   手元に残っていた同名 tag は消す
+[作業コピーの指定誤り]
+  OK   作業コピーが無ければ失敗する
+  OK   git の作業コピーでなければ失敗する
+失敗なし
+
+### scripts/release/check-nuget-version.sh --selftest  (exit 0)
+[公開済み]
+  OK   200 / 版一覧に一致がある -> exit 0
+  OK   200 / 大文字の入力も小文字の一覧に一致する -> exit 0
+[未公開]
+  OK   200 / 版一覧に無い -> exit 1
+  OK   200 / 版一覧が空 -> exit 1
+  OK   404 / index が無い -> exit 1
+  OK   200 / 前方一致する別の版があっても未公開 -> exit 1
+[判定不能 — 未公開に倒れないこと]
+  OK   通信失敗 (status なし) -> exit 2
+  OK   接続できない (curl の 000) -> exit 2
+  OK   500 -> exit 2
+  OK   503 -> exit 2
+  OK   429 -> exit 2
+  OK   200 / JSON として壊れている -> exit 2
+  OK   200 / HTML が返ってきた -> exit 2
+  OK   200 / versions が配列ではない -> exit 2
+  OK   200 / versions が無い -> exit 2
+[本文のファイルが無い]
+  OK   200 だが本文が無い -> exit 2
+失敗なし
+
+### scripts/release/check-resume-eligibility.sh --selftest  (exit 0)
+[外部状態が無い]
+  OK   試行 1 / tag absent / 外部 none / 印 absent -> proceed
+  OK   試行 2 / tag absent / 外部 none / 印 absent -> proceed
+  OK   試行 2 / tag absent / 外部 none / 印 match -> proceed
+[外部状態がある]
+  OK   試行 1 / tag absent / 外部 present / 印 absent -> fail-new-dispatch
+  OK   試行 1 / tag absent / 外部 present / 印 match -> fail-new-dispatch
+  OK   試行 2 / tag absent / 外部 present / 印 match -> resume
+  OK   試行 7 / tag absent / 外部 present / 印 match -> resume
+[外部状態があるが、この run 由来だと示せない]
+  OK   試行 2 / tag absent / 外部 present / 印 absent -> fail-no-marker
+  OK   試行 7 / tag absent / 外部 present / 印 absent -> fail-no-marker
+  OK   試行 2 / tag absent / 外部 present / 印 mismatch -> fail-marker-mismatch
+  OK   試行 7 / tag absent / 外部 present / 印 mismatch -> fail-marker-mismatch
+[monorepo の tag]
+  OK   試行 1 / tag same-commit / 外部 present / 印 absent -> skip-all
+  OK   試行 1 / tag same-commit / 外部 none / 印 absent -> skip-all
+  OK   試行 2 / tag same-commit / 外部 present / 印 absent -> skip-all
+  OK   試行 1 / tag other-commit / 外部 none / 印 absent -> fail-tag-mismatch
+  OK   試行 2 / tag other-commit / 外部 present / 印 match -> fail-tag-mismatch
+[案内]
+  OK   新規 dispatch の失敗は再実行を案内する
+  OK   案内は診断注釈ではなく説明として出す
+  OK   印の無い再試行の失敗は部分 publish を行った run の再実行を案内する
+[入力の誤り]
+  OK   試行回数 0 は失敗する
+  OK   試行回数が数字でなければ失敗する
+  OK   知らない tag の状態は失敗する
+  OK   知らない外部状態は失敗する
+  OK   知らない marker の状態は失敗する
+[印の読み書き]
+  OK   書く前の印は absent
+  OK   同じ version・commit・run なら match
+  OK   version が違えば mismatch
+  OK   commit が違えば mismatch
+  OK   run が違えば mismatch
+  OK   空白だけの印は absent
+  OK   末尾に空行が増えても match
+[印と判定をつないだ経路]
+  OK   外部状態ありの試行 1 回目は拒否され、印は書かれない
+  OK   拒否された試行は印を残さない
+  OK   その run の再実行 (試行 2 回目) も止まる
+  OK   外部状態が無い試行 1 回目は proceed
+  OK   その run の再実行だけが resume
+  OK   別の run から拾った印では resume にならない
+  OK   別の commit で起動した再試行では resume にならない
+失敗なし
+
+### scripts/release/check-signatures.sh --selftest  (exit 0)
+[署名が揃っている発行物]
+  OK   Android 枠は 2 publication が揃えば通る
+  OK   KMP 枠は 5 publication が揃えば通る
+  OK   検査した成果物の件数を出力する
+[署名の欠落]
+  OK   cinterop klib の .asc が 1 件欠ければ失敗する
+  OK   欠けたファイル名を出力する
+  OK   SwiftPM 連携メタデータ (json) の .asc が欠ければ失敗する
+  OK   Android の aar の .asc が欠ければ失敗する
+[publication の欠落]
+  OK   iOS ターゲットの publication がまるごと無ければ失敗する
+  OK   欠けた publication 名を出力する
+  OK   枠を取り違えた発行物は publication の不足で止まる
+[走査先の指定誤り]
+  OK   ディレクトリが無ければ失敗する
+  OK   知らない枠名は失敗する
+失敗なし
+
+### scripts/release/compare-maven-artifacts.sh --selftest  (exit 0)
+[同じ内容]
+  OK   同じ内容の 3 成果物が一致する
+[無視すべき差異]
+  OK   署名 / checksum / maven-metadata の有無は差異にしない
+  OK   アーカイブの更新時刻の差は差異にしない
+[止めたい差異]
+  OK   pom の内容が違えば失敗する
+  OK   差異のあるファイル名を出力する
+  OK   アーカイブの中身が違えば失敗する
+  OK   中身の違うアーカイブ名を出力する
+  OK   アーカイブのエントリが増えれば失敗する
+  OK   片方にしか無い成果物があれば失敗する
+  OK   どちら側にしか無いかを出力する
+[走査先の指定誤り]
+  OK   ディレクトリが無ければ失敗する
+  OK   成果物が 1 件も無いツリーは緑で通さない
+失敗なし
+
+### scripts/release/wait-for-registries.sh --selftest  (exit 0)
+[待ち対象]
+  OK   待ち対象は Maven 7 件 + NuGet 3 件の 10 件
+  OK   Maven の pom の URL
+  OK   nuget.org の index の URL
+[全件が反映済み]
+  OK   10 件すべてが反映済みなら 1 巡で抜ける
+  OK   照会した URL は 10 種
+[版の大小文字]
+  OK   index の大文字表記でも同じ version として一致する
+  OK   index に無い version は未反映
+[1 件でも未反映なら待つ]
+  OK   KMP のターゲット別 publication 1 件の未反映で待ち続ける
+  OK   上限を過ぎれば失敗する
+  OK   NuGet 1 件の未反映で待ち続ける
+失敗なし
+
+### python3 scripts/release/set-readme-version.py --selftest  (exit 0)
+[置換]
+  OK   置換が成功する (14 ファイルのインストール例 26 行を 1.2.3-beta.4 にした)
+  OK   SwiftPM の from: が exact: の新 version になる (README 2 枚)
+  OK   ksdialogs-core の座標が新 version になる
+  OK   ksdialogs の座標が新 version になる
+  OK   ksdialogs-kmp の座標が新 version になる
+  OK   NuGet の Version が新 version になる
+  OK   散文の中の座標も置き換える
+  OK   version を持たないプレースホルダの説明は書き換えない
+  OK   version の付かない座標の言及は書き換えない
+  OK   散文の配信リポジトリ URL は書き換えない
+  OK   書き換わるのはファイルごとに期待した本数だけ (README.md=5; README_ja.md=5; skills/en/ksdialogs-android/SKILL.md=2; skills/ja/ksdialogs-android/SKILL.md=2; skills/en/ksdialogs-kmp/SKILL.md=2; skills/ja/ksdialogs-kmp/SKILL.md=2; skills/en/ksdialogs-kmp/references/ios-host.md=1; skills/ja/ksdialogs-kmp/references/ios-host.md=1; skills/en/ksdialogs-kmp/references/android-host.md=1; skills/ja/ksdialogs-kmp/references/android-host.md=1; skills/en/ksdialogs-maui/SKILL.md=1; skills/ja/ksdialogs-maui/SKILL.md=1; skills/en/ksdialogs-aiforms-migration/SKILL.md=1; skills/ja/ksdialogs-aiforms-migration/SKILL.md=1)
+  OK   置換後の検査が通る (インストール例 26 行が 1.2.3-beta.4 と一致する)
+  OK   別の version の検査は失敗する
+  OK   README の不一致の行番号が出力される (診断の全文は落とす)
+  OK   Skill の不一致の行番号が出力される (診断の全文は落とす)
+[実値からの置換]
+  OK   実値からの置換も成功する (14 ファイルのインストール例 26 行を 2.0.0 にした)
+  OK   2 度目の置換後も検査が通る (インストール例 26 行が 2.0.0 と一致する)
+[期待していない種別は見ない]
+  OK   期待外の種別が混ざっていても置換は成功する (14 ファイルのインストール例 26 行を 1.2.3 にした)
+  OK   期待していない種別の行は書き換えない
+  OK   書き換わるのは期待した 1 行だけ
+[該当行が確定できない場合]
+  OK   対象行が無ければ置換しない
+  OK   見つからなかったファイルと種別が出力される (診断の全文は落とす)
+  OK   1 枚でも確定できなければ他方も書き換えない
+  OK   期待本数に足りなければ置換しない
+  OK   見つかった行数と期待本数が出力される (診断の全文は落とす)
+  OK   Skill 1 枚の不備で README も書き換えない
+  OK   対象行が期待より多ければ置換しない
+  OK   見つかった行数が出力される (診断の全文は落とす)
+[SwiftPM が from: のままの場合]
+  OK   version が一致していても from: なら検査が失敗する (診断の全文は落とす)
+  OK   exact: を要求する指摘にファイルと行番号が出力される (診断の全文は落とす)
+  OK   version の不一致としては報告しない (診断の全文は落とす)
+[対象ファイルが無い場合]
+  OK   対象ファイルが無ければ置換しない
+  OK   無いファイルの名前が出力される (診断の全文は落とす)
+  OK   1 枚が無ければ残りも書き換えない
+  OK   対象ファイルが無ければ検査も失敗する (診断の全文は落とす)
+[実物のファイルに対する疎通]
+  OK   実物のファイルで 26 行を確定できる (14 ファイルのインストール例 26 行を 9.9.9-rc.7 にした)
+  OK   置換したコピーの検査が通る (インストール例 26 行が 9.9.9-rc.7 と一致する)
+失敗なし

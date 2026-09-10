@@ -20,6 +20,13 @@
     <Description>A dialog UI library for .NET MAUI that presents dialogs, loading indicators, and toasts from anywhere in an application, with content written as MAUI views, on iOS and Android. Successor to AiForms.Maui.Dialogs.</Description>
     <PackageTags>maui dialog dialogs loading toast ios android</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!--
+      公開面の doc コメントを XML ドキュメントとして 3 TFM ぶん生成し、nupkg の lib/<TFM>/ へ
+      同梱する。利用者の IDE で説明が読めるのはこのファイルによる。
+      指定は共通の props ではなくここに置く — XML ドキュメントを持つのは利用者向けの公開契約を
+      持つ facade だけで、輸送層 binding 2 件は false を自分の csproj で宣言する。
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

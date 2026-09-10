@@ -1,0 +1,49 @@
+失敗経路で deployment ID の引き継ぎが空に上書きされないことの検査 (実行日 2026-09-10)
+
+publish job は、保留中の deployment の ID を artifact `central-deployment-id` に置いて同じ run の
+再試行へ引き継ぐ。守りたい性質は「引き継ぎを読み込んでいない attempt が、その artifact を
+空の内容で書き戻さない」こと。これは 2 つの構造で担保している。
+
+  (1) 引き継ぎの読み込み (Download previous deployment ids / Prepare deployment id files) を、
+      落ちうる他の download (Download Android artifacts / Download MAUI packages) より前に置く
+  (2) 失敗経路の 3 step (Recover deployment ids from upload logs / Drop pending deployments /
+      Store deployment ids after cleanup) を、引き継ぎを読み込んだ attempt に限定する
+      (`steps.deployment-ids.outputs.ready == 'true'`)
+
+実 run で download を強制失敗させた観測は GitHub Actions 上でしか取れないため、ここでは
+release.yml の構造そのものを検査した。検査は step の順序と条件式を読むだけの一時スクリプトで、
+作業木には残していない。
+
+# 1. 本体 (修正後の release.yml)
+
+  OK  Download previous deployment ids は Download Android artifacts より前にある
+  OK  Download previous deployment ids は Download MAUI packages より前にある
+  OK  Prepare deployment id files は Download Android artifacts より前にある
+  OK  Prepare deployment id files は Download MAUI packages より前にある
+  OK  Recover deployment ids from upload logs は引き継ぎを読み込んだ attempt に限定されている
+  OK  Drop pending deployments は引き継ぎを読み込んだ attempt に限定されている
+  OK  Store deployment ids after cleanup は引き継ぎを読み込んだ attempt に限定されている
+  失敗なし   (exit 0)
+
+# 2. 判別力の確認 — 機構を外した写しでは落ちる
+
+同じ release.yml から、修正前の構造 (失敗経路のガードを外し、引き継ぎの読み込みを package の
+download より後ろへ戻したもの) を機械的に作って同じ検査を掛けた。
+
+  NG  Download previous deployment ids が Download Android artifacts より後ろにある
+  NG  Download previous deployment ids が Download MAUI packages より後ろにある
+  NG  Prepare deployment id files が Download Android artifacts より後ろにある
+  NG  Prepare deployment id files が Download MAUI packages より後ろにある
+  NG  Recover deployment ids from upload logs の条件が引き継ぎの読み込みを要求していない: 'failure()'
+  NG  Drop pending deployments の条件が引き継ぎの読み込みを要求していない: 'failure()'
+  NG  Store deployment ids after cleanup の条件が引き継ぎの読み込みを要求していない: 'failure()'
+  失敗 7 件   (exit 1)
+
+この検査が示すのは release.yml の構造 (順序とガードの実在) までで、実行時に artifact の内容が
+保たれることそのものではない。実行時の観測は初回リリースの run で確かめる。
+
+# 3. actionlint
+
+  $ actionlint .github/workflows/release.yml
+  error 0 件。shellcheck の info / style が 3 件 (SC2012 × 2、SC2001 × 1) で、いずれも修正前から
+  ある指摘 (`ls` で Xcode を選ぶ箇所 2 つと、置換したファイル名の整形 1 つ)。

@@ -23,6 +23,16 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <Description>Android native bridge binding for KsDialogs.Maui. Referenced transitively by KsDialogs.Maui; do not reference this package directly.</Description>
+    <!--
+      XML ドキュメントは生成しない。この assembly は輸送層で、利用者が直接読む公開契約を
+      持たない。SDK の既定に任せず明示するのは、既定が変わっても nupkg の中身が動かないようにするため。
+
+      なお .NET Android の binding 用 targets は、束縛した Java API の Javadoc を IntelliSense へ
+      運ぶために、共通 SDK がこの指定を見て空にした後の DocumentationFile を出力先へ設定し直す。
+      そのため生成そのものはこの指定では止まらない (生成されるのは Android の Resource designer
+      クラスの説明だけで、束縛面の説明は入らない)
+    -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>

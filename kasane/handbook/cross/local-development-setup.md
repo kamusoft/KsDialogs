@@ -2,9 +2,9 @@
 kind: guide
 applies-when:
   always: false
-  tasks: [環境構築, worktree での作業開始, Gradle ルートのビルド・テスト, Sample のビルドと実行, MAUI iOS の Sample ビルド, .NET SDK の解決, 消費者検証を手元で回す]
+  tasks: [環境構築, worktree での作業開始, Gradle ルートのビルド・テスト, Sample のビルドと実行, MAUI iOS の Sample ビルド, .NET SDK の解決, 消費者検証を手元で回す, リリース用スクリプトの自己テスト]
 title: ローカル開発環境の準備
-description: Android SDK と Xcode のローカル環境を整え、repo 直下の global.json が固定する .NET SDK / workload set を確認し、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド。Gradle build root は本体・Sample の 5 つと消費者検証の 2 つ。消費者検証 (`verification/`) を手元で回す手順を含む
+description: Android SDK と Xcode のローカル環境を整え、repo 直下の global.json が固定する .NET SDK / workload set を確認し、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド。Gradle build root は本体・Sample の 5 つと消費者検証の 2 つ。消費者検証 (`verification/`) と `scripts/release/` の自己テストを手元で回す手順を含む
 timestamp: 2026-09-10
 ---
 
@@ -197,8 +197,20 @@ verification/kmp/build-consumer.sh
 - 実行後は `git status` で `verification/` と `kmp/.swiftpm-locks/` に差分が無いことを確かめる。差分が出たら消費者検証の欠陥として扱う (追跡物は実行で変化しない契約)
 - Android / KMP の SDK は「Android SDK ロケーション」節のとおり本体 build root の設定から引き継がれる。MAUI は repo 直下の `global.json` が固定する SDK をそのまま使う
 
+## リリース用スクリプトの自己テストを回す
+
+`scripts/release/` のスクリプトはリリースのときにしか実行されない。判定やパターンを触ったら、リポジトリルートで自己テストを回して全件通過を確かめる (ネットワークにも実レジストリにも出ない)。
+
+```bash
+for s in scripts/release/*.sh; do "$s" --selftest; done
+python3 scripts/release/set-readme-version.py --selftest
+```
+
+`set-readme-version.py` の自己テストは実物の README と Skill を一時ディレクトリへ複写して置換を試すため、インストール例を書き換えたときの受け皿にもなる (対象行の形が変わって検出できなくなっていれば、ここで落ちる)。リリース手順そのものは [リリース手順](release-procedure.md) を参照する。
+
 ## 関連
 
 - [テスト実行規約](test-execution.md) — 各 build root の全件実行コマンドと件数の確認
+- [リリース手順](release-procedure.md) — 公開の起動と初回だけ行う GitHub 側の設定
 - [Sample パリティ規約](sample-parity.md) — 4 ルートで一致させるデモと撮影支援の外部契約
 - [KMP 利用者の iOS ホスト統合](../../concepts/kmp/api/ios-host-integration.md) — KMP iOS の依存経路と合成 package
