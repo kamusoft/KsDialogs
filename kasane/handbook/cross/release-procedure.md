@@ -144,6 +144,8 @@ gh run watch "$(gh run list --workflow=release.yml --limit 1 --json databaseId -
 
 publish は 1 つの job で直列に進み、配信リポジトリへの commit → Android の Maven upload と検証待ち → 配信リポジトリの tag → KMP の発行と upload と検証待ち → nuget.org への push → Maven Central の release 2 件 (Android → KMP の順) を要求してから 2 枠の公開をまとめて待つ (上限 90 分) → monorepo の tag と Release → `develop` へのインストール例の反映、の順になる。検証待ち (上限 30 分) を通らなければ nuget.org へ push する前に止まる。
 
+所要時間の目安は初回リリース (`0.1.0-beta.1`、2026-09-10) の実測で、dry-run 段 (validate → 本体検証 5 ∥ package 3 → 消費者 dry-run 4) まで約 18 分、publish は Central の公開待ちが支配的で Android 枠が約 60 分・KMP 枠が約 27 分、反映待ちと smoke 4 本で約 10 分、壁時計は再実行を含めて約 2 時間だった。publish job の timeout 150 分は本体の作業約 16 分と公開待ちの上限 90 分を足した実測ベースの予算で、待ちがすべて上限まで伸びる最悪ケースは job timeout で止めて再実行に回す。
+
 ### 公開後の確認
 
 - nuget.org の 3 パッケージのページ (README が表示されること)

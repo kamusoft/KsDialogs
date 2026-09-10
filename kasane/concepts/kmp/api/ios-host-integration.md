@@ -61,6 +61,8 @@ KMP artifact の発行 metadata に載る Swift package 参照は、`kmp/ksdialo
 
 リリース版の発行は、発行の副作用として本体側の合成 Swift マニフェスト 2 本 (`kmp/.swiftpm-locks/default/swiftImport/subpackages/` 配下の `Package.swift`) を、そのとき解決した Swift 参照の URL へ書き換える。`file://` の上書き付きで手元から発行すると追跡ファイルにローカル絶対パスが残るため、消費者検証のフィード準備は発行前に 2 本が未変更であることを検査し、成否によらず復元する ([消費者検証](../../cross/architecture/consumer-verification.md))。
 
+リリース版の iOS publication (cinterop klib 付き) は、Kotlin Gradle Plugin が発行時に SwiftPM パッケージを解決するため、配信リポジトリに同版の tag が実在しないと発行できない。release workflow はこの制約から配信リポジトリの tag を push した後に KMP を発行する ([release workflow](../../cross/architecture/release-workflow.md)、cross/ADR-0024)。
+
 SNAPSHOT のまま Maven local へ発行した成果物には発行者の絶対パスが載り、同一マシンでしか解決できない。SNAPSHOT の消費はリポジトリ内 Sample の composite build が担い、リポジトリ外での検証はリリース版の version を注入して行う。
 
 消費者側の Kotlin Gradle Plugin は本ライブラリと同じ minor (2.4.x) をサポートし、動作確認済みの版はリポジトリのバージョンカタログ (`android/gradle/libs.versions.toml` の `kotlin`) が固定する値である。SwiftPM import は Alpha 機能で消費側の最低版と metadata 形式の互換に公式の記述が無いため、これより広い範囲は約束しない。

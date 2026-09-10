@@ -121,6 +121,8 @@ Xcode project (`VerificationKmp.xcodeproj`) は共有モジュールの static f
 
 ## 関連
 
+- [配布物の構成](distribution-artifacts.md) — 消費者が解決する配布物の中身と version の注入
+- [release workflow](release-workflow.md) — dry-run に artifact を渡し smoke に version を渡す呼び出し側
 - [検証 CI の範囲と実行条件](../../../handbook/cross/verification-ci.md) — 消費者検証 4 job の起動条件と lint job の検査一覧
 - [ローカル開発環境の準備](../../../handbook/cross/local-development-setup.md) — 消費者検証を手元で回す手順と Android SDK の引き継ぎ
 - [KMP 利用者の iOS ホスト統合](../../kmp/api/ios-host-integration.md) — 発行 metadata の Swift 参照が version で決まること、合成 package の再生成

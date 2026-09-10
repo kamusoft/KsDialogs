@@ -44,7 +44,7 @@ KsDialogs.Maui は AiForms.Maui.Dialogs を、Dialog の結果型・factory に�
 
 ## 導入
 
-`AiForms.Maui.Dialogs` package を外し、.NET 10 の MAUI project に `KsDialogs.Maui` を追加する。package は NuGet にまだ公開していないため、下の `<version>` は入手した package の version を指す。`using AiForms.Dialogs;` は `using KsDialogs;` へ置き換える。
+`AiForms.Maui.Dialogs` package を外し、.NET 10 の MAUI project に nuget.org の `KsDialogs.Maui` を追加する。project に書く参照はこれだけでよい。native 側を運ぶ binding package `KsDialogs.Binding.iOS` と `KsDialogs.Binding.Android` は iOS / Android の target framework で推移的に届くので、直接参照しない。`using AiForms.Dialogs;` は `using KsDialogs;` へ置き換える。
 
 ```xml
 <PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />

@@ -11,7 +11,7 @@ concepts はドメイン別に分割して管理する。カテゴリ定義・�
 | [android](android/index.md) | Android Native (Kotlin) の公開面 — Dialog・レイアウト・トランジション・Loading・Toast |
 | [maui](maui/index.md) | .NET MAUI 固有の知識 (binding 構成・DI 連携と登録糖衣) と MAUI (C#) の公開面 — Dialog・レイアウト・トランジション・Loading・Toast |
 | [kmp](kmp/index.md) | KMP 固有の知識 (expect/actual 境界・iOS host 統合) と共有コード (commonMain) の公開面 — Dialog・Loading・Toast |
-| [cross](cross/index.md) | リポジトリ横断のメタ事項 — 消費者検証 (`verification/`) の構成と参照先の切り替え、外部参考リポジトリの在り処 (横断的な開発規約は handbook/cross へ移送) |
+| [cross](cross/index.md) | リポジトリ横断のメタ事項 — 4 形態の配布物の構成と version の注入、release workflow (一斉公開の段構成・publish の順序・再実行)、消費者検証 (`verification/`) の構成と参照先の切り替え、外部参考リポジトリの在り処 (横断的な開発規約は handbook/cross へ移送) |
 
 同じ機能でも、挙動の契約は core、公開名・署名・コード例・framework 固有の注意は `<platform>/api/` に分かれる ([rules.md の「配置判断」](rules.md)・cross/ADR-0014)。core の各 concept は末尾の「形態別の公開面」節から、各公開面 concept は冒頭から、互いにリンクする。
 

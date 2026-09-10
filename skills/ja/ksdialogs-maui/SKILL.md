@@ -27,7 +27,7 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 
 ## セットアップ
 
-.NET 10 の MAUI project に `KsDialogs.Maui` を追加する。package は NuGet にまだ公開していないため、下の `<version>` は入手した package の version を指す。利用するファイルで `KsDialogs` namespace を import する。
+.NET 10 の MAUI project に nuget.org の `KsDialogs.Maui` package を追加する。project に書く参照はこれだけでよい。native 側を運ぶ binding package `KsDialogs.Binding.iOS` と `KsDialogs.Binding.Android` は iOS / Android の target framework で推移的に届くので、直接参照しない。利用するファイルで `KsDialogs` namespace を import する。
 
 ```xml
 <PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
@@ -37,7 +37,9 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 |---|---|
 | MAUI | `Microsoft.Maui.Controls` 10.0.20 以降。これはライブラリ側がビルドとテストに使う .NET workload set 同梱の version なので、同じ workload set の project なら version を書かなくてよい。それより古い version (10.0.20 未満) を明示すると restore が NU1605 (NuGet の package ダウングレードのエラー) を報告する |
 | .NET SDK | iOS / Android の MAUI workload を入れた .NET 10 |
-| 最低 OS 版 | iOS 17.0 と Android 7.0 (API 24)。これを下回る `SupportedOSPlatformVersion` は、SDK の既定値が下回る未設定の場合も含めて、ビルドを `KSDLG0001` のエラーで止める。エラーには必要な version と現在の値が出る。検査が走るのは iOS・Android の inner build だけである |
+| 最低 OS 版 | iOS 17.0 と Android 7.0 (API 24)。これを下回る `SupportedOSPlatformVersion` は、SDK の既定値が下回る未設定の場合も含めて、ビルドを `KSDLG0001` のエラーで止める。エラーには必要な version と現在の値が出る。検査は package に同梱されていて利用者のビルドで走り、対象は iOS・Android の inner build だけである |
+
+package には公開 API の XML ドキュメント (説明文は日本語) も同梱されているので、IDE の補完やツールチップでメンバーの説明が読める。
 
 ## 最小例
 

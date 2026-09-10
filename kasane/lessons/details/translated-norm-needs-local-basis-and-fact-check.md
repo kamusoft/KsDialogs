@@ -22,3 +22,5 @@ evidence:
 - 2026-09-08 add-verification-ci: 翻案元の「`MauiVersion` 直書きのまま」は「プロパティ経由の書き方を保つ」の意味で、翻案元 Sample は値 10.0.70 を明示していた。翻案先では Sample が値を持たないため「推移的に上がる」という前提が NuGet の解決規則 (直接参照が下位なら NU1605) と矛盾し、`samples/maui` の restore が失敗した。翻案元の該当ファイル 1 本を開くか `dotnet msbuild -getProperty:MauiVersion` を 1 回打てば採録前に分かった
 
 - 2026-09-04 adopt-docs-refresh: 翻案元の SKILL.md にあった README 設置の禁止規範は KsSettingsView の cross/ADR-0023 が根拠だったが、KsDialogs には対応する決定が無い。tasks は「phase-2 踏襲決定への参照に直す」と書いたが phase-2 はまだ議論されておらず、samples/ 配下の README は現役文書だった。近縁: [[handoff-item-not-checked-against-evidence]] (写す項目を現在の証跡と突き合わせる) / [[tool-premise-decision-needs-existence-probe]] (前提の存在プローブ)
+
+- 2026-09-10 add-release-workflow (昇格後の観測、count 対象外): 翻案元の実測 (publish 11 分) を根拠にした公開待ちの上限 30 分を運用値としてそのまま写し、初回リリースで Android 枠の Central 同期 (約 60 分) に足りず失敗した (同じ run の再実行で整合し、fix-release-published-wait で 90 分・並行待ちへ)。design は「timeout は翻案元のまま置き初回の実測で詰める」と明記していたので判断としては意図的だが、ルール文の「翻案元の実測に基づく前提」には運用値 (上限・間隔) も含まれる

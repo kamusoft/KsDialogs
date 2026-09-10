@@ -101,6 +101,8 @@ PATTERNS = {
 TARGET_FILES: list[tuple[str, dict[str, int]]] = [
     ("README.md", {SWIFTPM: 1, MAVEN_CORE: 1, MAVEN_COMPOSE: 1, MAVEN_KMP: 1, NUGET: 1}),
     ("README_ja.md", {SWIFTPM: 1, MAVEN_CORE: 1, MAVEN_COMPOSE: 1, MAVEN_KMP: 1, NUGET: 1}),
+    ("skills/en/ksdialogs-ios/SKILL.md", {SWIFTPM: 1}),
+    ("skills/ja/ksdialogs-ios/SKILL.md", {SWIFTPM: 1}),
     ("skills/en/ksdialogs-android/SKILL.md", {MAVEN_CORE: 1, MAVEN_COMPOSE: 1}),
     ("skills/ja/ksdialogs-android/SKILL.md", {MAVEN_CORE: 1, MAVEN_COMPOSE: 1}),
     # 導入節のコードブロックと、iOS ホストの手順に書かれた同じ座標の 2 行。
@@ -404,7 +406,21 @@ SELFTEST_NUGET_SKILL = """# MAUI Skill
 """
 
 # 期待する種別の組み合わせごとの自己テスト用テキスト。
+SELFTEST_IOS_SKILL = """\
+## Setup
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/kamusoft/KsDialogs-SPM",
+        exact: "<version>"
+    )
+]
+```
+"""
+
 SELFTEST_BY_TARGETS: dict[tuple[tuple[str, int], ...], str] = {
+    ((SWIFTPM, 1),): SELFTEST_IOS_SKILL,
     ((SWIFTPM, 1), (MAVEN_CORE, 1), (MAVEN_COMPOSE, 1), (MAVEN_KMP, 1), (NUGET, 1)): SELFTEST_README,
     ((MAVEN_CORE, 1), (MAVEN_COMPOSE, 1)): SELFTEST_ANDROID_SKILL,
     ((MAVEN_KMP, 2),): SELFTEST_KMP_SKILL,

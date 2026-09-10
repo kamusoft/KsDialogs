@@ -44,7 +44,7 @@ KsDialogs.Maui replaces AiForms.Maui.Dialogs with Dialog result types, factory-b
 
 ## Setup
 
-Remove the `AiForms.Maui.Dialogs` package and add `KsDialogs.Maui` to a .NET 10 MAUI project. The package is not published on NuGet yet, so `<version>` below stands for the version of the package you obtained. Replace `using AiForms.Dialogs;` with `using KsDialogs;`.
+Remove the `AiForms.Maui.Dialogs` package and add `KsDialogs.Maui` from nuget.org to a .NET 10 MAUI project. That single reference is everything a project writes: the binding packages `KsDialogs.Binding.iOS` and `KsDialogs.Binding.Android` carry the native side and arrive transitively on the iOS and Android target frameworks, so do not reference them directly. Replace `using AiForms.Dialogs;` with `using KsDialogs;`.
 
 ```xml
 <PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />

@@ -28,7 +28,7 @@ Calling through a default entry and calling through an injected contract reach t
 
 ## Setup
 
-The artifacts are built with Kotlin 2.4.10 and support consumers on the same minor line (2.4.x), with minSdk 24 or later. `jp.kamusoft:ksdialogs-core` (Android Views) and `jp.kamusoft:ksdialogs` (Jetpack Compose) are the planned public coordinates; they are not published to Maven Central yet. Replace `<version>` below with the release version.
+The artifacts are published to Maven Central under the group `jp.kamusoft`. They are built with Kotlin 2.4.10 and expect a consumer-side Kotlin Gradle Plugin on the same minor line (2.4.x); the minimum supported OS is Android 7.0 (API 24). `jp.kamusoft:ksdialogs-core` carries the Android View API and does not depend on Compose, while `jp.kamusoft:ksdialogs` carries the Jetpack Compose API and depends on the core artifact at the same version, so the core arrives transitively. A release version looks like `X.Y.Z` and a prerelease like `X.Y.Z-{alpha|beta|rc}.N`; the version in the examples below tracks the latest published release.
 
 For a View-only Android application, declare only the core artifact:
 

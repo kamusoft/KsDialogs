@@ -1,7 +1,5 @@
 # KsDialogs
 
-> **配信準備中:** 各 package は初回の一般公開に向けて準備中です。
-
 ## 概要と主な特徴
 
 KsDialogs は、現在の View 階層へ組み込まずにアプリケーションのどこからでも UI を表示できるダイアログライブラリです。iOS と Android の Native 実装を土台とし、.NET MAUI と Kotlin Multiplatform には薄い wrapper を提供します。
@@ -36,7 +34,7 @@ Android target は minSdk 24、compileSdk 36 です。Android Native と Kotlin 
 
 ## インストール
 
-以下には package 座標と prerelease version の指定方法だけを示します。platform ごとのセットアップや IDE 固有の詳細は [Agent Skills](#agent-skills) を参照してください。
+以下には package 座標と version の書き方だけを示します。例の version は現在の公開版で、リリースのたびに更新されます。prerelease は `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` の形で書きます。platform ごとのセットアップや IDE 固有の詳細は [Agent Skills](#agent-skills) を参照してください。
 
 ### iOS Native
 
@@ -51,7 +49,7 @@ dependencies: [
 ]
 ```
 
-prerelease では `<version>` を `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` などの正確な tag に置き換えます。
+SwiftPM は `exact` で tag を固定した宣言でなければ prerelease を解決しないため、正式版でも prerelease でもこの形のまま使います。
 
 ### Android Native
 
@@ -71,7 +69,7 @@ dependencies {
 }
 ```
 
-prerelease では `<version>` を `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` のいずれかに置き換えます。
+prerelease も同じ version 文字列を座標にそのまま書きます。
 
 ### .NET MAUI
 
@@ -81,7 +79,9 @@ NuGet package を追加します。
 <PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
 ```
 
-prerelease では `Version` の値を `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` のいずれかに置き換えます。
+prerelease も同じ version 文字列を `Version` 属性にそのまま書きます。
+
+Native の binding package は iOS / Android の target framework へ推移依存で届きます。アプリ側から直接参照する必要はありません。
 
 Microsoft.Maui.Controls は 10.0.20 以上が必要です。これはこのリポジトリが固定する .NET workload set に同梱される version と同じなので、同じ workload set を使うアプリでは MAUI 本体の version を書く必要はありません。10.0.20 未満を明示すると、NuGet のダウングレードエラー NU1605 でビルドが失敗します。
 
@@ -103,7 +103,9 @@ kotlin {
 
 共有 ViewModel が `DialogViewModel` を継承するため、Android アプリ側から KsDialogs の型が見える必要があります。`api` はそのための宣言です。
 
-iOS アプリ側では `https://github.com/kamusoft/KsDialogs-SPM` も追加し、その `KsDialogs` product を link します。prerelease では Maven artifact と Swift package tag に同じ `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` version を使います。
+Android アプリ側には Android Native の artifact `jp.kamusoft:ksdialogs-core` が推移依存で届きます。Compose 用の artifact `jp.kamusoft:ksdialogs` は届かないため、Android アプリで Compose の中身を書く場合は別途追加します。
+
+iOS アプリ側では `https://github.com/kamusoft/KsDialogs-SPM` も追加し、その `KsDialogs` product を Maven artifact と同じ version に `exact` で固定して link します。
 
 ## 最小コード例
 
@@ -173,7 +175,7 @@ suspend fun showConfirmation(message: String): DialogResult<Boolean> =
 | [`android/`](https://github.com/kamusoft/KsDialogs/tree/develop/android) | Native Android ライブラリ |
 | [`maui/`](https://github.com/kamusoft/KsDialogs/tree/develop/maui) | .NET MAUI wrapper |
 | [`kmp/`](https://github.com/kamusoft/KsDialogs/tree/develop/kmp) | Kotlin Multiplatform wrapper |
-| `samples/` | 4 形態の Sample アプリケーション |
+| [`samples/`](https://github.com/kamusoft/KsDialogs/tree/develop/samples) | 4 形態の Sample アプリケーション |
 | [`skills/`](https://github.com/kamusoft/KsDialogs/tree/develop/skills) | 英語版と日本語版の Agent Skills |
 | [`assets/`](https://github.com/kamusoft/KsDialogs/tree/develop/assets) | 公開ドキュメント用画像 |
 | [`kasane/`](https://github.com/kamusoft/KsDialogs/tree/develop/kasane) | プロジェクト知識と変更記録 |

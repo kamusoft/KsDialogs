@@ -1,7 +1,5 @@
 # KsDialogs
 
-> **Release preparation:** Packages are being prepared for their initial public release.
-
 ## Overview and highlights
 
 KsDialogs is a dialog UI library that can present UI from anywhere in an application without wiring it into the current view hierarchy. Native iOS and Android implementations provide the foundation, with thin wrappers for .NET MAUI and Kotlin Multiplatform.
@@ -36,7 +34,7 @@ The Android targets use minSdk 24 and compileSdk 36. Android Native and Kotlin M
 
 ## Installation
 
-The declarations below cover the package coordinates and prerelease version syntax. See [Agent Skills](#agent-skills) for platform setup and IDE-specific details.
+The declarations below cover the package coordinates and the version syntax. The version in each example is the current release and is updated with every release. A prerelease is written as `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N`. See [Agent Skills](#agent-skills) for platform setup and IDE-specific details.
 
 ### iOS Native
 
@@ -51,7 +49,7 @@ dependencies: [
 ]
 ```
 
-For a prerelease, replace `<version>` with an exact tag such as `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N`.
+SwiftPM resolves a prerelease only when the tag is pinned with `exact`, so the declaration keeps that form for release and prerelease versions alike.
 
 ### Android Native
 
@@ -71,7 +69,7 @@ dependencies {
 }
 ```
 
-For a prerelease, replace `<version>` with `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N`.
+A prerelease is written as the same version string in the coordinate.
 
 ### .NET MAUI
 
@@ -81,7 +79,9 @@ Add the NuGet package.
 <PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
 ```
 
-For a prerelease, replace the `Version` value with `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N`.
+A prerelease is written as the same version string in the `Version` attribute.
+
+The native binding packages arrive transitively for the iOS and Android target frameworks; an application does not reference them directly.
 
 Microsoft.Maui.Controls 10.0.20 or later is required. That is the version bundled with the .NET workload set this repository pins, so an application on the same workload set does not have to state a MAUI version of its own; pinning a version below 10.0.20 makes the build fail with the NuGet downgrade error NU1605.
 
@@ -103,7 +103,9 @@ kotlin {
 
 `api` keeps the KsDialogs types visible to the Android application, which needs them because a shared view model derives from `DialogViewModel`.
 
-The iOS application also adds `https://github.com/kamusoft/KsDialogs-SPM` and links its `KsDialogs` product. For a prerelease, use the same `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N` version for the Maven artifact and Swift package tag.
+The Android application receives the Android Native artifact `jp.kamusoft:ksdialogs-core` transitively. The Compose artifact `jp.kamusoft:ksdialogs` is not included, so an Android application that writes dialog content in Compose adds it as well.
+
+The iOS application also adds `https://github.com/kamusoft/KsDialogs-SPM` and links its `KsDialogs` product, pinned with `exact` to the same version as the Maven artifact.
 
 ## Minimal examples
 
@@ -173,7 +175,7 @@ The [Agent Skills index](https://github.com/kamusoft/KsDialogs/blob/develop/skil
 | [`android/`](https://github.com/kamusoft/KsDialogs/tree/develop/android) | Native Android libraries |
 | [`maui/`](https://github.com/kamusoft/KsDialogs/tree/develop/maui) | .NET MAUI wrapper |
 | [`kmp/`](https://github.com/kamusoft/KsDialogs/tree/develop/kmp) | Kotlin Multiplatform wrapper |
-| `samples/` | Sample applications for the four forms |
+| [`samples/`](https://github.com/kamusoft/KsDialogs/tree/develop/samples) | Sample applications for the four forms |
 | [`skills/`](https://github.com/kamusoft/KsDialogs/tree/develop/skills) | Agent Skills in English and Japanese |
 | [`assets/`](https://github.com/kamusoft/KsDialogs/tree/develop/assets) | Public documentation images |
 | [`kasane/`](https://github.com/kamusoft/KsDialogs/tree/develop/kasane) | Project knowledge and change records |

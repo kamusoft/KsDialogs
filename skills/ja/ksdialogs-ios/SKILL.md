@@ -26,7 +26,20 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 
 ## セットアップ
 
-Swift Package 依存として `https://github.com/kamusoft/KsDialogs-SPM` を追加し、`KsDialogs` product を選んで Swift 6.3 以降の toolchain で iOS 17 以降の target にリンクする。利用するファイルで `KsDialogs` を import する。
+Swift package 依存として `https://github.com/kamusoft/KsDialogs-SPM` を https で追加し、公開済みの tag へ `exact` で固定する。tag は version 文字列そのもので、正式版は `X.Y.Z`、prerelease は `X.Y.Z-alpha.N` / `X.Y.Z-beta.N` / `X.Y.Z-rc.N` の形をとる。`from` は prerelease の tag を解決しないため、`exact` で固定する。
+
+package の identity は `KsDialogs-SPM`、リンクする product は `KsDialogs`。Swift 6.3 以降の toolchain でビルドする iOS 17 以降の target にリンクする (ライブラリ自体は Swift 6 言語モードでコンパイルされている)。利用するファイルで `KsDialogs` を import する。
+
+下の宣言の version は現在の公開版で、リリースのたびに更新される。
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/kamusoft/KsDialogs-SPM",
+        exact: "0.1.0-beta.1"
+    )
+]
+```
 
 ## 最小例
 

@@ -179,15 +179,33 @@ change add-release-workflow の実装で初回リリース `0.1.0-beta.1` まで
 | KsSettingsView への逆流 | R4 (workflow による version 置換) と、翻案で見つけた `check-signatures.sh` の自己テストの無言終了 (`$( ... \|\| true )` の形で `exit` がサブシェルを終える) と `.github/release.yml` のラベル 6 件が未作成な点 (ロードマップ外で起票) |
 | 蒸留後の docs-refresh 2 回目と、phase-9 の完了 | roadmap のゴール「tag は publish 全成功後にのみ生まれる」は monorepo の tag について成り立ち、配信リポジトリの tag は KMP 発行の前に生まれる例外 (ADR-0024) として ksn-roadmap で 1 行直す |
 
+### 蒸留の反映 (2026-09-10 反映)
+
+change add-release-workflow と fix-release-published-wait を 2026-09-10 に蒸留し archive した (`kasane/changes/archive/2026-09-10-add-release-workflow/`、`.../2026-09-10-fix-release-published-wait/`)。cross/ADR-0024 は accepted (0016 を一部改訂)。上の申し送り表の受け皿は次のとおり。
+
+| 申し送り | 受け皿 |
+|---|---|
+| cross/ADR-0024 の accepted 昇格 (Decision 3 の 1 文を含む) | 完了 (蒸留) |
+| PUBLISHED 待ちの上限 | 完了 (fix-release-published-wait、S 級) |
+| Portal の表示名 | 完了 (同 change で handbook release-procedure に 1 文) |
+| 配布構成の concepts 化 | 完了 (concepts cross/architecture/distribution-artifacts.md と release-workflow.md を新設) |
+| docs-refresh 2 回目 | 蒸留後にオーナーが依頼して起動する (下の TODO)。「未配信」表記の解除と配布構成 concepts の反映 |
+| 自己テストと actionlint の lint job 搭載 | 簡易起票 `kasane/changes/add-release-script-selftests-to-lint/` (cross/ADR-0022 の一部改訂を含む) |
+| monorepo tag の別 commit 検出 | 同上に同梱 |
+| KsSettingsView への逆流 | `kasane/outbox/KsSettingsView/2026-09-10-release-workflow-fixes-and-improvements.md` (kind: change。相手側の判断に委ねる) |
+| ロードマップのゴール文の読み替え | 完了 (roadmap.md のゴール 2 行目を monorepo の tag に限定) |
+
+fix-release-published-wait の review-002 Suggestion のうち「FAILED 時に他の枠の状態を出力する」は見送り (Portal 一覧と Summarize の deployment ID で運用が成立し、実装の価値が小さい)。
+
 ## TODO
 
 - [x] 論点の解消 (R1〜R7、2026-09-10 決定)
 - [x] docs-refresh 1 回目 (2026-09-10 完了): 旧 Android 座標 16 箇所を新座標へ、MAUI 分 (10.0.20・`KSDLG0001`・`ViewCreationFailed`) と KMP 分 (`api` スコープ・Kotlin 同 minor) を反映。API 版付き TFM 名は利用者向け文書に書かない (SDK 更新で腐るため、オーナー判断)。drift 所見: KMP 消費者の Android ホストへ推移的に届くもの (`ksdialogs-core` は自動、Compose 系は別途) と共有コード側の `api` スコープの根拠、MAUI の下限版 / `KSDLG0001` は concepts に無い (skills だけが持つ状態) → 蒸留の配布構成 concepts 化に含める
 - [ ] docs-refresh 2 回目 (初回リリース後の蒸留の後): 「未配信」表記の解除と配布構成 concepts の反映 (R5)
-- [ ] MAUI の nupkg 名検査 (package / publish の 2 回) と XML ドキュメントの明示 (facade true / binding false) を release の change に含める (R6)
-- [ ] ksn-propose で変更提案を起こす (docs-refresh 1 回目の後。cross/ADR-0024 proposed を design の Decision に反映)
-- [ ] KsSettingsView 側へ R4 (release workflow による version 置換) を逆流させる作業を、このロードマップの外で起票する (phase-9 の実装後)
+- [x] MAUI の nupkg 名検査 (package / publish の 2 回) と XML ドキュメントの明示 (facade true / binding false) を release の change に含める (R6) (add-release-workflow で実装)
+- [x] ksn-propose で変更提案を起こす (docs-refresh 1 回目の後。cross/ADR-0024 proposed を design の Decision に反映) (2026-09-10 完了)
+- [x] KsSettingsView 側へ R4 (release workflow による version 置換) を逆流させる作業を、このロードマップの外で起票する (phase-9 の実装後) (2026-09-10: outbox の知らせとして送付。起票は KsSettingsView 側の判断)
 - [x] change add-release-workflow の実装と初回リリース `0.1.0-beta.1` (2026-09-10 完了。詳細は上の「実装結果と蒸留への申し送り」)
-- [ ] 蒸留 (ksn-distill): cross/ADR-0024 の accepted、配布構成の concepts 化、lessons の昇格判定
+- [x] 蒸留 (ksn-distill): cross/ADR-0024 の accepted、配布構成の concepts 化、lessons の昇格判定 (2026-09-10 完了。上の「蒸留の反映」)
 - [x] PUBLISHED 待ちの上限の change: fix-release-published-wait (S 級、2026-09-10 完了。2 枠の公開待ちを 1 本・並行・上限 90 分に、job timeout 150 分。次のリリース PR で main へ)
 - [ ] 蒸留後: docs-refresh 2 回目 (R5)

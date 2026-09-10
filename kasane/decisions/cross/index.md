@@ -19,7 +19,7 @@
 | [0013](0013-contributions-via-issues-no-external-pull-requests.md) | 貢献は Issue Forms で受け、外部からの Pull Request は受け付けない (Platform は形態 × ホスト OS の 7 択) | accepted | 2026-09-04 |
 | [0014](0014-concepts-core-contract-platform-surface.md) | concepts は core に platform 非依存の契約だけを残し、公開名・署名・コード例は <platform>/api/ へ分離する | accepted | 2026-09-05 |
 | [0015](0015-diagnostic-messages-english-only.md) | ライブラリが外へ出す診断文言 (例外メッセージ・警告ログ) は英語固定とし、ローカライズしない | accepted | 2026-09-07 |
-| [0016](0016-branch-model-develop-main.md) | ブランチは develop / main の 2 本とし、develop へ直 push、main はリリース候補だけが PR で入り release は main からのみ起動する | accepted | 2026-09-07 |
+| [0016](0016-branch-model-develop-main.md) | ブランチは develop / main の 2 本とし、develop へ直 push、main はリリース候補だけが PR で入り release は main からのみ起動する (一部改訂: 0024 — README のインストール例の version 置換の時点) | accepted | 2026-09-07 |
 | [0017](0017-verification-ci-structure-and-guarantee.md) | 検証 CI は platform 別 reusable workflow 5 本と入口 1 本で構成し、緑の意味を「ロジック全件通過 + native 配線のコンパイル」に限り、トリガーはブランチの役割で分ける (一部改訂: 0020 — lint job の検査の集合) | accepted | 2026-09-08 |
 | [0018](0018-toolchain-pinned-in-repo.md) | 検証に用いる toolchain の版はリポジトリ内で固定し、.NET SDK / workload set の固定は repo 直下の global.json で行う (0004 を一部改訂。一部改訂: 0023 — MAUI 本体の版) | accepted | 2026-09-08 |
 | [0019](0019-android-maven-coordinates-core-suffix.md) | Android の Maven 座標は View 系本体を ksdialogs-core、Compose 側を素の ksdialogs とする (0005 と android/0001 を一部改訂) | accepted | 2026-09-08 |
@@ -27,4 +27,4 @@
 | [0021](0021-ci-only-skip-owner-allowlist-and-lint.md) | CI 上だけのテスト skip はオーナーが書く許可リスト (`lint.ci-skip.allow`) と `scripts/ci-skip-lint.py` で統制し、検証 CI の lint job に許可リスト検査を加えて 7 検査とする (0020 を一部改訂。一部改訂: 0022 — lint job の検査の集合) | accepted | 2026-09-09 |
 | [0022](0022-lint-job-includes-readme-example-lint.md) | 検証 CI の lint job に README 最小例と消費者ソースの一致検査 (`scripts/readme-example-lint.py`) を加え、8 検査とする (0021 を一部改訂) | accepted | 2026-09-09 |
 | [0023](0023-maui-controls-floor-follows-maui-adr-0004.md) | toolchain 固定境界のうち MAUI 本体の版は maui/ADR-0004 の「workload set 同梱版」に従う (0018 を一部改訂) | accepted | 2026-09-09 |
-| [0024](0024-release-dispatch-serial-publish-spm-tag-before-kmp.md) | release は dispatch 起動・取り消せる順で直列に publish し、SPM tag は KMP の Maven 発行より前に置く | proposed | 2026-09-10 |
+| [0024](0024-release-dispatch-serial-publish-spm-tag-before-kmp.md) | release は dispatch 起動・取り消せる順で直列に publish し、SPM tag は KMP の Maven 発行より前に置く (0016 を一部改訂) | accepted | 2026-09-10 |
