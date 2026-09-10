@@ -4,7 +4,7 @@
 
 前提: iOS target を持つ Kotlin Multiplatform 共有 module と、その framework をすでにビルド・リンクできる Xcode のアプリ project。
 
-1. 共有 module の commonMain dependencies に `api("jp.kamusoft:ksdialogs-kmp:<version>")` を追加する。
+1. 共有 module の commonMain dependencies に `api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")` を追加する。
 2. `XCODEPROJ_PATH` を指定して `integrateLinkagePackage` を1回実行し、生成された `KotlinMultiplatformLinkedPackage/` directory を project と一緒に commit する。
 3. Xcode の Package Dependencies に `https://github.com/kamusoft/KsDialogs-SPM` を追加し、`KsDialogs` product をアプリ target に link する。
 

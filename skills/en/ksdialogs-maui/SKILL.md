@@ -30,7 +30,7 @@ A call through a default entry and a call through an injected contract reach the
 Add `KsDialogs.Maui` to a .NET 10 MAUI project. The package is not published on NuGet yet, so `<version>` below stands for the version of the package you obtained. Import the `KsDialogs` namespace where you use the library.
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="<version>" />
+<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
 ```
 
 | Requirement | What to satisfy |

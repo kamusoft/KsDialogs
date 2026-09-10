@@ -50,7 +50,7 @@ content の型が OS ごとに違うため、content の登録は host 側にあ
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api("jp.kamusoft:ksdialogs-kmp:<version>")
+            api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")
         }
     }
 }
@@ -66,7 +66,7 @@ KMP artifact から Android View 系 artifact `jp.kamusoft:ksdialogs-core` が�
 
 前提: Xcode project から共有 module の framework をビルド・リンクする標準の KMP iOS 連携を済ませる。
 
-1. 上記の Maven 依存 `jp.kamusoft:ksdialogs-kmp:<version>` 1 点を共有 module に追加する。
+1. 上記の Maven 依存 `jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1` 1 点を共有 module に追加する。
 2. Xcode project のパスを渡して `integrateLinkagePackage` を 1 回実行し、生成された `KotlinMultiplatformLinkedPackage/` を VCS に含める。
 3. Xcode の Package Dependencies に `https://github.com/kamusoft/KsDialogs-SPM` を追加し、product `KsDialogs` をアプリ target にリンクする。
 

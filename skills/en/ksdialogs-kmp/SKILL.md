@@ -50,7 +50,7 @@ Add one Maven dependency to `commonMain` in the shared module's `build.gradle.kt
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api("jp.kamusoft:ksdialogs-kmp:<version>")
+            api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")
         }
     }
 }
@@ -66,7 +66,7 @@ The KMP artifact brings the Android Views artifact `jp.kamusoft:ksdialogs-core` 
 
 Prerequisite: finish the standard KMP iOS integration that builds and links the shared module's framework from the Xcode project.
 
-1. Add the single `jp.kamusoft:ksdialogs-kmp:<version>` Maven dependency to the shared module as shown above.
+1. Add the single `jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1` Maven dependency to the shared module as shown above.
 2. Run `integrateLinkagePackage` once with the Xcode project path, then include the generated `KotlinMultiplatformLinkedPackage/` in version control.
 3. Add `https://github.com/kamusoft/KsDialogs-SPM` to Xcode Package Dependencies and link its `KsDialogs` product to the application target.
 

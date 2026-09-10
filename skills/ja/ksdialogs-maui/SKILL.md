@@ -30,7 +30,7 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 .NET 10 の MAUI project に `KsDialogs.Maui` を追加する。package は NuGet にまだ公開していないため、下の `<version>` は入手した package の version を指す。利用するファイルで `KsDialogs` namespace を import する。
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="<version>" />
+<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
 ```
 
 | 要件 | 満たすもの |

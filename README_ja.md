@@ -46,7 +46,7 @@ Swift package を追加し、その `KsDialogs` product を利用します。
 dependencies: [
     .package(
         url: "https://github.com/kamusoft/KsDialogs-SPM",
-        exact: "<version>"
+        exact: "0.1.0-beta.1"
     )
 ]
 ```
@@ -59,7 +59,7 @@ View-only アプリでは core Maven artifact を追加します。
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-core:<version>")
+    implementation("jp.kamusoft:ksdialogs-core:0.1.0-beta.1")
 }
 ```
 
@@ -67,7 +67,7 @@ Compose アプリでは `ksdialogs` だけを追加します。core artifact は
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:<version>")
+    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
 }
 ```
 
@@ -78,7 +78,7 @@ prerelease では `<version>` を `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N
 NuGet package を追加します。
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="<version>" />
+<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
 ```
 
 prerelease では `Version` の値を `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` のいずれかに置き換えます。
@@ -95,7 +95,7 @@ Maven artifact を `commonMain` に追加します。
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api("jp.kamusoft:ksdialogs-kmp:<version>")
+            api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")
         }
     }
 }

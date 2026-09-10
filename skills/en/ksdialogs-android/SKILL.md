@@ -34,7 +34,7 @@ For a View-only Android application, declare only the core artifact:
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-core:<version>")
+    implementation("jp.kamusoft:ksdialogs-core:0.1.0-beta.1")
 }
 ```
 
@@ -42,7 +42,7 @@ For a Compose application, declare only the Compose artifact; it brings in the c
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:<version>")
+    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
     val composeBom = platform("androidx.compose:compose-bom:2025.05.00")
     implementation(composeBom)
     implementation("androidx.compose.foundation:foundation")

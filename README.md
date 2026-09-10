@@ -46,7 +46,7 @@ Add the Swift package and use its `KsDialogs` product.
 dependencies: [
     .package(
         url: "https://github.com/kamusoft/KsDialogs-SPM",
-        exact: "<version>"
+        exact: "0.1.0-beta.1"
     )
 ]
 ```
@@ -59,7 +59,7 @@ For a View-only application, add the core Maven artifact.
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-core:<version>")
+    implementation("jp.kamusoft:ksdialogs-core:0.1.0-beta.1")
 }
 ```
 
@@ -67,7 +67,7 @@ For a Compose application, add only `ksdialogs`; it brings in the core artifact 
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:<version>")
+    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
 }
 ```
 
@@ -78,7 +78,7 @@ For a prerelease, replace `<version>` with `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `
 Add the NuGet package.
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="<version>" />
+<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
 ```
 
 For a prerelease, replace the `Version` value with `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N`.
@@ -95,7 +95,7 @@ Add the Maven artifact to `commonMain`.
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api("jp.kamusoft:ksdialogs-kmp:<version>")
+            api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")
         }
     }
 }
