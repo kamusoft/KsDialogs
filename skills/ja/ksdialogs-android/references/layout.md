@@ -53,7 +53,7 @@ Dialog の大きさ・位置・背後の覆い・外側タップの扱いは、�
 
 ## Compose コンテンツへ添付する
 
-`KsDialogAttributes` をコンテンツの冒頭で宣言する。`LazyColumn` のような遅延評価されるスコープの中にだけ書いた宣言は初回の組み立てで実行されず、その表示には効かない。`KsDialogAttributes` は `ksdialogs-compose` artifact に入っている。
+`KsDialogAttributes` をコンテンツの冒頭で宣言する。`LazyColumn` のような遅延評価されるスコープの中にだけ書いた宣言は初回の組み立てで実行されず、その表示には効かない。`KsDialogAttributes` は Compose 系 artifact `jp.kamusoft:ksdialogs` に入っている。
 
 以下は画面下端に幅いっぱいで貼り付くシート風のコンテンツで、余白・比率・覆い・配置をまとめて添付している。
 

@@ -10,7 +10,7 @@ A result is `Cancelled` when the notifier reports cancellation, when the overlay
 
 ## Choose a `show`
 
-`KsDialog` (`Dialog.instance` and an injected instance are the same thing) exposes three `show` overloads, and the `ksdialogs-compose` artifact adds the extension function `showCompose`. Two axes decide which to use: whether the view model is passed as an instance or as a type only, and whether the content comes from a registered factory or is supplied at the call site. Every entry takes an optional `placement`, which replaces the whole placement attached to the content when supplied ([Layout](layout.md)). The return value is `DialogResult<R>`, where `R` comes from the view-model declaration.
+`KsDialog` (`Dialog.instance` and an injected instance are the same thing) exposes three `show` overloads, and the Compose artifact `jp.kamusoft:ksdialogs` adds the extension function `showCompose`. Two axes decide which to use: whether the view model is passed as an instance or as a type only, and whether the content comes from a registered factory or is supplied at the call site. Every entry takes an optional `placement`, which replaces the whole placement attached to the content when supplied ([Layout](layout.md)). The return value is `DialogResult<R>`, where `R` comes from the view-model declaration.
 
 | Signature | What it does | When to choose it | Registration required |
 |---|---|---|---|

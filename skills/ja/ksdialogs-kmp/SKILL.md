@@ -38,9 +38,9 @@ content の型が OS ごとに違うため、content の登録は host 側にあ
 
 ## セットアップ
 
-現行 artifact のビルド環境は Kotlin 2.4.10 と Gradle 9.7.0。Android target は API 24 以降、iOS target は iOS 17 以降と Swift tools 6.3 が必要になる。利用側で対応する Kotlin の下限は未確定。
+現行 artifact のビルド環境は Kotlin 2.4.10 と Gradle 9.7.0。Android target は API 24 以降、iOS target は iOS 17 以降と Swift tools 6.3 が必要になる。利用側の Kotlin Gradle Plugin は同じ minor 系列 (2.4.x) をサポートし、動作確認済みの版は 2.4.10 である。iOS のリンク情報を運ぶ SwiftPM import は Kotlin 2.4 の Alpha 機能なので、これより広い範囲は約束しない。
 
-`jp.kamusoft:ksdialogs-kmp` は予定している公開 coordinate である。以下の `<version>` を release version に置き換える。
+`jp.kamusoft:ksdialogs-kmp` は予定している公開 coordinate で、Maven Central へはまだ公開していない。以下の `<version>` を release version に置き換える。
 
 ### 共有 module
 
@@ -50,15 +50,17 @@ content の型が OS ごとに違うため、content の登録は host 側にあ
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("jp.kamusoft:ksdialogs-kmp:<version>")
+            api("jp.kamusoft:ksdialogs-kmp:<version>")
         }
     }
 }
 ```
 
+`implementation` ではなく `api` で宣言する。共有 ViewModel は `DialogViewModel` を継承するため KsDialogs の型が共有 module 自身の公開面に現れ、Android host の登録コードからも見える必要がある。
+
 ### Android host
 
-KMP artifact から Android Native API が推移的に見えるため、Android アプリは `Dialog.instance.registry`・`Loading.instance.registry`・`Toast.instance.registry` へ content を登録する。Compose の content にはもう 1 点の依存が要る。詳しくは [Android host](references/android-host.md) を読む。
+KMP artifact から Android View 系 artifact `jp.kamusoft:ksdialogs-core` が推移的に届くため、Android アプリは `Dialog.instance.registry`・`Loading.instance.registry`・`Toast.instance.registry` へ content を登録する。Compose の content には Compose 系 artifact がもう 1 点要る。詳しくは [Android host](references/android-host.md) を読む。
 
 ### iOS host
 

@@ -48,11 +48,11 @@ The factory receiver is the presenting screen's `Context`, and it runs on every 
 
 ## Register Compose content
 
-The KMP artifact does not pull in the Compose extensions. Add them to the Android application and use each registry's `registerCompose` overload; the name differs from `register` because a `@Composable` function type and a plain one cannot be overloaded together without making the call site ambiguous.
+The KMP artifact brings the Android Views artifact `jp.kamusoft:ksdialogs-core` in transitively, but not the Compose extensions. Add the Compose artifact `jp.kamusoft:ksdialogs` to the Android application — it brings the core artifact along — and use each registry's `registerCompose` overload; the name differs from `register` because a `@Composable` function type and a plain one cannot be overloaded together without making the call site ambiguous.
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-compose:<version>")
+    implementation("jp.kamusoft:ksdialogs:<version>")
     implementation("androidx.compose.foundation:foundation:1.8.1")
 }
 ```
@@ -89,7 +89,7 @@ object ComposeHostRegistration {
 }
 ```
 
-Showing registered content still goes through the same `show` and `start` calls, whichever technology the factory used. Attributes are declared inside the composable with `KsDialogAttributes`, which also ships in `ksdialogs-compose`; see [Layout](layout.md) and [Transitions](transitions.md).
+Showing registered content still goes through the same `show` and `start` calls, whichever technology the factory used. Attributes are declared inside the composable with `KsDialogAttributes`, which also ships in `jp.kamusoft:ksdialogs`; see [Layout](layout.md) and [Transitions](transitions.md).
 
 ## Call registration at startup
 

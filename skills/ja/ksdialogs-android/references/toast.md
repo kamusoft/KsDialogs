@@ -6,7 +6,7 @@ Toast は結果を返さない fire-and-forget の通知で、`KsToast` (`Toast.
 
 ## `show` を選ぶ
 
-`KsToast` は `show` を複数の overload で公開し、`ksdialogs-compose` artifact が拡張関数 `showCompose` を加える。選ぶ軸は、コンテンツを組み込みのメッセージ Toast にするか自分で書くか、自分で書いたコンテンツを登録済みの factory に任せるかその場で渡すか、そして ViewModel をインスタンスで渡すか型だけ渡すかである。どの入口も省略可能な `durationMs` と `placement` を取る。
+`KsToast` は `show` を複数の overload で公開し、Compose 系 artifact `jp.kamusoft:ksdialogs` が拡張関数 `showCompose` を加える。選ぶ軸は、コンテンツを組み込みのメッセージ Toast にするか自分で書くか、自分で書いたコンテンツを登録済みの factory に任せるかその場で渡すか、そして ViewModel をインスタンスで渡すか型だけ渡すかである。どの入口も省略可能な `durationMs` と `placement` を取る。
 
 | シグネチャ | 何をする | いつ選ぶ | 必要な登録 |
 |---|---|---|---|

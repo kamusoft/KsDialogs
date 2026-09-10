@@ -38,9 +38,9 @@ Content registration lives in the hosts because the content type differs per OS.
 
 ## Setup
 
-The current artifact is built with Kotlin 2.4.10 and Gradle 9.7.0. The Android target requires API 24 or later; the iOS target requires iOS 17 or later and Swift tools 6.3. The supported consumer Kotlin range has not yet been finalized.
+The current artifact is built with Kotlin 2.4.10 and Gradle 9.7.0. The Android target requires API 24 or later; the iOS target requires iOS 17 or later and Swift tools 6.3. A consumer Kotlin Gradle Plugin on the same minor line (2.4.x) is supported, and 2.4.10 is the verified version. The SwiftPM import that carries the iOS linkage is an Alpha feature of Kotlin 2.4, so no wider range is promised.
 
-`jp.kamusoft:ksdialogs-kmp` is the planned public coordinate. Replace `<version>` below with the release version.
+`jp.kamusoft:ksdialogs-kmp` is the planned public coordinate; it is not published to Maven Central yet. Replace `<version>` below with the release version.
 
 ### Shared module
 
@@ -50,15 +50,17 @@ Add one Maven dependency to `commonMain` in the shared module's `build.gradle.kt
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("jp.kamusoft:ksdialogs-kmp:<version>")
+            api("jp.kamusoft:ksdialogs-kmp:<version>")
         }
     }
 }
 ```
 
+Declare it with `api` rather than `implementation`: a shared view model derives from `DialogViewModel`, so KsDialogs types appear in the shared module's own API, and the Android host's registration code has to see them.
+
 ### Android host
 
-The KMP artifact exposes the Android Native API transitively, so the Android application registers content with `Dialog.instance.registry`, `Loading.instance.registry`, and `Toast.instance.registry`. Compose content needs one more dependency. See [Android host](references/android-host.md).
+The KMP artifact brings the Android Views artifact `jp.kamusoft:ksdialogs-core` in transitively, so the Android application registers content with `Dialog.instance.registry`, `Loading.instance.registry`, and `Toast.instance.registry`. Compose content needs the Compose artifact as well. See [Android host](references/android-host.md).
 
 ### iOS host
 

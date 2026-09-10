@@ -6,7 +6,7 @@ Each accepted display uses its supplied duration and placement, has its own time
 
 ## Choose a `show`
 
-`KsToast` exposes several `show` overloads, and the `ksdialogs-compose` artifact adds the extension function `showCompose`. Three axes decide which to use: whether the content is the built-in message Toast or your own, whether your own content comes from a registered factory or is supplied at the call site, and whether the view model is passed as an instance or as a type. Every entry takes an optional `durationMs` and `placement`.
+`KsToast` exposes several `show` overloads, and the Compose artifact `jp.kamusoft:ksdialogs` adds the extension function `showCompose`. Three axes decide which to use: whether the content is the built-in message Toast or your own, whether your own content comes from a registered factory or is supplied at the call site, and whether the view model is passed as an instance or as a type. Every entry takes an optional `durationMs` and `placement`.
 
 | Signature | What it does | When to choose it | Registration required |
 |---|---|---|---|

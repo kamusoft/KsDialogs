@@ -6,7 +6,7 @@ Loading は処理中の操作をブロックする表示で、`KsLoading` (`Load
 
 ## `show` と `start` を選ぶ
 
-`KsLoading` は表示を開いて自分で閉じる `show` と、表示の生存期間を処理に対応させる `start` を持ち、どちらも複数の overload を公開する。`ksdialogs-compose` artifact が拡張関数 `showCompose` と `startCompose` を加える。選ぶ軸は、コンテンツを組み込みの既定にするか自分で書くか、自分で書いたコンテンツを登録済みの factory に任せるかその場で渡すか、そして ViewModel をインスタンスで渡すか型だけ渡すかである。どの入口も省略可能な `placement` を取る ([レイアウト](layout.md))。
+`KsLoading` は表示を開いて自分で閉じる `show` と、表示の生存期間を処理に対応させる `start` を持ち、どちらも複数の overload を公開する。Compose 系 artifact `jp.kamusoft:ksdialogs` が拡張関数 `showCompose` と `startCompose` を加える。選ぶ軸は、コンテンツを組み込みの既定にするか自分で書くか、自分で書いたコンテンツを登録済みの factory に任せるかその場で渡すか、そして ViewModel をインスタンスで渡すか型だけ渡すかである。どの入口も省略可能な `placement` を取る ([レイアウト](layout.md))。
 
 | シグネチャ | 何をする | いつ選ぶ | 必要な登録 |
 |---|---|---|---|

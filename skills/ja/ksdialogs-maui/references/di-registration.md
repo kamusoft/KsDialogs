@@ -11,6 +11,8 @@
 
 表示する View は、現在の ViewModel を明示引数として渡す constructor 経由で生成され、その同じ instance が `BindingContext` になる。したがって `TView` の service 登録が意味を持つのは、その constructor の他の依存を解決するところまでである。
 
+その View をライブラリが組み立てられなかった場合 (constructor の依存が service にない、など) は `DialogException.ViewCreationFailed` で show が失敗する。元の失敗は `InnerException` に残り、組み立てようとした View と ViewModel の型名は `ViewTypeName` / `ViewModelTypeName` から読める。包まれるのは 1 行登録でライブラリ自身が組み立てる View だけで、自分で書いた factory や fallback resolver が投げた失敗はそのまま届く。Toast だけは `Show` が既に戻っているため報告の形が違い、警告に `ViewCreationFailed` が原因として残ってその 1 枚が破棄される ([Toast](toast.md))。
+
 ViewModel が `bool` 以外の custom 結果型を宣言するときは `RegisterForDialog<TView, TViewModel, TResult>` を使う。
 
 ## Loading・Toast の custom content を登録する
@@ -125,7 +127,7 @@ public sealed class ProfileViewModel : IDialogViewModel
 
 View slot と ViewModel slot は独立に判定され、どちらも「明示登録 → fallback → 失敗」の順で解決される。
 
-`AddKsDialogs` の再呼び出しはその回に設定した slot だけを合成する。後から引数なしの `AddKsDialogs()` を呼んでも先の fallback は黙って消えない (同じ slot を 2 回設定した場合は後が勝つ)。
+`AddKsDialogs` の再呼び出しはその回に設定した slot だけを合成する。後から引数なしの `AddKsDialogs()` を呼んでも先の fallback は黙って消えない (同じ slot を 2 回設定した場合は後が勝つ)。AiForms.Maui.Dialogs の `SetIocConfig` のような static な一括設定口はなく、後の呼び出しが null で先の設定を潰すこともない。解決関数はこの options の slot に載せる。
 
 設定はプロセス内で共有される `DialogViewRegistry.Shared` に載り、公開 API から解除する手段はない。1 つのテストプロセスで複数の host を組み立てるときは注意する。
 

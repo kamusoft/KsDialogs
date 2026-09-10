@@ -407,11 +407,12 @@ public static class MauiProgram
 
 A misconfiguration fails with a nested `DialogException` class. A failure that leaves the view model — or the view-model type — passed to `ShowAsync` / `StartAsync` unresolvable on the spot is thrown synchronously at the call, no view is created or shown, and the action of `StartAsync` does not run either (fail-fast). A failure that arises while the content is being built arrives as a `Task` failure, because the caller is still awaiting.
 
-An exception that carries `ViewModelTypeName` also reads back, from that property, the type name of the view model that could not be resolved.
+An exception that carries `ViewModelTypeName` also reads back, from that property, the type name of the view model that could not be resolved. `ViewCreationFailed` adds `ViewTypeName` for the view it was building and keeps the original failure in `InnerException`.
 
 | Exception | Message | Cause and fix |
 |---|---|---|
 | `DialogException.ViewFactoryNotRegistered` | `No View factory is registered for ViewModel type {TypeName}.` | The custom Loading's view-model type has no view factory. Call `Loading.Instance.Registry.Register` or `RegisterForLoading` for that type |
+| `DialogException.ViewCreationFailed` | `Could not create the View {ViewTypeName} registered for ViewModel type {ViewModelTypeName}.` | The library could not construct the view bound by `RegisterForLoading`, a missing constructor dependency being the usual cause. Read `InnerException` for the original failure. A failure thrown by a factory you wrote is not wrapped in this type |
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | Showing by view-model type has no view-model factory. Call `Loading.Instance.Registry.RegisterViewModel` or `RegisterForLoading` for that type (Loading has no fallback) |
 | `DialogException.ValueTypeViewModel` | `ViewModel type {TypeName} is a value type and cannot be used as a ViewModel.` | A value-type view model reached the show entry. Make the view model a `class` (`struct` and `record struct` cannot be used) |
 | `DialogException.ServiceProviderUnavailable` | `The app's IServiceProvider is not available yet.` | Content wired with `RegisterForLoading` was shown before startup captured the service provider. Show after `MauiApp` has been built ([DI registration](di-registration.md)) |

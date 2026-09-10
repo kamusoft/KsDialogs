@@ -10,7 +10,7 @@ factory は show のたびに呼ばれ、その show の結果を完了または
 
 ## `show` を選ぶ
 
-`KsDialog` (`Dialog.instance` と DI で注入したもののどちらも同じ実体) は `show` を 3 つの overload で公開し、`ksdialogs-compose` artifact が拡張関数 `showCompose` を加える。選ぶ軸は 2 つで、ViewModel をインスタンスで渡すか型だけ渡すか、そしてコンテンツを登録済みの factory に任せるかその場で渡すかである。どの入口も省略可能な `placement` を取り、渡すとコンテンツに添付された配置をまるごと置換する ([レイアウト](layout.md))。戻り値は `DialogResult<R>` で、`R` は ViewModel の宣言から決まる。
+`KsDialog` (`Dialog.instance` と DI で注入したもののどちらも同じ実体) は `show` を 3 つの overload で公開し、Compose 系 artifact `jp.kamusoft:ksdialogs` が拡張関数 `showCompose` を加える。選ぶ軸は 2 つで、ViewModel をインスタンスで渡すか型だけ渡すか、そしてコンテンツを登録済みの factory に任せるかその場で渡すかである。どの入口も省略可能な `placement` を取り、渡すとコンテンツに添付された配置をまるごと置換する ([レイアウト](layout.md))。戻り値は `DialogResult<R>` で、`R` は ViewModel の宣言から決まる。
 
 | シグネチャ | 何をする | いつ選ぶ | 必要な登録 |
 |---|---|---|---|

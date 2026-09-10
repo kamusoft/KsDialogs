@@ -53,7 +53,7 @@ The effective values are the ones attached when the first native layout pass fin
 
 ## Attach to Compose content
 
-Declare `KsDialogAttributes` at the top of the content. A declaration written only inside a lazily evaluated scope such as `LazyColumn` does not run on the first composition and has no effect on that presentation. `KsDialogAttributes` comes from the `ksdialogs-compose` artifact.
+Declare `KsDialogAttributes` at the top of the content. A declaration written only inside a lazily evaluated scope such as `LazyColumn` does not run on the first composition and has no effect on that presentation. `KsDialogAttributes` comes from the Compose artifact `jp.kamusoft:ksdialogs`.
 
 The following is sheet-style content pinned to the bottom edge at full width, attaching the margin, ratios, overlay, and placement together.
 

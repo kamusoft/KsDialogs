@@ -28,11 +28,13 @@ Calling through a default entry and calling through an injected contract reach t
 
 ## Setup
 
-For a View-only Android application with minSdk 24 or later, replace `<version>` with the release version and declare only the core artifact:
+The artifacts are built with Kotlin 2.4.10 and support consumers on the same minor line (2.4.x), with minSdk 24 or later. `jp.kamusoft:ksdialogs-core` (Android Views) and `jp.kamusoft:ksdialogs` (Jetpack Compose) are the planned public coordinates; they are not published to Maven Central yet. Replace `<version>` below with the release version.
+
+For a View-only Android application, declare only the core artifact:
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:<version>")
+    implementation("jp.kamusoft:ksdialogs-core:<version>")
 }
 ```
 
@@ -40,7 +42,7 @@ For a Compose application, declare only the Compose artifact; it brings in the c
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-compose:<version>")
+    implementation("jp.kamusoft:ksdialogs:<version>")
     val composeBom = platform("androidx.compose:compose-bom:2025.05.00")
     implementation(composeBom)
     implementation("androidx.compose.foundation:foundation")

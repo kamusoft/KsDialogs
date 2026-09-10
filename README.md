@@ -29,10 +29,10 @@ The public API may introduce breaking changes while the version remains 0.x.
 |---|---|---|
 | iOS Native | iOS 17 | Swift 6.3 |
 | Android Native | Android 7.0 (API 24) | Kotlin 2.4.10, AGP 9.3.0, Gradle 9.7.0 |
-| .NET MAUI | iOS 17 / Android 7.0 (API 24) | .NET 10 (`net10.0`), Microsoft.Maui.Controls 10.0.1 |
+| .NET MAUI | iOS 17 / Android 7.0 (API 24) | .NET 10 (`net10.0`), Microsoft.Maui.Controls 10.0.20 |
 | Kotlin Multiplatform | iOS 17 / Android 7.0 (API 24) | Kotlin 2.4.10, AGP 9.3.0, Gradle 9.7.0, Swift 6.3 |
 
-The Android targets use minSdk 24 and compileSdk 36. The .NET MAUI consumer baseline is Microsoft.Maui.Controls 10.0.1. The minimum consumer Kotlin version for Android Native and Kotlin Multiplatform has not yet been finalized and will be established before the initial release. The versions in the table are used to build the library; they are not consumer minimums. SwiftPM linkage on the Kotlin side of the KMP integration is Alpha.
+The Android targets use minSdk 24 and compileSdk 36. Android Native and Kotlin Multiplatform support a Kotlin Gradle Plugin from the same minor series, Kotlin 2.4.x; 2.4.10 is the version the consumer builds are verified against. The versions in the table are used to build the library; they are not consumer minimums. SwiftPM linkage on the Kotlin side of the KMP integration is Alpha.
 
 ## Installation
 
@@ -59,15 +59,15 @@ For a View-only application, add the core Maven artifact.
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:<version>")
+    implementation("jp.kamusoft:ksdialogs-core:<version>")
 }
 ```
 
-For a Compose application, add only `ksdialogs-compose`; it brings in the core artifact transitively.
+For a Compose application, add only `ksdialogs`; it brings in the core artifact transitively.
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-compose:<version>")
+    implementation("jp.kamusoft:ksdialogs:<version>")
 }
 ```
 
@@ -78,10 +78,14 @@ For a prerelease, replace `<version>` with `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `
 Add the NuGet package.
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0" />
+<PackageReference Include="KsDialogs.Maui" Version="<version>" />
 ```
 
 For a prerelease, replace the `Version` value with `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N`.
+
+Microsoft.Maui.Controls 10.0.20 or later is required. That is the version bundled with the .NET workload set this repository pins, so an application on the same workload set does not have to state a MAUI version of its own; pinning a version below 10.0.20 makes the build fail with the NuGet downgrade error NU1605.
+
+The package targets `net10.0`, `net10.0-ios`, and `net10.0-android`, so the .NET 10 SDK with the iOS and Android MAUI workloads is required. The minimum OS versions are iOS 17 and Android 7.0 (API 24); an application whose `SupportedOSPlatformVersion` is lower than that — or left unset — stops at build time with the guard diagnostic `KSDLG0001`.
 
 ### Kotlin Multiplatform
 
@@ -91,11 +95,13 @@ Add the Maven artifact to `commonMain`.
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("jp.kamusoft:ksdialogs-kmp:<version>")
+            api("jp.kamusoft:ksdialogs-kmp:<version>")
         }
     }
 }
 ```
+
+`api` keeps the KsDialogs types visible to the Android application, which needs them because a shared view model derives from `DialogViewModel`.
 
 The iOS application also adds `https://github.com/kamusoft/KsDialogs-SPM` and links its `KsDialogs` product. For a prerelease, use the same `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N` version for the Maven artifact and Swift package tag.
 

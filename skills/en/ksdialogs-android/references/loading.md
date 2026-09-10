@@ -6,7 +6,7 @@ Concurrent uses coalesce into one process-wide display, and the content of the f
 
 ## Choose `show` or `start`
 
-`KsLoading` has `show`, which opens a display you close yourself, and `start`, which ties the display's lifetime to an operation; each exposes several overloads. The `ksdialogs-compose` artifact adds the extension functions `showCompose` and `startCompose`. Three axes decide which to use: whether the content is the built-in default or your own, whether your own content comes from a registered factory or is supplied at the call site, and whether the view model is passed as an instance or as a type. Every entry takes an optional `placement` ([Layout](layout.md)).
+`KsLoading` has `show`, which opens a display you close yourself, and `start`, which ties the display's lifetime to an operation; each exposes several overloads. The Compose artifact `jp.kamusoft:ksdialogs` adds the extension functions `showCompose` and `startCompose`. Three axes decide which to use: whether the content is the built-in default or your own, whether your own content comes from a registered factory or is supplied at the call site, and whether the view model is passed as an instance or as a type. Every entry takes an optional `placement` ([Layout](layout.md)).
 
 | Signature | What it does | When to choose it | Registration required |
 |---|---|---|---|

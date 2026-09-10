@@ -39,15 +39,18 @@ KsDialogs.Maui replaces AiForms.Maui.Dialogs with Dialog result types, factory-b
 | Replace model-type-based show (`ShowFromModelAsync`, `CreateFromModel`) | [API mapping](references/api-mapping.md) |
 | Move layout, overlay, and animation settings off `ExtraView` | [API mapping](references/api-mapping.md) |
 | Replace the obsolete custom-view-only toast API | [API mapping](references/api-mapping.md) |
+| Understand how a mis-wired registration fails now | Failures after migrating below |
 | Look up the KsDialogs.Maui API itself | the `ksdialogs-maui` Skill |
 
 ## Setup
 
-Remove the `AiForms.Maui.Dialogs` package and add `KsDialogs.Maui` version `0.1.0` to a .NET 10 MAUI project (`net10.0-ios` / `net10.0-android`, Microsoft.Maui.Controls 10.0.1). KsDialogs.Maui supports iOS 17 or later and Android 7.0 (API 24) or later. Replace `using AiForms.Dialogs;` with `using KsDialogs;`.
+Remove the `AiForms.Maui.Dialogs` package and add `KsDialogs.Maui` to a .NET 10 MAUI project. The package is not published on NuGet yet, so `<version>` below stands for the version of the package you obtained. Replace `using AiForms.Dialogs;` with `using KsDialogs;`.
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0" />
+<PackageReference Include="KsDialogs.Maui" Version="<version>" />
 ```
+
+The project also needs `Microsoft.Maui.Controls` 10.0.20 or later. That is the version bundled with the .NET workload set this library is built and tested against, so a project on the same workload set can leave the version unwritten; pinning an older one (below 10.0.20) makes restore report NU1605, the NuGet package-downgrade error. Use the .NET 10 SDK with the iOS and Android MAUI workloads installed. KsDialogs.Maui supports iOS 17.0 or later and Android 7.0 (API 24) or later; a `SupportedOSPlatformVersion` below that, including one left unset where the SDK default is lower, stops the build with error `KSDLG0001`.
 
 ## Minimal migration
 
@@ -71,6 +74,10 @@ public static class StartupWork
             message: "Loading");
 }
 ```
+
+## Failures after migrating
+
+Setup mistakes surface as `DialogException` subtypes rather than as a cancelled result. One new subtype has no counterpart in the old library: when a one-line registration (`RegisterForDialog`, `RegisterForLoading`, `RegisterForToast`) cannot build the View it wired, the failure is `DialogException.ViewCreationFailed`, which keeps the original failure in `InnerException` and exposes `ViewTypeName` and `ViewModelTypeName`. Only the route where the library itself builds the View is wrapped — an exception thrown by a factory you wrote or by a fallback resolver arrives unwrapped. Dialog and Loading report it as a faulted show or start task; `Toast.Show` returns no task, so it discards that one toast with a warning that names the cause.
 
 ## Choose the mapping
 

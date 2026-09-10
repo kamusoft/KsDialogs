@@ -11,6 +11,8 @@ A registration you made yourself is left as it is.
 
 The displayed view is built through its constructor with the current view model passed as an explicit argument, and that same instance becomes its `BindingContext`, so the service registration for `TView` only resolves its other constructor dependencies.
 
+When the library cannot construct that view — a constructor dependency missing from the services, for instance — the show fails with `DialogException.ViewCreationFailed`, which keeps the original failure in `InnerException` and names the pair in `ViewTypeName` and `ViewModelTypeName`. Wrapping covers the view the library builds itself for a one-line registration; a failure thrown by a factory you wrote or by a fallback resolver arrives unwrapped. A Toast reports it differently, since `Show` has already returned: a warning records `ViewCreationFailed` as the cause and that single Toast is discarded ([Toast](toast.md)).
+
 Use `RegisterForDialog<TView, TViewModel, TResult>` when the view model declares a custom result type instead of `bool`.
 
 ## Register custom Loading and Toast content
@@ -125,7 +127,7 @@ public sealed class ProfileViewModel : IDialogViewModel
 
 The view slot and the view-model slot are decided independently, and for each the order is explicit registration, then fallback, then failure.
 
-Re-calling `AddKsDialogs` merges only the slots you set this time. An earlier fallback is not silently cleared by a later bare `AddKsDialogs()`; setting the same slot twice keeps the later one.
+Re-calling `AddKsDialogs` merges only the slots you set this time. An earlier fallback is not silently cleared by a later bare `AddKsDialogs()`; setting the same slot twice keeps the later one. There is no static configuration entry point of the kind AiForms.Maui.Dialogs had in `SetIocConfig`, where a later call could overwrite an earlier setting with a null; resolvers live in these option slots instead.
 
 The settings live on the process-wide `DialogViewRegistry.Shared` and no public API removes them, which matters when one test process builds several hosts.
 

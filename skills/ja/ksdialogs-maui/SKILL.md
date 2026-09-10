@@ -27,11 +27,17 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 
 ## セットアップ
 
-.NET 10 の MAUI project に `KsDialogs.Maui` version `0.1.0` を追加する。package の対象は iOS 17 以降と Android 7.0 (API 24) 以降である。利用するファイルで `KsDialogs` namespace を import する。
+.NET 10 の MAUI project に `KsDialogs.Maui` を追加する。package は NuGet にまだ公開していないため、下の `<version>` は入手した package の version を指す。利用するファイルで `KsDialogs` namespace を import する。
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0" />
+<PackageReference Include="KsDialogs.Maui" Version="<version>" />
 ```
+
+| 要件 | 満たすもの |
+|---|---|
+| MAUI | `Microsoft.Maui.Controls` 10.0.20 以降。これはライブラリ側がビルドとテストに使う .NET workload set 同梱の version なので、同じ workload set の project なら version を書かなくてよい。それより古い version (10.0.20 未満) を明示すると restore が NU1605 (NuGet の package ダウングレードのエラー) を報告する |
+| .NET SDK | iOS / Android の MAUI workload を入れた .NET 10 |
+| 最低 OS 版 | iOS 17.0 と Android 7.0 (API 24)。これを下回る `SupportedOSPlatformVersion` は、SDK の既定値が下回る未設定の場合も含めて、ビルドを `KSDLG0001` のエラーで止める。エラーには必要な version と現在の値が出る。検査が走るのは iOS・Android の inner build だけである |
 
 ## 最小例
 
@@ -56,4 +62,4 @@ public static class Notifications
 | preset と非同期 custom hook | [トランジション](references/transitions.md) |
 | 命令形・スコープ形の Loading、進捗、style、custom content | [Loading](references/loading.md) |
 | message、登録、インラインの Toast 経路 | [Toast](references/toast.md) |
-| 1 行登録と fallback 解決 | [DI 登録](references/di-registration.md) |
+| 1 行登録、fallback 解決、View の組み立て失敗 | [DI 登録](references/di-registration.md) |

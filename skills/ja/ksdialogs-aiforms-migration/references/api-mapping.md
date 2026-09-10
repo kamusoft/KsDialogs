@@ -14,7 +14,7 @@
 | `Configurations.SetIocConfig(viewTypeGetter, viewResolver)` | `RegisterForDialog`、または `options.UseViewFallback(...)` と `options.UseViewModelFallback()` を伴う `AddKsDialogs` | 明示登録を優先し、命名規約による解決で MAUI DI から View や ViewModel を得る場合だけ fallback を使う |
 | `LoadingConfig` | `LoadingStyle` と `DialogOptions` | 旧来の複合 settings object を、役割を絞った 2 つの値へ置き換える |
 
-`RegisterForDialog<TView, TViewModel>()` は View factory と ViewModel factory の 2 スロットを 1 回で配線し、両方の型を transient としてサービス登録する。結果型を宣言する ViewModel には `RegisterForDialog<TView, TViewModel, TResult>()` を使う。`RegisterForLoading<TView, TViewModel>()` と `RegisterForToast<TView, TViewModel>()` は Loading / Toast のレジストリに対する同じ糖衣で、こちらも 2 スロットを配線するため、この 1 行だけで ViewModel の instance を渡す表示と型を渡す表示の双方が使える。Loading / Toast は結果を返さないので、結果型を取る形はどちらにもない。
+`RegisterForDialog<TView, TViewModel>()` は View factory と ViewModel factory の 2 スロットを 1 回で配線し、両方の型を transient としてサービス登録する。結果型を宣言する ViewModel には `RegisterForDialog<TView, TViewModel, TResult>()` を使う。`RegisterForLoading<TView, TViewModel>()` と `RegisterForToast<TView, TViewModel>()` は Loading / Toast のレジストリに対する同じ糖衣で、こちらも 2 スロットを配線するため、この 1 行だけで ViewModel の instance を渡す表示と型を渡す表示の双方が使える。Loading / Toast は結果を返さないので、結果型を取る形はどちらにもない。1 行登録では View をライブラリ自身が組み立てるため、その生成が失敗した場合 (コンストラクタが要求する依存がサービスに無い等) は factory 未登録ではなく `DialogException.ViewCreationFailed` として報告する。元の失敗は `InnerException` にそのまま残り、組み立てようとした組は `ViewTypeName` と `ViewModelTypeName` で読める。利用者が書いた factory と fallback resolver は包まれず、その例外は投げられたまま届く。
 
 登録と fallback は process 全体のレジストリ (`DialogViewRegistry.Shared`、`LoadingViewRegistry.Shared`、`ToastViewRegistry.Shared`) に載り、`Dialog.Instance.Registry`・`Loading.Instance.Registry`・`Toast.Instance.Registry` からも辿れる。`AddKsDialogs` の fallback は Dialog のレジストリだけの機構で、Loading / Toast は明示登録か 1 行登録のみを受け付け、解決できない型はそこで失敗する。明示登録は fallback より優先され、`AddKsDialogs` の再呼び出しは設定したスロットだけを合成する (引数なしの呼び出しは設定済みの fallback を消さない)。設定した fallback を公開 API から解除する手段はない。DI を使う登録と fallback 解決には、MAUI startup で捕捉する application service provider が必要である。それより前にこの経路を呼ぶと、無関係な生成経路へ切り替わらず `DialogException.ServiceProviderUnavailable` で失敗する。
 
@@ -71,7 +71,7 @@ public static class MauiProgram
 | `IReusableDialog.ShowResultAsync<TResult>()` | 直接の対応先なし | 型付き `ShowAsync` を呼び、`DialogResult<TResult>` を処理する |
 | `IReusableDialog.Dispose()` | 直接の対応先なし | 再利用 Dialog の手動 dispose を削除する。KsDialogs は show ごとに新しい content を作る |
 
-`DialogViewRegistry` は View と ViewModel の factory slot を持つ。instance 渡しの show の前に View factory を登録し、型指定 show の前には ViewModel factory (`RegisterViewModel` または `RegisterForDialog`) も登録する。View factory が無い場合は `DialogException.ViewFactoryNotRegistered`、ViewModel factory と fallback の両方が無い場合は `DialogException.ViewModelFactoryNotRegistered`、提示先の画面が無い場合は `DialogException.PresentationHostUnavailable` で失敗する。いずれも faulted Task として届き、cancelled result には変換されない。
+`DialogViewRegistry` は View と ViewModel の factory slot を持つ。instance 渡しの show の前に View factory を登録し、型指定 show の前には ViewModel factory (`RegisterViewModel` または `RegisterForDialog`) も登録する。View factory が無い場合は `DialogException.ViewFactoryNotRegistered`、ViewModel factory と fallback の両方が無い場合は `DialogException.ViewModelFactoryNotRegistered`、1 行登録が結び付けた View をライブラリが組み立てられなかった場合は `DialogException.ViewCreationFailed`、提示先の画面が無い場合は `DialogException.PresentationHostUnavailable` で失敗する。いずれも faulted Task として届き、cancelled result には変換されない。
 
 `ShowResultFromModelAsync<TViewModel, TParameter, TResult>` の書き換え — 結果型は ViewModel が宣言し、報告は notifier で行う:
 
@@ -169,7 +169,7 @@ await Loading.Instance.StartAsync(
     });
 ```
 
-`CreateFromModel<TViewModel>` の書き換え — ViewModel の型を渡し、登録済みの ViewModel factory が DI から instance を解決する。`configure` は中身の View を作る前に完了する。ViewModel factory が未登録なら `DialogException.ViewModelFactoryNotRegistered` で失敗し、これは View factory 未登録とは別の失敗である。すでに出ている表示に合流した呼び出しでも ViewModel の生成と `configure` は行われるが、その instance は画面に出ない:
+`CreateFromModel<TViewModel>` の書き換え — ViewModel の型を渡し、登録済みの ViewModel factory が DI から instance を解決する。`configure` は中身の View を作る前に完了する。ViewModel factory が未登録なら `DialogException.ViewModelFactoryNotRegistered` で失敗し、これは View factory 未登録とは別の失敗である。`RegisterForLoading` が結び付けた View をライブラリが組み立てられなかった場合は `DialogException.ViewCreationFailed` で show / start が失敗する。すでに出ている表示に合流した呼び出しでも ViewModel の生成と `configure` は行われるが、その instance は画面に出ない:
 
 ```csharp
 builder.Services.RegisterForLoading<UploadLoadingView, UploadViewModel>();
@@ -301,7 +301,7 @@ layout 属性は content View 自身の XAML にも書ける:
 
 `Show` は `void` を返し、表示を待つ・更新する・閉じる手段はない — Toast は duration の経過で消える。0 以下の `durationMs` は未指定として扱われ、`ToastStyle.DefaultDuration` (`ToastStyle.BuiltinDefaultDuration`、1500 ミリ秒) に落ちる。`ToastStyle` は built-in の message View 向けに `BackgroundColor`・`TextColor`・`FontSize`・`CornerRadius` を持ち、`DefaultPlacement` は built-in と custom の双方に効く app-wide の配置になる。`BackgroundColor` の出発点は組み込みのメッセージ Toast の既定色 `ToastStyle.BuiltinBackgroundColor` (半透明のダークグレー) で、`DefaultDuration` に対する `ToastStyle.BuiltinDefaultDuration` と同じ位置づけである。未登録の ViewModel 型で表示すると `DialogException.ViewFactoryNotRegistered` で失敗する。
 
-型を渡す表示は、`RegisterForToast` か `Toast.Instance.Registry.RegisterViewModel<TViewModel>` で ViewModel factory を配線すれば使える。`Show` が即座に戻るため `configure` は同期の形だけである。ViewModel factory が未登録なら呼び出し時点で `DialogException.ViewModelFactoryNotRegistered` を投げる一方、ViewModel factory や `configure` が投げた例外は呼び出し元へ届かず、警告を残してその 1 枚だけを破棄する (他の表示と後続の表示には影響しない):
+型を渡す表示は、`RegisterForToast` か `Toast.Instance.Registry.RegisterViewModel<TViewModel>` で ViewModel factory を配線すれば使える。`Show` が即座に戻るため `configure` は同期の形だけである。ViewModel factory が未登録なら呼び出し時点で `DialogException.ViewModelFactoryNotRegistered` を投げる一方、ViewModel factory や `configure` が投げた例外は呼び出し元へ届かず、警告を残してその 1 枚だけを破棄する (他の表示と後続の表示には影響しない)。`RegisterForToast` が結び付けた View をライブラリが組み立てられなかった場合も同じ経路で、警告には `DialogException.ViewCreationFailed` が原因として残る:
 
 ```csharp
 Toast.Instance.Style = Toast.Instance.Style with { DefaultDuration = 2000 };

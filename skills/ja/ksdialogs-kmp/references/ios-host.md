@@ -4,7 +4,7 @@
 
 前提: iOS target を持つ Kotlin Multiplatform 共有 module と、その framework をすでにビルド・リンクできる Xcode のアプリ project。
 
-1. 共有 module の commonMain dependencies に `implementation("jp.kamusoft:ksdialogs-kmp:<version>")` を追加する。
+1. 共有 module の commonMain dependencies に `api("jp.kamusoft:ksdialogs-kmp:<version>")` を追加する。
 2. `XCODEPROJ_PATH` を指定して `integrateLinkagePackage` を1回実行し、生成された `KotlinMultiplatformLinkedPackage/` directory を project と一緒に commit する。
 3. Xcode の Package Dependencies に `https://github.com/kamusoft/KsDialogs-SPM` を追加し、`KsDialogs` product をアプリ target に link する。
 
@@ -14,6 +14,8 @@ XCODEPROJ_PATH="$PWD/iosApp/MyApp.xcodeproj" \
 ```
 
 Maven 依存は発行 metadata に Swift package の参照を持ち、生成された package がその参照を Xcode の依存グラフへ渡すことで、共有 framework の未解決の Swift シンボルがリンクする。手順3の直接追加はそれとは別で、アプリのソースから登録 API を呼ぶために要る。同じ package identity は SwiftPM が 1 つにまとめるため、Swift の実体が二重化することはない。
+
+発行 metadata が指す Swift package の版は Maven artifact と同じ version に固定される。手順3で追加する package 参照も同じ version を指すようにし、2 つは一緒に上げる。
 
 手順2は初回だけ行う integration である。その後は通常の Gradle build が依存の変更を生成済み package へ反映する。Xcode が参照する統合物なので clone 直後にも必要になり、VCS に含める。
 

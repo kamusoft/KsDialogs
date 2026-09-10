@@ -251,7 +251,7 @@ private void OnSyncedClicked(object? sender, EventArgs e) =>
 
 表のメッセージは現在の実装が返す値であり、安定した API ではない (変わらないのは例外型と throw される条件であり、文言は予告なく変わりうる)。
 
-受理より後の失敗 — factory の失敗や器への取付失敗、型を渡す `Show` の ViewModel factory と `configure` が投げた失敗 — は例外にならない。警告を記録してその Toast 1 枚だけを破棄し、既に戻っている呼び出し元へは返らない。他の Toast は影響を受けない。Dialog と Loading の型を渡す表示ではこれらの失敗が呼び出し元へ伝播するので、Toast だけ扱いが違う。
+受理より後の失敗 — factory の失敗や器への取付失敗、型を渡す `Show` の ViewModel factory と `configure` が投げた失敗 — は例外にならない。警告を記録してその Toast 1 枚だけを破棄し、既に戻っている呼び出し元へは返らない。`RegisterForToast` が結び付けた View を組み立てられなかった場合は、`DialogException.ViewCreationFailed` が原因として警告に残る。元の失敗は `InnerException`、型名は `ViewTypeName` / `ViewModelTypeName` から読める ([DI 登録](di-registration.md))。他の Toast は影響を受けない。Dialog と Loading の型を渡す表示ではこれらの失敗が呼び出し元へ伝播するので、Toast だけ扱いが違う。
 
 たとえば起動時に `RegisterForToast` も `Registry.Register` も呼ばないまま `SavedToastViewModel` を表示すると、`SavedToastView` を解決できず `DialogException.ViewFactoryNotRegistered` になる。
 

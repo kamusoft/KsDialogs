@@ -48,11 +48,11 @@ factory の receiver は提示先画面の `Context` で、表示のたびに呼
 
 ## Compose の content を登録する
 
-KMP artifact は Compose 用の extension を引き込まない。Android アプリへ追加したうえで、各 registry の `registerCompose` overload を使う。`register` と別名なのは、`@Composable` 付きの関数型と通常の関数型を同名で並べると呼び出し側の型推論が曖昧になるためである。
+KMP artifact は Android View 系 artifact `jp.kamusoft:ksdialogs-core` を推移的に運ぶが、Compose 用の extension は引き込まない。Compose 系 artifact `jp.kamusoft:ksdialogs` (これが View 系本体も連れてくる) を Android アプリへ追加したうえで、各 registry の `registerCompose` overload を使う。`register` と別名なのは、`@Composable` 付きの関数型と通常の関数型を同名で並べると呼び出し側の型推論が曖昧になるためである。
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-compose:<version>")
+    implementation("jp.kamusoft:ksdialogs:<version>")
     implementation("androidx.compose.foundation:foundation:1.8.1")
 }
 ```
@@ -89,7 +89,7 @@ object ComposeHostRegistration {
 }
 ```
 
-登録済みの content の表示は、factory がどちらの技術で書かれていても同じ `show` / `start` を通る。属性は composable の中で `KsDialogAttributes` を宣言して供給する。これも `ksdialogs-compose` に入っている。[レイアウト](layout.md) と [トランジション](transitions.md) を読む。
+登録済みの content の表示は、factory がどちらの技術で書かれていても同じ `show` / `start` を通る。属性は composable の中で `KsDialogAttributes` を宣言して供給する。これも `jp.kamusoft:ksdialogs` に入っている。[レイアウト](layout.md) と [トランジション](transitions.md) を読む。
 
 ## 起動時に登録を呼ぶ
 

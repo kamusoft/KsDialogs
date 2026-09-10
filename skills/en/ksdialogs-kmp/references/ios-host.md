@@ -4,7 +4,7 @@
 
 Prerequisite: a Kotlin Multiplatform shared module with an iOS target, and an Xcode application project that already builds and links its framework.
 
-1. Add `implementation("jp.kamusoft:ksdialogs-kmp:<version>")` to the shared module's commonMain dependencies.
+1. Add `api("jp.kamusoft:ksdialogs-kmp:<version>")` to the shared module's commonMain dependencies.
 2. Run `integrateLinkagePackage` once with `XCODEPROJ_PATH`, then commit the generated `KotlinMultiplatformLinkedPackage/` directory with the project.
 3. In Xcode, add `https://github.com/kamusoft/KsDialogs-SPM` to Package Dependencies and link the `KsDialogs` product to the application target.
 
@@ -14,6 +14,8 @@ XCODEPROJ_PATH="$PWD/iosApp/MyApp.xcodeproj" \
 ```
 
 The Maven dependency carries the Swift package reference in its published metadata, and the generated package feeds that reference into Xcode's dependency graph so the shared framework's unresolved Swift symbols link. The direct package entry in step 3 is separate: it is what lets application source call the registration APIs. SwiftPM folds the two into one package identity, so the Swift implementation is not duplicated.
+
+The published metadata pins that Swift package to the same version as the Maven artifact, so pick the matching version for the package entry added in step 3 and move the two together.
 
 Step 2 is a one-time integration. After that, ordinary Gradle builds refresh the generated package when the dependencies change. Keep the directory in version control — Xcode references it, so it is needed right after a clone.
 

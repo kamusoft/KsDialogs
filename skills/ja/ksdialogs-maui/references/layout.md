@@ -18,6 +18,8 @@
 
 表の各名前 `X` には `Dialog.GetX` / `Dialog.SetX` の対と、`Dialog.XProperty` という `BindableProperty` がある。たとえば `Dialog.GetLayoutArea`、`Dialog.SetLayoutArea`、`Dialog.LayoutAreaProperty` である。
 
+基準領域は、AiForms.Maui.Dialogs では View の真偽値プロパティ `UseCurrentPageLocation` が担っていたところである。KsDialogs では両軸に効く列挙になっていて、XAML なら `ksd:Dialog.LayoutArea`、code からなら `Dialog.SetLayoutArea` で添付する。
+
 ## サイズと位置の細則
 
 | 事項 | ルール |

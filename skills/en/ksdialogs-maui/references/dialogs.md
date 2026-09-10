@@ -10,7 +10,7 @@ The content is an ordinary MAUI View, so a `ContentView` written in XAML can be 
 
 ## Choose a `ShowAsync`
 
-`IKsDialog` (both `Dialog.Instance` and what DI injects are the same object) exposes `ShowAsync` in seven overloads. There are two axes to choose on: pass the view model as an instance or as a type only, and leave the content factory to a registration or pass it on the spot. Every overload takes an optional trailing `placement` argument that replaces the placement attached to the content as a whole ([Layout](layout.md)). The return value is `Task<DialogResult<TResult>>`, where `TResult` is `bool` for a view model declared with the non-generic `IDialogViewModel`.
+`IKsDialog` (both `Dialog.Instance` and what DI injects are the same object) exposes `ShowAsync` in the overloads listed in the table below. There are two axes to choose on: pass the view model as an instance or as a type only, and leave the content factory to a registration or pass it on the spot. Every overload takes an optional trailing `placement` argument that replaces the placement attached to the content as a whole ([Layout](layout.md)). The return value is `Task<DialogResult<TResult>>`, where `TResult` is `bool` for a view model declared with the non-generic `IDialogViewModel`.
 
 | Signature | What it does | When to choose it | Registration needed |
 |---|---|---|---|
@@ -22,11 +22,13 @@ The content is an ordinary MAUI View, so a `ContentView` written in XAML can be 
 | `ShowAsync<TViewModel>(Action<TViewModel>? configure = null)` | The `IDialogViewModel` shorthand for type-based show (the result is `bool`) | The same, when the result type is not written as a type argument | The same |
 | `ShowAsync<TViewModel>(Func<TViewModel, Task> configure)` | The asynchronous `configure` form of the above | The same, when state is prepared asynchronously | The same |
 
-In the examples below, the `ShowAsync(new ConfirmDialogViewModel(...))` of "Register and call" is the first row, the `ShowAsync<ItemEditDialogViewModel, ItemEdit>(configure)` of "Return a result type other than bool" is the fourth, and the factory passed directly in "Show content without registration" is the third. The remaining rows — second, fifth, sixth, and seventh — appear as minimal examples in the next section.
+There is one presentation verb. AiForms.Maui.Dialogs split it in two, `ShowAsync` for a presentation without a result and `ShowResultAsync` for one with, whereas here the result type is declared on the view model, so every route above is `ShowAsync` and nothing corresponds to `ShowResultAsync`.
+
+In the examples below, the `ShowAsync(new ConfirmDialogViewModel(...))` of "Register and call" is the first row, the `ShowAsync<ItemEditDialogViewModel, ItemEdit>(configure)` of "Return a result type other than bool" is the fourth, and the factory passed directly in "Show content without registration" is the third. The rows not covered by those recipes appear as minimal examples in the next section.
 
 ## Minimal examples for the remaining overloads
 
-The four that do not appear in the samples of the later sections are called as follows. The types used are `ConfirmDialogViewModel` (result `bool`) and `ItemEditDialogViewModel` (result `ItemEdit`), both declared in those later sections. Some types in the later sections, such as `NoticeDialogViewModel` / `NoticeDialogView`, are ones you write yourself in the same shape.
+The overloads that do not appear in the samples of the later sections are called as follows. The types used are `ConfirmDialogViewModel` (result `bool`) and `ItemEditDialogViewModel` (result `ItemEdit`), both declared in those later sections. Some types in the later sections, such as `NoticeDialogViewModel` / `NoticeDialogView`, are ones you write yourself in the same shape.
 
 Passing the view-model instance and a two-argument factory on the spot, with the result type explicit as a type argument.
 
@@ -274,11 +276,12 @@ private async void OnShowTwoClicked(object? sender, EventArgs e)
 
 A misconfiguration does not return `Cancelled`; it faults the `Task` with a nested `DialogException` class, so that a missing registration cannot be mistaken for an end user's cancellation, and in that case no view is created or shown. It is thrown straight to the awaiting caller, so handle it in a form that surfaces during development rather than swallowing it in a `try` / `catch`.
 
-An exception that carries `ViewModelTypeName` also reads back, from that property, the type name of the view model that could not be resolved.
+An exception that carries `ViewModelTypeName` also reads back, from that property, the type name of the view model that could not be resolved. `ViewCreationFailed` adds `ViewTypeName` for the view it was building and keeps the original failure in `InnerException`.
 
 | Exception | Message | Cause and fix |
 |---|---|---|
 | `DialogException.ViewFactoryNotRegistered` | `No View factory is registered for ViewModel type {TypeName}.` | Neither an explicit registration nor a fallback resolves the content view. Call `Register` / `RegisterForDialog` for that view-model type, or set up convention resolution with `UseViewFallback` |
+| `DialogException.ViewCreationFailed` | `Could not create the View {ViewTypeName} registered for ViewModel type {ViewModelTypeName}.` | The library could not construct the view bound by a one-line registration, a missing constructor dependency being the usual cause. Read `InnerException` for the original failure. A failure thrown by a factory you wrote or by a fallback resolver is not wrapped in this type |
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | Type-based show has no view-model factory. Call `RegisterViewModel` / `RegisterForDialog`, or set up `UseViewModelFallback` ([View models](view-models.md)) |
 | `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | No screen is available to present on. Show after the first Page appears; it fails immediately rather than queueing |
 | `DialogException.ServiceProviderUnavailable` | `The app's IServiceProvider is not available yet.` | A DI-backed route (one-line registration, fallback resolution) ran before startup captured the service provider. Show after `MauiApp` has been built ([DI registration](di-registration.md)) |

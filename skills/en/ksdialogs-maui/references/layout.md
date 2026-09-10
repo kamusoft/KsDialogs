@@ -18,6 +18,8 @@ Size, position, overlay, and outside-tap behavior are specified by attaching the
 
 Each name `X` in that table has a `Dialog.GetX` / `Dialog.SetX` pair plus a `BindableProperty` named `Dialog.XProperty`, for example `Dialog.GetLayoutArea`, `Dialog.SetLayoutArea`, and `Dialog.LayoutAreaProperty`.
 
+The reference area is where AiForms.Maui.Dialogs had the boolean `UseCurrentPageLocation` property on the view. Here it is an enumeration covering both axes, written as `ksd:Dialog.LayoutArea` in XAML or `Dialog.SetLayoutArea` from code.
+
 ## Sizing and positioning rules
 
 | Item | Rule |

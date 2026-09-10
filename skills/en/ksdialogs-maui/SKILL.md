@@ -27,11 +27,17 @@ A call through a default entry and a call through an injected contract reach the
 
 ## Setup
 
-Add `KsDialogs.Maui` version `0.1.0` to a .NET 10 MAUI project. The package targets iOS 17 or later and Android 7.0 (API 24) or later. Import the `KsDialogs` namespace where you use the library.
+Add `KsDialogs.Maui` to a .NET 10 MAUI project. The package is not published on NuGet yet, so `<version>` below stands for the version of the package you obtained. Import the `KsDialogs` namespace where you use the library.
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0" />
+<PackageReference Include="KsDialogs.Maui" Version="<version>" />
 ```
+
+| Requirement | What to satisfy |
+|---|---|
+| MAUI | `Microsoft.Maui.Controls` 10.0.20 or later. That is the version bundled with the .NET workload set this library is built and tested against, so a project on the same workload set can leave the version unwritten. Pinning an older one (below 10.0.20) makes restore report NU1605, the NuGet package-downgrade error |
+| .NET SDK | .NET 10 with the iOS and Android MAUI workloads installed |
+| Minimum OS | iOS 17.0 and Android 7.0 (API 24). A `SupportedOSPlatformVersion` below that, including one left unset where the SDK default is lower, stops the build with error `KSDLG0001`, which names the required version and the current value. The check runs on the iOS and Android inner builds only |
 
 ## Minimal example
 
@@ -56,4 +62,4 @@ public static class Notifications
 | Presets and custom asynchronous hooks | [Transitions](references/transitions.md) |
 | Imperative and scoped Loading, progress, styling, custom content | [Loading](references/loading.md) |
 | Message, registered, and inline Toast routes | [Toast](references/toast.md) |
-| One-line registration and fallback resolution | [DI registration](references/di-registration.md) |
+| One-line registration, fallback resolution, and view-construction failures | [DI registration](references/di-registration.md) |

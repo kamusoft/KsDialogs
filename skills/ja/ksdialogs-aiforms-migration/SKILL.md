@@ -39,15 +39,18 @@ KsDialogs.Maui は AiForms.Maui.Dialogs を、Dialog の結果型・factory に�
 | 型から show する旧経路 (`ShowFromModelAsync`・`CreateFromModel`) を置き換える | [API 対応表](references/api-mapping.md) |
 | layout・overlay・animation 設定を `ExtraView` から移す | [API 対応表](references/api-mapping.md) |
 | obsolete の custom View 専用 Toast API を置き換える | [API 対応表](references/api-mapping.md) |
+| 登録の配線ミスがどう失敗するかを知る | 下の「移行後の失敗の扱い」 |
 | KsDialogs.Maui の API 自体を調べる | `ksdialogs-maui` Skill |
 
 ## 導入
 
-`AiForms.Maui.Dialogs` package を外し、.NET 10 MAUI project (`net10.0-ios` / `net10.0-android`、Microsoft.Maui.Controls 10.0.1) に `KsDialogs.Maui` version `0.1.0` を追加する。KsDialogs.Maui は iOS 17 以降と Android 7.0 (API 24) 以降に対応する。`using AiForms.Dialogs;` は `using KsDialogs;` へ置き換える。
+`AiForms.Maui.Dialogs` package を外し、.NET 10 の MAUI project に `KsDialogs.Maui` を追加する。package は NuGet にまだ公開していないため、下の `<version>` は入手した package の version を指す。`using AiForms.Dialogs;` は `using KsDialogs;` へ置き換える。
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0" />
+<PackageReference Include="KsDialogs.Maui" Version="<version>" />
 ```
+
+project には `Microsoft.Maui.Controls` 10.0.20 以降も要る。これはライブラリ側がビルドとテストに使う .NET workload set 同梱の version なので、同じ workload set の project なら version を書かなくてよい。それより古い version (10.0.20 未満) を明示すると restore が NU1605 (NuGet の package ダウングレードのエラー) を報告する。.NET SDK は iOS / Android の MAUI workload を入れた .NET 10 を使う。KsDialogs.Maui は iOS 17.0 以降と Android 7.0 (API 24) 以降に対応し、これを下回る `SupportedOSPlatformVersion` は、SDK の既定値が下回る未設定の場合も含めて、ビルドを `KSDLG0001` のエラーで止める。
 
 ## 最小移行
 
@@ -71,6 +74,10 @@ public static class StartupWork
             message: "Loading");
 }
 ```
+
+## 移行後の失敗の扱い
+
+構成ミスは cancel された結果ではなく `DialogException` の入れ子の型として届く。そのうち 1 つは移植元に対応物が無い。1 行登録 (`RegisterForDialog`・`RegisterForLoading`・`RegisterForToast`) が結び付けた View をライブラリが組み立てられなかった場合、失敗は `DialogException.ViewCreationFailed` になり、元の失敗は `InnerException` にそのまま残り、`ViewTypeName` と `ViewModelTypeName` で型名を読める。包まれるのはライブラリ自身が View を組み立てる経路だけで、利用者が書いた factory や fallback resolver が投げた例外は包まれずそのまま届く。Dialog と Loading では show / start の task の失敗として届き、`Toast.Show` は task を返さないため、原因を書いた警告を残してその 1 枚だけを破棄する。
 
 ## 対応表を選ぶ
 

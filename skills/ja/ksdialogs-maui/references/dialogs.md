@@ -10,7 +10,7 @@ content は普通の MAUI View なので、XAML で書いた `ContentView` を�
 
 ## `ShowAsync` を選ぶ
 
-`IKsDialog` (`Dialog.Instance` と DI で注入したもののどちらも同じ実体) は `ShowAsync` を 7 つの overload で公開する。選ぶ軸は 2 つで、ViewModel をインスタンスで渡すか型だけ渡すか、そして content の factory を登録済みのものに任せるかその場で渡すかである。どの overload も末尾に省略可能な `placement` 引数を取り、渡すと content に添付された配置をまるごと置換する ([レイアウト](layout.md))。戻り値は `Task<DialogResult<TResult>>` で、非 generic の `IDialogViewModel` で宣言した ViewModel では `TResult` が `bool` になる。
+`IKsDialog` (`Dialog.Instance` と DI で注入したもののどちらも同じ実体) は `ShowAsync` を下の表に挙げる overload で公開する。選ぶ軸は 2 つで、ViewModel をインスタンスで渡すか型だけ渡すか、そして content の factory を登録済みのものに任せるかその場で渡すかである。どの overload も末尾に省略可能な `placement` 引数を取り、渡すと content に添付された配置をまるごと置換する ([レイアウト](layout.md))。戻り値は `Task<DialogResult<TResult>>` で、非 generic の `IDialogViewModel` で宣言した ViewModel では `TResult` が `bool` になる。
 
 | シグネチャ | 何をする | いつ選ぶ | 必要な登録 |
 |---|---|---|---|
@@ -22,11 +22,13 @@ content は普通の MAUI View なので、XAML で書いた `ContentView` を�
 | `ShowAsync<TViewModel>(Action<TViewModel>? configure = null)` | 型指定 show の `IDialogViewModel` 用の省略形 (結果は `bool`) | 同上で、結果型を型引数に書かないとき | 同上 |
 | `ShowAsync<TViewModel>(Func<TViewModel, Task> configure)` | 上の非同期 `configure` 版 | 同上で、非同期に状態を用意するとき | 同上 |
 
-以下の例では、「登録して呼び出す」の `ShowAsync(new ConfirmDialogViewModel(...))` が 1 行目、「bool 以外の結果型を返す」の `ShowAsync<ItemEditDialogViewModel, ItemEdit>(configure)` が 4 行目、「登録せずに content を表示する」の factory 直渡しが 3 行目に当たる。残る 2・5・6・7 行目は次節の最小例で示す。
+表示の動詞は 1 つである。AiForms.Maui.Dialogs は結果を返さない表示の `ShowAsync` と結果を返す表示の `ShowResultAsync` に分けていたが、KsDialogs では結果型を ViewModel が宣言するため上のどの経路も `ShowAsync` で、`ShowResultAsync` に相当する呼び方はない。
+
+以下の例では、「登録して呼び出す」の `ShowAsync(new ConfirmDialogViewModel(...))` が 1 行目、「bool 以外の結果型を返す」の `ShowAsync<ItemEditDialogViewModel, ItemEdit>(configure)` が 4 行目、「登録せずに content を表示する」の factory 直渡しが 3 行目に当たる。これらのレシピに現れない行は次節の最小例で示す。
 
 ## 残りの overload の最小例
 
-後続の節のサンプルに現れない 4 つは次の形で呼ぶ。使う型は後続の節で宣言する `ConfirmDialogViewModel` (結果は `bool`) と `ItemEditDialogViewModel` (結果は `ItemEdit`) である。以降の節に現れる `NoticeDialogViewModel` / `NoticeDialogView` のように、同じ形で利用者が書く型もある。
+後続の節のサンプルに現れない overload は次の形で呼ぶ。使う型は後続の節で宣言する `ConfirmDialogViewModel` (結果は `bool`) と `ItemEditDialogViewModel` (結果は `ItemEdit`) である。以降の節に現れる `NoticeDialogViewModel` / `NoticeDialogView` のように、同じ形で利用者が書く型もある。
 
 ViewModel インスタンスと 2 引数 factory をその場で渡し、結果型を型引数で明示する形。
 
@@ -274,11 +276,12 @@ private async void OnShowTwoClicked(object? sender, EventArgs e)
 
 構成ミスは `Cancelled` を返さず、入れ子クラスの `DialogException` で `Task` を fault させる。登録漏れをエンドユーザーのキャンセルと取り違えないためであり、この場合 View は生成も表示もされない。`await` した呼び出し元にそのまま throw されるので、`try` / `catch` で握り潰さず、開発中に気づける形で扱う。
 
-`ViewModelTypeName` を持つ例外は、解決できなかった ViewModel の型名をそのプロパティからも読める。
+`ViewModelTypeName` を持つ例外は、解決できなかった ViewModel の型名をそのプロパティからも読める。`ViewCreationFailed` はこれに加えて、組み立てようとした View の型名を `ViewTypeName` に、元の失敗を `InnerException` に持つ。
 
 | 例外 | メッセージ | 原因と対処 |
 |---|---|---|
 | `DialogException.ViewFactoryNotRegistered` | `No View factory is registered for ViewModel type {TypeName}.` | 明示登録も fallback も content View を解決できない。`Register` / `RegisterForDialog` をその ViewModel 型に対して呼ぶか、`UseViewFallback` で規約解決を設定する |
+| `DialogException.ViewCreationFailed` | `Could not create the View {ViewTypeName} registered for ViewModel type {ViewModelTypeName}.` | 1 行登録が結び付けた View をライブラリが組み立てられなかった。よくある原因は constructor の依存が service にないこと。元の失敗は `InnerException` から読む。自分で書いた factory や fallback resolver が投げた失敗はこの型に包まれない |
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | 型指定 show に ViewModel factory がない。`RegisterViewModel` / `RegisterForDialog` を呼ぶか、`UseViewModelFallback` を設定する ([ViewModel](view-models.md)) |
 | `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | 提示できる画面がない。最初の Page が表示された後に show する。キューイングはせず即座に失敗する |
 | `DialogException.ServiceProviderUnavailable` | `The app's IServiceProvider is not available yet.` | startup が service provider を捕捉する前に DI 経路 (1 行登録・fallback 解決) を使った。`MauiApp` の構築完了後に show する ([DI 登録](di-registration.md)) |

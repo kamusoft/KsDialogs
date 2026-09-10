@@ -407,11 +407,12 @@ public static class MauiProgram
 
 構成ミスは入れ子クラスの `DialogException` で失敗する。`ShowAsync` / `StartAsync` に渡した ViewModel またはその型をその場で解決できない失敗は呼び出し時点で同期に投げられ、View は生成も表示もされず、`StartAsync` の action も実行されない (fail-fast)。content を作る段階で起きる失敗は、呼び出し元がまだ待っているため `Task` の失敗として届く。
 
-`ViewModelTypeName` を持つ例外は、解決できなかった ViewModel の型名をそのプロパティからも読める。
+`ViewModelTypeName` を持つ例外は、解決できなかった ViewModel の型名をそのプロパティからも読める。`ViewCreationFailed` はこれに加えて、組み立てようとした View の型名を `ViewTypeName` に、元の失敗を `InnerException` に持つ。
 
 | 例外 | メッセージ | 原因と対処 |
 |---|---|---|
 | `DialogException.ViewFactoryNotRegistered` | `No View factory is registered for ViewModel type {TypeName}.` | custom Loading の ViewModel 型に View factory がない。`Loading.Instance.Registry.Register` か `RegisterForLoading` をその型に対して呼ぶ |
+| `DialogException.ViewCreationFailed` | `Could not create the View {ViewTypeName} registered for ViewModel type {ViewModelTypeName}.` | `RegisterForLoading` が結び付けた View をライブラリが組み立てられなかった。よくある原因は constructor の依存が service にないこと。元の失敗は `InnerException` から読む。自分で書いた factory が投げた失敗はこの型に包まれない |
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | 型を渡す表示に ViewModel factory がない。`Loading.Instance.Registry.RegisterViewModel` か `RegisterForLoading` をその型に対して呼ぶ (Loading には fallback がない) |
 | `DialogException.ValueTypeViewModel` | `ViewModel type {TypeName} is a value type and cannot be used as a ViewModel.` | 値型の ViewModel が表示の入口に届いた。ViewModel を `class` にする (`struct` / `record struct` は使えない) |
 | `DialogException.ServiceProviderUnavailable` | `The app's IServiceProvider is not available yet.` | `RegisterForLoading` で配線した content を、startup が service provider を捕捉する前に表示した。`MauiApp` の構築完了後に表示する ([DI 登録](di-registration.md)) |

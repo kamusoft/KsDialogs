@@ -29,10 +29,10 @@ version 0.x の間は、公開 API に破壊的変更が入る可能性があり
 |---|---|---|
 | iOS Native | iOS 17 | Swift 6.3 |
 | Android Native | Android 7.0 (API 24) | Kotlin 2.4.10, AGP 9.3.0, Gradle 9.7.0 |
-| .NET MAUI | iOS 17 / Android 7.0 (API 24) | .NET 10 (`net10.0`), Microsoft.Maui.Controls 10.0.1 |
+| .NET MAUI | iOS 17 / Android 7.0 (API 24) | .NET 10 (`net10.0`), Microsoft.Maui.Controls 10.0.20 |
 | Kotlin Multiplatform | iOS 17 / Android 7.0 (API 24) | Kotlin 2.4.10, AGP 9.3.0, Gradle 9.7.0, Swift 6.3 |
 
-Android target は minSdk 24、compileSdk 36 です。.NET MAUI の利用側下限は Microsoft.Maui.Controls 10.0.1 です。Android Native と Kotlin Multiplatform の利用側 Kotlin 最小 version は確定前で、初回リリースまでに確定します。表の version はライブラリのビルドに使ったものであり、利用側の最小 version ではありません。KMP 統合における Kotlin 側の SwiftPM 連携は Alpha です。
+Android target は minSdk 24、compileSdk 36 です。Android Native と Kotlin Multiplatform は同じ minor 系列の Kotlin Gradle Plugin (Kotlin 2.4.x) に対応し、利用側ビルドで動作を確認しているのは 2.4.10 です。表の version はライブラリのビルドに使ったものであり、利用側の最小 version ではありません。KMP 統合における Kotlin 側の SwiftPM 連携は Alpha です。
 
 ## インストール
 
@@ -59,15 +59,15 @@ View-only アプリでは core Maven artifact を追加します。
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:<version>")
+    implementation("jp.kamusoft:ksdialogs-core:<version>")
 }
 ```
 
-Compose アプリでは `ksdialogs-compose` だけを追加します。core artifact は推移依存で解決されます。
+Compose アプリでは `ksdialogs` だけを追加します。core artifact は推移依存で解決されます。
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-compose:<version>")
+    implementation("jp.kamusoft:ksdialogs:<version>")
 }
 ```
 
@@ -78,10 +78,14 @@ prerelease では `<version>` を `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N
 NuGet package を追加します。
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0" />
+<PackageReference Include="KsDialogs.Maui" Version="<version>" />
 ```
 
 prerelease では `Version` の値を `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` のいずれかに置き換えます。
+
+Microsoft.Maui.Controls は 10.0.20 以上が必要です。これはこのリポジトリが固定する .NET workload set に同梱される version と同じなので、同じ workload set を使うアプリでは MAUI 本体の version を書く必要はありません。10.0.20 未満を明示すると、NuGet のダウングレードエラー NU1605 でビルドが失敗します。
+
+package の target は `net10.0`、`net10.0-ios`、`net10.0-android` で、iOS / Android の MAUI workload を入れた .NET 10 SDK が必要です。最低 OS 版は iOS 17 / Android 7.0 (API 24) で、`SupportedOSPlatformVersion` がそれ未満のアプリ (未設定の場合を含む) はビルド時にガード診断 `KSDLG0001` で停止します。
 
 ### Kotlin Multiplatform
 
@@ -91,11 +95,13 @@ Maven artifact を `commonMain` に追加します。
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("jp.kamusoft:ksdialogs-kmp:<version>")
+            api("jp.kamusoft:ksdialogs-kmp:<version>")
         }
     }
 }
 ```
+
+共有 ViewModel が `DialogViewModel` を継承するため、Android アプリ側から KsDialogs の型が見える必要があります。`api` はそのための宣言です。
 
 iOS アプリ側では `https://github.com/kamusoft/KsDialogs-SPM` も追加し、その `KsDialogs` product を link します。prerelease では Maven artifact と Swift package tag に同じ `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` version を使います。
 

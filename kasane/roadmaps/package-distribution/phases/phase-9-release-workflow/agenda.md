@@ -152,7 +152,7 @@ version の注入と SNAPSHOT ガードは android/ に配線済み (cross/ADR-0
 ## TODO
 
 - [x] 論点の解消 (R1〜R7、2026-09-10 決定)
-- [ ] docs-refresh 1 回目 (提案化の前): skills / README の旧 Android 座標 (16 箇所) を cross/ADR-0019 の新座標へ追随させ、MAUI 分 (phase-6 申し送りの表) と KMP 分 (phase-7 申し送りの表) を Input に添える (R5)
+- [x] docs-refresh 1 回目 (2026-09-10 完了): 旧 Android 座標 16 箇所を新座標へ、MAUI 分 (10.0.20・`KSDLG0001`・`ViewCreationFailed`) と KMP 分 (`api` スコープ・Kotlin 同 minor) を反映。API 版付き TFM 名は利用者向け文書に書かない (SDK 更新で腐るため、オーナー判断)。drift 所見: KMP 消費者の Android ホストへ推移的に届くもの (`ksdialogs-core` は自動、Compose 系は別途) と共有コード側の `api` スコープの根拠、MAUI の下限版 / `KSDLG0001` は concepts に無い (skills だけが持つ状態) → 蒸留の配布構成 concepts 化に含める
 - [ ] docs-refresh 2 回目 (初回リリース後の蒸留の後): 「未配信」表記の解除と配布構成 concepts の反映 (R5)
 - [ ] MAUI の nupkg 名検査 (package / publish の 2 回) と XML ドキュメントの明示 (facade true / binding false) を release の change に含める (R6)
 - [ ] ksn-propose で変更提案を起こす (docs-refresh 1 回目の後。cross/ADR-0024 proposed を design の Decision に反映)
