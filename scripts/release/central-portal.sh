@@ -6,7 +6,7 @@
 #   scripts/release/central-portal.sh status <deployment-id>
 #   scripts/release/central-portal.sh wait-validated <deployment-id>
 #   scripts/release/central-portal.sh release <deployment-id>
-#   scripts/release/central-portal.sh wait-published <deployment-id>
+#   scripts/release/central-portal.sh wait-published <deployment-id>...
 #   scripts/release/central-portal.sh drop <deployment-id>
 #   scripts/release/central-portal.sh published <version> [artifactId]
 #   scripts/release/central-portal.sh --selftest
@@ -28,6 +28,15 @@
 #   release         VALIDATED であることを再確認してから release する。VALIDATED 以外なら
 #                   何も送らずに失敗する。検証の決着は wait-validated で先に待っておく。
 #   wait-published  PUBLISHED になるまで待つ。FAILED / NOT_FOUND になったら失敗する。
+#                   deployment ID を複数受け取れる。1 ループで渡された全 ID の状態を照会し、
+#                   PUBLISHED になった ID をその場で待機対象から外して残りを待ち続ける
+#                   (枠ごとに直列で待つと同期時間が足し算になるため)。すべてが PUBLISHED に
+#                   なれば成功、いずれかが FAILED / NOT_FOUND になった時点で失敗し、上限は
+#                   全体に対して 1 つ効く。ID が 1 件のときの契約は複数 ID を渡す場合と同じ。
+#                   上限は検証待ちより桁が違う (Central Portal の同期は release の受理から
+#                   1 時間級かかる) ため、wait-validated とは別の環境変数を持ち、既定も
+#                   長い方 (5400 秒 = 90 分) にしてある。呼び出し側が env で指定し忘れても
+#                   短い上限に落ちないようにするため。
 #   drop            VALIDATED / FAILED のときだけ削除する。PUBLISHING / PUBLISHED は
 #                   API 上削除できないため、理由を出して正常終了する (失敗経路の後始末から
 #                   呼ばれるので、削除できない状態を失敗にしない)。NOT_FOUND は既に
@@ -49,8 +58,9 @@
 # published サブコマンドは公開リポジトリを見るだけなので認証を要求しない。
 #
 # 待機の間隔と上限は環境変数で上書きできる (テストと運用の調整用):
-#   KSR_POLL_INTERVAL_SECONDS  wait-validated / wait-published のポーリング間隔 (既定 30)
-#   KSR_POLL_TIMEOUT_SECONDS   wait-validated / wait-published の上限 (既定 1800)
+#   KSR_POLL_INTERVAL_SECONDS   wait-validated / wait-published のポーリング間隔 (既定 30)
+#   KSR_POLL_TIMEOUT_SECONDS    wait-validated の上限 (既定 1800 = 30 分)
+#   KSR_PUBLISHED_TIMEOUT_SECONDS  wait-published の上限 (既定 5400 = 90 分)
 #
 # ネットワークへ出るのは実行本番だけで、--selftest は HTTP 送信関数をモックへ差し替えて
 # URL の組み立て・応答の解釈・状態分岐だけを検査する。
@@ -73,7 +83,7 @@ usage() {
   status <deployment-id>            deployment の状態を出力する
   wait-validated <deployment-id>    検証の決着を待ち、決着した状態を出力する
   release <deployment-id>           VALIDATED を再確認してから release する
-  wait-published <deployment-id>    PUBLISHED になるまで待つ
+  wait-published <deployment-id>... 渡した全 deployment が PUBLISHED になるまで待つ
   drop <deployment-id>              VALIDATED / FAILED のときだけ削除する
   published <version> [artifactId]  公開済みなら 0、未公開なら 1 で終了する
                                     (artifactId の既定は ${DEFAULT_MAVEN_ARTIFACT_ID})
@@ -265,31 +275,46 @@ cmd_release() {
     echo "release を要求した: ${id}"
 }
 
+# 渡された全 deployment の公開を待つ。1 ループで全 ID を照会し、PUBLISHED になったものから
+# 待機対象を外していく (残りだけを次のループで照会する)。上限は検証待ちと別の変数で持ち、
+# 既定を 90 分にしてある (Central の同期の実測が 1 時間級で、検証待ちの 30 分とは桁が違う)。
 cmd_wait_published() {
-    local id="$1"
     local interval="${KSR_POLL_INTERVAL_SECONDS:-30}"
-    local timeout="${KSR_POLL_TIMEOUT_SECONDS:-1800}"
+    local timeout="${KSR_PUBLISHED_TIMEOUT_SECONDS:-5400}"
     local deadline=$(( SECONDS + timeout ))
-    local state
+    local -a pending=("$@")
+    local -a remaining
+    local id state states
 
     while :; do
-        state="$(deployment_state "${id}")"
-        case "${state}" in
-            PUBLISHED)
-                echo "公開された: ${id}"
-                return 0
-                ;;
-            FAILED)
-                fail "deployment が FAILED になった: ${id}"
-                ;;
-            "${DEPLOYMENT_NOT_FOUND}")
-                fail "公開を待っている deployment が存在しない: ${id}"
-                ;;
-        esac
-        if [ "${SECONDS}" -ge "${deadline}" ]; then
-            fail "公開を待ちきれなかった (上限 ${timeout} 秒、最後の状態 ${state}): ${id}"
+        remaining=()
+        states=""
+        for id in "${pending[@]}"; do
+            state="$(deployment_state "${id}")"
+            case "${state}" in
+                PUBLISHED)
+                    echo "公開された: ${id}"
+                    ;;
+                FAILED)
+                    fail "deployment が FAILED になった: ${id}"
+                    ;;
+                "${DEPLOYMENT_NOT_FOUND}")
+                    fail "公開を待っている deployment が存在しない: ${id}"
+                    ;;
+                *)
+                    remaining+=("${id}")
+                    states="${states}${states:+, }${id}=${state}"
+                    ;;
+            esac
+        done
+        if [ "${#remaining[@]}" -eq 0 ]; then
+            return 0
         fi
-        echo "待機中 (${state}): ${id}"
+        pending=("${remaining[@]}")
+        if [ "${SECONDS}" -ge "${deadline}" ]; then
+            fail "公開を待ちきれなかった (上限 ${timeout} 秒、最後の状態 ${states})"
+        fi
+        echo "待機中 (${states})"
         sleep "${interval}"
     done
 }
@@ -527,8 +552,46 @@ selftest() {
         "FAILED になれば失敗する"
 
     arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHING"}'
-    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_POLL_TIMEOUT_SECONDS=0 cmd_wait_published abc > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=0 cmd_wait_published abc > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
         "上限を過ぎれば失敗する"
+
+    # 公開待ちの上限は検証待ちと別の変数で持つ。検証待ち用の変数を 0 にしても公開待ちは
+    # 打ち切られない (両者が同じ変数を見る実装なら、この呼び出しは 1 ループ目で失敗する)。
+    arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHED"}'
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_POLL_TIMEOUT_SECONDS=0 cmd_wait_published abc > /dev/null 2>&1 ); then echo 0; else echo 1; fi)" \
+        "検証待ちの上限は公開待ちに効かない"
+
+    echo "[wait-published の複数 ID]"
+    # 2 枠が別々のタイミングで PUBLISHED になっても、遅い方まで待って成功する。
+    # 台本 (PUBLISHING, PUBLISHING, PUBLISHED, PUBLISHING, PUBLISHED) に対する照会順は
+    # aaa, bbb, aaa, bbb, bbb になる。並行と直列を分ける観測点は 2 件目の照会で、
+    # 枠ごとに待ち切る実装なら 2 件目も aaa になる (照会の総数と最後の ID は一致するため、
+    # 件数や末尾では両者を分けられない)。
+    arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHING"}' \
+        '200 {"deploymentState":"PUBLISHED"}' '200 {"deploymentState":"PUBLISHING"}' \
+        '200 {"deploymentState":"PUBLISHED"}'
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 0; else echo 1; fi)" \
+        "2 件が別々のタイミングで PUBLISHED になれば成功する"
+    check "$(contains "$(calls | sed -n 2p)" "id=bbb")" \
+        "1 ループで全枠を照会する (直列なら 2 件目も aaa になる)" "$(calls | sed -n 2p)"
+    # 3 ループ目の照会は残った枠だけになる。公開済みを外さず毎ループ全件を照会する実装は
+    # ここで aaa を照会し直し、台本を使い切って終われない。
+    check "$(contains "$(calls | sed -n 5p)" "id=bbb")" \
+        "公開済みの枠は次のループで照会しない" "$(calls | sed -n 5p)"
+    check "$([ "$(calls | wc -l | tr -d ' ')" = "5" ] && echo 0 || echo 1)" \
+        "残った枠だけを照会し続ける" "$(calls)"
+
+    # 片方が FAILED なら、他方が公開済みでも全体を失敗にする
+    # (先頭の ID しか見ない実装ならここは成功してしまう)。
+    arrange '200 {"deploymentState":"PUBLISHED"}' '200 {"deploymentState":"FAILED"}'
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
+        "2 件のうち 1 件が FAILED なら失敗する"
+    check "$([ "$(calls | wc -l | tr -d ' ')" = "2" ] && echo 0 || echo 1)" \
+        "FAILED を見つけた時点で止まる" "$(calls)"
+
+    arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHING"}'
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=0 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
+        "2 件とも未公開のまま上限を過ぎれば失敗する"
 
     echo "[published]"
     local published_code
@@ -600,7 +663,16 @@ main() {
             # 公開リポジトリを見るだけなので認証を要求しない。
             cmd_published "$@"
             ;;
-        status|wait-validated|release|wait-published|drop)
+        wait-published)
+            # 複数の deployment をまとめて待てる。
+            if [ $# -lt 1 ]; then
+                usage
+                exit 2
+            fi
+            require_portal_credentials
+            cmd_wait_published "$@"
+            ;;
+        status|wait-validated|release|drop)
             if [ $# -ne 1 ]; then
                 usage
                 exit 2
@@ -611,7 +683,6 @@ main() {
                 status)         cmd_status "$1" ;;
                 wait-validated) cmd_wait_validated "$1" ;;
                 release)        cmd_release "$1" ;;
-                wait-published) cmd_wait_published "$1" ;;
                 drop)           cmd_drop "$1" ;;
             esac
             ;;

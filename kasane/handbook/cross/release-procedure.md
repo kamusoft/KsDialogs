@@ -142,7 +142,7 @@ gh workflow run release.yml --ref main -f version=<version>
 gh run watch "$(gh run list --workflow=release.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
 ```
 
-publish は 1 つの job で直列に進み、配信リポジトリへの commit → Android の Maven upload と検証待ち → 配信リポジトリの tag → KMP の発行と upload と検証待ち → nuget.org への push → Maven Central の release 2 件 → monorepo の tag と Release → `develop` へのインストール例の反映、の順になる。検証待ち (上限 30 分) を通らなければ nuget.org へ push する前に止まる。
+publish は 1 つの job で直列に進み、配信リポジトリへの commit → Android の Maven upload と検証待ち → 配信リポジトリの tag → KMP の発行と upload と検証待ち → nuget.org への push → Maven Central の release 2 件 (Android → KMP の順) を要求してから 2 枠の公開をまとめて待つ (上限 90 分) → monorepo の tag と Release → `develop` へのインストール例の反映、の順になる。検証待ち (上限 30 分) を通らなければ nuget.org へ push する前に止まる。
 
 ### 公開後の確認
 
@@ -171,10 +171,11 @@ publish の各ステップは冪等なので、原因を取り除いてから **
 | KMP の Maven upload / 検証 | Android 枠と同じ分岐。Android 枠の保留 deployment は失敗経路の後始末で drop される |
 | nuget.org の push | 公開済みのパッケージは skip される |
 | Maven の release | 枠ごとに保留中の deployment を release する。応答を取りこぼして PUBLISHING のまま残った枠は、公開の完了を待つだけで release を送り直さない |
+| Maven の公開待ち (上限超過) | 公開処理中の deployment は削除できないので ID が残る。次の attempt は release を送り直さず、2 枠まとめて公開の完了を待つ step へ回す (待ちは再実行でも 1 本で、上限は同じ 90 分) |
 | tag / Release | 同じ内容の tag は skip、別内容なら失敗する。monorepo の tag が起動 commit にある再実行は、レジストリと配信リポジトリへの publish だけを skip し、Release の作成とインストール例の反映は続けて行う (Release が既にあれば本文には触れない) |
 | `develop` へのインストール例の反映 | この step の失敗は release を失敗にしない (置換・lint・git 操作のどれが落ちても要約に警告が出るだけ)。次のリリースで追いつく |
 
-保留中の deployment は Android / KMP の 2 枠あり、失敗経路の後始末で削除できる状態 (VALIDATED / FAILED) のものが drop される。削除できない状態 (検証中か公開処理中) のときは何もせず理由が出て ID もそのまま残る (次の attempt がその状態を見て続きを行う)。状態は [Central Portal の deployment 一覧](https://central.sonatype.com/publishing/deployments) で見る。手で操作するときは次を使う。
+保留中の deployment は Android / KMP の 2 枠あり、失敗経路の後始末で削除できる状態 (VALIDATED / FAILED) のものが drop される。削除できない状態 (検証中か公開処理中) のときは何もせず理由が出て ID もそのまま残る (次の attempt がその状態を見て続きを行う)。状態は [Central Portal の deployment 一覧](https://central.sonatype.com/publishing/deployments) で見る。一覧では 2 枠の deployment がどちらも `jp.kamusoft-<version>` の名前で並び、表示名では見分けられない。枠 (Android / KMP) の区別は publish job の Summarize が出す deployment ID の行で行う。手で操作するときは次を使う。
 
 ```bash
 export MAVEN_CENTRAL_USERNAME=... MAVEN_CENTRAL_PASSWORD=...

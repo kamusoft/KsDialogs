@@ -174,7 +174,7 @@ change add-release-workflow の実装で初回リリース `0.1.0-beta.1` まで
 | Portal の表示名 | Android 枠も KMP 枠も deployment 名が `jp.kamusoft-<version>` (複数 publication の bundle は artifactId が落ちる) で一覧で見分けられない。handbook release-procedure「失敗したとき」に「枠の区別は Summarize の deployment ID で行う」を 1 文足す |
 | 配布構成の concepts 化 | phase-6 / 7 の申し送りと docs-refresh 1 回目の drift 所見のとおり。release workflow の段構成・2 枠 deployment・marker による再実行判定・version 置換の自動化 (README は「最新の公開版」を指す) を含める |
 | docs-refresh 2 回目 | README 2 枚と Skill 10 箇所の「まだ公開していない」「`<version>` を置き換える」という散文が、置換 commit 87b7cf7 でコード例が実値になったため矛盾している。「未配信」表記の解除と配布構成の反映 (R5) |
-| 自己テストの lint job 搭載 | `scripts/release/*.sh --selftest` と `set-readme-version.py --selftest` は数秒・ネットワーク不要。cross/ADR-0022 の lint job の検査集合を 8 → 9 に一部改訂 (tasks 2.5 の検討結果、review-001 Suggestion) |
+| 自己テストと actionlint の lint job 搭載 | `scripts/release/*.sh --selftest` と `set-readme-version.py --selftest` は数秒・ネットワーク不要。`actionlint` も CI から呼ばれておらず workflow の構文退行を CI で検出できない (fix-release-published-wait の発見)。cross/ADR-0022 の lint job の検査集合を一部改訂 (tasks 2.5 の検討結果、review-001 Suggestion) |
 | monorepo tag の別 commit 検出 | `release.yml` の validate と publish の tag 照合だけが自己テストを持たない (verify-001 所見)。スクリプト化するなら上の change に同梱 |
 | KsSettingsView への逆流 | R4 (workflow による version 置換) と、翻案で見つけた `check-signatures.sh` の自己テストの無言終了 (`$( ... \|\| true )` の形で `exit` がサブシェルを終える) と `.github/release.yml` のラベル 6 件が未作成な点 (ロードマップ外で起票) |
 | 蒸留後の docs-refresh 2 回目と、phase-9 の完了 | roadmap のゴール「tag は publish 全成功後にのみ生まれる」は monorepo の tag について成り立ち、配信リポジトリの tag は KMP 発行の前に生まれる例外 (ADR-0024) として ksn-roadmap で 1 行直す |
@@ -189,4 +189,5 @@ change add-release-workflow の実装で初回リリース `0.1.0-beta.1` まで
 - [ ] KsSettingsView 側へ R4 (release workflow による version 置換) を逆流させる作業を、このロードマップの外で起票する (phase-9 の実装後)
 - [x] change add-release-workflow の実装と初回リリース `0.1.0-beta.1` (2026-09-10 完了。詳細は上の「実装結果と蒸留への申し送り」)
 - [ ] 蒸留 (ksn-distill): cross/ADR-0024 の accepted、配布構成の concepts 化、lessons の昇格判定
-- [ ] 蒸留後: docs-refresh 2 回目 (R5)、PUBLISHED 待ちの上限の change (簡易起票 → S/M 級)
+- [x] PUBLISHED 待ちの上限の change: fix-release-published-wait (S 級、2026-09-10 完了。2 枠の公開待ちを 1 本・並行・上限 90 分に、job timeout 150 分。次のリリース PR で main へ)
+- [ ] 蒸留後: docs-refresh 2 回目 (R5)
