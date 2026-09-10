@@ -545,11 +545,14 @@ jobs:
       contents: write
       # NuGet の Trusted Publishing (OIDC) に要る。
       id-token: write
-    # 既定の 360 分は長すぎる。Android と KMP の発行と Central Portal の検証待ちを含む
-    # 直列の publish に対する上限として置く。待ちは最悪で枠ごとに 3 本 (引き継いだ
-    # deployment の決着 30 分 → FAILED で再 upload した deployment の決着 30 分 →
-    # 公開待ち 30 分) 並ぶため、本体の作業を足しても収まる予算にする。
-    timeout-minutes: 120
+    # 既定の 360 分は長すぎる。Android と KMP の発行と Central Portal の待ちを含む
+    # 直列の publish に対する上限として置く。実測 (検証待ちは枠ごとに数秒〜数分で決着し、
+    # 公開待ちは遅い枠で約 60 分) に、本体の作業 (upload / 検証 / NuGet で約 10 分 +
+    # KMP の再ビルド約 6 分) と公開待ちの上限 90 分 (2 枠まとめて 1 本) を足した予算。
+    # 検証待ちが枠ごとに上限 (30 分) まで伸びる最悪ケースはこの値を超えるが、その場合は
+    # job timeout で止めて再実行に回す (deployment ID は upload の直後に artifact へ
+    # 保存済みで、次の attempt が状態を見て続きを行う)。
+    timeout-minutes: 150
 
     env:
       KS_VERSION: ${{ inputs.version }}
@@ -903,13 +906,18 @@ jobs:
 
           # 「release を送る必要があるか」を後段へ渡す。upload した直後 (検証の決着は後段の
           # step で待つ) と、前の attempt が VALIDATED のまま残した場合だけ true になる。
+          # 「公開の完了だけが残っている枠」も後段へ渡す。ここで待つと枠ごとに直列になり
+          # (もう一方の枠の step へ進めない)、上限も枠ごとに別々に効いてしまうため、
+          # この step では待たずに公開待ちの step へ引き継ぐ。
           release_needed=false
+          pending_published=""
           case "${action}" in
             skip-upload)
               release_needed=true
               ;;
             wait-published)
-              scripts/release/central-portal.sh wait-published "${deployment_id}"
+              echo "release は要求済み (公開の完了は後段でまとめて待つ): ${deployment_id}"
+              pending_published="${deployment_id}"
               ;;
             skip-all)
               echo "公開済みなので upload と release を skip する"
@@ -971,6 +979,7 @@ jobs:
           {
             echo "deployment-id=${deployment_id}"
             echo "release-needed=${release_needed}"
+            echo "pending-published-id=${pending_published}"
           } >> "$GITHUB_OUTPUT"
 
       # 抽出した ID は、publish の後半が失敗しても後始末できるよう upload の直後に保存する。
@@ -1053,13 +1062,17 @@ jobs:
             action="$(scripts/release/central-resume.sh decide "${state}")"
           fi
 
+          # 引き継ぎの扱いは Android 枠と同じ。公開の完了だけが残っている枠は、ここで待たずに
+          # 公開待ちの step へ引き継ぐ。
           release_needed=false
+          pending_published=""
           case "${action}" in
             skip-upload)
               release_needed=true
               ;;
             wait-published)
-              scripts/release/central-portal.sh wait-published "${deployment_id}"
+              echo "release は要求済み (公開の完了は後段でまとめて待つ): ${deployment_id}"
+              pending_published="${deployment_id}"
               ;;
             skip-all)
               echo "公開済みなので upload と release を skip する"
@@ -1119,6 +1132,7 @@ jobs:
           {
             echo "deployment-id=${deployment_id}"
             echo "release-needed=${release_needed}"
+            echo "pending-published-id=${pending_published}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Upload deployment ids (kmp)
@@ -1172,29 +1186,62 @@ jobs:
           done
 
       # NuGet が出たあとに Maven Central を公開する。ここで初めて Maven 側が
-      # 取り消せない状態になる。枠の順は Android → KMP で、KMP は Android の
-      # 発行物へ推移的に依存する。
-      - name: Release Maven Central deployment (android)
-        if: steps.maven-android.outputs.release-needed == 'true'
+      # 取り消せない状態になる。release の要求は Android → KMP の順で行う
+      # (KMP は Android の発行物へ推移的に依存する)。公開の完了は枠ごとに待たず、
+      # 要求した枠をまとめて次の step で待つ。
+      # 枠ごとの条件は step の if では書き分けられない (2 枠を 1 step で扱うため)
+      # ので、それぞれの release-needed を env で受けてこの中で分岐する。
+      - name: Release Maven Central deployments
+        id: maven-release
+        if: steps.maven-android.outputs.release-needed == 'true' || steps.maven-kmp.outputs.release-needed == 'true'
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          KS_DEPLOYMENT_ID: ${{ steps.maven-android.outputs.deployment-id }}
+          KS_RELEASE_NEEDED_ANDROID: ${{ steps.maven-android.outputs.release-needed }}
+          KS_RELEASE_NEEDED_KMP: ${{ steps.maven-kmp.outputs.release-needed }}
+          KS_DEPLOYMENT_ID_ANDROID: ${{ steps.maven-android.outputs.deployment-id }}
+          KS_DEPLOYMENT_ID_KMP: ${{ steps.maven-kmp.outputs.deployment-id }}
         run: |
           set -euo pipefail
-          scripts/release/central-portal.sh release "${KS_DEPLOYMENT_ID}"
-          scripts/release/central-portal.sh wait-published "${KS_DEPLOYMENT_ID}"
+          released=""
+          if [ "${KS_RELEASE_NEEDED_ANDROID:-}" = "true" ]; then
+            scripts/release/central-portal.sh release "${KS_DEPLOYMENT_ID_ANDROID}"
+            released="${KS_DEPLOYMENT_ID_ANDROID}"
+          fi
+          if [ "${KS_RELEASE_NEEDED_KMP:-}" = "true" ]; then
+            scripts/release/central-portal.sh release "${KS_DEPLOYMENT_ID_KMP}"
+            released="${released}${released:+ }${KS_DEPLOYMENT_ID_KMP}"
+          fi
+          # 公開を待つ枠を後段へ渡す。release を要求した枠だけが並ぶ。
+          echo "released-deployment-ids=${released}" >> "${GITHUB_OUTPUT}"
 
-      - name: Release Maven Central deployment (kmp)
-        if: steps.maven-kmp.outputs.release-needed == 'true'
+      # release の受理から Maven Central への同期完了までは長い (初回リリース
+      # 2026-09-10 の実測で Android 枠 約 60 分 / KMP 枠 27 分)。枠ごとに直列で待つと
+      # 足し算になるため、公開待ちはこの step 1 本にまとめ、1 回のポーリングで全枠を
+      # 見る。上限 (遅い方 1 枠分に余裕を持たせた 90 分) は central-portal.sh が既定で
+      # 持つので、ここでは指定しない。
+      # 待つ対象は 2 通りある。この attempt で release を要求した枠と、前の attempt が
+      # release まで済ませて公開待ちだけが残った枠 (再実行でここへ来る) で、後者は
+      # release を送り直さないため release-needed には現れない。
+      - name: Wait for Maven Central deployments to be published
+        if: >-
+          steps.maven-release.outputs.released-deployment-ids != ''
+          || steps.maven-android.outputs.pending-published-id != ''
+          || steps.maven-kmp.outputs.pending-published-id != ''
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          KS_DEPLOYMENT_ID: ${{ steps.maven-kmp.outputs.deployment-id }}
+          KS_RELEASED_DEPLOYMENT_IDS: ${{ steps.maven-release.outputs.released-deployment-ids }}
+          KS_PENDING_PUBLISHED_ANDROID: ${{ steps.maven-android.outputs.pending-published-id }}
+          KS_PENDING_PUBLISHED_KMP: ${{ steps.maven-kmp.outputs.pending-published-id }}
         run: |
           set -euo pipefail
-          scripts/release/central-portal.sh release "${KS_DEPLOYMENT_ID}"
-          scripts/release/central-portal.sh wait-published "${KS_DEPLOYMENT_ID}"
+          ids="${KS_RELEASED_DEPLOYMENT_IDS} ${KS_PENDING_PUBLISHED_ANDROID} ${KS_PENDING_PUBLISHED_KMP}"
+          echo "公開を待つ deployment: ${ids}"
+          # deployment ID は空白を含まないので、語の分割でそのまま引数に開く
+          # (空の枠は分割で消える)。
+          # shellcheck disable=SC2086
+          scripts/release/central-portal.sh wait-published ${ids}
 
       - name: Push monorepo tag
         if: steps.state.outputs.publish-needed == 'true'

@@ -26,7 +26,20 @@ Whether you call through a shared entry or through an injected contract, you rea
 
 ## Setup
 
-Add `https://github.com/kamusoft/KsDialogs-SPM` as a Swift Package dependency, select the `KsDialogs` product, and link it to an iOS 17 or later target using a Swift 6.3 or later toolchain. Import `KsDialogs` where you use the library.
+Add `https://github.com/kamusoft/KsDialogs-SPM` as a Swift package dependency over https, and pin it with `exact` to a published tag. A tag is the version string itself — `X.Y.Z` for a release, `X.Y.Z-alpha.N` / `X.Y.Z-beta.N` / `X.Y.Z-rc.N` for a prerelease. Pin with `exact` rather than `from`, which does not resolve prerelease tags.
+
+The package identity is `KsDialogs-SPM` and the product to link is `KsDialogs`. Link it to an iOS 17 or later target built with a Swift 6.3 or later toolchain; the library itself is compiled in Swift 6 language mode. Import `KsDialogs` where you use the library.
+
+The version in the declaration below is the current release and is updated with every release.
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/kamusoft/KsDialogs-SPM",
+        exact: "0.1.0-beta.1"
+    )
+]
+```
 
 ## Minimal example
 

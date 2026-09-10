@@ -52,7 +52,7 @@ KMP artifact は Android View 系 artifact `jp.kamusoft:ksdialogs-core` を推�
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:<version>")
+    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
     implementation("androidx.compose.foundation:foundation:1.8.1")
 }
 ```

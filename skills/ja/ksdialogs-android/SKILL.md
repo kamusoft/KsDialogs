@@ -28,13 +28,13 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 
 ## セットアップ
 
-この artifact は Kotlin 2.4.10 でビルドしており、サポートするのは同じ minor 系列 (2.4.x)、minSdk は 24 以降である。`jp.kamusoft:ksdialogs-core` (Android View 系) と `jp.kamusoft:ksdialogs` (Jetpack Compose) は公開予定の coordinate で、Maven Central へはまだ公開していない。以下の `<version>` は release version に置き換える。
+この artifact は Maven Central の group `jp.kamusoft` で公開している。ビルドに使っている Kotlin は 2.4.10 で、利用者側の Kotlin Gradle Plugin も同じ minor 系列 (2.4.x) を前提とする。最低対象 OS は Android 7.0 (API 24)。`jp.kamusoft:ksdialogs-core` は Android View 系の API を持ち Compose には依存せず、`jp.kamusoft:ksdialogs` は Jetpack Compose 系の API を持ち基本 artifact に同版で依存するため、基本 artifact は推移で届く。release version は `X.Y.Z`、prerelease は `X.Y.Z-{alpha|beta|rc}.N` の形で、以下の例の version は公開済みの最新 release に追従する。
 
 View-only の Android アプリでは、基本 artifact だけを宣言する。
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-core:<version>")
+    implementation("jp.kamusoft:ksdialogs-core:0.1.0-beta.1")
 }
 ```
 
@@ -42,7 +42,7 @@ Compose アプリでは Compose artifact だけを宣言する。基本 artifact
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:<version>")
+    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
     val composeBom = platform("androidx.compose:compose-bom:2025.05.00")
     implementation(composeBom)
     implementation("androidx.compose.foundation:foundation")

@@ -40,7 +40,7 @@ Content registration lives in the hosts because the content type differs per OS.
 
 The current artifact is built with Kotlin 2.4.10 and Gradle 9.7.0. The Android target requires API 24 or later; the iOS target requires iOS 17 or later and Swift tools 6.3. A consumer Kotlin Gradle Plugin on the same minor line (2.4.x) is supported, and 2.4.10 is the verified version. The SwiftPM import that carries the iOS linkage is an Alpha feature of Kotlin 2.4, so no wider range is promised.
 
-`jp.kamusoft:ksdialogs-kmp` is the planned public coordinate; it is not published to Maven Central yet. Replace `<version>` below with the release version.
+`jp.kamusoft:ksdialogs-kmp` is published to Maven Central, and the Swift package that the iOS host links is published in the distribution repository `https://github.com/kamusoft/KsDialogs-SPM` (package identity `KsDialogs-SPM`, product `KsDialogs`). Both go out under one and the same version string, so the Maven dependency in the shared module and the package entry in Xcode state the same version. The version in the examples below is the released one.
 
 ### Shared module
 
@@ -50,7 +50,7 @@ Add one Maven dependency to `commonMain` in the shared module's `build.gradle.kt
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api("jp.kamusoft:ksdialogs-kmp:<version>")
+            api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")
         }
     }
 }
@@ -60,15 +60,15 @@ Declare it with `api` rather than `implementation`: a shared view model derives 
 
 ### Android host
 
-The KMP artifact brings the Android Views artifact `jp.kamusoft:ksdialogs-core` in transitively, so the Android application registers content with `Dialog.instance.registry`, `Loading.instance.registry`, and `Toast.instance.registry`. Compose content needs the Compose artifact as well. See [Android host](references/android-host.md).
+The KMP artifact brings the Android Views artifact `jp.kamusoft:ksdialogs-core` in transitively, so the Android application registers content with `Dialog.instance.registry`, `Loading.instance.registry`, and `Toast.instance.registry`. The Compose artifact `jp.kamusoft:ksdialogs` does not arrive that way, so add it in the Android application when the content is written in Compose. See [Android host](references/android-host.md).
 
 ### iOS host
 
 Prerequisite: finish the standard KMP iOS integration that builds and links the shared module's framework from the Xcode project.
 
-1. Add the single `jp.kamusoft:ksdialogs-kmp:<version>` Maven dependency to the shared module as shown above.
+1. Add the single `jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1` Maven dependency to the shared module as shown above.
 2. Run `integrateLinkagePackage` once with the Xcode project path, then include the generated `KotlinMultiplatformLinkedPackage/` in version control.
-3. Add `https://github.com/kamusoft/KsDialogs-SPM` to Xcode Package Dependencies and link its `KsDialogs` product to the application target.
+3. Add `https://github.com/kamusoft/KsDialogs-SPM` to Xcode Package Dependencies, pinned to that same version as an exact requirement, and link its `KsDialogs` product to the application target.
 
 ```bash
 XCODEPROJ_PATH="$PWD/iosApp/MyApp.xcodeproj" \

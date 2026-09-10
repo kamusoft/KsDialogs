@@ -44,10 +44,10 @@ KsDialogs.Maui は AiForms.Maui.Dialogs を、Dialog の結果型・factory に�
 
 ## 導入
 
-`AiForms.Maui.Dialogs` package を外し、.NET 10 の MAUI project に `KsDialogs.Maui` を追加する。package は NuGet にまだ公開していないため、下の `<version>` は入手した package の version を指す。`using AiForms.Dialogs;` は `using KsDialogs;` へ置き換える。
+`AiForms.Maui.Dialogs` package を外し、.NET 10 の MAUI project に nuget.org の `KsDialogs.Maui` を追加する。project に書く参照はこれだけでよい。native 側を運ぶ binding package `KsDialogs.Binding.iOS` と `KsDialogs.Binding.Android` は iOS / Android の target framework で推移的に届くので、直接参照しない。`using AiForms.Dialogs;` は `using KsDialogs;` へ置き換える。
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="<version>" />
+<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
 ```
 
 project には `Microsoft.Maui.Controls` 10.0.20 以降も要る。これはライブラリ側がビルドとテストに使う .NET workload set 同梱の version なので、同じ workload set の project なら version を書かなくてよい。それより古い version (10.0.20 未満) を明示すると restore が NU1605 (NuGet の package ダウングレードのエラー) を報告する。.NET SDK は iOS / Android の MAUI workload を入れた .NET 10 を使う。KsDialogs.Maui は iOS 17.0 以降と Android 7.0 (API 24) 以降に対応し、これを下回る `SupportedOSPlatformVersion` は、SDK の既定値が下回る未設定の場合も含めて、ビルドを `KSDLG0001` のエラーで止める。

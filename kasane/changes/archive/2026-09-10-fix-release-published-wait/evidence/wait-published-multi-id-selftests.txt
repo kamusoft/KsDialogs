@@ -1,0 +1,105 @@
+wait-published の複数 ID 対応と上限の自己テスト (実行日 2026-09-10)
+
+すべて手元で実行。--selftest は HTTP 送信関数をモックへ差し替えるため、ネットワークにも
+実レジストリにも出ない。判定行だけを残した抜粋 (括弧内の詳細は長いので落とした)。
+
+### 1. scripts/release/central-portal.sh --selftest  (exit 0、OK 60 件 / NG 0 件)
+
+新規に足した検査 (抜粋):
+
+[wait-published]
+  OK   検証待ちの上限は公開待ちに効かない
+[wait-published の複数 ID]
+  OK   2 件が別々のタイミングで PUBLISHED になれば成功する
+  OK   1 ループで全枠を照会する (直列なら 2 件目も aaa になる)
+  OK   公開済みの枠は次のループで照会しない
+  OK   残った枠だけを照会し続ける
+  OK   2 件のうち 1 件が FAILED なら失敗する
+  OK   FAILED を見つけた時点で止まる
+  OK   2 件とも未公開のまま上限を過ぎれば失敗する
+
+複数 ID の台本は PUBLISHING, PUBLISHING, PUBLISHED, PUBLISHING, PUBLISHED で、
+照会順は aaa, bbb, aaa, bbb, bbb になる。並行と直列を分ける観測点は 2 件目の照会
+(直列に待ち切る実装なら 2 件目も aaa)。照会の総数 (5 件) と最後の ID (bbb) は
+直列実装でも一致するため、件数や末尾だけでは両者を分けられない。
+
+### 2. 逆対照 A: 単一 ID 版 (先頭の ID しか見ない写し) で同じ自己テストを回す  (NG 5 件)
+
+cmd_wait_published の待機対象を `("$@")` から `("$1")` へ戻した写し (複数 ID 対応の
+前と同じ挙動)。
+
+[wait-published の複数 ID]
+  OK   2 件が別々のタイミングで PUBLISHED になれば成功する
+  NG   1 ループで全枠を照会する (直列なら 2 件目も aaa になる)
+  NG   公開済みの枠は次のループで照会しない
+  NG   残った枠だけを照会し続ける
+  NG   2 件のうち 1 件が FAILED なら失敗する
+  NG   FAILED を見つけた時点で止まる
+  OK   2 件とも未公開のまま上限を過ぎれば失敗する
+
+(「2 件とも未公開のまま上限を過ぎれば失敗する」だけは単一 ID 実装でも通る。
+ 上限の扱いは複数 ID 対応と独立なので、退行の見張りとして残している)
+
+### 3. 逆対照 B: 直列版 (ID ごとに公開まで待ち切る写し) で同じ自己テストを回す  (NG 1 件)
+
+cmd_wait_published を `for id in "$@"; do while :; do ... done; done` の形へ
+差し替えた写し。並行待ちを外しても複数 ID は扱えるため、分かれるのは観測点を
+2 件目の照会に置いた 1 件だけになる。
+
+[wait-published の複数 ID]
+  OK   2 件が別々のタイミングで PUBLISHED になれば成功する
+  NG   1 ループで全枠を照会する (直列なら 2 件目も aaa になる)
+  OK   公開済みの枠は次のループで照会しない
+  OK   残った枠だけを照会し続ける
+  OK   2 件のうち 1 件が FAILED なら失敗する
+  OK   FAILED を見つけた時点で止まる
+  OK   2 件とも未公開のまま上限を過ぎれば失敗する
+
+(「公開済みを外さず毎ループ全件を照会する」写しも作って回したが、この台本を
+ 使い切っても待機対象が減らないため終わらない。上限の既定 5400 秒まで回り続けるので
+ 判定行が出ず、対照として並べられない。この実装が検査群を通らないことは同じ)
+
+### 4. 逆対照 C: 上限の変数を分けていない版で同じ自己テストを回す  (NG 1 件)
+
+公開待ちの上限を検証待ちと同じ `KSR_POLL_TIMEOUT_SECONDS` (既定 1800) から取り、
+自己テスト側の上限指定も同じ変数に戻した写し。公開待ち専用の変数
+`KSR_PUBLISHED_TIMEOUT_SECONDS` (既定 5400) を持つかどうかで分かれる。
+
+[wait-published]
+  OK   上限を過ぎれば失敗する
+  NG   検証待ちの上限は公開待ちに効かない
+
+### 5. scripts/release/ の全スクリプトの自己テスト
+
+scripts/release/central-portal.sh: exit 0 / OK 60 件 / NG 0 件
+scripts/release/central-resume.sh: exit 0 / OK 20 件 / NG 0 件
+scripts/release/check-distribution-tag.sh: exit 0 / OK 9 件 / NG 0 件
+scripts/release/check-nuget-version.sh: exit 0 / OK 16 件 / NG 0 件
+scripts/release/check-resume-eligibility.sh: exit 0 / OK 38 件 / NG 0 件
+scripts/release/check-signatures.sh: exit 0 / OK 12 件 / NG 0 件
+scripts/release/compare-maven-artifacts.sh: exit 0 / OK 12 件 / NG 0 件
+scripts/release/wait-for-registries.sh: exit 0 / OK 10 件 / NG 0 件
+
+shellcheck scripts/release/central-portal.sh: exit 0
+
+### 6. actionlint .github/workflows/release.yml
+
+変更後に報告されるのは info / style の 3 件だけで、変更前 (HEAD) と同一。error は 0 件。
+公開待ちを 1 本へ寄せた step からの指摘は無い (語の分割は shellcheck disable=SC2086
+を添えている)。
+
+  release.yml:347  SC2012:info  Use find instead of ls ...   (変更前から)
+  release.yml:569  SC2012:info  Use find instead of ls ...   (変更前から)
+  release.yml:1292 SC2001:style See if you can use ${variable//search/replace} ...  (変更前は 1245 行、内容同一)
+
+### 7. lint 群
+
+scripts/local-path-lint.py: exit 0
+scripts/identity-lint.py: exit 0
+scripts/comment-policy-lint.py: exit 0
+scripts/ci-skip-lint.py: exit 0
+scripts/readme-example-lint.py: exit 0
+scripts/doc-structure-lint.py --paths kasane/handbook/cross/release-procedure.md: 違反なし (exit 0)
+
+(リポジトリ全体の doc-structure-lint は変更前から exit 1。指摘は今回触っていない
+ roadmap / agenda の既存分で、変更の前後で同一)

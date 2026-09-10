@@ -149,11 +149,63 @@ version の注入と SNAPSHOT ガードは android/ に配線済み (cross/ADR-0
 | docs-refresh の内容 (MAUI 分) | README 互換表と導入節、skills `ksdialogs-maui` / `ksdialogs-aiforms-migration` に、MAUI 10.0.20 以上 (同じ workload set なら版を書かなくてよい・古い版を書くと NU1605)・最低 OS 版 iOS 17 / Android 24 とガード `KSDLG0001`・API 版付き TFM の SDK 要件・失敗種別 `ViewCreationFailed` を反映する。phase-5 の Android 座標分と 1 回の依頼にまとめる |
 | 配布構成の concepts 化 | MAUI の 3 パッケージ構成・pack 経路・最低 OS ガード・SDK 更新時の再検証箇所 (manifest 絶対パス・API 版付き TFM・自 assembly 用 aar の有無) は、phase-5 の Native 配布経路 (SwiftPM スナップショット・Maven 発行・版の導出) と併せて phase-9 の蒸留で置き場 (`<platform>/api/` に収めるか新カテゴリか) を決める。現時点の記述は maui/ADR-0004 の現行照合 footer と handbook local-development-setup.md が持つ |
 
+### 実装結果と蒸留への申し送り (2026-09-10)
+
+change add-release-workflow の実装で初回リリース `0.1.0-beta.1` まで到達した (release run 34449418361、試行 2 回で完了)。証跡は change の `evidence/` (dispatch-validate-and-dry-run.txt / main-branch-protection.txt / release-pr-and-dispatch.txt / central-portal-upload-probe.txt)。
+
+**所要時間の実測** (macos-26 の同時実行上限 5 の待ちを含む):
+
+| 段 | 所要 |
+|---|---|
+| dry-run 本番 (validate → 本体検証 5 ∥ package 3 → 消費者 dry-run 4) | 17 分 49 秒 (最長は maui / verify 17 分 31 秒) |
+| main 宛て PR の検証 CI 10 job | 17 分 20 秒 |
+| publish 試行 1 回目 (Android upload → tag → KMP 発行 → NuGet → Android release まで) | 38 分 (うち Android 枠の PUBLISHED 待ちが上限 30 分で失敗) |
+| Central の同期 (release 要求 → repo1 に POM) | Android 枠 約 60 分 / KMP 枠 27 分 29 秒 |
+| publish 試行 2 回目 (KMP 再ビルド + upload + 検証 約 6 分 + KMP release 待ち) | 34 分 |
+| 反映待ち + smoke 4 本 | 10 分 (最長 smoke-maui 9 分 26 秒) |
+| 壁時計の合計 (手動の同期待ち 14 分を含む) | 約 1 時間 54 分 |
+
+**申し送り** (蒸留と後続 change):
+
+| 項目 | 内容 |
+|---|---|
+| cross/ADR-0024 の accepted 昇格 | design Decision 1 / 2 / 4 のとおり実装。Decision 3 の「package-android も publish と同じ macOS で作る」を 1 文追記 (蒸留時に判断) |
+| PUBLISHED 待ちの上限 (要 change) | `central-portal.sh wait-published` の上限 30 分 (翻案元の実測 11 分が根拠) は初回公開の同期に足りず、Android 枠で失敗 → 同じ run の再実行で整合した (spec の Scenario どおり)。KMP 枠は 27 分 29 秒で上限の内側。直し方は「上限と job timeout (120 分) を伸ばす」か「2 枠の release を先に両方要求してから並行で待つ (壁時計が半分)」で、実測値を根拠に探索で決める。main 保護済みのため develop → リリース PR の経路で入る |
+| Portal の表示名 | Android 枠も KMP 枠も deployment 名が `jp.kamusoft-<version>` (複数 publication の bundle は artifactId が落ちる) で一覧で見分けられない。handbook release-procedure「失敗したとき」に「枠の区別は Summarize の deployment ID で行う」を 1 文足す |
+| 配布構成の concepts 化 | phase-6 / 7 の申し送りと docs-refresh 1 回目の drift 所見のとおり。release workflow の段構成・2 枠 deployment・marker による再実行判定・version 置換の自動化 (README は「最新の公開版」を指す) を含める |
+| docs-refresh 2 回目 | README 2 枚と Skill 10 箇所の「まだ公開していない」「`<version>` を置き換える」という散文が、置換 commit 87b7cf7 でコード例が実値になったため矛盾している。「未配信」表記の解除と配布構成の反映 (R5) |
+| 自己テストと actionlint の lint job 搭載 | `scripts/release/*.sh --selftest` と `set-readme-version.py --selftest` は数秒・ネットワーク不要。`actionlint` も CI から呼ばれておらず workflow の構文退行を CI で検出できない (fix-release-published-wait の発見)。cross/ADR-0022 の lint job の検査集合を一部改訂 (tasks 2.5 の検討結果、review-001 Suggestion) |
+| monorepo tag の別 commit 検出 | `release.yml` の validate と publish の tag 照合だけが自己テストを持たない (verify-001 所見)。スクリプト化するなら上の change に同梱 |
+| KsSettingsView への逆流 | R4 (workflow による version 置換) と、翻案で見つけた `check-signatures.sh` の自己テストの無言終了 (`$( ... \|\| true )` の形で `exit` がサブシェルを終える) と `.github/release.yml` のラベル 6 件が未作成な点 (ロードマップ外で起票) |
+| 蒸留後の docs-refresh 2 回目と、phase-9 の完了 | roadmap のゴール「tag は publish 全成功後にのみ生まれる」は monorepo の tag について成り立ち、配信リポジトリの tag は KMP 発行の前に生まれる例外 (ADR-0024) として ksn-roadmap で 1 行直す |
+
+### 蒸留の反映 (2026-09-10 反映)
+
+change add-release-workflow と fix-release-published-wait を 2026-09-10 に蒸留し archive した (`kasane/changes/archive/2026-09-10-add-release-workflow/`、`.../2026-09-10-fix-release-published-wait/`)。cross/ADR-0024 は accepted (0016 を一部改訂)。上の申し送り表の受け皿は次のとおり。
+
+| 申し送り | 受け皿 |
+|---|---|
+| cross/ADR-0024 の accepted 昇格 (Decision 3 の 1 文を含む) | 完了 (蒸留) |
+| PUBLISHED 待ちの上限 | 完了 (fix-release-published-wait、S 級) |
+| Portal の表示名 | 完了 (同 change で handbook release-procedure に 1 文) |
+| 配布構成の concepts 化 | 完了 (concepts cross/architecture/distribution-artifacts.md と release-workflow.md を新設) |
+| docs-refresh 2 回目 | 蒸留後にオーナーが依頼して起動する (下の TODO)。「未配信」表記の解除と配布構成 concepts の反映 |
+| 自己テストと actionlint の lint job 搭載 | 簡易起票 `kasane/changes/add-release-script-selftests-to-lint/` (cross/ADR-0022 の一部改訂を含む) |
+| monorepo tag の別 commit 検出 | 同上に同梱 |
+| KsSettingsView への逆流 | `kasane/outbox/KsSettingsView/2026-09-10-release-workflow-fixes-and-improvements.md` (kind: change。相手側の判断に委ねる) |
+| ロードマップのゴール文の読み替え | 完了 (roadmap.md のゴール 2 行目を monorepo の tag に限定) |
+
+fix-release-published-wait の review-002 Suggestion のうち「FAILED 時に他の枠の状態を出力する」は見送り (Portal 一覧と Summarize の deployment ID で運用が成立し、実装の価値が小さい)。
+
 ## TODO
 
 - [x] 論点の解消 (R1〜R7、2026-09-10 決定)
 - [x] docs-refresh 1 回目 (2026-09-10 完了): 旧 Android 座標 16 箇所を新座標へ、MAUI 分 (10.0.20・`KSDLG0001`・`ViewCreationFailed`) と KMP 分 (`api` スコープ・Kotlin 同 minor) を反映。API 版付き TFM 名は利用者向け文書に書かない (SDK 更新で腐るため、オーナー判断)。drift 所見: KMP 消費者の Android ホストへ推移的に届くもの (`ksdialogs-core` は自動、Compose 系は別途) と共有コード側の `api` スコープの根拠、MAUI の下限版 / `KSDLG0001` は concepts に無い (skills だけが持つ状態) → 蒸留の配布構成 concepts 化に含める
 - [ ] docs-refresh 2 回目 (初回リリース後の蒸留の後): 「未配信」表記の解除と配布構成 concepts の反映 (R5)
-- [ ] MAUI の nupkg 名検査 (package / publish の 2 回) と XML ドキュメントの明示 (facade true / binding false) を release の change に含める (R6)
-- [ ] ksn-propose で変更提案を起こす (docs-refresh 1 回目の後。cross/ADR-0024 proposed を design の Decision に反映)
-- [ ] KsSettingsView 側へ R4 (release workflow による version 置換) を逆流させる作業を、このロードマップの外で起票する (phase-9 の実装後)
+- [x] MAUI の nupkg 名検査 (package / publish の 2 回) と XML ドキュメントの明示 (facade true / binding false) を release の change に含める (R6) (add-release-workflow で実装)
+- [x] ksn-propose で変更提案を起こす (docs-refresh 1 回目の後。cross/ADR-0024 proposed を design の Decision に反映) (2026-09-10 完了)
+- [x] KsSettingsView 側へ R4 (release workflow による version 置換) を逆流させる作業を、このロードマップの外で起票する (phase-9 の実装後) (2026-09-10: outbox の知らせとして送付。起票は KsSettingsView 側の判断)
+- [x] change add-release-workflow の実装と初回リリース `0.1.0-beta.1` (2026-09-10 完了。詳細は上の「実装結果と蒸留への申し送り」)
+- [x] 蒸留 (ksn-distill): cross/ADR-0024 の accepted、配布構成の concepts 化、lessons の昇格判定 (2026-09-10 完了。上の「蒸留の反映」)
+- [x] PUBLISHED 待ちの上限の change: fix-release-published-wait (S 級、2026-09-10 完了。2 枠の公開待ちを 1 本・並行・上限 90 分に、job timeout 150 分。次のリリース PR で main へ)
+- [ ] 蒸留後: docs-refresh 2 回目 (R5)

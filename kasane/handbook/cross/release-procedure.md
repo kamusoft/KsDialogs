@@ -20,12 +20,12 @@ timestamp: 2026-09-10
 
 | ブランチ | 先端が表すもの |
 |---|---|
-| `develop` | 開発の最新。リポジトリの既定ブランチ。ローカルの作業ブランチをローカルでマージして直接 push する。push のたびに検証 CI (lint + 本体検証 5 job) が事後検証として走り、失敗は通知で拾う |
-| `main` | 最新リリース、またはリリース進行中 (リリース PR のマージ後、publish 成功まで) のリリース候補 |
+| `develop` | 開発の最新。ローカルの作業ブランチをローカルでマージして直接 push する。push のたびに検証 CI (lint + 本体検証 5 job) が事後検証として走り、失敗は通知で拾う |
+| `main` | 最新リリース、またはリリース進行中 (リリース PR のマージ後、publish 成功まで) のリリース候補。リポジトリの既定ブランチ (cross/ADR-0025) |
 
 `main` へ入るのは `develop` からの pull request だけで、それ以外の head は CI の lint job が失敗させる。この pull request では lint と本体検証 5 job に加えて消費者検証 4 job が走り、10 件すべてが `main` の必須 status check になる。リリースの起動も `main` に限られる。
 
-既定ブランチは `develop` のままにする (cross/ADR-0016)。`develop` には必須 status check も pull request の必須化も付けない (force-push 禁止と削除禁止だけ)。開発者 1 人が直接 push する運用に合わせた設定である。
+既定ブランチは `main` で、利用者がリポジトリを開いたときに最新リリースの README が見える (cross/ADR-0025)。`develop` には必須 status check も pull request の必須化も付けない (force-push 禁止と削除禁止だけ)。開発者 1 人が直接 push する運用に合わせた設定である。
 
 ## 初回だけ行う設定
 
@@ -72,7 +72,7 @@ gh api -X PUT repos/kamusoft/KsDialogs/branches/main/protection --input - <<'JSO
 JSON
 ```
 
-`app_id` 15368 は GitHub Actions を指す。これを省くと同名の check を出す他のアプリでも必須が満たせてしまう。設定後に `gh api repos/kamusoft/KsDialogs/branches/main/protection` を読み直して 10 件が並ぶことを確かめる。既定ブランチは切り替えないので、`main` 宛ての pull request は base を明示して作る。
+`app_id` 15368 は GitHub Actions を指す。これを省くと同名の check を出す他のアプリでも必須が満たせてしまう。設定後に `gh api repos/kamusoft/KsDialogs/branches/main/protection` を読み直して 10 件が並ぶことを確かめ、既定ブランチを `main` に切り替える (`gh api -X PATCH repos/kamusoft/KsDialogs -f default_branch=main`)。
 
 ### 配信リポジトリの deploy key
 
@@ -142,7 +142,9 @@ gh workflow run release.yml --ref main -f version=<version>
 gh run watch "$(gh run list --workflow=release.yml --limit 1 --json databaseId --jq '.[0].databaseId')"
 ```
 
-publish は 1 つの job で直列に進み、配信リポジトリへの commit → Android の Maven upload と検証待ち → 配信リポジトリの tag → KMP の発行と upload と検証待ち → nuget.org への push → Maven Central の release 2 件 → monorepo の tag と Release → `develop` へのインストール例の反映、の順になる。検証待ち (上限 30 分) を通らなければ nuget.org へ push する前に止まる。
+publish は 1 つの job で直列に進み、配信リポジトリへの commit → Android の Maven upload と検証待ち → 配信リポジトリの tag → KMP の発行と upload と検証待ち → nuget.org への push → Maven Central の release 2 件 (Android → KMP の順) を要求してから 2 枠の公開をまとめて待つ (上限 90 分) → monorepo の tag と Release → `develop` へのインストール例の反映、の順になる。検証待ち (上限 30 分) を通らなければ nuget.org へ push する前に止まる。
+
+所要時間の目安は初回リリース (`0.1.0-beta.1`、2026-09-10) の実測で、dry-run 段 (validate → 本体検証 5 ∥ package 3 → 消費者 dry-run 4) まで約 18 分、publish は Central の公開待ちが支配的で Android 枠が約 60 分・KMP 枠が約 27 分、反映待ちと smoke 4 本で約 10 分、壁時計は再実行を含めて約 2 時間だった。publish job の timeout 150 分は本体の作業約 16 分と公開待ちの上限 90 分を足した実測ベースの予算で、待ちがすべて上限まで伸びる最悪ケースは job timeout で止めて再実行に回す。
 
 ### 公開後の確認
 
@@ -171,10 +173,11 @@ publish の各ステップは冪等なので、原因を取り除いてから **
 | KMP の Maven upload / 検証 | Android 枠と同じ分岐。Android 枠の保留 deployment は失敗経路の後始末で drop される |
 | nuget.org の push | 公開済みのパッケージは skip される |
 | Maven の release | 枠ごとに保留中の deployment を release する。応答を取りこぼして PUBLISHING のまま残った枠は、公開の完了を待つだけで release を送り直さない |
+| Maven の公開待ち (上限超過) | 公開処理中の deployment は削除できないので ID が残る。次の attempt は release を送り直さず、2 枠まとめて公開の完了を待つ step へ回す (待ちは再実行でも 1 本で、上限は同じ 90 分) |
 | tag / Release | 同じ内容の tag は skip、別内容なら失敗する。monorepo の tag が起動 commit にある再実行は、レジストリと配信リポジトリへの publish だけを skip し、Release の作成とインストール例の反映は続けて行う (Release が既にあれば本文には触れない) |
 | `develop` へのインストール例の反映 | この step の失敗は release を失敗にしない (置換・lint・git 操作のどれが落ちても要約に警告が出るだけ)。次のリリースで追いつく |
 
-保留中の deployment は Android / KMP の 2 枠あり、失敗経路の後始末で削除できる状態 (VALIDATED / FAILED) のものが drop される。削除できない状態 (検証中か公開処理中) のときは何もせず理由が出て ID もそのまま残る (次の attempt がその状態を見て続きを行う)。状態は [Central Portal の deployment 一覧](https://central.sonatype.com/publishing/deployments) で見る。手で操作するときは次を使う。
+保留中の deployment は Android / KMP の 2 枠あり、失敗経路の後始末で削除できる状態 (VALIDATED / FAILED) のものが drop される。削除できない状態 (検証中か公開処理中) のときは何もせず理由が出て ID もそのまま残る (次の attempt がその状態を見て続きを行う)。状態は [Central Portal の deployment 一覧](https://central.sonatype.com/publishing/deployments) で見る。一覧では 2 枠の deployment がどちらも `jp.kamusoft-<version>` の名前で並び、表示名では見分けられない。枠 (Android / KMP) の区別は publish job の Summarize が出す deployment ID の行で行う。手で操作するときは次を使う。
 
 ```bash
 export MAVEN_CENTRAL_USERNAME=... MAVEN_CENTRAL_PASSWORD=...
