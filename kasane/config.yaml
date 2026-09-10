@@ -162,3 +162,10 @@ evolve:
     - ../Kasane                  # ksn-* ハーネス本体
     - ../KsSkills                # 汎用スキル群 (csharp-impl / kotlin-impl / swift-ui 等)
   promote-projects: 2            # スキル反映の閾値 (昇格済みプロジェクト数)
+
+# 関連リポジトリ (ksn-core references/relations.md)。相手は ../<リポジトリ名>/ で解決する
+relations:
+  - repo: KsSettingsView
+    kind: sibling
+    note: "AiForms.Maui.SettingsView のリブランド。同じ Native + MAUI 構成・CI / 消費者検証 / sample / skills の運用を共有"
+    overlap: [.github, scripts, samples, verification, skills]
