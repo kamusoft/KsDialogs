@@ -1,0 +1,30 @@
+main の作成と branch protection (tasks 6.1。実行日 2026-09-10、handbook cross/release-procedure.md「main の作成と保護」の手順どおり)
+
+  $ gh api -X POST repos/kamusoft/KsDialogs/git/refs -f ref=refs/heads/main -f sha=<develop の先端>
+  refs/heads/main d70bfbe83efddec24295dc1b6e7f9ca4e4ac71b9   (= develop の先端。dry-run 予行 (5.4) を通した commit)
+
+  $ gh api -X PUT repos/kamusoft/KsDialogs/branches/main/protection --input - <<JSON  (手順書の完全な payload)
+  $ gh api repos/kamusoft/KsDialogs/branches/main/protection  (読み直し)
+  {
+    "checks": [
+      "lint (app 15368)",
+      "ios / verify (app 15368)",
+      "android / verify (app 15368)",
+      "android-instrumented / verify (app 15368)",
+      "kmp / verify (app 15368)",
+      "maui / verify (app 15368)",
+      "consumer-ios / verify (app 15368)",
+      "consumer-android / verify (app 15368)",
+      "consumer-maui / verify (app 15368)",
+      "consumer-kmp / verify (app 15368)"
+    ],
+    "strict": false,
+    "enforce_admins": false,
+    "approvals": 0,
+    "force_push": false,
+    "deletions": false
+  }
+  $ gh api repos/kamusoft/KsDialogs --jq .default_branch
+  develop   (既定ブランチは切り替えない。cross/ADR-0016)
+
+develop の保護は触っていない。

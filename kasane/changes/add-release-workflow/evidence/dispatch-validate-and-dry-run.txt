@@ -1,0 +1,59 @@
+release workflow の dispatch による検証 (tasks 5.3 / 5.4。実行日 2026-09-10、develop = d70bfbe)
+
+# 5.3 validate の負ケース (dry-run: true、起動ブランチ develop)
+
+| version | run | 結果 |
+|---|---|---|
+| 1.0 | 34445809593 | validate 失敗: version の形式が不正: 1.0 (X.Y.Z または X.Y.Z-{alpha|beta|rc}.N、先頭ゼロ不可) |
+| v1.0.0 | 34445818211 | validate 失敗 (同上のメッセージ) |
+| 1.0.0-pre.1 | 34445822992 | validate 失敗 (同上) |
+| 1.0.0-SNAPSHOT | 34445852865 | validate 失敗 (同上) |
+| 01.0.0 | 34446006571 | validate 失敗 (同上)。初回 dispatch (34445857636) は待ち行列で後続の dispatch に取り消された (concurrency の契約どおり) ため再 dispatch |
+| 1.0.0-beta.01 | 34445862360 | validate 失敗 (同上) |
+
+validate job の step (34445809593): Set up job → **Validate inputs (failure)** → Checkout (skipped) →
+Verify monorepo tag (skipped) → Verify distribution repository tag (skipped) → Export artifact names (skipped)。
+入力検査はソースの取得より前で止まる。後続 job はすべて未実行。
+
+develop からの本番起動 (dry-run: false、version 0.1.0-beta.1、オーナーが dispatch): run 34447577188
+  validate 失敗: 本番のリリースは main からのみ起動できる (起動 ref: refs/heads/develop)
+  後続 18 job (本体検証 5 / package 3 / 消費者 dry-run 4 / publish / 反映待ち / smoke 4) はすべて skipped。
+  main は作成済み (6.1) の状態で実施 — 起動 ref が develop なので結果は main の有無に依らない。
+
+# 5.4 dry-run 本番 (version 0.1.0-beta.1、dry-run: true、develop から)
+
+run 34445897977: success。壁時計 06:35:36 → 06:53:25 (17 分 49 秒)
+
+| job | 所要 | 結果 |
+|---|---|---|
+| validate | 7 秒 | success |
+| package-ios | 5 秒 | success |
+| package-maui (macos-26) | 3 分 58 秒 | success |
+| package-android (macos-26) | 1 分 50 秒 (待ち 1 分 45 秒を含まず) | success |
+| android / verify | 1 分 29 秒 | success |
+| kmp / verify | 5 分 1 秒 | success |
+| android-instrumented / verify | 9 分 16 秒 | success |
+| ios / verify | 4 分 7 秒 (開始まで 7 分 37 秒待ち) | success |
+| maui / verify | 17 分 31 秒 | success (最長。壁時計を決めた) |
+| consumer-ios / verify | 42 秒 | success |
+| consumer-android / verify | 2 分 11 秒 | success |
+| consumer-maui / verify | 11 分 56 秒 | success |
+| consumer-kmp / verify | 5 分 49 秒 | success |
+| publish / wait-for-registries / smoke 4 | — | skipped (dry-run) |
+
+同時実行上限 (macOS) の待ち: ios / verify が 7 分 37 秒、package-android が 1 分 45 秒 開始を待った。
+
+配信先の無変化 (run 完了後に確認):
+  - develop の先端: d70bfbe のまま (置換 commit は増えていない)
+  - 配信リポジトリ KsDialogs-SPM の tag: 0.1.0 系なし
+  - nuget.org: KsDialogs.Maui の index なし (check-nuget-version.sh → exit 1)
+  - Maven Central: ksdialogs-core:0.1.0-beta.1 未公開 (central-portal.sh published → exit 1)
+
+package-maui の artifact (nupkg 6 件: 3 ID × nupkg / snupkg、いずれも 0.1.0-beta.1 の名前) の
+KsDialogs.Maui.0.1.0-beta.1.nupkg 同梱 README.md のインストール例:
+  49:        exact: "0.1.0-beta.1"
+  62:    implementation("jp.kamusoft:ksdialogs-core:0.1.0-beta.1")
+  70:    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
+  81:    <PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
+  98:            api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")
+→ 5 行すべて入力 version。散文の「replace `<version>` with ...」(54 / 74 行) は残る (docs-refresh 2 回目の範囲)。
