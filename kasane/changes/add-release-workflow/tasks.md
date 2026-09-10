@@ -45,7 +45,7 @@
 - [x] 5.3 validate の負ケース: 不正 version 6 種・`develop` からの本番起動 (dry-run false) が checkout 前に失敗することを `develop` 上の dry-run とは別に確認する (workflow の `act` が使えなければ dispatch で実測) (→ Scenario: 不正な version 形式は早期に失敗する / main 以外からの本番起動は失敗する)
 - [x] 5.3b 外部状態の再検査の負ケース: `github.run_attempt` の値と外部状態の組み合わせ (初回 + 外部状態あり + monorepo tag なし → 失敗) を、判定をスクリプト化して自己テストで示す (実レジストリでの再現はしない) (→ Scenario: 別 commit からの新規 dispatch は部分 publish を引き継がない)
 - [x] 5.4 `develop` から `dry-run: true` で `0.1.0-beta.1` を dispatch し、validate → 本体検証 5 → package 3 → 消費者 dry-run 4 が成功し、publish 以降が skip され、配信先 (配信リポジトリの tag・Central Portal の deployments・nuget.org) が変化しないこと、package-maui の nupkg 内 README が入力 version を持つこと、`develop` に commit が増えないことを確認する。各 job の所要時間を記録する (→ Scenario: dry-run 入力は publish 手前で止まる / dry-run は publish する配布物そのものを検証する / nupkg の README は入力 version を持つ)
-- [ ] 5.5 初回リリース (群 7) の実行結果で、publish の順序 (配信 tag が KMP 発行より前に存在する、2 枠の VALIDATED → NuGet → release の順)、prerelease の Release、反映待ちと smoke 4 本の成功、`develop` への置換 commit を確認する。再実行の状態分岐は 2.1b の自己テストで判別し、実レジストリでの再実行は初回で失敗が起きた場合にだけ実測する (起きなければ「実レジストリでは未実測、分岐は自己テストで確認」と deviation に明記する) (→ Scenario: KMP の発行前に配信リポジトリの tag が存在する / NuGet push の後に 2 枠が release される / prerelease の suffix で prerelease になる / 公開レジストリから 4 形態が解決される / publish 成功後に develop の README と Skill が新 version になる)
+- [x] 5.5 初回リリース (群 7) の実行結果で、publish の順序 (配信 tag が KMP 発行より前に存在する、2 枠の VALIDATED → NuGet → release の順)、prerelease の Release、反映待ちと smoke 4 本の成功、`develop` への置換 commit を確認する。再実行の状態分岐は 2.1b の自己テストで判別し、実レジストリでの再実行は初回で失敗が起きた場合にだけ実測する (起きなければ「実レジストリでは未実測、分岐は自己テストで確認」と deviation に明記する) (→ Scenario: KMP の発行前に配信リポジトリの tag が存在する / NuGet push の後に 2 枠が release される / prerelease の suffix で prerelease になる / 公開レジストリから 4 形態が解決される / publish 成功後に develop の README と Skill が新 version になる)
 
 ## 6. GitHub 設定 (オーナーの手作業、手順書 4.9 に従う)
 
@@ -56,10 +56,10 @@
 
 ## 7. 初回リリース
 
-- [ ] 7.1 リリース PR (`develop` → `main`) を開き、`main` 宛て PR の検証 CI 10 job が起動して status check 名が必須 check と一致し緑になることを確認してマージする (phase-4 / 8 の申し送りの実動確認) (→ Scenario: main 宛て PR で 10 job が起動する / 検査未通過のマージ拒否)
-- [ ] 7.2 `main` から `0.1.0-beta.1` を dispatch し (dry-run false)、完了まで見守る。失敗したら手順書「失敗したとき」に従い同じ version で再実行する (→ 群 5.5)
-- [ ] 7.3 公開後の確認: GitHub Release (prerelease) / 配信リポジトリと monorepo の tag / Maven Central の 3 座標 / nuget.org の 3 ID / `develop` の README と Skill の version。所要時間 (各 job と壁時計) を agenda の申し送りへ記録する
-- [ ] 7.4 蒸留への申し送り: cross/ADR-0024 の accepted 昇格 (Decision 3 の 1 文の追記を含む)、配布構成の concepts 化、docs-refresh 2 回目、KsSettingsView への R4 の逆流 (proposal Non-Goals)
+- [x] 7.1 リリース PR (`develop` → `main`) を開き、`main` 宛て PR の検証 CI 10 job が起動して status check 名が必須 check と一致し緑になることを確認してマージする (phase-4 / 8 の申し送りの実動確認) (→ Scenario: main 宛て PR で 10 job が起動する / 検査未通過のマージ拒否)
+- [x] 7.2 `main` から `0.1.0-beta.1` を dispatch し (dry-run false)、完了まで見守る。失敗したら手順書「失敗したとき」に従い同じ version で再実行する (→ 群 5.5)
+- [x] 7.3 公開後の確認: GitHub Release (prerelease) / 配信リポジトリと monorepo の tag / Maven Central の 3 座標 / nuget.org の 3 ID / `develop` の README と Skill の version。所要時間 (各 job と壁時計) を agenda の申し送りへ記録する
+- [x] 7.4 蒸留への申し送り: cross/ADR-0024 の accepted 昇格 (Decision 3 の 1 文の追記を含む)、配布構成の concepts 化、docs-refresh 2 回目、KsSettingsView への R4 の逆流 (proposal Non-Goals)
 
 ## 備考
 

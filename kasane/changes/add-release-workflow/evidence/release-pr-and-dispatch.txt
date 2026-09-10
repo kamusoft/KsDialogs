@@ -1,0 +1,90 @@
+リリース PR と初回リリースの dispatch (tasks 7.1 / 7.2。実行日 2026-09-10)
+
+# 7.1 リリース PR (develop → main)
+
+  PR #2 "release: 0.1.0-beta.1"。head = develop 737bf95、base = main (d70bfbe から作成、6.1)
+  main 宛て PR の検証 CI run 34447644907: success (06:58:10 → 07:15:30、17 分 20 秒)
+
+  必須 status check 10 件と PR の check 名の対応 (すべて pass):
+    lint                            12s
+    ios / verify                    5m17s
+    android / verify                (pass)
+    android-instrumented / verify   (pass)
+    kmp / verify                    4m52s
+    maui / verify                   15m45s (最長)
+    consumer-ios / verify           1m18s
+    consumer-android / verify       2m32s
+    consumer-maui / verify          11m18s
+    consumer-kmp / verify           9m19s
+  mergeable = MERGEABLE / mergeStateStatus = CLEAN → check 名は必須 check と一致し、マージ保護が実動した。
+  同じ commit の develop への push で走った CI run 34447640995 は paths フィルタで本体検証を skip (lint のみ)。
+  push 側の check は PR の判定に使われない。
+
+  マージ: オーナーが `gh pr merge 2 --merge` (マージ commit addb8c2)。エージェントの自動モードでは
+  main へのマージと本番 dispatch が分類器で止まるため、この 2 操作はオーナー実行。
+
+# 7.2 本番 dispatch
+
+  main の先端 addb8c2 から version 0.1.0-beta.1 / dry-run false を dispatch (オーナー実行)
+  run 34449418361 (07:19:52 起動)
+
+  試行 1 回目: failure (07:19:52 → 08:15:05)
+    前段 13 job (validate / package 3 / 本体検証 5 / 消費者 dry-run 4) はすべて success (07:37 まで、dry-run 本番と同等)
+    publish (07:37:09 → 08:15:04、macos-26):
+      step 8-10  eligibility marker: 外部状態なし → proceed → marker 保存
+      step 17    配信リポジトリへスナップショット commit push
+      step 19-21 Android upload → ID 保存 → VALIDATED
+      step 22    配信リポジトリ tag push (KMP 発行より前)
+      step 23-25 KMP 発行 (https + exact) → upload → ID 保存 → VALIDATED
+      step 26-27 NuGet login (OIDC) → 3 パッケージ push 成功
+      step 28    Release Maven Central deployment (android): release 要求は受理 (PUBLISHING) → wait-published が
+                 上限 1800 秒で決着せず失敗 (07:44:53 → 08:15)
+      step 29-32 skipped (KMP release / monorepo tag / Release / develop への反映)
+      step 33-35 失敗経路: android 枠は PUBLISHING のため drop せず ID を引き継ぎ、kmp 枠は VALIDATED のため drop して
+                 引き継ぎを断つ (spec「失敗時に保留 deployment が残らない」「PUBLISHING は drop しない」どおり)
+      step 36    Summarize に 2 枠の ID と判定を出力
+
+    失敗後の外部状態 (08:20 に確認):
+      配信リポジトリ tag 0.1.0-beta.1: あり (7d89721)
+      monorepo tag: なし
+      nuget.org: KsDialogs.Maui 0.1.0-beta.1 あり (3 パッケージ公開済み)
+      Maven Central: ksdialogs-core / ksdialogs-kmp とも repo1 に未反映 (Android 枠は Portal で PUBLISHING 中)
+      develop: 737bf95 のまま (置換 commit なし)
+
+    原因: 公開完了待ち (central-portal.sh wait-published) の上限 30 分 (翻案元の実測 publish 11 分を根拠にした
+    既定値) が、この namespace の初回公開の Central 同期に足りなかった。
+    → 蒸留への申し送り: wait-published の上限を初回公開の実測に合わせて引き上げる (別 change)
+
+  試行 2 回目 (Android 枠が repo1 に反映された 08:29 に「失敗した job から再実行」): success (08:29:39 → 09:13:28)
+    publish (08:29:39 → 09:03:46、34 分):
+      step 8-9   marker を download → 外部状態あり (配信リポジトリの tag / Maven Android / NuGet)、
+                 monorepo tag 未作成、印は今回の version・commit・run と一致 → 判定 resume。marker 再保存は skip
+      step 11-12 前回の deployment ID (android のみ。kmp は前回 drop で破棄済み) を引き継ぎ
+      step 17-18 スナップショット commit は差分なし skip、配信 tag は match
+      step 19    Android 枠: 前回 ID の状態 PUBLISHED → upload skip (step 21 の検証待ちも skip)
+      step 22    配信 tag push は match で skip
+      step 23-25 KMP 枠: 前回 ID なし → 再ビルド → 署名検査 → upload (5 分 15 秒) → VALIDATED (1 秒)
+      step 27    NuGet push 3 件は --skip-duplicate で既存を受理
+      step 28    Android 枠の release は skip (PUBLISHED 済み)
+      step 29    KMP 枠の release → PUBLISHED 待ち 27 分 29 秒 (08:36:02 → 09:03:31。上限 30 分の内側)
+      step 30-32 monorepo tag (addb8c2) → GitHub Release (prerelease) → develop へ置換 commit 87b7cf7 を push
+      step 33-35 失敗経路は skip
+    wait-for-registries: 7 秒 (10 件とも反映済み)
+    smoke: ios 1 分 13 秒 / android 2 分 3 秒 / kmp 3 分 28 秒 / maui 9 分 26 秒、すべて success
+
+  壁時計の合計: 試行 1 回目 55 分 + Android 枠の同期待ち (手動) 14 分 + 試行 2 回目 44 分 = 約 1 時間 54 分
+  (publish の KMP 分: 再ビルド + upload + 検証で約 6 分。Central の同期は Android 枠 約 60 分 / KMP 枠 27 分)
+
+# 7.3 公開後の確認 (09:15)
+
+  GitHub Release: 0.1.0-beta.1、prerelease = true、draft = false
+    https://github.com/kamusoft/KsDialogs/releases/tag/0.1.0-beta.1
+  monorepo tag 0.1.0-beta.1: addb8c2 (main のマージ commit)
+  配信リポジトリ KsDialogs-SPM の tag 0.1.0-beta.1: 7d89721
+  Maven Central (repo1.maven.org の POM、wait-for-registries.sh で確認): 7 件すべて取得可能
+    ksdialogs-core / ksdialogs / ksdialogs-kmp / ksdialogs-kmp-android /
+    ksdialogs-kmp-iosarm64 / ksdialogs-kmp-iossimulatorarm64 / ksdialogs-kmp-iosx64
+  nuget.org: ksdialogs.maui / ksdialogs.binding.ios / ksdialogs.binding.android の 0.1.0-beta.1
+  develop: 87b7cf7 "docs: インストール例の version を 0.1.0-beta.1 にする" (14 ファイル 26 行) が
+    GITHUB_TOKEN で push 済み (検証 CI は起動しない。publish job 内で lint 3 本を通過)。main は addb8c2 のまま
+
