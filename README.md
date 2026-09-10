@@ -15,9 +15,9 @@ The public API may introduce breaking changes while the version remains 0.x.
 
 | iOS | Android |
 |---|---|
-| **Dialog**<br>![A basic dialog in the iOS Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/ios-dialog.png) | **Dialog**<br>![A basic dialog in the Android Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/android-dialog.png) |
-| **Loading**<br>![Loading at 50 percent in the iOS Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/ios-loading.png) | **Loading**<br>![Loading at 50 percent in the Android Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/android-loading.png) |
-| **Toast**<br>![Three toast notifications in the iOS Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/ios-toast.png) | **Toast**<br>![Three toast notifications in the Android Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/android-toast.png) |
+| **Dialog**<br>![A basic dialog in the iOS Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/ios-dialog.png) | **Dialog**<br>![A basic dialog in the Android Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/android-dialog.png) |
+| **Loading**<br>![Loading at 50 percent in the iOS Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/ios-loading.png) | **Loading**<br>![Loading at 50 percent in the Android Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/android-loading.png) |
+| **Toast**<br>![Three toast notifications in the iOS Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/ios-toast.png) | **Toast**<br>![Three toast notifications in the Android Sample](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/android-toast.png) |
 
 .NET MAUI and Kotlin Multiplatform wrap the native implementations and produce the same screens.
 

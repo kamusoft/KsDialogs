@@ -15,9 +15,9 @@ version 0.x の間は、公開 API に破壊的変更が入る可能性があり
 
 | iOS | Android |
 |---|---|
-| **Dialog**<br>![iOS Sample の基本ダイアログ](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/ios-dialog.png) | **Dialog**<br>![Android Sample の基本ダイアログ](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/android-dialog.png) |
-| **Loading**<br>![iOS Sample の50パーセントの Loading](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/ios-loading.png) | **Loading**<br>![Android Sample の50パーセントの Loading](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/android-loading.png) |
-| **Toast**<br>![iOS Sample の3枚の Toast 通知](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/ios-toast.png) | **Toast**<br>![Android Sample の3枚の Toast 通知](https://raw.githubusercontent.com/kamusoft/KsDialogs/develop/assets/android-toast.png) |
+| **Dialog**<br>![iOS Sample の基本ダイアログ](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/ios-dialog.png) | **Dialog**<br>![Android Sample の基本ダイアログ](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/android-dialog.png) |
+| **Loading**<br>![iOS Sample の50パーセントの Loading](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/ios-loading.png) | **Loading**<br>![Android Sample の50パーセントの Loading](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/android-loading.png) |
+| **Toast**<br>![iOS Sample の3枚の Toast 通知](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/ios-toast.png) | **Toast**<br>![Android Sample の3枚の Toast 通知](https://raw.githubusercontent.com/kamusoft/KsDialogs/main/assets/android-toast.png) |
 
 .NET MAUI と Kotlin Multiplatform は Native 実装を wrap するため、同じ画面になります。
 
