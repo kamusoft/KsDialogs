@@ -3,7 +3,7 @@ id: 0016
 title: ブランチは develop / main の 2 本とし、develop へ直 push、main はリリース候補だけが PR で入り release は main からのみ起動する
 status: accepted
 date: 2026-09-07
-amended-by: 0024
+amended-by: [0024, 0025]
 ---
 
 ## Context

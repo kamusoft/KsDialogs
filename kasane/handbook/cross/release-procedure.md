@@ -20,12 +20,12 @@ timestamp: 2026-09-10
 
 | ブランチ | 先端が表すもの |
 |---|---|
-| `develop` | 開発の最新。リポジトリの既定ブランチ。ローカルの作業ブランチをローカルでマージして直接 push する。push のたびに検証 CI (lint + 本体検証 5 job) が事後検証として走り、失敗は通知で拾う |
-| `main` | 最新リリース、またはリリース進行中 (リリース PR のマージ後、publish 成功まで) のリリース候補 |
+| `develop` | 開発の最新。ローカルの作業ブランチをローカルでマージして直接 push する。push のたびに検証 CI (lint + 本体検証 5 job) が事後検証として走り、失敗は通知で拾う |
+| `main` | 最新リリース、またはリリース進行中 (リリース PR のマージ後、publish 成功まで) のリリース候補。リポジトリの既定ブランチ (cross/ADR-0025) |
 
 `main` へ入るのは `develop` からの pull request だけで、それ以外の head は CI の lint job が失敗させる。この pull request では lint と本体検証 5 job に加えて消費者検証 4 job が走り、10 件すべてが `main` の必須 status check になる。リリースの起動も `main` に限られる。
 
-既定ブランチは `develop` のままにする (cross/ADR-0016)。`develop` には必須 status check も pull request の必須化も付けない (force-push 禁止と削除禁止だけ)。開発者 1 人が直接 push する運用に合わせた設定である。
+既定ブランチは `main` で、利用者がリポジトリを開いたときに最新リリースの README が見える (cross/ADR-0025)。`develop` には必須 status check も pull request の必須化も付けない (force-push 禁止と削除禁止だけ)。開発者 1 人が直接 push する運用に合わせた設定である。
 
 ## 初回だけ行う設定
 
@@ -72,7 +72,7 @@ gh api -X PUT repos/kamusoft/KsDialogs/branches/main/protection --input - <<'JSO
 JSON
 ```
 
-`app_id` 15368 は GitHub Actions を指す。これを省くと同名の check を出す他のアプリでも必須が満たせてしまう。設定後に `gh api repos/kamusoft/KsDialogs/branches/main/protection` を読み直して 10 件が並ぶことを確かめる。既定ブランチは切り替えないので、`main` 宛ての pull request は base を明示して作る。
+`app_id` 15368 は GitHub Actions を指す。これを省くと同名の check を出す他のアプリでも必須が満たせてしまう。設定後に `gh api repos/kamusoft/KsDialogs/branches/main/protection` を読み直して 10 件が並ぶことを確かめ、既定ブランチを `main` に切り替える (`gh api -X PATCH repos/kamusoft/KsDialogs -f default_branch=main`)。
 
 ### 配信リポジトリの deploy key
 
