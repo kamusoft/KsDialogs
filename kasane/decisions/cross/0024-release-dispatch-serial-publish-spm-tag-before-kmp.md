@@ -3,6 +3,7 @@ id: 0024
 title: release は dispatch 起動・取り消せる順で直列に publish し、SPM tag は KMP の Maven 発行より前に置く
 status: proposed
 date: 2026-09-10
+amends: [cross/0016]
 ---
 
 ## Context
@@ -17,7 +18,7 @@ KsSettingsView には KMP 形態が無い。KsDialogs の KMP は発行物の Sw
 
 ## Decision
 
-**起動と version**: 起動は `workflow_dispatch` で、version 入力は `^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$` のみ通し、`dry-run` 入力で publish 以降を行わない。本番はリリース対象ブランチ `main` からのみ起動し、secrets は Environment `release` に置く。tag push はトリガーにしない。version の SSoT は dispatch 入力 (= tag) で、CI が `-Pversion=` / `-p:Version=` で注入し、リポジトリ内の値は開発用既定値のまま (bump コミットを積まない)。tag は接頭辞なし `X.Y.Z`。
+**起動と version**: 起動は `workflow_dispatch` で、version 入力は `^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$` のみ通し、`dry-run` 入力で publish 以降を行わない。本番はリリース対象ブランチ `main` からのみ起動し、secrets は Environment `release` に置く。tag push はトリガーにしない。version の SSoT は dispatch 入力 (= tag) で、CI が `-Pversion=` / `-p:Version=` で注入し、リポジトリ内の値は開発用既定値のまま (bump コミットを積まない)。tag は接頭辞なし `X.Y.Z`。
 
 **段構成**: validate → (test ∥ package) → dry-run (消費者検証に artifact を渡す) → publish → 反映待ち → smoke。package 段に KMP の job は置かない (コンパイルは本体検証 `kmp / verify` が担保)。
 
@@ -32,9 +33,11 @@ KsSettingsView には KMP 形態が無い。KsDialogs の KMP は発行物の Sw
 | 5 | NuGet push (Trusted Publishing / OIDC) |
 | 6 | Maven release 2 件 (Android → KMP) → published 待ち |
 | 7 | monorepo tag + GitHub Release |
-| 8 | README 2 枚と利用者向け Skill のインストール例の version を置き換えた commit を `develop` へ push (競合しても release は失敗にしない) |
+| 8 | README 2 枚と利用者向け Skill のインストール例の version を置き換えた commit を、lint を掛けてから `develop` へ push (競合しても release は失敗にしない) |
 
-**tag と README の扱い**: version を放棄するときだけ、配信リポジトリに残った tag を手で消す (手順は handbook の release-procedure)。インストール例の version は release workflow が書く — MAUI の pack の前に作業木で置き換えて nupkg に同梱し、publish 成功後に順 8 で `develop` へ commit する。人がリリース PR で version を書く手順は持たず、`main` は次のリリース PR で追従する。
+**再実行の範囲**: 部分 publish の続行は同じ workflow run の再試行に限る。新規の dispatch で当該 version の外部状態 (配信リポジトリの tag・Maven Central の公開・nuget.org の存在) が既にあり monorepo の tag が起動 commit に無ければ失敗する (別の commit の binary に tag を打たない)。
+
+**tag と README の扱い**: 配信リポジトリの tag は KMP の発行に先立って生まれるため、取り消せない操作 (NuGet push / Maven release) より前に存在する例外である。第一の受け皿は同じ version での再実行で、放棄するときはその番号を欠番にして再利用しない (tag の削除は任意の後片付けで、clone 済みの利用者からは回収できない。手順は handbook の release-procedure)。「tag は publish 全成功後にのみ生まれる」は monorepo の tag について成り立つ。インストール例の version は release workflow が書く — MAUI の pack の前に作業木で置き換えて nupkg に同梱し、publish 成功後に順 8 で `develop` へ commit する。人がリリース PR で version を書く手順は持たず、`main` は次のリリース PR で追従する。cross/ADR-0016 の決定のうち「README の version 置換はリリース PR の中の commit として行う」の 1 文を本決定で置き換える。他の決定 (ブランチ 2 本・`develop` へ直 push・`main` は PR のみ・release は `main` からのみ起動) は維持する。置き換えの commit は `GITHUB_TOKEN` の push のため検証 CI を起動せず、publish job が push の前に検証 CI の lint job と同じ検査を掛ける。
 
 ## Alternatives Considered
 
@@ -53,7 +56,7 @@ KsSettingsView には KMP 形態が無い。KsDialogs の KMP は発行物の Sw
 - 正: 4 形態が 1 回の手動起動で同一 version で出て、tag は publish 全成功後にのみ生まれる
 - 正: 取り消せない操作 (NuGet push・Maven release) より前に、署名・認証・KMP の発行の失敗が出る
 - 負: KMP の https 発行は dry-run で予行できず、本番でしか通らない (`file://` 発行と URL 以外は同じ経路)
-- 負: 配信リポジトリの tag が Maven release より前に生まれるため、version を放棄したときは tag の手動削除が要る
+- 負: 配信リポジトリの tag が Maven release より前に生まれるため、KMP 以降で失敗して放棄した version は「iOS だけ解決できる tag」が残り、番号は欠番になる
 - 負: publish job が macOS runner になる (KsSettingsView は ubuntu)
 - 正: README が指す version は常に公開済みの版で、更新忘れが起きない
 - 負: `develop` への push が競合したときは README の追従が次回のリリースまで遅れる
