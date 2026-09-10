@@ -4,10 +4,8 @@ KsSettingsView の `release.yml` をコピー + 固有値の差し替えで逆�
 
 ## 論点
 
-- 4 本化: package / dry-run / smoke の各段に KMP を足す (phase-7・8 の結論)。publish 段の順序 (Maven upload 保留 → NuGet push → Maven release → SPM tag → monorepo tag) に KMP の Maven artifact をどう並べるか (同じ Central deployment に `ksdialogs-core` / `ksdialogs` / `ksdialogs-kmp` を同梱できるか)
-- 初回リリースの version (KsSettingsView は `0.1.0-beta.1`) と GitHub Release の prerelease 扱い
-- README の version 置換 (`scripts/release/set-readme-version.py`) を置く位置はブランチモデル (phase-3 の結論) に従う。AGENTS.md の「README は docs-refresh 経由のみ」への例外 1 行
-- 初回リリース前の docs-refresh 依頼 (phase-2 で作った Skills / README を最新の concepts に追従させる) のタイミング
+(2026-09-10 に R1〜R7 をすべて決定事項へ移した。番号は決定事項の見出しに残る)
+
 
 ### KsSettingsView phase-8 からの申し送り (2026-09-04、library-foundation phase-11 から移送)
 
@@ -74,6 +72,68 @@ KMP の発行設定は実装済み (`kasane/changes/archive/2026-09-09-add-kmp-m
 - concurrency group は `release`、cancel-in-progress は false
 - 却下済み: tag push トリガー / ファイルを version の正にして tag と照合 / `vX.Y.Z` 表記 / 開発ブランチから起動 / publish 済み version の再実行禁止 / smoke 成功後に tag / workflow が README をリリース対象ブランチに commit / 共有 workflow 化 (理由は cross/ADR-0020 と KsSettingsView phase-8 の Alternatives)
 
+### R1 KMP の Maven 発行は publish 段の中で SPM tag push の直後に行い、publish job は macOS 1 本 (2026-09-10)
+
+KMP の発行物 (SwiftPM 連携メタデータ) には Swift 参照の URL と URL 末尾から導出される `packageName` が焼き込まれ、cinterop klib を伴う iOS publication の発行は配信リポジトリに同版 tag が実在しないと失敗する (add-kmp-maven-distribution の deviation / evidence/swiftpm-reference-derivation.txt)。したがって Central へ上げる KMP artifact は https + exact で、SPM tag の後にしか作れない。phase-7 C3 が却下した「SPM tag を Maven release より前に push する」は前提 (package 段で KMP を先に作れる) が崩れたため改め、tag は「Android 分の deployment が validated になった後」に置く。署名鍵・Portal 認証の失敗は tag より前に出て、tag が残るのは KMP のビルド / validation 失敗だけになる。package 段に KMP の job は置かない (消費者検証は job 内で `file://` 発行し直す (phase-8) ので消費者が居ず、URL が違うため同一性検査 `compare-maven-artifacts.sh` も掛けられない。コンパイルは `kmp / verify` が担保)。iOS publication の発行に Xcode が要るため publish job は macOS runner 1 本で直列にし、drop と deployment ID の扱いを 1 job に閉じる。踏襲元 (KsSettingsView cross/ADR-0020) の「取り消せる順で直列」は tag が削除可能なので保たれ、cross/ADR-0008 / 0009 との衝突はない。
+
+| 順 | ステップ | 失敗したときに残るもの |
+|---|---|---|
+| 1 | SPM スナップショット commit push (差分なしなら skip) | なし |
+| 2 | Android の Maven upload 保留 → `.asc` 検査 → validated 待ち | 保留 deployment (drop) |
+| 3 | SPM tag push (同 commit なら skip) | tag |
+| 4 | KMP を https + exact で発行 → upload 保留 → validated 待ち | tag + 保留 deployment 2 件 (drop) |
+| 5 | NuGet push (OIDC) | 以降は取り消せない領域 (翻案元と同じ) |
+| 6 | Maven release 2 件 (Android → KMP) + published 待ち | |
+| 7 | monorepo tag + GitHub Release | |
+
+- 残る tag の扱い: 同 version の再実行なら手順 3 が `match` で skip されるため何もしない。version を放棄するときだけ配信リポジトリの tag を手で消す手順を handbook (release-procedure) に置く
+- 対価: KMP の https 発行は dry-run で予行できず本番でしか通らない (`file://` 発行と URL 以外は同じ経路)
+- 却下: package 段でも `file://` で KMP を発行し publish 段で作り直す (消費者の居ない成果物を作るだけ) / SPM tag を publish 段の先頭に置く (署名鍵・認証の失敗でも tag が残る) / publish job を ubuntu と macOS の 2 本に割る (drop・deployment ID の引き継ぎが job をまたぐ)
+- → [cross/ADR-0024](../../../../decisions/cross/0024-release-dispatch-serial-publish-spm-tag-before-kmp.md) (proposed。踏襲分と併せて 1 本)
+
+### R2 Maven Central の deployment は Android / KMP の 2 枠で持ち回り、反映待ちと smoke に KMP を足す (2026-09-10)
+
+android/ と kmp/ は別ビルドのため deployment は 2 件 (Android = `ksdialogs-core` + `ksdialogs`、KMP = 5 publication)。deployment を「枠 (Android / KMP)」として扱い、ID の保存 (1 つの artifact に枠名のファイル 2 つ)・状態分岐 (VALIDATED / PUBLISHING / PUBLISHED / FAILED / NOT_FOUND)・release + published 待ち・失敗時の drop を枠ごとに繰り返す (翻案元のステップの写し、または枠名を引数にした composite step)。`central-portal.sh` は ID を引数に取る現状のまま変えない。「両方 validated まで release しない」は R1 の順序 (両方の validated 待ちが NuGet push より前) で満たされ、release 段の状態確認は冪等化の分岐だけ。Android release → KMP release の間に数分の窓が開くが、利用者は GitHub Release 以後に導入するので実害はない。
+
+- 反映待ち (`wait-for-registries.sh`): Maven の POM を `ksdialogs-core` / `ksdialogs` / `ksdialogs-kmp` の 3 座標で確認 (NuGet 3 ID は踏襲)。配信リポジトリの tag は publish 段で push 済みのため待ち対象に入れず、`check-distribution-tag.sh` は publish 段の存在検査だけに使う
+- smoke: `verify-consumer-kmp.yml` を `mode: smoke` + `version` で呼ぶ 4 本目を足す (`mavenCentral()` + https + exact は phase-8 で実装済み)
+- 却下: 2 つの Gradle 出力を 1 つの bundle にまとめ Portal API へ手で upload して deployment 1 件にする (upload サブコマンドと署名済み bundle の組み立てが要り、vanniktech の upload を使わない。phase-7 C3 が退けた形)
+
+### R3 初回リリースは `0.1.0-beta.1`、GitHub Release は prerelease (2026-09-10)
+
+翻案元 (KsSettingsView) と同じ値と扱い。suffix 付きの version は GitHub Release に `--prerelease` を付ける (Maven Central は suffix を同格に扱うため README の prerelease 節が説明を担う)。理由: AiForms.Maui.Dialogs からの移行利用者を迎える前提で API を固めた宣言はまだ早く、試用版であることと 0.x の API 変更余地が伝わる。Issue テンプレートの例示 (`0.1.0-beta.1`) とカタログの開発既定値 (`0.1.0-SNAPSHOT`) に揃う。以後は `beta.2` → `rc.1` → `0.1.0` と刻める。
+
+- 却下: `0.1.0` (正式版と読まれ prerelease の段が無い) / `1.0.0-beta.1` (1.0 が近いと読まれ、カタログとテンプレート両方の書き換えが要る)
+
+### R4 README / Skill の version 置換は release workflow が行い、人の手作業をなくす (2026-09-10)
+
+翻案元の「リリース PR の中でオーナーが手で `set-readme-version.py` を実行し validate が `--check` で止める」形は手作業が 1 つだけ残って不便なため採らず、release workflow が 2 箇所で書く。(1) package-maui job が pack の前に作業木で置換を実行する (commit しない) — facade の nupkg に同梱される README (`KsDialogs.Maui.csproj` の `PackageReadmeFile`) が実値になる。(2) publish job の最後 (GitHub Release 作成の後) に `develop` を checkout して置換を commit し push する — `develop` は force-push 禁止・削除禁止だけで PR 必須も必須 check も無く、publish job が持つ `contents: write` で push できる。push 前に rebase し、競合しても release は失敗にせず Summarize に警告を出す (次回の release で追いつく)。`main` は次のリリース PR で `develop` から追従する。dry-run では (2) を行わない。validate の `--check` は廃止し、README の意味は「最新の公開版」になる。`GITHUB_TOKEN` の push は他の workflow を起動しないため CI は連鎖しない。翻案元 ADR-0020 の却下案は「`main` に commit」(push 権限と protection のバイパスが要る) で、`develop` 宛てはその理由に当たらない。AGENTS.md には「リリース時の version 置換は release workflow が行い docs-refresh を経ない」の例外 1 行を足す。
+
+- スクリプトは行の形 (配信リポジトリ URL / Maven 座標 / NuGet ID) で対象行を見つけ、値がプレースホルダ `<version>` でも実値でも新しい version に置く (初回の `<version>` を吸収)。対象は README 2 枚と Skill の導入例すべて (SKILL.md + `ksdialogs-kmp/references/{ios,android}-host.md`) を列挙し、期待した行が無ければ失敗。対象行の形は docs-refresh (R5) の後に確定する
+- 却下: 手で実行 + validate の `--check` (元の踏襲案。手作業が残る) / 「リリース準備」workflow を別に dispatch して置換 commit 付きの PR を自動で作る (dispatch が 2 回になり、release が失敗すると README が未公開の版を指す) / workflow が `main` へ commit (ADR-0020 の却下理由のまま)
+- 派生: KsSettingsView 側も phase-9 の実装後に同じ形を逆流させる (このロードマップの外で起票)。→ cross/ADR-0024 (proposed) の Decision に追記
+
+### R5 docs-refresh は提案化の前と初回リリース後の蒸留の後の 2 回、README に KMP ホスト側の例は載せない (2026-09-10)
+
+1 回目はこのフェーズ議論の締め (ksn-propose の前) に走らせる。出典は現行 concepts (Android の新座標は android/api/dialog-surface.md にある) と、concepts に無い分 (MAUI の下限版 10.0.20・ガード `KSDLG0001`・iOS 17 / Android 24・API 版付き TFM・`ViewCreationFailed`、KMP の依存スコープ `api`・Kotlin 同 minor と確認済み版・「予定している公開 coordinate」の状態表記・Maven local 発行物の可搬性) を phase-6 / 7 の申し送り表として docs-refresh の Input に添える。handbook「docs-refresh を走らせる時点」の例外規定 (途中で走らせたら蒸留後にもう一度) に沿う。提案化の前に済ませれば、release change の version 置換スクリプト (R4) が確定した README / Skill の行の形を見て書ける。2 回目は初回リリース後の phase-9 蒸留 (配布構成 concepts 化を含む) の後で、「未配信」の状態表記の解除と配布構成を反映し、manifest をその時点の concepts で確定する。
+
+- README の KMP ホスト側の例は載せない。README は最小例 4 ブロックのまま (cross/ADR-0012 の「ルート README は入口」)、ホスト側の登録手順は Skill `ksdialogs-kmp/references/{ios,android}-host.md` が持つ。`readme-example-lint.py` の対応表は動かさない (cross/ADR-0022 の Revisit When は発火しない)
+- 却下: 1 回目を release change の実装後・リリース PR 直前にする (実装中の README が旧座標のままで、R4 のスクリプトを後から直す) / 配布構成の concepts 化を ksn-concept で先に済ませて 1 回にする (リリース後の状態表記解除で 2 回目がどのみち要り、置き場の議論を前倒しするだけ)
+
+### R6 MAUI の発行ガードは workflow 側の nupkg 名検査 2 回、XML ドキュメントは facade の 3 TFM で同梱 (2026-09-10)
+
+**発行ガード**: package-maui job は pack 後に 3 つの nupkg が `<ID>.<入力 version>.nupkg` の名前で存在することを検査し、publish job は push の直前に同じ検査をもう一度行う (artifact の取り違えを止める)。`0.0.0-dev` の nupkg は名前の時点で弾かれる。NuGet の push は MSBuild の外 (`dotnet nuget push`) にあり、Gradle の SNAPSHOT ガード (Central 向けタスクを止める) と同じ場所に置けない。MSBuild で pack 自体を止める形は手元 pack と消費者検証の運用を壊すだけで得がなく採らない。
+
+**XML ドキュメント**: facade (`KsDialogs.Maui`、doc コメント 431 か所・日本語) は 3 TFM すべてで `GenerateDocumentationFile=true` を明示して nupkg に同梱し、binding 2 つ (doc コメントなし) は生成しないことを明示して SDK 既定への暗黙依存を消す。理由: 主な移行元 (AiForms.Maui.Dialogs) の利用者層には日本語の IntelliSense が実用になり、無いより公開 API の意図が伝わる。翻案元 KsSettingsView と同じ。英語圏の利用者に日本語が見える対価は、cross/ADR-0015 が doc コメントを英語化の対象外にしたときに受け入れ済み。実装時に未記載メンバの警告 (CS1591) の有無を実測する。
+
+- 却下: pack から外す (説明なし、Skill 頼み) / 英訳して同梱 (431 か所の翻訳と維持、ADR-0015 の改訂が要る非ゴール範囲外の作業)
+
+### R7 MAUI の依存警告を故意に起こす負ケースは release の change に足さない (2026-09-10)
+
+消費者 MAUI の `WarningsAsErrors` (NU1605 / NU1608 / NU1107) の実効性の証跡は無いまま見送る。守っている経路 (README / Skill が古い MAUI の版を案内する) は phase-6 の申し送りと docs-refresh (R5) で入口を塞いでおり、NU1605 は .NET SDK が既定で error 扱いにする。負ケースには MAUI の版を意図的に食い違わせたフィードが要り、release の change (主題は workflow と外部設定) に消費者検証の話を混ぜて初回リリースを遅らせる価値がない。Skill / README が MAUI の版を書くようになったら簡易起票で別 change にする。
+
+- 却下: release の change に 1 ケース足す (tasks が増え主題が混ざる) / 今すぐ簡易起票 (必要になる時点が来ていない)
+
 ### phase-5 からの申し送り (2026-09-08)
 
 利用者向け成果物 (`skills/{en,ja}/ksdialogs-android/**`・`skills/{en,ja}/ksdialogs-kmp/references/android-host.md`・`README.md`・`README_ja.md`) に旧座標 `jp.kamusoft:ksdialogs-compose` と本体としての `jp.kamusoft:ksdialogs` が計 16 箇所残る。cross/ADR-0019 の新座標 (Compose 側 `ksdialogs` / 本体 `ksdialogs-core`) への追随は docs-refresh の責務で、初回リリースより前に走らせる (release が先だと存在しない座標を案内する README が公開される)。「docs-refresh のタイミング」の論点はこの残存を潰す前提で決める。
@@ -91,7 +151,9 @@ version の注入と SNAPSHOT ガードは android/ に配線済み (cross/ADR-0
 
 ## TODO
 
-- [ ] 論点の解消 (4 本化・SPM tag の先行 (phase-7 申し送り)・初回 version・README 置換の位置・docs-refresh のタイミング)
-- [ ] 初回リリース前に docs-refresh を走らせ、skills / README の旧 Android 座標 (16 箇所) を cross/ADR-0019 の新座標へ追随させる (phase-5 申し送り)。MAUI 分 (phase-6 申し送りの表) と KMP 分 (phase-7 申し送りの表) は同じ依頼に含める
-- [ ] MAUI 3 パッケージの `0.0.0-dev` 発行ガードと XML ドキュメントの方針を release の change に含める (phase-6 申し送り)
-- [ ] ksn-propose で変更提案を起こす
+- [x] 論点の解消 (R1〜R7、2026-09-10 決定)
+- [ ] docs-refresh 1 回目 (提案化の前): skills / README の旧 Android 座標 (16 箇所) を cross/ADR-0019 の新座標へ追随させ、MAUI 分 (phase-6 申し送りの表) と KMP 分 (phase-7 申し送りの表) を Input に添える (R5)
+- [ ] docs-refresh 2 回目 (初回リリース後の蒸留の後): 「未配信」表記の解除と配布構成 concepts の反映 (R5)
+- [ ] MAUI の nupkg 名検査 (package / publish の 2 回) と XML ドキュメントの明示 (facade true / binding false) を release の change に含める (R6)
+- [ ] ksn-propose で変更提案を起こす (docs-refresh 1 回目の後。cross/ADR-0024 proposed を design の Decision に反映)
+- [ ] KsSettingsView 側へ R4 (release workflow による version 置換) を逆流させる作業を、このロードマップの外で起票する (phase-9 の実装後)

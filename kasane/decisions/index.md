@@ -9,6 +9,6 @@ decisions はドメイン別に分割して管理する。ドメイン定義の�
 | [android](android/index.md) | Android 系統 (ADR 1件) |
 | [maui](maui/index.md) | .NET MAUI 系統 (ADR 5件) |
 | [kmp](kmp/index.md) | Kotlin Multiplatform 系統 (ADR 6件) |
-| [cross](cross/index.md) | リポジトリ横断のメタ事項 (ADR 23件) |
+| [cross](cross/index.md) | リポジトリ横断のメタ事項 (ADR 24件) |
 
 ドメインディレクトリと各ドメインの index は最初の ADR 書き込み時に作成する。
