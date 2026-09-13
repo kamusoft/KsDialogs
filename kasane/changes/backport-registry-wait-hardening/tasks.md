@@ -76,12 +76,12 @@
 
 ## 6. 検証
 
-- [ ] 6.1 `scripts/release/` 全スクリプトの `--selftest` が手元で全件通ることを確認する
-- [ ] 6.2 `check-time-budget.py` と `check-publish-step-order.py` の検査が、意図的に定数・step 順序を
+- [x] 6.1 `scripts/release/` 全スクリプトの `--selftest` が手元で全件通ることを確認する
+- [x] 6.2 `check-time-budget.py` と `check-publish-step-order.py` の検査が、意図的に定数・step 順序を
       壊したときに失敗することを確認する (→ Scenario: 公開待ちを延ばすと予算の超過が検出される /
       Scenario: 順序が崩れると検査が落ちる)
-- [ ] 6.3 lint job が手元と同じ結果になることを、`develop` への push で確認する
-- [ ] 6.4 `dry-run` で release を起動し、validate から消費者検証までが通ることを確認する
+- [x] 6.3 lint job が手元と同じ結果になることを、`develop` への push で確認する
+- [x] 6.4 `dry-run` で release を起動し、validate から消費者検証までが通ることを確認する
       (publish 内部は `dry-run` では到達しない — Impact のリスクに記載のとおり)
 
 ## 蒸留への申し送り (実装タスクではない)
