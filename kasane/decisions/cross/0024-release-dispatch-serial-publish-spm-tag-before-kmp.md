@@ -4,6 +4,7 @@ title: release は dispatch 起動・取り消せる順で直列に publish し�
 status: accepted
 date: 2026-09-10
 amends: [cross/0016]
+amended-by: [cross/0030]
 ---
 
 ## Context

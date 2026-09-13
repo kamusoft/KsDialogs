@@ -8,6 +8,8 @@
 
 発見の文脈: add-kmp-maven-distribution の蒸留直後、オーナーの依頼で CI 失敗を切り分けた。オーナーの指示は「同様の禁止系があれば全部直す」。
 
+2 回目の観測 (2026-09-13): リリース PR #4 (0.1.0-beta.2、commit f3644e7) の `android-instrumented / verify` (run 34752439146) が同じ 1 件・同じメッセージで落ちた。当該 PR は release 機構とインストール例の契約だけを変え、Android の本体・instrumented テストは無改変。初観測 (2026-09-09) から 4 日、別 commit・別 run での再現で、タイミング依存という切り分けの裏付けになる。オーナー判断で `Re-run failed jobs` により再実行した。
+
 同型の洗い出し (2026-09-09、4 面のテストで中間状態 PRESENTING / DISMISSING を待つ・主張する箇所を実物で確認):
 
 | # | 面 | 箇所 | 状況 |

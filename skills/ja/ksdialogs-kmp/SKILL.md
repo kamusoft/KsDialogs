@@ -40,7 +40,9 @@ content の型が OS ごとに違うため、content の登録は host 側にあ
 
 現行 artifact のビルド環境は Kotlin 2.4.10 と Gradle 9.7.0。Android target は API 24 以降、iOS target は iOS 17 以降と Swift tools 6.3 が必要になる。利用側の Kotlin Gradle Plugin は同じ minor 系列 (2.4.x) をサポートし、動作確認済みの版は 2.4.10 である。iOS のリンク情報を運ぶ SwiftPM import は Kotlin 2.4 の Alpha 機能なので、これより広い範囲は約束しない。
 
-`jp.kamusoft:ksdialogs-kmp` は Maven Central へ公開されており、iOS host がリンクする Swift package は配信リポジトリ `https://github.com/kamusoft/KsDialogs-SPM` (package identity は `KsDialogs-SPM`、product は `KsDialogs`) に公開されている。どちらも同じ 1 つの version 文字列で出るため、共有 module の Maven 依存と Xcode の package 参照には同じ version を書く。以下の例に載る version は公開済みのものである。
+`jp.kamusoft:ksdialogs-kmp` は Maven Central へ公開されており、iOS host がリンクする Swift package は配信リポジトリ `https://github.com/kamusoft/KsDialogs-SPM` (package identity は `KsDialogs-SPM`、product は `KsDialogs`) に公開されている。どちらも同じ 1 つの version 文字列で出るため、共有 module の Maven 依存と Xcode の package 参照には同じ version を書く。
+
+以下の例の `{version}` はプレースホルダで、使う version に置き換える (そのままでは依存解決に失敗する)。現在の version は、常に最新のリリースへ解決される [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) のページで確認できる。
 
 ### 共有 module
 
@@ -50,7 +52,7 @@ content の型が OS ごとに違うため、content の登録は host 側にあ
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")
+            api("jp.kamusoft:ksdialogs-kmp:{version}")
         }
     }
 }
@@ -66,7 +68,7 @@ KMP artifact から Android View 系 artifact `jp.kamusoft:ksdialogs-core` が�
 
 前提: Xcode project から共有 module の framework をビルド・リンクする標準の KMP iOS 連携を済ませる。
 
-1. 上記の Maven 依存 `jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1` 1 点を共有 module に追加する。
+1. 上記の Maven 依存 `jp.kamusoft:ksdialogs-kmp:{version}` 1 点を共有 module に追加する。
 2. Xcode project のパスを渡して `integrateLinkagePackage` を 1 回実行し、生成された `KotlinMultiplatformLinkedPackage/` を VCS に含める。
 3. Xcode の Package Dependencies に `https://github.com/kamusoft/KsDialogs-SPM` を同じ version の exact 指定で追加し、product `KsDialogs` をアプリ target にリンクする。
 

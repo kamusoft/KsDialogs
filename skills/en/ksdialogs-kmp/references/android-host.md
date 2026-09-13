@@ -52,10 +52,12 @@ The KMP artifact brings the Android Views artifact `jp.kamusoft:ksdialogs-core` 
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
+    implementation("jp.kamusoft:ksdialogs:{version}")
     implementation("androidx.compose.foundation:foundation:1.8.1")
 }
 ```
+
+`{version}` is a placeholder: replace it with the version you want to use, or resolution fails. To find the current version, open the [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) page, which always resolves to the most recent release.
 
 ```kotlin
 import androidx.compose.foundation.clickable

@@ -30,8 +30,10 @@ A call through a default entry and a call through an injected contract reach the
 Add the `KsDialogs.Maui` package from nuget.org to a .NET 10 MAUI project. That single reference is everything a project writes: the binding packages `KsDialogs.Binding.iOS` and `KsDialogs.Binding.Android` carry the native side and arrive transitively on the iOS and Android target frameworks, so do not reference them directly. Import the `KsDialogs` namespace where you use the library.
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
+<PackageReference Include="KsDialogs.Maui" Version="{version}" />
 ```
+
+`{version}` is a placeholder: replace it with the version you want to use, or restore fails. To find the current version, open the [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) page, which always resolves to the most recent release.
 
 | Requirement | What to satisfy |
 |---|---|

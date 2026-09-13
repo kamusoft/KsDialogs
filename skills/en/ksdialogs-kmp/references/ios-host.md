@@ -4,9 +4,11 @@
 
 Prerequisite: a Kotlin Multiplatform shared module with an iOS target, and an Xcode application project that already builds and links its framework.
 
-1. Add `api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")` to the shared module's commonMain dependencies.
+1. Add `api("jp.kamusoft:ksdialogs-kmp:{version}")` to the shared module's commonMain dependencies.
 2. Run `integrateLinkagePackage` once with `XCODEPROJ_PATH`, then commit the generated `KotlinMultiplatformLinkedPackage/` directory with the project.
 3. In Xcode, add `https://github.com/kamusoft/KsDialogs-SPM` to Package Dependencies as an exact requirement on the same version, and link the `KsDialogs` product to the application target.
+
+`{version}` in step 1 is a placeholder: replace it with the version you want to use, or resolution fails. To find the current version, open the [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) page, which always resolves to the most recent release.
 
 ```bash
 XCODEPROJ_PATH="$PWD/iosApp/MyApp.xcodeproj" \

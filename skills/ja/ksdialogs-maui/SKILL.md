@@ -30,8 +30,10 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 .NET 10 の MAUI project に nuget.org の `KsDialogs.Maui` package を追加する。project に書く参照はこれだけでよい。native 側を運ぶ binding package `KsDialogs.Binding.iOS` と `KsDialogs.Binding.Android` は iOS / Android の target framework で推移的に届くので、直接参照しない。利用するファイルで `KsDialogs` namespace を import する。
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
+<PackageReference Include="KsDialogs.Maui" Version="{version}" />
 ```
+
+`{version}` はプレースホルダで、使う version に置き換える (そのままでは復元に失敗する)。現在の version は、常に最新のリリースへ解決される [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) のページで確認できる。
 
 | 要件 | 満たすもの |
 |---|---|

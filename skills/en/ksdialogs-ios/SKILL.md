@@ -30,13 +30,13 @@ Add `https://github.com/kamusoft/KsDialogs-SPM` as a Swift package dependency ov
 
 The package identity is `KsDialogs-SPM` and the product to link is `KsDialogs`. Link it to an iOS 17 or later target built with a Swift 6.3 or later toolchain; the library itself is compiled in Swift 6 language mode. Import `KsDialogs` where you use the library.
 
-The version in the declaration below is the current release and is updated with every release.
+`{version}` in the declaration below is a placeholder: replace it with the version you want to use, or resolution fails. To find the current version, open the [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) page, which always resolves to the most recent release.
 
 ```swift
 dependencies: [
     .package(
         url: "https://github.com/kamusoft/KsDialogs-SPM",
-        exact: "0.1.0-beta.1"
+        exact: "{version}"
     )
 ]
 ```

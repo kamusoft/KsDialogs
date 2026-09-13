@@ -4,6 +4,7 @@ title: 検証 CI の lint job に README 最小例と消費者ソースの一致
 status: accepted
 date: 2026-09-09
 amends: [cross/0021]
+amended-by: [cross/0026]
 ---
 
 ## Context
