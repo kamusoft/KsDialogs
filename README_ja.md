@@ -34,7 +34,7 @@ Android target は minSdk 24、compileSdk 36 です。Android Native と Kotlin 
 
 ## インストール
 
-以下には package 座標と version の書き方だけを示します。例の version は現在の公開版で、リリースのたびに更新されます。prerelease は `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` の形で書きます。platform ごとのセットアップや IDE 固有の詳細は [Agent Skills](#agent-skills) を参照してください。
+以下には package 座標と version の書き方だけを示します。各例の version はプレースホルダ `{version}` で書いています。使う version に置き換えてください (そのままでは依存解決に失敗します)。現在の version は、常に最新のリリースへ解決される [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) のページで確認できます。prerelease は `X.Y.Z-alpha.N`、`X.Y.Z-beta.N`、`X.Y.Z-rc.N` の形で書きます。platform ごとのセットアップや IDE 固有の詳細は [Agent Skills](#agent-skills) を参照してください。
 
 ### iOS Native
 
@@ -44,7 +44,7 @@ Swift package を追加し、その `KsDialogs` product を利用します。
 dependencies: [
     .package(
         url: "https://github.com/kamusoft/KsDialogs-SPM",
-        exact: "0.1.0-beta.1"
+        exact: "{version}"
     )
 ]
 ```
@@ -57,7 +57,7 @@ View-only アプリでは core Maven artifact を追加します。
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-core:0.1.0-beta.1")
+    implementation("jp.kamusoft:ksdialogs-core:{version}")
 }
 ```
 
@@ -65,7 +65,7 @@ Compose アプリでは `ksdialogs` だけを追加します。core artifact は
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
+    implementation("jp.kamusoft:ksdialogs:{version}")
 }
 ```
 
@@ -76,7 +76,7 @@ prerelease も同じ version 文字列を座標にそのまま書きます。
 NuGet package を追加します。
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
+<PackageReference Include="KsDialogs.Maui" Version="{version}" />
 ```
 
 prerelease も同じ version 文字列を `Version` 属性にそのまま書きます。
@@ -95,7 +95,7 @@ Maven artifact を `commonMain` に追加します。
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")
+            api("jp.kamusoft:ksdialogs-kmp:{version}")
         }
     }
 }

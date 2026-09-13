@@ -19,7 +19,7 @@
 # (任意のブランチからリハーサルできる)。
 #
 # 決定の経緯は cross/ADR-0009 (lockstep の単一 version) と cross/ADR-0024 (手動起動・
-# publish の順序・version は CI が注入・README のインストール例は workflow が書く)。
+# publish の順序・version は CI が注入)。
 name: release
 
 on:
@@ -79,6 +79,8 @@ env:
   # 「この run は外部状態が 1 つも無い状態から publish に入った」ことを示す印の artifact。
   # 続きを埋める再試行は、この印が今回の version・commit・run と一致するときだけ許される。
   KS_ARTIFACT_ELIGIBILITY: release-eligibility-marker
+  # validate が確定させた Release ノートを publish へ渡すための artifact。
+  KS_ARTIFACT_RELEASE_NOTES: release-notes
 
 jobs:
   # 不可逆な操作に入る前の入力検査。配布物の生成にも進ませない。
@@ -89,6 +91,13 @@ jobs:
     runs-on: ubuntu-24.04
     # 既定の 360 分は長すぎる。検査は clone と文字列比較だけなので短い上限を置く。
     timeout-minutes: 15
+
+    # Release ノートの材料として pull request 本文を読む。job レベルの permissions は
+    # 列挙しなかった権限を none にするため、pull-requests だけを足すと checkout と
+    # commit / Release の取得に要る contents が失われる。両方をここに書き切る。
+    permissions:
+      contents: read
+      pull-requests: read
 
     # 再利用可能 workflow の呼び出し (`with:`) では env コンテキストを参照できないため、
     # 冒頭の env に集約した artifact 名を出力として渡し直す。
@@ -169,8 +178,68 @@ jobs:
               ;;
           esac
 
-      # インストール例の version は release workflow が書くため (cross/ADR-0024)、
-      # ここでは検査しない。作業木の内容は package 段が pack の前に揃える。
+      # Release ノートの材料を集め、検査し、本文まで確定させる。publish はこの成果物を
+      # そのまま使い、pull request 本文を読み直さない — 収集と公開を別の段に分けると、
+      # その間に本文が編集されたときに「公開の後で Release の作成だけが失敗する」経路が
+      # 残る。記載の不備で止まるのもこの位置であり、不可逆な公開には入っていない。
+      #
+      # リハーサルは `main` から起動したときだけ本番と同じ経路を通す。`main` 以外から
+      # 起動したリハーサルは pull request に紐づかない commit を範囲に含むため、収集を
+      # 行うと正当なリハーサルが記載の不備で落ちる。
+      #
+      # その分岐の条件はここで一度だけ評価し、後続の 3 つの step はこの出力だけを見る。
+      # 同じ条件式を書き写すと、片方だけを直したときに「収集は飛ばしたのに upload は
+      # 走り、成果物が無くて落ちる」という、条件の意味と無関係な失敗になる。
+      - name: Decide release notes scope
+        id: notes-scope
+        env:
+          KS_DRY_RUN: ${{ inputs['dry-run'] }}
+          KS_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "${KS_DRY_RUN}" != "true" ] || [ "${KS_REF}" = "refs/heads/main" ]; then
+            collect=true
+          else
+            collect=false
+          fi
+          echo "collect=${collect}" >> "$GITHUB_OUTPUT"
+          echo "Release ノートの収集: ${collect} (dry-run: ${KS_DRY_RUN} / 起動 ref: ${KS_REF})"
+
+      - name: Build release notes
+        if: ${{ steps.notes-scope.outputs.collect == 'true' }}
+        env:
+          # API の照会にはこの token を使う (job の permissions が読み取り範囲を決める)。
+          GH_TOKEN: ${{ github.token }}
+          KS_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          python3 scripts/release/build-release-notes.py collect \
+            --repo "${GITHUB_REPOSITORY}" \
+            --version "${KS_VERSION}" \
+            --sha "${GITHUB_SHA}" \
+            --out "${RUNNER_TEMP}/release-notes"
+          {
+            echo "## Release ノート: ${KS_VERSION}"
+            echo ""
+            cat "${RUNNER_TEMP}/release-notes/notes.md"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release notes
+        if: ${{ steps.notes-scope.outputs.collect == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ env.KS_ARTIFACT_RELEASE_NOTES }}
+          path: ${{ runner.temp }}/release-notes
+          if-no-files-found: error
+          # `Re-run all jobs` で同じ名前を作り直せるようにする。
+          overwrite: true
+
+      # 収集を省いたことをログに残す。省いたのか、走って 0 件だったのかを後から区別する。
+      - name: Skip release notes
+        if: ${{ steps.notes-scope.outputs.collect != 'true' }}
+        run: |
+          echo "main 以外からのリハーサルなので Release ノートの収集と検査は行わない (起動 ref: ${GITHUB_REF})"
+
       - name: Export artifact names
         id: names
         run: |
@@ -389,14 +458,6 @@ jobs:
         # workload set の版は global.json の workloadVersion で固定されている。
         run: dotnet workload install maui
 
-      # facade の nupkg はルート README を同梱する。pack の前に作業木のインストール例を
-      # 入力の version へ揃えることで、nupkg の README が実際に公開される version を指す。
-      # commit はしない (作業木だけの変更で、リポジトリへは publish job が反映する)。
-      - name: Set install example version
-        env:
-          KS_VERSION: ${{ inputs.version }}
-        run: python3 scripts/release/set-readme-version.py "${KS_VERSION}"
-
       # binding 2 件を先に、facade を最後に pack する。facade は binding を
       # ProjectReference で参照しているので pack 自体は順不同で成立するが、nuget.org へ
       # push する順序 (binding が先) と揃えて、成果物の並びを追いやすくする。
@@ -541,17 +602,29 @@ jobs:
     # 起動ブランチの検査 (validate) が外れた場合の二重の歯止めになる。
     environment: release
     permissions:
-      # tag・GitHub Release の作成と、develop へのインストール例の反映に要る。
+      # tag・GitHub Release の作成に要る。
       contents: write
       # NuGet の Trusted Publishing (OIDC) に要る。
       id-token: write
     # 既定の 360 分は長すぎる。Android と KMP の発行と Central Portal の待ちを含む
-    # 直列の publish に対する上限として置く。実測 (検証待ちは枠ごとに数秒〜数分で決着し、
-    # 公開待ちは遅い枠で約 60 分) に、本体の作業 (upload / 検証 / NuGet で約 10 分 +
-    # KMP の再ビルド約 6 分) と公開待ちの上限 90 分 (2 枠まとめて 1 本) を足した予算。
-    # 検証待ちが枠ごとに上限 (30 分) まで伸びる最悪ケースはこの値を超えるが、その場合は
-    # job timeout で止めて再実行に回す (deployment ID は upload の直後に artifact へ
-    # 保存済みで、次の attempt が状態を見て続きを行う)。
+    # 直列の publish に対する上限として置く。内訳 (分):
+    #
+    #   公開待ちの上限   5400 秒 (2 枠まとめて 1 本)                             90
+    #   最後の照会       照会 1 回あたりの応答上限 300 秒 x 1 待ち                5
+    #   巡回間隔の端数   巡回間隔 30 秒 x 1 待ち                                  1
+    #   本体処理         成果物の取得・署名つき再ビルドと比較・upload・NuGet push 16
+    #   余裕                                                                     38
+    #   合計                                                                    150
+    #
+    # 検証の決着待ち (枠ごとに上限 30 分、引き継ぎ経路と upload 後で最大 4 回) と待機外の
+    # 照会は予算に含めない。Maven Central の枠が 2 つあるため最悪ケースを全部収容すると
+    # 合計が実行環境の job 実行時間の上限に対して余裕を持たないこと、検証は枠ごとに短時間で
+    # 決着するのが常態であること、deployment ID が upload の直後に artifact へ保存されて
+    # 次の attempt が引き継ぐため打ち切りが不可逆な損失を生まないことによる。上限を超えた
+    # 場合は job timeout で止めて再実行に回す。
+    #
+    # 上の各項の定数は scripts/release/central-portal.sh 側にあり、この値との突き合わせは
+    # scripts/release/check-time-budget.py が行う (lint job で実行される)。手で数え直さない。
     timeout-minutes: 150
 
     env:
@@ -695,7 +768,7 @@ jobs:
             "${GITHUB_RUN_ATTEMPT}" "${tag_state}" "${external}" "${marker}")"
           echo "判定: ${decision}"
           # skip-all は「レジストリと配信リポジトリへの publish が完了済み」を意味する。
-          # tag より後の冪等な後処理 (Release の作成・インストール例の反映) は別に扱う。
+          # tag より後の冪等な後処理 (Release の作成) は別に扱う。
           case "${decision}" in
             proceed|resume) publish_needed=true ;;
             skip-all)       publish_needed=false ;;
@@ -750,17 +823,30 @@ jobs:
       #
       # ここまで来た attempt だけが 2 枠の引き継ぎを正しく読み込んでいる。失敗経路が
       # artifact を書き戻してよいかの条件として `ready` を出す。
+      #
+      # 出力は「読み込み済みか」(`ready`) と「引き継ぎが存在したか」(`handover`) を分けて
+      # 持つ (枠ごとの内訳は上のログに出る)。引き継ぎが無い初回は
+      # ready=true / handover=absent になり、読み込みに失敗した場合は step ごと失敗して
+      # どちらの出力も残らない。両者を同じ扱いにすると、引き継ぐべき deployment があるのに
+      # upload をやり直し、保留中の deployment を二重に作ってしまう。
       - name: Prepare deployment id files
         id: deployment-ids
         if: steps.state.outputs.publish-needed == 'true'
         run: |
           set -euo pipefail
           mkdir -p "${RUNNER_TEMP}/deployment"
+          handover="absent"
           for slot in android kmp; do
             file="${RUNNER_TEMP}/deployment/deployment-id-${slot}.txt"
             [ -f "${file}" ] || printf '\n' > "${file}"
-            echo "${slot} 枠の引き継ぎ: '$(tr -d '[:space:]' < "${file}")'"
+            deployment_id="$(tr -d '[:space:]' < "${file}")"
+            echo "${slot} 枠の引き継ぎ: '${deployment_id}'"
+            if [ -n "${deployment_id}" ]; then
+              handover="present"
+            fi
           done
+          echo "引き継ぎの有無: ${handover}"
+          echo "handover=${handover}" >> "$GITHUB_OUTPUT"
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Download Android artifacts
@@ -776,6 +862,18 @@ jobs:
         with:
           name: ${{ needs.validate.outputs.artifact-maui }}
           path: ${{ runner.temp }}/package-maui
+
+      # validate が確定させた Release ノート。publish は pull request 本文を読み直さない
+      # ので、検査を通した時点の内容がそのまま Release になる。
+      #
+      # 他の download と違い publish の要否では分岐させない。レジストリへの公開が済んだ
+      # 再実行 (Release だけが残っている状態) でも Release 作成 step は走るため、ここで
+      # 取らないと本文が無いまま Release を作る段に達する。
+      - name: Download release notes
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: ${{ env.KS_ARTIFACT_RELEASE_NOTES }}
+          path: ${{ runner.temp }}/release-notes
 
       # push そのものはずっと後だが、名前の検査は download 直後に置く。取り違えや
       # 開発既定値の混入は、取り消せない操作 (配信リポジトリへの commit 以降) に入る前に
@@ -1272,79 +1370,18 @@ jobs:
             echo "Release ${KS_VERSION} は作成済み (本文は更新しない)"
             exit 0
           fi
-          # prerelease の suffix を持つ version は prerelease として出す。
-          case "${KS_VERSION}" in
-            *-*) gh release create "${KS_VERSION}" --generate-notes --title "${KS_VERSION}" --prerelease ;;
-            *)   gh release create "${KS_VERSION}" --generate-notes --title "${KS_VERSION}" ;;
-          esac
-
-      # README と利用者向け Skill が指す version を、公開した版へ追従させる。
-      # `GITHUB_TOKEN` による push は他の workflow を起動しないため検証 CI は走らない。
-      # その代わりに、検証 CI の lint job と同じ検査を push の前にここで掛ける
-      # (cross/ADR-0024)。
-      #
-      # この step は 4 形態すべてを公開し終えた後にあるので、ここで起きた失敗で release を
-      # 赤くしない。置換・lint・git 操作のどれが落ちても警告として要約に残し、step 自体は
-      # 成功で抜ける (公開そのものは完了しており、次のリリースで追いつく)。
-      # `skip-all` の再実行でも走らせる — 反映だけが残っている run を完了できるようにする。
-      - name: Update install examples on develop
-        id: readme
-        run: |
-          set -euo pipefail
-          work="${RUNNER_TEMP}/develop"
-          warn() {
-            echo "::warning::$1"
-            echo "warning=$1" >> "$GITHUB_OUTPUT"
-            exit 0
-          }
-
-          # checkout action が持たせた資格情報を使い回すため、別 clone ではなく worktree を
-          # 使う (別 clone には push 権限が付かない)。remote-tracking ref
-          # (`origin/develop`) が更新されるかは checkout action の fetch 設定に左右されるため、
-          # 直前の fetch が必ず更新する FETCH_HEAD から作る。
-          git fetch --quiet origin develop || \
-            warn "develop の取得に失敗したため反映しなかった"
-          git worktree add --quiet --detach "${work}" FETCH_HEAD || \
-            warn "develop の作業ツリーを作れなかったため反映しなかった"
-
-          # 置換の対象は worktree 側のファイル。スクリプトは実行時の作業ディレクトリから
-          # リポジトリの根を求めるため、必ず worktree の中で起動する。
-          ( cd "${work}" && python3 scripts/release/set-readme-version.py "${KS_VERSION}" ) || \
-            warn "インストール例の置換に失敗したため develop へ反映しなかった"
-
-          if git -C "${work}" diff --quiet; then
-            echo "develop のインストール例は既に ${KS_VERSION} (commit しない)"
-            exit 0
+          notes="${RUNNER_TEMP}/release-notes/notes.md"
+          if [ ! -s "${notes}" ]; then
+            echo "::error::確定した Release ノートが無い (${notes})"
+            exit 1
           fi
-
-          changed="$(git -C "${work}" diff --name-only)" || \
-            warn "置換した差分を読めなかったため develop へ反映しなかった"
-          echo "置換したファイル:"
-          echo "${changed}" | sed 's/^/  /'
-
-          # 置換後の内容に、検証 CI の lint job と同じ検査を掛ける。
-          # 個体情報とローカル絶対パスは置換したファイルだけ、README 最小例の一致は
-          # 検査の単位がリポジトリ全体なので worktree の中で走らせる。
-          # shellcheck disable=SC2086 # 1 行 1 パスを個別の引数として渡す
-          if ! ( cd "${work}" \
-            && python3 scripts/local-path-lint.py --paths ${changed} \
-            && python3 scripts/identity-lint.py --paths ${changed} \
-            && python3 scripts/readme-example-lint.py ); then
-            warn "置換後の内容が lint に通らないため develop へ反映しなかった"
-          fi
-
-          { git -C "${work}" config user.name "github-actions[bot]" \
-            && git -C "${work}" config user.email "41898282+github-actions[bot]@users.noreply.github.com"; } || \
-            warn "commit の作成者を設定できなかったため develop へ反映しなかった"
-          git -C "${work}" commit -a -m "docs: インストール例の version を ${KS_VERSION} にする" || \
-            warn "置換内容を commit できなかったため develop へ反映しなかった"
-          git -C "${work}" fetch --quiet origin develop || \
-            warn "develop の再取得に失敗したため反映しなかった (次のリリースで追いつく)"
-          git -C "${work}" rebase --quiet FETCH_HEAD || \
-            warn "develop への rebase が競合したため反映しなかった (次のリリースで追いつく)"
-          git -C "${work}" push origin HEAD:refs/heads/develop || \
-            warn "develop への push が拒否されたため反映しなかった (次のリリースで追いつく)"
-          echo "develop のインストール例を ${KS_VERSION} にした"
+          # semver の prerelease 表記を持つ版でも GitHub の prerelease 印は付けず、最新の
+          # リリースとして明示的に指定する。印を外すだけでは最新の選別が自動判定に委ねられ、
+          # インストール例が案内する最新版の参照が意図した版に着地する保証にならない。
+          gh release create "${KS_VERSION}" \
+            --title "${KS_VERSION}" \
+            --notes-file "${notes}" \
+            --latest
 
       # bundle が Portal に受理された後・ID をファイルへ書く前に前の step が落ちると、
       # 保留 deployment だけが残って後始末の手がかりが無くなる。同じ規則で upload の
@@ -1443,17 +1480,17 @@ jobs:
             echo "| Maven 座標 | ${KS_MAVEN_ANDROID_CORE} / ${KS_MAVEN_ANDROID_COMPOSE} / ${KS_MAVEN_KMP} |"
             echo "| NuGet | ${KS_NUGET_BINDING_IOS} / ${KS_NUGET_BINDING_ANDROID} / ${KS_NUGET_FACADE} |"
             echo "| 配信リポジトリ | ${KS_SPM_REPOSITORY} |"
+            echo "| 引き継ぎ | ${KS_HANDOVER:-未実行} |"
             echo "| Central deployment (android) | ${android_id:-なし} |"
             echo "| Central deployment (kmp) | ${kmp_id:-なし} |"
-            if [ -n "${KS_README_WARNING:-}" ]; then
-              echo "| インストール例の追従 | ${KS_README_WARNING} |"
-            fi
             echo ""
             echo "Central Portal の deployment 一覧: ${KS_PORTAL_DEPLOYMENTS_URL}"
           } >> "$GITHUB_STEP_SUMMARY"
         env:
           KS_STATE_DECISION: ${{ steps.state.outputs.decision }}
-          KS_README_WARNING: ${{ steps.readme.outputs.warning }}
+          # 引き継ぎの有無。読み込みに失敗した場合は step ごと失敗して値が残らないので、
+          # 初回 (absent) と読み込み失敗を実行の記録から区別できる。
+          KS_HANDOVER: ${{ steps.deployment-ids.outputs.handover }}
 
   # 公開レジストリの配信元へ反映されるまで待つ。反映前に smoke を回すと、
   # 解決できないのか間に合っていないだけなのかが区別できない。
@@ -1462,7 +1499,21 @@ jobs:
     needs: publish
     if: ${{ !inputs['dry-run'] }}
     runs-on: ubuntu-24.04
-    # スクリプト側の上限 (45 分) を超えても job が居座らないようにする。
+    # スクリプト側の上限を超えても job が居座らないようにする。内訳 (分):
+    #
+    #   待機の上限         2700 秒                                45
+    #   期限を跨げる照会   応答上限 120 秒 x 1 件                  2
+    #   job の前後         checkout と runner の起動               5
+    #   余裕                                                       8
+    #   合計                                                      60
+    #
+    # 期限を跨げる照会が 1 件までであることは、照会が残り時間の正のときだけ始まり対象 1 件
+    # ごとに再判定する巡回の構造に依存する。待機側の構造を変えたらこの項も見直す。
+    # 打ち切りが待機スクリプトの失敗より先に来ると、対象ごとの分類 (反映済み / 未反映 /
+    # 判定不能 / 未照会) の出力ごと消え、レジストリが遅いのか壊れているのか分からなくなる。
+    #
+    # 上の各項の定数は scripts/release/wait-for-registries.sh 側にあり、この値との
+    # 突き合わせは scripts/release/check-time-budget.py が行う。手で数え直さない。
     timeout-minutes: 60
 
     steps:

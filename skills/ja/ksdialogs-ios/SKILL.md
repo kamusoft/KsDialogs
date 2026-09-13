@@ -30,13 +30,13 @@ Swift package 依存として `https://github.com/kamusoft/KsDialogs-SPM` を ht
 
 package の identity は `KsDialogs-SPM`、リンクする product は `KsDialogs`。Swift 6.3 以降の toolchain でビルドする iOS 17 以降の target にリンクする (ライブラリ自体は Swift 6 言語モードでコンパイルされている)。利用するファイルで `KsDialogs` を import する。
 
-下の宣言の version は現在の公開版で、リリースのたびに更新される。
+下の宣言の `{version}` はプレースホルダで、使う version に置き換える (そのままでは依存解決に失敗する)。現在の version は、常に最新のリリースへ解決される [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) のページで確認できる。
 
 ```swift
 dependencies: [
     .package(
         url: "https://github.com/kamusoft/KsDialogs-SPM",
-        exact: "0.1.0-beta.1"
+        exact: "{version}"
     )
 ]
 ```

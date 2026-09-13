@@ -28,13 +28,15 @@ Calling through a default entry and calling through an injected contract reach t
 
 ## Setup
 
-The artifacts are published to Maven Central under the group `jp.kamusoft`. They are built with Kotlin 2.4.10 and expect a consumer-side Kotlin Gradle Plugin on the same minor line (2.4.x); the minimum supported OS is Android 7.0 (API 24). `jp.kamusoft:ksdialogs-core` carries the Android View API and does not depend on Compose, while `jp.kamusoft:ksdialogs` carries the Jetpack Compose API and depends on the core artifact at the same version, so the core arrives transitively. A release version looks like `X.Y.Z` and a prerelease like `X.Y.Z-{alpha|beta|rc}.N`; the version in the examples below tracks the latest published release.
+The artifacts are published to Maven Central under the group `jp.kamusoft`. They are built with Kotlin 2.4.10 and expect a consumer-side Kotlin Gradle Plugin on the same minor line (2.4.x); the minimum supported OS is Android 7.0 (API 24). `jp.kamusoft:ksdialogs-core` carries the Android View API and does not depend on Compose, while `jp.kamusoft:ksdialogs` carries the Jetpack Compose API and depends on the core artifact at the same version, so the core arrives transitively. A release version looks like `X.Y.Z` and a prerelease like `X.Y.Z-{alpha|beta|rc}.N`.
+
+`{version}` in the examples below is a placeholder: replace it with the version you want to use, or resolution fails. To find the current version, open the [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) page, which always resolves to the most recent release.
 
 For a View-only Android application, declare only the core artifact:
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-core:0.1.0-beta.1")
+    implementation("jp.kamusoft:ksdialogs-core:{version}")
 }
 ```
 
@@ -42,7 +44,7 @@ For a Compose application, declare only the Compose artifact; it brings in the c
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
+    implementation("jp.kamusoft:ksdialogs:{version}")
     val composeBom = platform("androidx.compose:compose-bom:2025.05.00")
     implementation(composeBom)
     implementation("androidx.compose.foundation:foundation")

@@ -301,6 +301,11 @@ cmd_wait_published() {
                 "${DEPLOYMENT_NOT_FOUND}")
                     fail "公開を待っている deployment が存在しない: ${id}"
                     ;;
+                "")
+                    # 状態を取り出せなかった ID を待機対象に残すと、応答の得られない相手を
+                    # 上限まで待ち続ける。照会が答えを返さなかったときは待たずに止める。
+                    fail "deployment の状態を取得できなかった: ${id}"
+                    ;;
                 *)
                     remaining+=("${id}")
                     states="${states}${states:+, }${id}=${state}"
@@ -419,6 +424,10 @@ selftest() {
         fi
     }
 
+    # 台本が尽きたときに返すステータス。curl が応答を得られなかったときの値に揃えてあり、
+    # 応答を解釈するどの経路でも成功にも既知の状態にも当たらない。
+    local MOCK_EXHAUSTED_STATUS="000"
+
     # http_request のモック。ここから先は本物の curl を呼ばない。
     # 本物と同じく「1 行目 = ステータスコード、2 行目以降 = 本文」の形で返す。
     http_request() {
@@ -433,8 +442,13 @@ selftest() {
         local line
         line="$(sed -n "${index}p" "${MOCK_SCRIPT}")"
         if [ -z "${line}" ]; then
+            # 台本切れは「応答が返らなかった」ことにして、応答を解釈する側の失敗経路へ流す。
+            # 戻り値だけで失敗を伝えると、`if` の条件のように set -e が働かない文脈から
+            # 呼ばれたときに呼び出し側へ何も伝わらない。応答として表せば、状態を取り出せない
+            # ことが呼び出し側に届き、待機は答えの返らない照会として止まる。
             echo "モックの台本が尽きた (${index} 件目): ${method} ${url}" >&2
-            return 1
+            printf '%s\n%s' "${MOCK_EXHAUSTED_STATUS}" "mock script exhausted"
+            return 0
         fi
         printf '%s\n%s' "${line%% *}" "${line#* }"
     }
@@ -532,8 +546,10 @@ selftest() {
         "drop 済みの ID は存在しない旨を出力する" "${dropped_output}"
 
     arrange '404 {"error":"not found"}'
-    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 cmd_wait_published abc > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=5 cmd_wait_published abc > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
         "存在しない deployment の公開待ちは失敗する"
+    check "$([ "$(calls | wc -l | tr -d ' ')" = "1" ] && echo 0 || echo 1)" \
+        "存在しない deployment は 1 回の照会で止まる" "$(calls)"
 
     arrange '404 {"error":"not found"}'
     check "$(if ( cmd_release abc > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
@@ -541,24 +557,34 @@ selftest() {
     check "$([ "$(calls | wc -l | tr -d ' ')" = "1" ] && echo 0 || echo 1)" \
         "release しないときは状態照会だけで止まる (NOT_FOUND)" "$(calls)"
 
+    # 待機が止まらなくなる誤りに対しては二層で構えている。内側は `cmd_wait_published` 側で、
+    # 答えの返らない照会を待機対象に残さず止める。外側がここで、公開待ちを回す検査に
+    # 期待の成否によらず短い上限を与える (検査は `if` の条件で呼ぶため set -e が働かず、
+    # 既定の 90 分のままだと誤りが検査の失敗ではなく自己テストの停止として表れる)。
+    # ただし上限に達したことだけでは、上限が効いたのか終端の状態を取りこぼして台本を
+    # 使い切ったのかが区別できない。どちらの層も、照会回数の表明と対にして初めて効く。
     echo "[wait-published]"
     arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHED"}'
-    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 cmd_wait_published abc > /dev/null 2>&1 ); then echo 0; else echo 1; fi)" \
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=5 cmd_wait_published abc > /dev/null 2>&1 ); then echo 0; else echo 1; fi)" \
         "PUBLISHING を経て PUBLISHED になれば成功する"
     check "$([ "$(calls | wc -l | tr -d ' ')" = "3" ] && echo 0 || echo 1)" "PUBLISHED まで照会を繰り返す" "$(calls)"
 
     arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"FAILED"}'
-    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 cmd_wait_published abc > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=5 cmd_wait_published abc > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
         "FAILED になれば失敗する"
+    check "$([ "$(calls | wc -l | tr -d ' ')" = "2" ] && echo 0 || echo 1)" \
+        "FAILED を見つけた時点で止まる (単一 ID)" "$(calls)"
 
     arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHING"}'
     check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=0 cmd_wait_published abc > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
         "上限を過ぎれば失敗する"
+    check "$([ "$(calls | wc -l | tr -d ' ')" = "1" ] && echo 0 || echo 1)" \
+        "上限で止まるので 1 巡で終わる" "$(calls)"
 
     # 公開待ちの上限は検証待ちと別の変数で持つ。検証待ち用の変数を 0 にしても公開待ちは
     # 打ち切られない (両者が同じ変数を見る実装なら、この呼び出しは 1 ループ目で失敗する)。
     arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHED"}'
-    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_POLL_TIMEOUT_SECONDS=0 cmd_wait_published abc > /dev/null 2>&1 ); then echo 0; else echo 1; fi)" \
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_POLL_TIMEOUT_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=5 cmd_wait_published abc > /dev/null 2>&1 ); then echo 0; else echo 1; fi)" \
         "検証待ちの上限は公開待ちに効かない"
 
     echo "[wait-published の複数 ID]"
@@ -570,7 +596,7 @@ selftest() {
     arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHING"}' \
         '200 {"deploymentState":"PUBLISHED"}' '200 {"deploymentState":"PUBLISHING"}' \
         '200 {"deploymentState":"PUBLISHED"}'
-    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 0; else echo 1; fi)" \
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=5 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 0; else echo 1; fi)" \
         "2 件が別々のタイミングで PUBLISHED になれば成功する"
     check "$(contains "$(calls | sed -n 2p)" "id=bbb")" \
         "1 ループで全枠を照会する (直列なら 2 件目も aaa になる)" "$(calls | sed -n 2p)"
@@ -584,7 +610,7 @@ selftest() {
     # 片方が FAILED なら、他方が公開済みでも全体を失敗にする
     # (先頭の ID しか見ない実装ならここは成功してしまう)。
     arrange '200 {"deploymentState":"PUBLISHED"}' '200 {"deploymentState":"FAILED"}'
-    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=5 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
         "2 件のうち 1 件が FAILED なら失敗する"
     check "$([ "$(calls | wc -l | tr -d ' ')" = "2" ] && echo 0 || echo 1)" \
         "FAILED を見つけた時点で止まる" "$(calls)"
@@ -592,6 +618,28 @@ selftest() {
     arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHING"}'
     check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=0 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
         "2 件とも未公開のまま上限を過ぎれば失敗する"
+    check "$([ "$(calls | wc -l | tr -d ' ')" = "2" ] && echo 0 || echo 1)" \
+        "上限で止まるので 2 件を 1 巡して終わる" "$(calls)"
+
+    # 台本を 1 件伸ばしても、正しい実装の照会数は変わらない。余分まで使い切る実装 (公開済みの
+    # 枠を外さない・枠ごとに待ち切る) は、この写しでは台本を先に使い切る。
+    arrange '200 {"deploymentState":"PUBLISHING"}' '200 {"deploymentState":"PUBLISHING"}' \
+        '200 {"deploymentState":"PUBLISHED"}' '200 {"deploymentState":"PUBLISHING"}' \
+        '200 {"deploymentState":"PUBLISHED"}' '200 {"deploymentState":"PUBLISHING"}'
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=5 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 0; else echo 1; fi)" \
+        "台本を 1 件伸ばしても成功する"
+    check "$([ "$(calls | wc -l | tr -d ' ')" = "5" ] && echo 0 || echo 1)" \
+        "台本を 1 件伸ばしても照会は 5 件で終わる" "$(calls)"
+
+    # 台本が尽きた照会は応答の得られない照会として扱われ、待機は上限を待たずに止まる
+    # (内側の層)。短い上限はその外側の保険で、内側が外れたときに停止ではなく失敗として
+    # 表れるようにする。照会回数の表明を対にしてあるのは、待機が止まった理由が
+    # 「答えの返らない照会で止まった」のか「上限まで空回りした」のかを分けるため。
+    arrange '200 {"deploymentState":"PUBLISHING"}'
+    check "$(if ( KSR_POLL_INTERVAL_SECONDS=0 KSR_PUBLISHED_TIMEOUT_SECONDS=1 cmd_wait_published aaa bbb > /dev/null 2>&1 ); then echo 1; else echo 0; fi)" \
+        "台本が尽きても待機が終わらなくなるのではなく失敗する"
+    check "$([ "$(calls | wc -l | tr -d ' ')" = "2" ] && echo 0 || echo 1)" \
+        "答えの返らない照会は待たずに止まる (上限まで空回りしない)" "$(calls)"
 
     echo "[published]"
     local published_code

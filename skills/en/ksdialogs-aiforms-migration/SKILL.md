@@ -47,8 +47,10 @@ KsDialogs.Maui replaces AiForms.Maui.Dialogs with Dialog result types, factory-b
 Remove the `AiForms.Maui.Dialogs` package and add `KsDialogs.Maui` from nuget.org to a .NET 10 MAUI project. That single reference is everything a project writes: the binding packages `KsDialogs.Binding.iOS` and `KsDialogs.Binding.Android` carry the native side and arrive transitively on the iOS and Android target frameworks, so do not reference them directly. Replace `using AiForms.Dialogs;` with `using KsDialogs;`.
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
+<PackageReference Include="KsDialogs.Maui" Version="{version}" />
 ```
+
+`{version}` is a placeholder: replace it with the version you want to use, or restore fails. To find the current version, open the [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) page, which always resolves to the most recent release.
 
 The project also needs `Microsoft.Maui.Controls` 10.0.20 or later. That is the version bundled with the .NET workload set this library is built and tested against, so a project on the same workload set can leave the version unwritten; pinning an older one (below 10.0.20) makes restore report NU1605, the NuGet package-downgrade error. Use the .NET 10 SDK with the iOS and Android MAUI workloads installed. KsDialogs.Maui supports iOS 17.0 or later and Android 7.0 (API 24) or later; a `SupportedOSPlatformVersion` below that, including one left unset where the SDK default is lower, stops the build with error `KSDLG0001`.
 

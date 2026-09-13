@@ -4,8 +4,8 @@ applies-when:
   always: false
   tasks: [CI の検証範囲の確認, CI の失敗の切り分け, workflow の変更, 変更の完了判定]
 title: 検証 CI の範囲と実行条件
-description: 検証 CI (`.github/workflows/ci.yml` と platform 別 reusable workflow 5 本・消費者検証 4 本) が回す範囲と手元に残る範囲、各 job が回すテストルートと実行件数の検査、CI の Swift テストをスイート直列で回す理由と待ち不足との見分け方、android-instrumented job の IME 系テストの既知の落ち方 2 型。決定の記録は cross/ADR-0017 (構成と保証範囲) / cross/ADR-0018 (toolchain の固定) / cross/ADR-0022 (lint の 8 検査)
-timestamp: 2026-09-09
+description: 検証 CI (`.github/workflows/ci.yml` と platform 別 reusable workflow 5 本・消費者検証 4 本) が回す範囲と手元に残る範囲、各 job が回すテストルートと実行件数の検査、CI の Swift テストをスイート直列で回す理由と待ち不足との見分け方、android-instrumented job の IME 系テストの既知の落ち方 2 型。決定の記録は cross/ADR-0017 (構成と保証範囲) / cross/ADR-0018 (toolchain の固定) / cross/ADR-0026・0029 (lint の 12 検査)
+timestamp: 2026-09-13
 ---
 
 # 検証 CI の範囲と実行条件
@@ -25,11 +25,11 @@ timestamp: 2026-09-09
 | consumer-android | `verification/android/` の消費者アプリ 2 つを dry-run で release variant ビルドし、依存ツリーを検査 | `main` 宛て PR のみ |
 | consumer-maui | `verification/maui/` の消費者アプリを dry-run で net10.0-android / net10.0-ios の Release ビルドし、解決版と取得元とアセットを検査 | `main` 宛て PR のみ |
 | consumer-kmp | `verification/kmp/` の消費者を dry-run で 3 段 (Android release / 共有モジュールの iOS framework リンク / iOS アプリの Release) 通し、5 publication の解決と Swift 参照を検査 | `main` 宛て PR のみ |
-| lint | 8 検査 (下表) | 常時 |
+| lint | 12 検査 (下表) | 常時 |
 
-release workflow (`.github/workflows/release.yml`) は上表の本体検証 5 本と消費者検証 4 本を同じ再利用可能 workflow の呼び出しとして使う (消費者検証は dry-run で 1 回、公開後の smoke で 1 回)。lint job は release からは呼ばず、publish job が `develop` へインストール例を反映する前に同じ検査のうち 3 つ (ローカル絶対パス・個体情報・README 最小例の一致) を掛ける (cross/ADR-0024)。手順は [リリース手順](release-procedure.md)。
+release workflow (`.github/workflows/release.yml`) は上表の本体検証 5 本と消費者検証 4 本を同じ再利用可能 workflow の呼び出しとして使う (消費者検証は dry-run で 1 回、公開後の smoke で 1 回)。lint job は release からは呼ばない。リリースはインストール例を書き換えず、リポジトリへ書き戻す step も持たないため、release の側で掛ける lint は無い。手順は [リリース手順](release-procedure.md)。
 
-lint job の 8 検査は次のとおりで、いずれかの違反で job が失敗する。
+lint job の 12 検査は次のとおりで、いずれかの違反で job が失敗する。自己テストを持つ検査は、自己テストを本検査より先に同じ step で走らせる (cross/ADR-0020) — その 1 対を 1 検査と数える。
 
 | 検査 | 見るもの |
 |---|---|
@@ -41,6 +41,10 @@ lint job の 8 検査は次のとおりで、いずれかの違反で job が失
 | CI 限定スキップの許可リスト検査 | 承認の無い skip (自己テストを含む。cross/ADR-0021) |
 | SwiftPM スナップショット同期スクリプトの自己テスト | 同期スクリプトの検出器が退行していないか (cross/ADR-0020) |
 | README 最小例の一致検査 | ルート README (英語) の最小例 4 つと `verification/` の消費者ソースの完全一致 (自己テストを含む。cross/ADR-0022) |
+| インストール例の契約の検査 | README 2 枚と `skills/` のインストール宣言のプレースホルダ・`exact:`・最新リリースへの案内・英日の同一構成と対象表の突合 (自己テストを含む。cross/ADR-0029)。[インストール例の契約](install-examples.md) |
+| リリース用スクリプトの自己テスト | `scripts/release/` の shell 8 本と `build-release-notes.py` の `--selftest` (cross/ADR-0026) |
+| 待ちの時間予算の検査 | 待ちの上限 (スクリプトの定数) と release workflow の `timeout-minutes` の突き合わせ (自己テストを含む。cross/ADR-0026) |
+| publish の step 順序の検査 | 保留中 deployment の引き継ぎを他の成果物の取得より前に読む並び (自己テストを含む。cross/ADR-0026) |
 
 CI に載らない検証は**手元の完了判定に残る**。変更の完了を判定するときは CI の緑だけでは足りず、該当するものを手で回す。
 
@@ -78,4 +82,5 @@ IME の出し入れを観測するテストが落ちたときは、job の成果
 - [テスト実行規約](test-execution.md) — 各ビルドルートの実行コマンドと件数の得方、手元の完了判定
 - [ローカル開発環境の準備](local-development-setup.md) — `global.json` による SDK / workload set の固定と Xcode の版
 - [リリース手順](release-procedure.md) — 必須 status check の登録とリリースの起動
+- [インストール例の契約](install-examples.md) — 契約の検査が見る範囲と、散文が検査の外に残る限界
 - cross/ADR-0017 (検証 CI の構成と保証範囲・トリガー) / cross/ADR-0018 (toolchain の固定境界)

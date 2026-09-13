@@ -203,10 +203,18 @@ verification/kmp/build-consumer.sh
 
 ```bash
 for s in scripts/release/*.sh; do "$s" --selftest; done
-python3 scripts/release/set-readme-version.py --selftest
+python3 scripts/release/build-release-notes.py --selftest
+python3 scripts/release/check-time-budget.py --selftest && python3 scripts/release/check-time-budget.py
+python3 scripts/release/check-publish-step-order.py --selftest && python3 scripts/release/check-publish-step-order.py
 ```
 
-`set-readme-version.py` の自己テストは実物の README と Skill を一時ディレクトリへ複写して置換を試すため、インストール例を書き換えたときの受け皿にもなる (対象行の形が変わって検出できなくなっていれば、ここで落ちる)。リリース手順そのものは [リリース手順](release-procedure.md) を参照する。
+`build-release-notes.py` の自己テストは、`## Changes` の解析・起点の選択・ページ送りを実物の実装で回す (GitHub API にも実レジストリにも出ない)。インストール例を触ったときの受け皿は別で、リポジトリルートで次を回す。
+
+```bash
+python3 scripts/install-example-lint.py --selftest && python3 scripts/install-example-lint.py
+```
+
+リリース手順そのものは [リリース手順](release-procedure.md)、インストール例が守る形は [インストール例の契約](install-examples.md) を参照する。
 
 ## 関連
 

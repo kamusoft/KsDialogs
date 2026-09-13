@@ -11,6 +11,7 @@
 | [runtime-behavior-verification.md](runtime-behavior-verification.md) | 実行時挙動 (表示 / dismiss の演出・多段表示のタイミング・IME・OS 提示機構) が絡む不具合を調査・修正し、完了を判定するとき | rule |
 | [local-development-setup.md](local-development-setup.md) | 環境構築・git worktree での作業開始・Gradle ルートのビルドやテストを始めるとき・4 形態の Sample をビルドまたは起動するとき・`dotnet` が拾う SDK と workload set を確認するとき・MAUI iOS で Xcode 版数の食い違いを解消するとき・消費者検証 (`verification/`) を手元で回すとき | guide |
 | [release-procedure.md](release-procedure.md) | リリースを起動するとき・release workflow の secrets / Environment / branch protection を設定するとき・リリースを再実行 / リハーサルするとき・放棄した version を後片付けするとき | guide |
+| [install-examples.md](install-examples.md) | README 2 枚と `skills/**` のインストール例を書くとき・利用者向け Skill や宣言を持つ補助文書を足すとき・`scripts/install-example-lint.py` の対象表を触るとき | rule |
 | [user-skill-api-listing.md](user-skill-api-listing.md) | `skills/**` を生成・更新するとき・docs-refresh の API 名網羅検査を仕分けるとき | rule |
 | [docs-refresh-timing.md](docs-refresh-timing.md) | docs-refresh を走らせるとき・変更を蒸留するとき (`skills/.manifest.json` の concepts スナップショットを書く時点) | rule |
 | [user-skill-writing-style.md](user-skill-writing-style.md) | `skills/**` の references を新設・改稿するとき・ja から en へ同期するとき | rule |

@@ -34,7 +34,7 @@ The Android targets use minSdk 24 and compileSdk 36. Android Native and Kotlin M
 
 ## Installation
 
-The declarations below cover the package coordinates and the version syntax. The version in each example is the current release and is updated with every release. A prerelease is written as `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N`. See [Agent Skills](#agent-skills) for platform setup and IDE-specific details.
+The declarations below cover the package coordinates and the version syntax. Each example writes the version as the placeholder `{version}`: replace it with the version you want to use, or dependency resolution fails. To find the current version, open the [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) page, which always resolves to the most recent release. A prerelease is written as `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, or `X.Y.Z-rc.N`. See [Agent Skills](#agent-skills) for platform setup and IDE-specific details.
 
 ### iOS Native
 
@@ -44,7 +44,7 @@ Add the Swift package and use its `KsDialogs` product.
 dependencies: [
     .package(
         url: "https://github.com/kamusoft/KsDialogs-SPM",
-        exact: "0.1.0-beta.1"
+        exact: "{version}"
     )
 ]
 ```
@@ -57,7 +57,7 @@ For a View-only application, add the core Maven artifact.
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs-core:0.1.0-beta.1")
+    implementation("jp.kamusoft:ksdialogs-core:{version}")
 }
 ```
 
@@ -65,7 +65,7 @@ For a Compose application, add only `ksdialogs`; it brings in the core artifact 
 
 ```kotlin
 dependencies {
-    implementation("jp.kamusoft:ksdialogs:0.1.0-beta.1")
+    implementation("jp.kamusoft:ksdialogs:{version}")
 }
 ```
 
@@ -76,7 +76,7 @@ A prerelease is written as the same version string in the coordinate.
 Add the NuGet package.
 
 ```xml
-<PackageReference Include="KsDialogs.Maui" Version="0.1.0-beta.1" />
+<PackageReference Include="KsDialogs.Maui" Version="{version}" />
 ```
 
 A prerelease is written as the same version string in the `Version` attribute.
@@ -95,7 +95,7 @@ Add the Maven artifact to `commonMain`.
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api("jp.kamusoft:ksdialogs-kmp:0.1.0-beta.1")
+            api("jp.kamusoft:ksdialogs-kmp:{version}")
         }
     }
 }
