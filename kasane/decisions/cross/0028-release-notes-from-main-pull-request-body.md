@@ -1,7 +1,7 @@
 ---
 id: 0028
 title: Release ノートは `main` 宛て pull request 本文の `## Changes` から組み立て、収集と検査は validate 段で一度だけ行う
-status: proposed
+status: accepted
 date: 2026-09-13
 ---
 
@@ -58,5 +58,5 @@ Release ノートは、範囲に入る `main` 宛て pull request の本文に�
 - リリースの起動ブランチの決定 (cross/ADR-0016) が変わったとき
 
 ---
-出典: kasane/changes/install-examples-and-release-notes/proposal.md (Why・What Changes 5) / 同 design.md (Decision 4・5・6・7・8) / ../KsSettingsView/kasane/outbox/KsDialogs/2026-09-12-install-examples-and-release-notes-decisions.md (sibling の決定)
+出典: kasane/changes/archive/2026-09-13-install-examples-and-release-notes/proposal.md (Why・What Changes 5) / 同 design.md (Decision 4・5・6・7・8) / ../KsSettingsView/kasane/outbox/KsDialogs/2026-09-12-install-examples-and-release-notes-decisions.md (sibling の決定)
 関連: cross/ADR-0016 (ブランチモデルとリリースの起動ブランチ) / cross/ADR-0024 (publish の順序 — 公開が取り消せない前提) / cross/ADR-0027 (インストール例と最新リリースの指定)

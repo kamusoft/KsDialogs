@@ -1,7 +1,7 @@
 ---
 id: 0030
 title: release は publish の後にインストール例を `develop` へ書き戻さず、publish の順序を 7 段で終える (0024 を一部改訂)
-status: proposed
+status: accepted
 date: 2026-09-13
 amends: [cross/0024]
 ---
@@ -48,5 +48,5 @@ cross/ADR-0024 が cross/ADR-0016 の「README の version 置換はリリース
 - release workflow がリポジトリへ何かを書き戻す必要が生じたとき
 
 ---
-出典: kasane/changes/install-examples-and-release-notes/proposal.md (What Changes 1・2) / 同 design.md (Decision 1・Migration Plan) / kasane/changes/install-examples-and-release-notes/review-001.md (accepted ADR との衝突の指摘)
+出典: kasane/changes/archive/2026-09-13-install-examples-and-release-notes/proposal.md (What Changes 1・2) / 同 design.md (Decision 1・Migration Plan) / kasane/changes/archive/2026-09-13-install-examples-and-release-notes/review-001.md (accepted ADR との衝突の指摘)
 関連: cross/ADR-0024 (publish の順序と tag の扱い。本決定で順 8 と「tag と README の扱い」後半を置き換え) / cross/ADR-0027 (インストール例は具体 version を持たない — 撤去の根拠) / cross/ADR-0029 (契約の検査を日常の lint job へ移す) / cross/ADR-0016 (ブランチモデル。README 置換の扱いは対象そのものが無くなった)

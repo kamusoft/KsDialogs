@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""publish job の step 順序の検査。
+"""publish job の step 順序の検査 (cross/ADR-0026)。
 
 保留中の deployment の引き継ぎは、publish が必要とする他の成果物の取得より前に読む。
 後ろにあると、成果物の取得に失敗した attempt が引き継ぎを読まないまま終わり、前の attempt が

@@ -18,6 +18,10 @@
 # `dry-run` 入力を true にすると publish 以降を行わず、起動ブランチの制限も外れる
 # (任意のブランチからリハーサルできる)。
 #
+# release はリポジトリへ何も書き戻さない。インストール例は具体的な version を持たないため
+# (cross/ADR-0027)、publish は配信先へ書き込むだけで終わり、`develop` への commit を行う段も
+# 持たない (cross/ADR-0030)。インストール例の契約は日常の検証 CI が検査する (cross/ADR-0029)。
+#
 # 決定の経緯は cross/ADR-0009 (lockstep の単一 version) と cross/ADR-0024 (手動起動・
 # publish の順序・version は CI が注入)。
 name: release
@@ -178,7 +182,9 @@ jobs:
               ;;
           esac
 
-      # Release ノートの材料を集め、検査し、本文まで確定させる。publish はこの成果物を
+      # Release ノートの材料を集め、検査し、本文まで確定させる (cross/ADR-0028)。
+      # 本文の出どころは `main` 宛て pull request の `## Changes` セクションで、GitHub が
+      # ラベル等から推測した分類は使わない。publish はこの成果物を
       # そのまま使い、pull request 本文を読み直さない — 収集と公開を別の段に分けると、
       # その間に本文が編集されたときに「公開の後で Release の作成だけが失敗する」経路が
       # 残る。記載の不備で止まるのもこの位置であり、不可逆な公開には入っていない。
@@ -1376,8 +1382,9 @@ jobs:
             exit 1
           fi
           # semver の prerelease 表記を持つ版でも GitHub の prerelease 印は付けず、最新の
-          # リリースとして明示的に指定する。印を外すだけでは最新の選別が自動判定に委ねられ、
-          # インストール例が案内する最新版の参照が意図した版に着地する保証にならない。
+          # リリースとして明示的に指定する (cross/ADR-0027)。印を外すだけでは最新の選別が
+          # 自動判定に委ねられ、インストール例が案内する最新版の参照が意図した版に着地する
+          # 保証にならない。
           gh release create "${KS_VERSION}" \
             --title "${KS_VERSION}" \
             --notes-file "${notes}" \

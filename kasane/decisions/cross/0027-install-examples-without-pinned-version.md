@@ -1,7 +1,7 @@
 ---
 id: 0027
 title: インストール例は具体 version を持たず、プレースホルダ `{version}` と最新リリースの案内に委ねる (置換機構を撤去し、GitHub Release は prerelease 印を付けず最新として明示指定する)
-status: proposed
+status: accepted
 date: 2026-09-13
 ---
 
@@ -58,5 +58,5 @@ date: 2026-09-13
 - 利用者から「version を埋める手間」に対する具体的な不満が届いたとき
 
 ---
-出典: kasane/changes/install-examples-and-release-notes/proposal.md (Why・What Changes 1〜4) / 同 design.md (Decision 1・2、Migration Plan) / ../KsSettingsView/kasane/outbox/KsDialogs/2026-09-12-install-examples-and-release-notes-decisions.md (sibling の決定)
+出典: kasane/changes/archive/2026-09-13-install-examples-and-release-notes/proposal.md (Why・What Changes 1〜4) / 同 design.md (Decision 1・2、Migration Plan) / ../KsSettingsView/kasane/outbox/KsDialogs/2026-09-12-install-examples-and-release-notes-decisions.md (sibling の決定)
 関連: cross/ADR-0025 (既定ブランチ main — 書き戻し先が収まらなくなった原因) / cross/ADR-0024 (publish の順序とインストール例の置換の時点。撤去に伴う改訂は cross/ADR-0030) / cross/ADR-0029 (契約の検査を lint job に加える) / cross/ADR-0028 (Release ノートの組み立て) / cross/ADR-0030 (release がインストール例を書き戻さない — 本決定に伴う 0024 の改訂)

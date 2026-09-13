@@ -1,9 +1,9 @@
 ---
 type: concept
 title: release workflow (4 形態の一斉公開)
-description: release.yml が 1 回の手動起動で 4 形態を同じ version で公開する仕組み — 段の構成、取り消せる順に並べた publish の順序、Maven Central の 2 枠 deployment と ID の引き継ぎ、印 (marker) による再試行の続行判定、README / Skill のインストール例の自動置換、反映待ちと smoke
+description: release.yml が 1 回の手動起動で 4 形態を同じ version で公開する仕組み — 段の構成、取り消せる順に並べた publish の順序、Maven Central の 2 枠 deployment と ID の引き継ぎ、印 (marker) による再試行の続行判定、Release ノートの組み立て、反映待ちの状態分類と smoke、待ちの時間予算
 tags: [cross, release, ci, github-actions, maven-central, nuget, swiftpm, kmp]
-timestamp: 2026-09-10
+timestamp: 2026-09-13
 ---
 
 # release workflow (4 形態の一斉公開)
@@ -42,7 +42,7 @@ graph LR
 
 | 段 | 何をするか |
 |---|---|
-| validate | checkout より前に version 形式と起動ブランチを検査し、checkout 後に monorepo の同名 tag (無し / 同 commit → 続行、別 commit → 失敗) と配信リポジトリの同名 tag (その tag が指す内容が今回のスナップショットと同じなら続行、違えば失敗。`check-distribution-tag.sh`) を見る |
+| validate | checkout より前に version 形式と起動ブランチを検査し、checkout 後に monorepo の同名 tag (無し / 同 commit → 続行、別 commit → 失敗) と配信リポジトリの同名 tag (その tag が指す内容が今回のスナップショットと同じなら続行、違えば失敗。`check-distribution-tag.sh`) を見る。Release ノートの収集・検査・整形もここで一度だけ行う (「Release ノートの組み立て」) |
 | 本体検証 | 検証 CI と同じ再利用可能 workflow 5 本 (`ios` / `android` / `android-instrumented` / `kmp` / `maui`) をそのまま呼ぶ |
 | package | iOS のスナップショット (ubuntu)、Android の Maven ローカル発行物 (macOS)、MAUI の nupkg / snupkg (macOS) を version を注入して作り artifact に保存する。KMP の配布物はここでは作らない |
 | 消費者 dry-run | `verify-consumer-{ios,android,maui,kmp}.yml` を `mode: dry-run` + version + package 段の artifact で呼ぶ。KMP の消費者には Android の artifact を渡し、kmp/ の発行は消費者 job 内で行う |
@@ -66,8 +66,7 @@ publish は macOS runner の 1 job で、取り消せる操作を先に、取り
 | 4 | KMP を https + `exact` で発行 → `.asc` の検査 → upload 保留 → 検証済み待ち | tag + 保留 deployment 2 件 (drop される) |
 | 5 | nuget.org へ push (binding 2 件 → facade の順。facade が見える時点で依存先が揃うように。`--skip-duplicate`) | 公開済みのパッケージ (取り消せない) |
 | 6 | Maven Central の release を Android → KMP の順に要求 (KMP の Android publication が `ksdialogs-core` に同版依存するため、依存先を先に公開する) してから、2 枠の公開 (PUBLISHED) をまとめて待つ | 公開済みの座標 (取り消せない) |
-| 7 | monorepo の tag と GitHub Release (prerelease の suffix があれば prerelease) | tag と Release (残す) |
-| 8 | `develop` へインストール例の version 置換 commit を push (失敗しても release は失敗にしない) | 置換されないままの `develop` (次のリリースで追いつく) |
+| 7 | monorepo の tag と GitHub Release (本文は validate が確定させた成果物。version の表記によらず prerelease の印は付けず `--latest` を明示する) | tag と Release (残す) |
 
 Android の同一性比較は署名ファイルとチェックサムを除き、アーカイブはエントリ名と内容で比べる (`compare-maven-artifacts.sh`)。KMP は publish 段でしか作らないため比較の対象外で、代わりに smoke が公開レジストリからの実解決で確かめる。署名鍵が届いていなければ Android の `.asc` 検査 (順 2) で止まり、配信リポジトリの tag も KMP の発行も NuGet push も起きない。
 
@@ -99,26 +98,27 @@ android/ と kmp/ は別ビルドで、Maven Central の upload は Gradle ビ�
 
 publish の各ステップは存在検査で冪等になっていて、失敗した run を同じ version で「失敗した job から再実行」(GitHub の Re-run failed jobs。run id は変わらず試行回数だけ増える) すれば、済んだ分を飛ばして続きを行える。続きを埋めてよいかは、書き込みを始める前の外部状態の再検査で、次の順に決める。
 
-1. **monorepo の tag を見る。** 起動 commit と別の commit を指していれば失敗する。起動 commit にあれば完了印とみなし、レジストリと配信リポジトリへの publish をすべて skip して GitHub Release の作成 (既存なら触らない) とインストール例の反映だけを行う。tag が無ければ 2 へ
+1. **monorepo の tag を見る。** 起動 commit と別の commit を指していれば失敗する。起動 commit にあれば完了印とみなし、レジストリと配信リポジトリへの publish をすべて skip して GitHub Release の作成 (既存なら触らない) だけを行う。tag が無ければ 2 へ
 2. **当該 version の外部状態 (配信リポジトリの tag・Maven Central の公開・nuget.org の存在) を見る。** 1 つも無ければ進む。このとき「無の状態から publish に入った」印 (version・commit・run id) を artifact に残す。1 つでもあれば 3 へ
 3. **印を見る。** 印が今回の version・commit・run と一致すれば続きを埋める (resume)。印が無い・一致しなければ失敗する — 新規の dispatch (試行 1 回目で外部状態がある) と、外部状態を理由に拒否された run の再試行がここに当たる。公開済みの binary と tag が指す source の対応を保証できないため
 
 判定は `check-resume-eligibility.sh` に切り出され、試行回数 × tag の状態 × 外部状態 × 印の組み合わせを自己テストが網羅する。nuget.org の照会は 200 / 404 / それ以外を分け、判定不能を「未公開」と読み替えない (fail-closed)。
 
-完了印のある再試行は Release と `develop` 反映を続けて行うため、完了済みの古い run を後から再実行すると `develop` のインストール例がその古い version へ書き戻されうる (手順書が「完了済みの run は再実行しない」と定める理由)。
+完了印のある再試行が行うのは Release の作成だけで、既に Release があれば本文にも触れない。本文は validate が確定させた成果物から取るため、再実行しても内容は変わらない。
 
 KMP 以降で失敗した version を再試行せずに放棄すると、配信リポジトリに「iOS だけ解決できる tag」が残る。番号は欠番にして再利用せず、tag の削除は任意の後片付けにすぎない。
 
-## README と Skill のインストール例の置換
+## Release ノートの組み立て
 
-利用者向け文書は monorepo ルートの README 2 枚 (`README.md` / `README_ja.md`) と `skills/` 配下の Agent Skills (利用者が自分のプロジェクトへコピーして使う導入ガイド) で、通常は docs-refresh (利用者向け文書を concepts とコードへ追従させる更新手順) でしか触らない。そのうちインストール例の version だけは release workflow が `scripts/release/set-readme-version.py` で直接書く例外で、AGENTS.md (エージェント向けの運用宣言) がこの例外を宣言している。script は対象行を行の形 (配信リポジトリの URL・Maven 座標・NuGet ID) で見つけ、値がプレースホルダ `<version>` でも実値でも入力の version に置き、期待する行が揃わないファイルがあれば何も書き換えずに失敗する。
+GitHub Release の本文は、`main` 宛ての pull request 本文の `## Changes` 節から `scripts/release/build-release-notes.py` が組み立てる ([cross/ADR-0028](../../../decisions/cross/0028-release-notes-from-main-pull-request-body.md))。収集・検査・整形は validate の段で一度だけ行い、確定した本文を artifact で publish へ渡す。publish は pull request 本文を読み直さない — 段をまたいで本文を読み直すと、不可逆な公開の後に Release の作成だけが失敗する経路と、検査したものと違う本文で Release が作られる経路の両方ができるためである。
 
-| 時点 | 動作 |
+| 項目 | 内容 |
 |---|---|
-| package-maui の pack の前 | 作業木で置換する (commit しない)。facade の nupkg に同梱される README が公開する version を指す |
-| publish の最後 (Release 作成の後) | `develop` の先端を worktree に取り出して置換し、差分があれば検証 CI の lint job と同じ検査 3 つ (ローカル絶対パスの混入・個体や個人を特定する値の混入・README の最小例と消費者ソースの一致) を掛けてから commit して push する。lint 失敗・push の競合は警告にとどめ、release は失敗にしない |
+| 対象の範囲 | 起点 tag から対象 commit までの commit に紐づく pull request のうち、base が `main` のもの。起点 tag は「今回の version でなく、公開済みで、`main` の first-parent 上で対象 commit の祖先である Release」のうち最も近いもの |
+| 入力の文法 | `## Changes` はちょうど 1 つ。節の非空行はすべて `- <種別>: <説明>` (種別は breaking / feature / fix / docs) か単独の `- none`。認識できない行は読み飛ばさず失敗させる (静かに項目が消えると誰も気づけない) |
+| リハーサル | `main` から起動した dry-run は収集から成果物の受け渡しまで本番と同じ経路を通る (Release だけ作らない)。`main` 以外からの起動では収集も検査も行わない (pull request に紐づかない commit が範囲に入るため) |
 
-`GITHUB_TOKEN` の push は他の workflow を起動しないため、この commit は検証 CI を通らない。publish job 内で同じ lint を掛けることで `develop` への push ごとの lint の保証を保つ。README が指す version は「最新の公開版」であり、release が失敗しても README は嘘にならず、`main` は次のリリース PR で `develop` から追従する。
+利用者向け文書 (ルート README 2 枚と `skills/` 配下の Agent Skills) のインストール例は具体 version を持たず、release はその行を書き換えない ([cross/ADR-0027](../../../decisions/cross/0027-install-examples-without-pinned-version.md)・[cross/ADR-0030](../../../decisions/cross/0030-release-does-not-write-back-install-examples.md))。最新版の案内は `/releases/latest` に委ねており、release が Release に prerelease の印を付けず `--latest` を明示するのはこの案内先を解決させるためである。例が守る形は handbook の [インストール例の契約](../../../handbook/cross/install-examples.md) が持ち、日常の検証 CI がその契約を検査する。
 
 ## 反映待ちと smoke
 
@@ -131,6 +131,34 @@ publish 直後は、Maven Central も nuget.org も利用者が解決に使う�
 
 KMP の root だけを待つと target publication の未反映で smoke が落ち、反映待ちの判別力が無くなる。配信リポジトリの tag は publish 段で push と存在検査が済んでいるため待ち対象に入れない。smoke の失敗は workflow の失敗として報告されるが、作成済みの tag と Release は取り消さない (公開レジストリへ出したものは取り消せない)。
 
+### 照会の状態分類
+
+`wait-for-registries.sh` は 10 件それぞれの分類を独立に持ち回る。
+
+| 分類 | 意味 |
+|---|---|
+| 未照会 | まだ一度も照会していない (上限に達して巡回を打ち切ったときに残りうる) |
+| 反映済み | 当該 version が配信元から取得できる。以後その対象は再照会しない |
+| 未反映 | 照会できたうえで、当該 version がまだ無い |
+| 判定不能 | 照会そのものが行えなかった。種別は通信そのものの失敗 / 応答が成功を示さない (2xx でも 404 でもない) / 応答を解釈できない (形が想定と違い有無を読めない) の 3 つ |
+
+判定不能でも待機は続ける — レジストリ側の一時的な不調で打ち切ると、公開そのものは済んでいるのに後段が走らない。区別を残す価値が出るのは上限まで待って失敗する瞬間で、そのとき対象ごとの分類と判定不能の種別を出力に含めることで、レジストリが遅いのか壊れているのかを読み分けられる。照会は残り時間が正のときにだけ始め、残り時間で応答の待ち時間を切り詰めることはしない (切り詰めると応答している相手を自分で打ち切ることになり、ただ未反映なだけの対象が通信の失敗へ化けて、分類がいちばん必要な瞬間に出力が嘘になる)。
+
+## 待ちの時間予算
+
+待ちの上限はスクリプト側の定数、job の打ち切りは workflow の `timeout-minutes` という二重管理で、片方だけを延ばしても平時の実行は緑のまま進む。`scripts/release/check-time-budget.py` が両者を読んで突き合わせ、検証 CI の lint job で走る。
+
+| job | 予算式 |
+|---|---|
+| publish (150 分) | 公開待ちの上限 + 最後の照会の応答上限 + 巡回間隔の端数 + 本体処理 (成果物の取得・署名つき再ビルドと比較・upload・nuget.org への push) |
+| 反映待ち (60 分) | 待機の上限 + 期限を跨げる照会 1 件の応答上限 + job の前後 (checkout と runner の起動) |
+
+publish の予算は公開待ちと本体処理を収容し、検証の決着待ちは予算外に置く。Maven Central の枠が 2 つあるため検証待ちは枠ごとに (引き継ぎ経路と upload 後で) 起きえ、全項を収容すると合計が実行環境の job 実行時間の上限に対して余裕を持たない。検証は枠ごとに短時間で決着するのが常態で、deployment ID は upload の直後に artifact へ保存されて次の試行が引き継ぐため、超過時は打ち切って再実行に回す方が安全側に倒れる。
+
+反映待ちで「期限を跨げる照会は常に 1 件まで」と言えるのは、待機が残り時間の正のときにだけ次の照会を始め、対象 1 件ごとに判定し直すという巡回の構造による。待機側がこの構造を変えたら予算式のこの項も見直す。
+
+検査が読むのはスクリプト側の定数リテラルだけで、workflow の `env:` による上書きは見ない。現状 `release.yml` に `KSR_` の上書きは無いが、上書きを導入するなら検査もそれを読む必要がある。定数が読み取れない形 (別の変数への委譲など) へ変わったときと、同じ定数の値が複数に割れているときは、読めないまま通過せず検査が失敗する。
+
 ## 保証すること
 
 - publish より前の段 (validate・本体検証・消費者 dry-run) が 1 つでも失敗すれば、配信先への書き込みは起きない。
@@ -138,14 +166,16 @@ KMP の root だけを待つと target publication の未反映で smoke が落�
 - monorepo の tag と GitHub Release は publish が全成功したときにだけ生まれる。配信リポジトリの tag だけが KMP の発行前に生まれる例外である。
 - 同じ version の続きを埋められるのは、外部状態が無い状態から入った run の再試行だけで、別の commit の binary に tag が付くことはない。
 - 公開レジストリの配布物は、dry-run で消費者検証が解決したものと同じ (MAUI・iOS) か、同一性比較を通った再ビルド (Android) である。KMP は publish 段でのみ生成されるため、公開後の smoke による実解決が担保になる。
+- Release の本文は publish に入る前に確定している。不可逆な公開を終えた後に、本文の不備で Release の作成だけが失敗することはない。
+- 反映待ちが上限で失敗したとき、10 件それぞれの分類が出力に残る。照会できなかった対象が「未反映」として報告されることはない。
 
 ## してはいけないこと
 
 - 同じ version を新規に dispatch して部分 publish の続きを埋めようとしない: 印が無いため止まる。失敗した run そのものを再試行する。
-- 完了済みの run を再実行しない: `develop` のインストール例がその version へ書き戻される。
 - publish job 以外に書き込み権限や secrets を渡さない: 消費者検証 workflow の呼び出しに `secrets: inherit` を書かない。
 - 放棄した version の番号を再利用しない: 公開済みの配信リポジトリ tag は clone 済みの利用者から回収できない。
-- 判定 (続行可否・枠の状態分岐・外部状態の照会) を workflow の step に直書きしない: `scripts/release/` に切り出し、`--selftest` で実レジストリなしに分岐を確かめる。
+- 判定 (続行可否・枠の状態分岐・外部状態の照会・ノートの組み立て) を workflow の step に直書きしない: `scripts/release/` に切り出し、`--selftest` で実レジストリなしに分岐を確かめる。publish 経路は不可逆な公開の後にしか到達しないため、自己テストは検証 CI の lint job で日常的に走らせる。
+- 照会できなかったことを「未反映」に畳み込まない: 判定不能を残さないと、上限まで待って失敗したときにレジストリの不調と反映の遅れが区別できない。
 
 ## 用語
 
@@ -169,7 +199,16 @@ KMP の root だけを待つと target publication の未反映で smoke が落�
 - [消費者検証](consumer-verification.md) — dry-run / smoke の参照先と artifact の配置
 - [リリース手順](../../../handbook/cross/release-procedure.md) — 初回設定・起動・失敗時の再試行・version の放棄
 - [検証 CI の範囲と実行条件](../../../handbook/cross/verification-ci.md) — release が呼ぶ再利用可能 workflow と `main` の必須 status check
-- [cross/ADR-0024](../../../decisions/cross/0024-release-dispatch-serial-publish-spm-tag-before-kmp.md) — dispatch 起動・publish の順序・インストール例の置換の決定
-- [cross/ADR-0009](../../../decisions/cross/0009-lockstep-single-version.md) — lockstep 単一 version と注入
-- [cross/ADR-0016](../../../decisions/cross/0016-branch-model-develop-main.md) — `develop` / `main` の役割
-- 設計判断の出典: `kasane/changes/archive/2026-09-10-add-release-workflow/design.md` (Decision 1〜8) と `kasane/changes/archive/2026-09-10-fix-release-published-wait/exploration.md` (公開待ちの並行化)
+- [インストール例の契約](../../../handbook/cross/install-examples.md) — release が書き換えない例が守る形と、その検査の範囲
+
+| ADR | 決定 |
+|---|---|
+| [cross/ADR-0009](../../../decisions/cross/0009-lockstep-single-version.md) | lockstep 単一 version と注入 |
+| [cross/ADR-0016](../../../decisions/cross/0016-branch-model-develop-main.md) | `develop` / `main` の役割 |
+| [cross/ADR-0024](../../../decisions/cross/0024-release-dispatch-serial-publish-spm-tag-before-kmp.md) | dispatch 起動と publish の順序 (インストール例の置換の部分は ADR-0030 が改訂) |
+| [cross/ADR-0026](../../../decisions/cross/0026-lint-job-includes-release-script-checks.md) | リリース用スクリプトの自己テストと時間予算・step 順序の検査を lint job へ |
+| [cross/ADR-0027](../../../decisions/cross/0027-install-examples-without-pinned-version.md) | インストール例のプレースホルダ化と最新リリースの明示 |
+| [cross/ADR-0028](../../../decisions/cross/0028-release-notes-from-main-pull-request-body.md) | Release ノートを `main` 宛て pull request 本文から組み立てる |
+| [cross/ADR-0030](../../../decisions/cross/0030-release-does-not-write-back-install-examples.md) | release がインストール例を書き戻さない (ADR-0024 の amends) |
+
+設計判断の出典は `kasane/changes/archive/` の 4 本 — `2026-09-10-add-release-workflow/design.md` (Decision 1〜8) と `2026-09-13-install-examples-and-release-notes/design.md` (Decision 1〜10)、公開待ちと反映待ちについては `2026-09-10-fix-release-published-wait/exploration.md` と `2026-09-13-backport-registry-wait-hardening/proposal.md`。
