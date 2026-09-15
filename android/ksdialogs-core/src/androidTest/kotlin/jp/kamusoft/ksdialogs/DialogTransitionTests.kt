@@ -278,21 +278,41 @@ class DialogTransitionTests {
     }
 
     @Test
-    fun PB_TR_21_none_直後の閉鎖は覆いの出現完了を待ってから退出する() = runBlocking<Unit> {
+    fun PB_TR_21_出現中の閉鎖は出現完了を待ってから退出する() = runBlocking<Unit> {
         coroutineScope {
-            val stage = start(this, DialogTransition.none())
+            // 出現の完了を関門で押さえて「出現中」を確定させる。実時間の演出を頼りにすると、
+            // 実行機が遅い回に出現が先に終わり、報告の時点では既に表示中になっている
+            val probe = DialogTransitionProbe()
+            val gate = DialogTransitionGate()
+            val stage = start(
+                this,
+                DialogTransition(
+                    presentation = probe.gatedHook(PRESENTATION, gate),
+                    dismissal = probe.immediateHook(DISMISSAL),
+                ),
+            )
             val container = requireNotNull(stage.surface.topmostContainer)
 
-            assertTrue(awaitState(container, DialogContainerState.PRESENTING))
+            assertTrue(awaitEvent(probe, DialogTransitionProbe.Event.Started(PRESENTATION)))
             val stateAtReport = AtomicReference<DialogContainerState>()
             onMainThread {
                 stage.notifier().complete(true)
                 stateAtReport.set(container.containerState)
             }
 
-            assertEquals("覆いの出現中はまだ退出しない", DialogContainerState.PRESENTING, stateAtReport.get())
+            assertEquals("出現中はまだ退出しない", DialogContainerState.PRESENTING, stateAtReport.get())
+            delay(NO_REACTION_WAIT_MILLIS)
+            assertEquals(
+                "関門を開けるまで出現中のまま (この状態を通り過ぎることはない)",
+                DialogContainerState.PRESENTING,
+                container.containerState,
+            )
+            assertEquals("出現の完了前に退出フックは始まらない", 0, probe.callCount(DISMISSAL))
+
+            gate.open()
             assertEquals(DialogResult.Completed(true), stage.awaitResult())
             assertEquals(DialogContainerState.REMOVED, container.containerState)
+            assertEquals("出現の完了後に退出フックが1回だけ走る", 1, probe.callCount(DISMISSAL))
         }
     }
 

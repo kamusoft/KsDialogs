@@ -22,22 +22,51 @@
 
 ## 検討した選択肢 (却下案と理由を含む)
 
+### 論点 1: PB_TR_21 の観測をどう確定させるか (2026-09-15 探索)
+
+前提の確認 (実物): 概念 `core/api/transition-semantics.md` の PB-TR-21 の主張は「中身の演出と覆いのフェードは並行して走り、両方が終わって初めて表示中になる」。Android の器 (`DialogContainer.beginPresentation`) は出現フェーズ (`DialogTransitionRunner.runPresentationPhase` = 覆いのフェードと中身のフックを 1 つの coroutineScope で束ねた区間) の完了後に `isResultSettled` を見て直列に退出する。覆いのフェードは器の内部 (`DialogTransitionAnimator` 経由) で走り、テストから止める継ぎ目は無い。現行テストは中身側を `none()` で潰し、覆いのフェードの実時間だけで PRESENTING の窓を作っている。
+
+| 案 | 中間状態の確定 | 概念の主張の保持 | 本体への手 | iOS への揃えやすさ | 判定 |
+|---|---|---|---|---|---|
+| A: 出現フックを関門 (`DialogTransitionGate`) で止めて「出現中」を確定させる | 確定する | 中身側からの検証に変わる。覆いだけが残る組み合わせは固定しない | なし (テストと Scenario の題名のみ) | 同じ関門があるので同形 | **採用** |
+| B: 覆いのフェードを止める継ぎ目を器 (アニメータ) に足す | 確定する | 完全に保てる | あり。内部に差し替え点が増え、iOS にも同じ継ぎ目が要る | 要追加 | 却下: 本体を触るコストに見合わない |
+| C: `overlayDuration` を長くして窓を広げる | 確定しない (実時間の賭けのまま) | 保てるが信頼できない | なし | 同じく実時間依存 | 却下: 規約 (中間状態をポーリングで捕まえない) の違反型が残る |
+
+A の根拠: 閉鎖を直列化している機構は「出現フェーズ全体の完了を待ってから閉鎖信号を扱う」という 1 本の経路で、中身側を止めても覆い側を止めても通る道は同じ。覆いと中身は同じ束の中で並行に走り分岐が無いので、主張の実質は保てる。
+
+### 論点 2: iOS LD-CO-13 を Android と同じ形に揃えられるか
+
+揃えられる (分岐なし)。iOS の `LoadingTestHarness` も registry にカスタム View を登録して `ksDialogTransition` を添付でき、`DialogTransitionGate` + `DialogTransitionProbe.gatedHook` で出の演出を止める書き方は LD-TR-01 (`ios/Tests/KsDialogsTests/LoadingTransitionTests.swift`) で既に使われている。Android 版 LD_CO_13 (`LoadingCoalescingTests.kt:330-`) と同じく、第 1 世代の出のフックを関門で押さえ、フックの呼び出しを確かめてから show を差し込み、関門を開けて hide を待つ形にする。Android 版にある「入りの演出を終えてから閉じる」の前提待ちも同様に置く。
+
+### 論点 3: iOS 退出系の `Task.sleep` 後の「起きない」確認を含めるか
+
+含めない (採用)。`ios/Tests/KsDialogsTests/DialogTransitionTests.swift` の 5 箇所 (PB-TR-1x 系) は状態を関門・撤去保留で確定させた上で「一定時間待っても起きない」を見る形で、間違って落ちることはなく、弱点は「起きたのを見逃して通る」方向だけ。CI の赤とは無関係で、履歴 (`DialogTestStateHistory`) へ寄せると変更の性格がフレーク修正から観測規律の追随へ広がるため、今回のスコープから外す。別起票もしない (オーナー判断)。
+
 ## 決定事項
+
+- 修正対象は中間状態のポーリング捕捉の 3 箇所に限定する: Android PB_TR_21 / iOS PB-TR-21 / iOS LD-CO-13。本体 (器・演出実行部) は無改変
+- PB_TR_21 (Android / iOS) は出現フックを関門で止めた `DialogTransition` で「出現中」を確定させ、関門を開ける前に閉鎖を報告して出現中のままであることを主張し、開けてから結果の配送と REMOVED を待つ形にする。Scenario の題名は「none 直後の閉鎖は覆いの出現完了を待ってから退出する」から主語を改め、「出現中の閉鎖は出現完了を待ってから退出する」のように中身の演出を止めた形に合わせる (ID `PB-TR-21` は据え置き。`scripts/scenario-id-coverage.py` は ID だけを突合するので題名の変更は影響しない)。concepts の PB-TR-21 の文 (両方が終わって初めて表示中) はそのまま
+- iOS LD-CO-13 は Android 版と同形 (出の関門) に揃える
+- ci-flaky-test-policy の切り分け手順に従い、手元反復 (10 回以上) の実測を change の `evidence/` に残す。CI 限定 skip の候補にはしない
+- 関連リポジトリ KsSettingsView からの知らせ (2026-09-14 `cmd_wait_published` の空文字アーム) は本件と無関係で、オーナー判断により却下・台帳記録済み
 
 ## ADR 候補 (作成済み: なし / 未起票: なし)
 
+覆すコストが低いテストの書き方の決定であり、ADR の選別基準 (覆すコスト高 / 境界を越える / 将来を制約) に該当しない。
+
 ## 未決の論点
 
-**未探索 (簡易起票)**。分かっている疑問点:
+- 覆いのフェードだけが残っている場合の直列化は今回固定しない (案 A の既知の狭まり)。将来、器の内部に覆いを止める継ぎ目を足す必要が別件で出たら、そのときに覆い側の Scenario を足す
+- iOS 退出系の `Task.sleep` 後の「起きない」確認 (5 箇所) は履歴で見る形が規約上は強いが、今回は対象外 (論点 3)
+- Android 版 LD_CO_13 の関門 (`LoadingTestGate`、`support/LoadingTestFixtures.kt`) と iOS の `DialogTransitionGate` は別物だが役割は同じ。iOS 側で Loading 用に別の関門を増やさず `DialogTransitionGate` を流用してよい (LD-TR-01 の前例)
 
-- PB_TR_21 (Android / iOS) の意図は「覆いの出現中に来た閉鎖信号は、出現を完走させてから直列に退出する」(`DialogContainer.beginPresentation` の `isResultSettled` 分岐)。`none()` のまま観測するのではなく、PB_TR_28 と同じく presentation フックを関門 (`DialogTransitionGate` / iOS の同等物) で止めた `DialogTransition` で「出現中」を確定させ、関門を開ける前に閉鎖を報告 → 開けてから REMOVED を待つ形にするのが素直。ただし Scenario 名が `none` を掲げているので、「none プリセットでも覆いの出現を待つ」という主張を残すなら、覆いのフェード側を止める仕掛け (器の既定時間を長くする・覆いのアニメーションを差し替える) が要るか、Scenario の主語を「中身の演出が無い組」から「出現フック付き」へ改める必要がある (core の layout-spec / transition の Scenario ID 網羅検査 `scripts/scenario-id-coverage.py` との対応も確認)
-- iOS LD-CO-13 は Android 版と同じ形 (出の演出を関門で止め、show の要求を受理列へ載せてから関門を開ける) に揃えるだけでよいか。iOS の Loading テストハーネスに関門相当 (`LoadingTestGate` の Swift 版) が既にあるかは未確認
-- iOS の退出系テスト (PB-TR-1x 系) にある `Task.sleep(150ms)` 後の「起きない」確認は、同規約の「『起きない』ことの確認には履歴を使う」に照らすと弱いが、状態は `holdsDismissalCompletion` で確定しているため今回の型 (中間状態のポーリング捕捉) とは別。今回のスコープに含めるかは探索時に決める
-- 切り分けの実測 (ci-flaky-test-policy の手順): 手元 10 回反復で通ることと、CI での落ち方 (1 件・初観測。過去の instrumented 失敗 LD_CO_13 とは別テスト) を evidence に残す。CI 限定 skip の候補にはしない (観測の修正が先)
+- (実装時の発見・蒸留への引き継ぎ) iOS の `PB-TR-05` (presentation 中の閉鎖信号は presentation 完走後に退出する) と書き換え後の `PB-TR-21` は仕掛けがほぼ同じで、違いは前者がフックの出来事の並び・後者が器の状態を主張する点だけ。Android には PB_TR_05 相当が無い。両方を残すかは蒸留時に判断
+- (蒸留への引き継ぎ) PB-TR-21 の旧題名はアーカイブ済み change (`2026-08-22-add-presentation-behavior` の spec.md / verify-001.md / review-004.md) にだけ残る。凍結アーカイブなので書き換えない。concepts / handbook / skills に旧題名は無い
+- (蒸留への引き継ぎ) iOS LD-CO-13 は差し込みの 1 回だけ公開入口ではなく UI スレッド隔離の受理口 (`LoadingCoordinator.beginUse`) を直接呼ぶ。Swift に `CoroutineStart.UNDISPATCHED` 相当が無いための構造的な固定で、根拠は evidence/ci-flake-triage.md「検出力の根拠」
 
-## 変更級の推奨
+## 変更級の推奨: S
 
-未判定 (暫定 S: テスト 3 本の観測方法の修正で本体は無改変。Scenario の主語を改める場合は core の Scenario ID の扱いが絡むため M に上がりうる)
+理由: 触るのはテスト 3 本と Scenario の題名だけで公開 API・本体は無改変、可逆、UI なし。触る能力は transition (Dialog) と Loading の 2 面だがどちらもテスト側の観測方法の修正に閉じる。デルタスペックは不要 (Scenario の意味は変えず、題名の主語を実態に合わせるのみ)。
 
 ## UI 素材 (ui/references/ の一覧と注釈)
 
