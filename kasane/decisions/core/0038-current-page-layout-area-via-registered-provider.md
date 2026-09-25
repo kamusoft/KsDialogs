@@ -19,10 +19,10 @@ ColorAnalyzer の移行 (AiForms.Maui.Dialogs → KsDialogs.Maui) で、右下�
 ## Decision
 
 1. **基準領域 `layoutArea` に 3 つ目の値「表示中のページ (currentPage)」を足す**。基準になる矩形は「表示中ページの矩形のうち、そのページ自身の safe area / システム insets の内側」(UIKit 標準ではページ view がバーの下まで伸びるため、view の矩形ではなく safe area を採る。Android はページの矩形 ∩ 可視領域)。器はこれを窓座標の 4 辺 inset に変換し、既存の rect 決定手順 (基準 rect R → 有効領域 A) にそのまま流す。水平・垂直の両軸に効かせる (原典の垂直のみは ADR-0008 の線で正す)
-2. **器はページ構造を自分で探索せず、登録された「現在ページ provider」に問い合わせる**。provider はアプリ (ホスト) が起動時に一度登録し、以後の全表示に効く (`ToastStyle.defaultPlacement` / Loading のアプリ既定 options と同じ「一度設定して各表示の開始時に読む」規律)。利用者向けの登録口は形態ごとに 1 つ — UIKit / Android View は「ページの View を返す provider」、Compose / SwiftUI は「付けた composable / View を現在ページとして名乗らせる modifier」(attach 中のものを台帳に持ち、窓外は除外・入れ子は内側・それ以外は最後に配置されたものが勝ち・detach で残りへ戻る)。「窓座標の矩形を返す provider」は内部の共通型で公開しない
-3. **既定 provider**: iOS Native と MAUI は既定を内蔵する — iOS = key window の view controller 階層を presented → navigation の top → tab の selected と先端まで走査した VC の view、MAUI = MAUI 層でページ木を辿る (ModalStack の先頭があればそれ、無ければ `Window.Page` を起点に Shell / FlyoutPage / TabbedPage / NavigationPage を容れ物でなくなるまで降りる。Shell の有無を問わない) 先端ページの PlatformView を Native の provider へ流す。Android Native に既定が無いため MAUI 層で持ち、両 OS で同じ 1 本にする。Android Native は既定を持たない (登録制)。どの形態でもアプリは provider を上書きできる
+2. **器はページ構造を自分で探索せず、登録された「現在ページ provider」に問い合わせる**。provider はアプリ (ホスト) が起動時に一度登録し、以後の全表示に効く (`ToastStyle.defaultPlacement` / Loading のアプリ既定 options と同じ「一度設定して各表示の開始時に読む」規律)。利用者向けの登録口は形態ごとに 1 つ — UIKit / Android View は「ページの View を返す provider」、Compose / SwiftUI は「付けた composable / View を現在ページとして名乗らせる modifier」(attach 中のものを台帳に持ち、窓外は除外・入れ子は内側・それ以外は最後に配置されたものが勝ち・detach で残りへ戻る)。取得元の優先順位は modifier の台帳 > 登録 provider > 既定 provider で、上位が空なら下位へ進む。候補は提示先と同じ window / Activity に属するものに限る。「窓座標の矩形を返す provider」は内部の共通型で公開しない
+3. **既定 provider**: iOS Native と MAUI は既定を内蔵する — iOS = 提示先 window の view controller 階層を presented → navigation の top → tab の selected と先端まで走査した VC の view (KsDialogs 自身の器は通り抜けて提示元へ戻る。保証は UIKit コンテナまでで、SwiftUI の TabView / NavigationStack は modifier が正規の経路)、MAUI = MAUI 層でページ木を辿る (ModalStack の先頭があればそれ、無ければ `Window.Page` を起点に Shell / FlyoutPage / TabbedPage / NavigationPage を容れ物でなくなるまで降りる。Shell の有無を問わない) 先端ページの PlatformView を Native の provider へ流す。Android Native に既定が無いため MAUI 層で持ち、両 OS で同じ 1 本にする。Android Native は既定を持たない (登録制)。どの形態でもアプリは provider を上書きできる
 4. **未解決時は可視領域へ落とす**: provider が未登録、または矩形を返せないときは `visibleArea` と同じ結果にする
-5. **ADR-0030・0032 の「器はページ構造を知らない」は Dialog の基準領域に限って例外とする**。器がページを見つけるのではなく、教えてもらう (provider) 形なので、Toast のタブバー自動検知の却下 (ADR-0032) はそのまま据え置く
+5. **ADR-0030・0032 の「器はページ構造を知らない」は Dialog の基準領域に限って例外とする (0030・0032 の amends)**。器がページを見つけるのではなく、教えてもらう (provider) 形なので、Toast のタブバー自動検知の却下 (ADR-0032) はそのまま据え置く
 
 ## Alternatives Considered
 
@@ -48,4 +48,4 @@ ColorAnalyzer の移行 (AiForms.Maui.Dialogs → KsDialogs.Maui) で、右下�
 - Android に OS またはデファクトの「表示中ページ」機構が定着し、既定 provider を安全に内蔵できるようになったとき
 - iOS / MAUI の既定 provider が SwiftUI や Shell の内部構造の変化で外れる事例が出たとき
 
-出典: kasane/changes/add-page-layout-area/exploration.md (2026-09-25 の探索: 論点 A の議論、案 1〜3 の比較、Android の Navigation 機構の整理、既定 provider の 3 案)
+出典: kasane/changes/add-page-layout-area/exploration.md (2026-09-25 の探索: 論点 A の議論、案 1〜3 の比較、Android の Navigation 機構の整理、既定 provider の 3 案) / second-opinion-spec-001.md (2026-09-26 の相方スペックレビュー: 器の通り抜け・SwiftUI の経路・優先順位・ウィンドウ同一性)
