@@ -10,16 +10,20 @@ import jp.kamusoft.ksdialogs.support.LoadingTestGate
 import jp.kamusoft.ksdialogs.support.LoadingTestHarness
 import jp.kamusoft.ksdialogs.support.LoadingTestViewModel
 import jp.kamusoft.ksdialogs.support.ProgressReceivingLoadingTestViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -285,6 +289,90 @@ class LoadingProgressTests {
         }
     }
 
+    /**
+     * 利用者の進捗の受け口が失敗しても、報告の受理と表示の終了が止まらないことを確かめる。
+     *
+     * 受け口の失敗は握りつぶさずスレッドの未捕捉例外ハンドラへ出る。既定のハンドラはプロセスを終えるため、
+     * テストの間だけ既定のハンドラを記録用に差し替え、失敗が外へ出たことも合わせて見る。
+     * 終了が固まった場合に備え、開始は別の文脈で走らせて上限つきで待つ。
+     */
+    @Test
+    fun 進捗の受け口が失敗しても以後の報告と終了は受理され次の開始が戻る() = runBlocking<Unit> {
+        val harness = newHarness()
+        harness.registry.register(FailingProgressLoadingTestViewModel::class) { _ ->
+            FixedContentSizeView(this, CONTENT_WIDTH_PIXELS, CONTENT_HEIGHT_PIXELS)
+        }
+        harness.registry.register(ProgressReceivingLoadingTestViewModel::class) { _ ->
+            FixedContentSizeView(this, CONTENT_WIDTH_PIXELS, CONTENT_HEIGHT_PIXELS)
+        }
+        val uncaught = CopyOnWriteArrayList<Throwable>()
+        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, failure -> uncaught.add(failure) }
+        val runner = CoroutineScope(Dispatchers.Default)
+        try {
+            val failing = FailingProgressLoadingTestViewModel()
+            val first = runner.async {
+                harness.loading.start(failing) { report ->
+                    report(0.25)
+                    report(FailingProgressLoadingTestViewModel.FAILING_PROGRESS)
+                    report(1.0)
+                    "完了"
+                }
+            }
+            assertEquals(
+                "受け口が失敗しても終了は受理され、開始は戻る",
+                "完了",
+                withTimeoutOrNull(SCOPE_COMPLETION_TIMEOUT_MILLIS) { first.await() },
+            )
+            assertEquals("失敗の後の報告も受理される", listOf(0.25, 1.0), failing.receivedProgress)
+            assertTrue(
+                "受け口の失敗は握りつぶされず未捕捉例外ハンドラへ出る",
+                uncaught.any { it is ProgressReceiverFailure },
+            )
+
+            val next = ProgressReceivingLoadingTestViewModel()
+            val second = runner.async {
+                harness.loading.start(next) { report ->
+                    report(1.0)
+                    "次"
+                }
+            }
+            assertEquals(
+                "次の開始も戻る",
+                "次",
+                withTimeoutOrNull(SCOPE_COMPLETION_TIMEOUT_MILLIS) { second.await() },
+            )
+            assertEquals("次の開始の報告も受理される", listOf(1.0), next.receivedProgress)
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previousHandler)
+            runner.cancel()
+        }
+    }
+
+    /** 進捗の受け口が投げる、テスト専用の失敗。 */
+    private class ProgressReceiverFailure : RuntimeException("進捗の受け口の失敗")
+
+    /** 特定の進捗値を受け取ったときだけ失敗する受け口を備えた ViewModel。それ以外の値は受理順に記録する。 */
+    private class FailingProgressLoadingTestViewModel : LoadingViewModel, LoadingProgressReceiver {
+        private val received = mutableListOf<Double>()
+
+        /** 失敗せずに受け取った進捗値を受理順に並べたもの。 */
+        val receivedProgress: List<Double>
+            get() = synchronized(received) { received.toList() }
+
+        override fun onProgress(progress: Double) {
+            if (progress == FAILING_PROGRESS) {
+                throw ProgressReceiverFailure()
+            }
+            synchronized(received) { received.add(progress) }
+        }
+
+        companion object {
+            /** 受け口が失敗する進捗値。 */
+            const val FAILING_PROGRESS = 0.5
+        }
+    }
+
     private fun newHarness(): LoadingTestHarness {
         val harness = AtomicReference<LoadingTestHarness>()
         activityRule.scenario.onActivity { activity: Activity ->
@@ -300,6 +388,9 @@ class LoadingProgressTests {
 
         /** 無視されるはずの報告が届き得る猶予 (ミリ秒)。 */
         const val NON_FINITE_REPORT_GRACE_MILLIS = 200L
+
+        /** スコープ形の完了を待つ上限 (ミリ秒)。終了が固まったときに無期限に待たないためのもの。 */
+        const val SCOPE_COMPLETION_TIMEOUT_MILLIS = 5_000L
 
         /** 報告と終了の前後関係を見る反復回数。 */
         const val FINAL_REPORT_ATTEMPTS = 12

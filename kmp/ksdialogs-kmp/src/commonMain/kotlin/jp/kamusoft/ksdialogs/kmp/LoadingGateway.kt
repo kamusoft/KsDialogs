@@ -22,17 +22,27 @@ internal interface LoadingGateway {
     /** 表示中のメッセージを更新する。 */
     suspend fun setMessage(message: String?)
 
-    /** 既定ローディングを表示したまま処理を実行し、その戻り値を返す。 */
+    /**
+     * 既定ローディングを表示したまま処理を実行し、その戻り値を返す。
+     *
+     * 処理を [actionThread] のスレッドで始めるのは各 OS の委譲面の責務で、共有コードは指定を渡すだけである。
+     */
     suspend fun <T> start(
         message: String?,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T
 
-    /** 登録済みのカスタム Loading View を表示したまま処理を実行し、その戻り値を返す。 */
+    /**
+     * 登録済みのカスタム Loading View を表示したまま処理を実行し、その戻り値を返す。
+     *
+     * 処理を始めるスレッドの扱いは既定ローディングのスコープ形と同じ。
+     */
     suspend fun <T> start(
         viewModel: LoadingViewModel,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T
 }
@@ -79,22 +89,25 @@ internal class GatewayKsLoading(private val gateway: LoadingGateway) : KsLoading
     override suspend fun <T> start(
         message: String?,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
-    ): T = gateway.start(message, placement, action)
+    ): T = gateway.start(message, placement, actionThread, action)
 
     @Throws(DialogException::class, CancellationException::class)
     override suspend fun <T> start(
         viewModel: LoadingViewModel,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
-    ): T = gateway.start(viewModel, placement, action)
+    ): T = gateway.start(viewModel, placement, actionThread, action)
 
     override suspend fun <VM : LoadingViewModel, T> start(
         viewModelClass: KClass<VM>,
         placement: DialogPlacement?,
         configure: (suspend (VM) -> Unit)?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
-    ): T = gateway.start(configured(viewModelClass, configure), placement, action)
+    ): T = gateway.start(configured(viewModelClass, configure), placement, actionThread, action)
 
     /**
      * ViewModel factory で ViewModel を作り、configure を適用して返す。

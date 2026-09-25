@@ -36,7 +36,10 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     }
 
     /// <inheritdoc/>
-    public async Task RunAsync(LoadingPresentationRequest request, Func<IProgress<double>, Task> action)
+    public async Task RunAsync(
+        LoadingPresentationRequest request,
+        Func<IProgress<double>, Task> action,
+        LoadingActionThread actionThread)
     {
         TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         // 処理の失敗は互換面へ渡さず、こちらで抱えたまま合流1件の終了だけを伝える。
@@ -47,8 +50,10 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
 
         MauiLoadingBridge.Shared.Start(
             ToBridgeContent(request, contentFailure),
+            // 互換面がこの口を呼ぶのは UI スレッド外だが、処理を始めるスレッドは手順の側が指定どおりに振り分ける
             (report, actionCompletion) => _ = LoadingActionRunner.RunAsync(
                 action,
+                actionThread,
                 progress => report(progress),
                 () => actionCompletion(),
                 thrown => failure = thrown),

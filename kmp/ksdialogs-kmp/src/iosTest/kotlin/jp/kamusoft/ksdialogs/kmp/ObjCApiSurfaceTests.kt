@@ -47,6 +47,26 @@ class ObjCApiSurfaceTests {
         )
     }
 
+    @Test
+    fun `スコープ形の処理を始めるスレッドの指定は Swift や ObjC から見える`() {
+        val header = readGeneratedHeader()
+
+        // ObjC 経由の書き出しでは引数の既定値が消えるため、Swift の利用者は指定を明示で渡すことになる。
+        // その引数と値の型が面に出ていることを、Swift から見える名前で確かめる
+        assertTrue(
+            header.contains("""swift_name("start(message:placement:actionThread:action:completionHandler:)")"""),
+            "既定ローディングのスコープ形に、処理を始めるスレッドの指定が現れていません。",
+        )
+        assertTrue(
+            header.contains("""swift_name("start(viewModel:placement:actionThread:action:completionHandler:)")"""),
+            "カスタム Loading のスコープ形に、処理を始めるスレッドの指定が現れていません。",
+        )
+        assertTrue(
+            header.contains("""swift_name("LoadingActionThread")"""),
+            "処理を始めるスレッドの指定の型が Swift から見えていません。",
+        )
+    }
+
     /** ビルド定義が渡した場所から、生成された ObjC ヘッダを読む。 */
     private fun readGeneratedHeader(): String {
         val path = NSProcessInfo.processInfo.environment[HEADER_PATH_KEY] as String?

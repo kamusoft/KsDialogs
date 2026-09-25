@@ -3,6 +3,7 @@ package jp.kamusoft.ksdialogs.compose
 import androidx.compose.runtime.Composable
 import jp.kamusoft.ksdialogs.DialogPlacement
 import jp.kamusoft.ksdialogs.KsLoading
+import jp.kamusoft.ksdialogs.LoadingActionThread
 import jp.kamusoft.ksdialogs.LoadingViewModel
 
 /**
@@ -31,17 +32,22 @@ public suspend fun <VM : LoadingViewModel> KsLoading.showCompose(
  * 登録せずに、その場で渡した Compose のコンテンツを表示したまま処理を実行する (core/ADR-0013)。
  *
  * レジストリの状態は一切変わらない。それ以外は登録経路のスコープ形とまったく同じである。
+ * 処理が始まるスレッドも従来 View 系のスコープ形と同じで、呼び出し元のスレッドに関係なく
+ * [actionThread] で指定したスレッドで始まる (既定は UI スレッド)。
  *
  * @param viewModel 表示するカスタム Loading の ViewModel
  * @param placement この呼び出しでの置き場所。渡すと中身に宣言された [DialogPlacement] を
  *   オブジェクトまるごと置換する (core/ADR-0015)
  * @param content 中身として組み立てる composable
+ * @param actionThread 処理を始めるスレッド。既定の [LoadingActionThread.MAIN] は UI スレッド、
+ *   [LoadingActionThread.BACKGROUND] は UI スレッド外で始まる
  * @param action 実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)
  */
 public suspend fun <VM : LoadingViewModel, T> KsLoading.startCompose(
     viewModel: VM,
     placement: DialogPlacement? = null,
     content: @Composable (VM) -> Unit,
+    actionThread: LoadingActionThread = LoadingActionThread.MAIN,
     action: suspend ((Double) -> Unit) -> T,
 ): T = start(
     viewModel,
@@ -49,5 +55,6 @@ public suspend fun <VM : LoadingViewModel, T> KsLoading.startCompose(
     factory = { suppliedViewModel ->
         DialogComposeContentView(this) { content(suppliedViewModel) }
     },
+    actionThread = actionThread,
     action = action,
 )

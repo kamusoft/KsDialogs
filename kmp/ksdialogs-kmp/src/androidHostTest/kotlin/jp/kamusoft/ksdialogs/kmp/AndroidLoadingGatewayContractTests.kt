@@ -46,6 +46,9 @@ private class RecordingNativeLoading(
     /** 表示に渡された ViewModel を呼ばれた順に記録したもの。既定ローディングなら null が入る。 */
     val shownViewModels: MutableList<jp.kamusoft.ksdialogs.LoadingViewModel?> = mutableListOf()
 
+    /** スコープ形に渡された、処理を始めるスレッドの指定を呼ばれた順に記録したもの。 */
+    val startedActionThreads: MutableList<jp.kamusoft.ksdialogs.LoadingActionThread> = mutableListOf()
+
     /** [hide] が呼ばれた回数。 */
     var hideCount: Int = 0
         private set
@@ -75,9 +78,11 @@ private class RecordingNativeLoading(
     override suspend fun <T> start(
         message: String?,
         placement: jp.kamusoft.ksdialogs.DialogPlacement?,
+        actionThread: jp.kamusoft.ksdialogs.LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         record(null, message, placement)
+        startedActionThreads += actionThread
         @Suppress("UNCHECKED_CAST")
         return scope(action as suspend ((Double) -> Unit) -> Any?) as T
     }
@@ -85,9 +90,11 @@ private class RecordingNativeLoading(
     override suspend fun <T> start(
         viewModel: jp.kamusoft.ksdialogs.LoadingViewModel,
         placement: jp.kamusoft.ksdialogs.DialogPlacement?,
+        actionThread: jp.kamusoft.ksdialogs.LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         record(viewModel, null, placement)
+        startedActionThreads += actionThread
         @Suppress("UNCHECKED_CAST")
         return scope(action as suspend ((Double) -> Unit) -> Any?) as T
     }
@@ -107,6 +114,7 @@ private class RecordingNativeLoading(
         viewModel: VM,
         placement: jp.kamusoft.ksdialogs.DialogPlacement?,
         factory: Context.(VM) -> View,
+        actionThread: jp.kamusoft.ksdialogs.LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T = throw UnsupportedOperationException("委譲面は中身を渡さない表示だけを使う。")
 
@@ -125,6 +133,7 @@ private class RecordingNativeLoading(
         viewModelClass: kotlin.reflect.KClass<VM>,
         placement: jp.kamusoft.ksdialogs.DialogPlacement?,
         configure: (suspend (VM) -> Unit)?,
+        actionThread: jp.kamusoft.ksdialogs.LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T = throw UnsupportedOperationException("委譲面はインスタンスを渡す表示だけを使う。")
 
@@ -155,6 +164,30 @@ class AndroidLoadingGatewayContractTests {
         assertEquals("完了", received, "処理の戻り値が共有コードへ届きませんでした。")
         assertContentEquals(listOf("読み込み中"), native.shownMessages)
         assertContentEquals(listOf(null), native.shownViewModels)
+    }
+
+    @Test
+    fun `LD-HK-02 処理を始めるスレッドの指定は Native の同型へ写して渡る`() = runTest {
+        val native = RecordingNativeLoading()
+        val gateway = AndroidLoadingGateway(native)
+        val viewModel = PlainTestLoadingViewModel()
+
+        gateway.start(null, null, LoadingActionThread.MAIN) { }
+        gateway.start(null, null, LoadingActionThread.BACKGROUND) { }
+        gateway.start(viewModel, null, LoadingActionThread.MAIN) { }
+        gateway.start(viewModel, null, LoadingActionThread.BACKGROUND) { }
+
+        assertContentEquals(
+            listOf(
+                jp.kamusoft.ksdialogs.LoadingActionThread.MAIN,
+                jp.kamusoft.ksdialogs.LoadingActionThread.BACKGROUND,
+                jp.kamusoft.ksdialogs.LoadingActionThread.MAIN,
+                jp.kamusoft.ksdialogs.LoadingActionThread.BACKGROUND,
+            ),
+            native.startedActionThreads,
+            "処理を始めるスレッドの指定が Native の同じ値として渡りませんでした。",
+        )
+        assertContentEquals(listOf(null, null, viewModel, viewModel), native.shownViewModels)
     }
 
     @Test

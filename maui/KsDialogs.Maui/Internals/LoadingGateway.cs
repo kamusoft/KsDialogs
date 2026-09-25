@@ -40,11 +40,20 @@ internal interface ILoadingGateway
     /// <paramref name="action"/> は表示状態によらず必ず実行される。失敗しても合流 1 件の終了として
     /// 数えたうえで、その失敗をそのまま呼び出し元へ伝播する。合流最後の 1 件なら器の撤去まで待って
     /// から戻り、そうでなければ処理の完了時点で戻る。
+    /// <para>
+    /// <paramref name="actionThread"/> は処理を始めるスレッドの指定で、UI スレッドを持つ platform の
+    /// 委譲面は <see cref="LoadingActionRunner"/> に渡してそこで振り分ける。UI スレッドを持たない
+    /// 委譲面は受け取るだけで切り替えない。
+    /// </para>
     /// </remarks>
     /// <param name="request">その表示の中身と供給値。</param>
     /// <param name="action">進捗報告口を受け取って走る処理。</param>
+    /// <param name="actionThread">処理を始めるスレッド。</param>
     /// <returns>処理と (最後の 1 件なら) 撤去の完了。</returns>
-    Task RunAsync(LoadingPresentationRequest request, Func<IProgress<double>, Task> action);
+    Task RunAsync(
+        LoadingPresentationRequest request,
+        Func<IProgress<double>, Task> action,
+        LoadingActionThread actionThread);
 
     /// <summary>合流数によらず表示を閉じる。出の演出と器の撤去の完了まで待って戻る。</summary>
     /// <returns>撤去の完了。</returns>

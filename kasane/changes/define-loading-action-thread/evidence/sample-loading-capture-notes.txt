@@ -1,0 +1,62 @@
+# Sample の Default Loading / Custom Loading の通し (LD-HS-01・LD-HS-02) の撮影記録
+
+撮影日: 2026-09-25 (MAUI iOS の 3 枚は同日に撮り直し)
+対象: 作業ツリーの変更後のライブラリ + tasks 5.1・5.2 の Sample (4 ルート、MAUI は iOS と Android の両方)
+共通の手順:
+  - 起動引数 loading-step-interval-ms で刻みを延ばして起動し (demo は渡さない)、メニューの行をタップして撮る。
+    iOS 系は `--loading-step-interval-ms <ms>`、Android 系は `--es loading-step-interval-ms <ms>`。
+    撮影のためのソース改変はしていない。
+  - demo 引数での自動再生を使わなかった理由: この Simulator では、起動直後の自動再生で Loading が画面に出ない
+    (変更前のビルドでも同じ。Basic Dialog の自動再生は提示に失敗して assertionFailure で止まる)。
+    今回の変更とは無関係の既存の事象として別途報告する。Scenario の WHEN はタップなので、タップで撮った。
+  - iOS 系のタップはシミュレータ操作ツール (device point)、Android 系は adb shell input tap (物理ピクセル)。
+端末:
+  - iOS: iOS Simulator (iPhone Air、iOS 26.5) を別途 boot して使用 (起動中の Simulator は流用していない)。Debug 構成。
+  - Android native / MAUI Android: Android エミュレータ (API 31。ステータスバーはデモモードで時計が 9:41 固定)。
+  - KMP Android: Pixel 4a 実機 (API 33)。ステータスバーの通知アイコン領域 (時計と Wi-Fi の間) を塗りつぶしている。
+
+各ファイル (画面の実体を開き直して記述。md5 は全 22 枚で相異):
+
+## iOS Native (刻み 8000 ms、Default Loading をタップ)
+- sample-ios-default-loading-processing-start.png : 既定ローディング「Loading... / 0%」表示中、結果表示「結果: 処理中」
+- sample-ios-default-loading-processing-soon.png  : 同「Soon... / 50%」(メッセージ差し替え後)、結果表示「結果: 処理中」
+- sample-ios-default-loading-completed.png        : Loading が閉じ、結果表示「結果: 完了」
+
+## iOS Native (刻み 4000 ms、Custom Loading をタップ) — LD-HS-01
+- sample-ios-custom-loading-progress-25.png : カスタムローディング (見出し「カスタムローディング」・帯・25%)、結果表示なし (起動直後で未表示)
+- sample-ios-custom-loading-progress-75.png : 同 75%
+- sample-ios-custom-loading-completed.png   : Loading が閉じ、結果表示「結果: 完了」
+
+## KMP iOS (刻み 8000 ms、Default Loading をタップ)
+- sample-kmp-ios-default-loading-processing-start.png : 「Loading... / 0%」、結果表示「結果: 処理中」
+- sample-kmp-ios-default-loading-processing-soon.png  : 「Soon... / 50%」、結果表示「結果: 処理中」
+- sample-kmp-ios-default-loading-completed.png        : 結果表示「結果: 完了」
+
+## MAUI iOS (Debug、刻み 8000 ms、Default Loading をタップ)
+1 回目の撮影 (20:25) では、配備した .app に変更後の互換面が入っていることを確認していなかった。
+相方レビューの指摘を受けて、再ビルドした配備物を nm / strings で確認してから撮り直し (22:02〜22:03)、下の 3 枚を差し替えた。
+確認のコマンドと結果は maui-ios-deployed-binary-check.txt。
+- sample-maui-ios-default-loading-processing-start.png : (22:02) 「Loading... / 0%」、結果表示「結果: 処理中」
+- sample-maui-ios-default-loading-processing-soon.png  : (22:03) 「Soon... / 50%」、結果表示「結果: 処理中」
+- sample-maui-ios-default-loading-completed.png        : (22:03) 結果表示「結果: 完了」。撮影後もプロセスは生存 (落ちていない)
+- 変更前のライブラリで同じ操作をした結果は maui-ios-before-change-default-loading.log (UIKitThreadAccessException で終了)。
+  比較に使った .app が変更前の互換面と変更前の Runner だったことも maui-ios-deployed-binary-check.txt に記録した
+
+## Android Native (エミュレータ、刻み 8000 ms、Default Loading をタップ)
+- sample-android-default-loading-processing-start.png : 「Loading... / 0%」、結果表示「結果: 処理中」
+- sample-android-default-loading-processing-soon.png  : 「Soon... / 50%」、結果表示「結果: 処理中」
+- sample-android-default-loading-completed.png        : 結果表示「結果: 完了」
+
+## KMP Android (Pixel 4a、刻み 8000 ms)
+画面の縦が短く、結果表示エリアが出るとメニューがスクロールするため、先に Basic Dialog を出して戻る操作で閉じ
+(結果: cancelled)、メニューを下へスクロールしてから Default Loading をタップした。
+- sample-kmp-android-default-loading-before-cancelled.png : タップ前。結果表示「結果: cancelled」
+- sample-kmp-android-default-loading-processing-start.png : 「Loading... / 0%」、結果表示「結果: 処理中」
+- sample-kmp-android-default-loading-processing-soon.png  : 「Soon... / 50%」、結果表示「結果: 処理中」
+- sample-kmp-android-default-loading-completed.png        : 結果表示「結果: 完了」
+
+## MAUI Android (エミュレータ、刻み 8000 ms、Default Loading をタップ)
+Android Native と同じエミュレータ。ステータスバーの色 (紫) と文字の描画で Native と見分けられる。
+- sample-maui-android-default-loading-processing-start.png : 「Loading... / 0%」、結果表示「結果: 処理中」
+- sample-maui-android-default-loading-processing-soon.png  : 「Soon... / 50%」、結果表示「結果: 処理中」
+- sample-maui-android-default-loading-completed.png        : 結果表示「結果: 完了」。撮影後もプロセスは生存

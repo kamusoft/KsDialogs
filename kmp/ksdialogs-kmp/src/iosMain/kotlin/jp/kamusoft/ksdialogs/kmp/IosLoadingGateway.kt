@@ -1,6 +1,8 @@
 package jp.kamusoft.ksdialogs.kmp
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSError
@@ -53,14 +55,16 @@ internal class IosLoadingGateway(
     override suspend fun <T> start(
         message: String?,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
-    ): T = runScope(beginBuiltin(message, placement), action)
+    ): T = runScope(beginBuiltin(message, placement), actionThread, action)
 
     override suspend fun <T> start(
         viewModel: LoadingViewModel,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
-    ): T = runScope(beginCustom(viewModel, placement), action)
+    ): T = runScope(beginCustom(viewModel, placement), actionThread, action)
 
     /** 既定ローディングで合流1件を開始する。 */
     private suspend fun beginBuiltin(
@@ -112,15 +116,24 @@ internal class IosLoadingGateway(
      *
      * 失敗を握り潰さずに伝播させつつ終了を数えるので、例外・キャンセルで表示が閉じ残らない。
      * 取り消された呼び出しでも終了を数え切れるよう、終了の受理は取り消しの対象から外す。
+     *
+     * 処理は呼び出し元の文脈ではなく、指定に応じた dispatcher へ移してから呼ぶ。
+     * 呼び出し元のスレッドに関係なく、処理の最初の文が指定のスレッドで実行されるようにするため
+     * (core/ADR-0037)。共有コードは UI スレッドを知らないので、切り替えはこの委譲面が持つ (kmp/ADR-0006)。
+     *
+     * 報告と終了の順序は互換面が保証する。互換面は報告と終了を呼ばれた順に 1 本の列へ積んでから
+     * UI スレッドで受理するため、処理の中で (どのスレッドからでも) 報告を呼び終えてから処理が戻れば、
+     * 終了はその報告の後に受理される。処理がどのスレッドで完了し、呼び出し元がどこで再開しても変わらない。
      */
     private suspend fun <T> runScope(
         handle: KSDInteropLoadingUseHandle,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         // 報告口は任意スレッドから呼べる。受理は UI スレッド上で呼ばれた順に直列化される
         val report: (Double) -> Unit = { progress -> bridge.reportProgress(progress, handle = handle) }
         try {
-            val value = action(report)
+            val value = withContext(actionThread.dispatcher()) { action(report) }
             withContext(NonCancellable) { endUse(handle) }
             return value
         } catch (failure: Throwable) {
@@ -135,6 +148,18 @@ internal class IosLoadingGateway(
             bridge.endUse(handle) { continuation.resume(Unit) }
         }
     }
+
+    /**
+     * 処理を始めるスレッドの指定に対応する dispatcher。
+     *
+     * UI スレッドから既定の指定で呼ばれたときは、`immediate` によりメインキューへの積み直しを省いて
+     * その場で処理を始める。
+     */
+    private fun LoadingActionThread.dispatcher(): CoroutineDispatcher =
+        when (this) {
+            LoadingActionThread.MAIN -> Dispatchers.Main.immediate
+            LoadingActionThread.BACKGROUND -> Dispatchers.Default
+        }
 
     private companion object {
         const val UNKNOWN_FAILURE_MESSAGE: String = "Failed to show the Loading."

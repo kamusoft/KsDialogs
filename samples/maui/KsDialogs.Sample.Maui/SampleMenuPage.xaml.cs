@@ -258,13 +258,15 @@ public partial class SampleMenuPage : ContentPage
     /// <returns>実行から結果の取り込みまでを表す待機可能な操作。</returns>
     /// <remarks>
     /// スコープ形の StartAsync は処理の間だけ既定ローディングを出し、処理の完了で自動的に閉じる。
-    /// 処理は 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
+    /// 処理は UI スレッドで始まるため、最初の文で結果表示を直接「処理中」に書き換える。
+    /// そのあと 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
     /// </remarks>
     private async Task RunDefaultLoadingAsync()
     {
         await Loading.Instance.StartAsync(
             async progress =>
             {
+                ShowResult(SampleText.LoadingProcessingResult);
                 for (int step = 0; step <= LoadingStepCount; step++)
                 {
                     progress.Report((double)step / LoadingStepCount);

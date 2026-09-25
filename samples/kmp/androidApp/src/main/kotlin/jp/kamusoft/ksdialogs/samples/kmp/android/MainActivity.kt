@@ -114,7 +114,7 @@ internal class MainActivity : ComponentActivity() {
             SampleDemoId.TOAST_PLACEMENT,
             SampleDemoId.TOAST_OVERLAP,
             -> scope.launch {
-                presenter.autoPlay(demo)?.let { menuView.showResult(it) }
+                presenter.autoPlay(demo, menuView::showResult)?.let { menuView.showResult(it) }
             }
         }
     }
@@ -186,10 +186,11 @@ internal class MainActivity : ComponentActivity() {
      * Default Loading を実行し、完了を直近の結果として取り込む。
      *
      * 呼び出しは共有 Presenter に閉じており、この画面は結果の文言を受け取るだけである。
+     * 処理中の文言は処理の中から UI スレッドで渡されるので、そのまま結果表示へ出す。
      */
     private fun runDefaultLoading() {
         scope.launch {
-            menuView.showResult(presenter.runDefaultLoading())
+            menuView.showResult(presenter.runDefaultLoading(menuView::showResult))
         }
     }
 

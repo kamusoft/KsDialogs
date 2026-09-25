@@ -1,0 +1,18 @@
+# KMP iOS framework の ObjC ヘッダ抜粋 (tasks 4.5)
+#
+# 生成: kmp/ で `./gradlew allTests --rerun-tasks` (iosSimulatorArm64Test が linkDebugFrameworkIosSimulatorArm64 を伴う)。2026-09-25
+# 対象: kmp/ksdialogs-kmp/build/bin/iosSimulatorArm64/debugFramework/KsDialogsKmp.framework/Headers/KsDialogsKmp.h
+# 抽出: `grep -n 'swift_name("start('` と LoadingActionThread の宣言行。log-sanitize.py 通過 (置換対象なし)
+#
+# 読み取り:
+# - Swift から見える start は 2 本 (インスタンス渡し・既定ローディング) で、どちらも actionThread 引数を持つ
+# - ObjC の書き出しでは既定値が消えるため、Swift 側は actionThread を明示で渡す (ヘッダの宣言に既定値の表現は無い)
+# - 型指定の start は @HiddenFromObjC のまま面に出ない (ヘッダ内の `ViewModelClass:` を含む宣言は 0 件、`- (void)start` は 2 件)
+# - 同じ確認を iosTest の ObjCApiSurfaceTests (「スコープ形の処理を始めるスレッドの指定は Swift や ObjC から見える」) が毎回の実行で行う
+
+581:- (void)startViewModel:(id<KDKLoadingViewModel>)viewModel placement:(KDKDialogPlacement * _Nullable)placement actionThread:(KDKLoadingActionThread *)actionThread action:(id<KDKKotlinSuspendFunction1>)action completionHandler:(void (^)(id _Nullable_result, NSError * _Nullable))completionHandler __attribute__((swift_name("start(viewModel:placement:actionThread:action:completionHandler:)")));
+616:- (void)startMessage:(NSString * _Nullable)message placement:(KDKDialogPlacement * _Nullable)placement actionThread:(KDKLoadingActionThread *)actionThread action:(id<KDKKotlinSuspendFunction1>)action completionHandler:(void (^)(id _Nullable_result, NSError * _Nullable))completionHandler __attribute__((swift_name("start(message:placement:actionThread:action:completionHandler:)")));
+720:__attribute__((swift_name("LoadingActionThread")))
+721-@interface KDKLoadingActionThread : KDKKotlinEnum<KDKLoadingActionThread *>
+735:@property (class, readonly) KDKLoadingActionThread *main __attribute__((swift_name("main")));
+736:@property (class, readonly) KDKLoadingActionThread *background __attribute__((swift_name("background")));

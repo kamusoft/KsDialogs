@@ -31,6 +31,7 @@ public class LoadingActionRunnerTests
                 progress.Report(1d);
                 return Task.CompletedTask;
             },
+            LoadingActionThread.Main,
             value =>
             {
                 order.Add("report");
@@ -63,6 +64,7 @@ public class LoadingActionRunnerTests
                 arrivedBeforeReturn = forwardingThread != 0;
                 return Task.CompletedTask;
             },
+            LoadingActionThread.Main,
             _ => forwardingThread = Environment.CurrentManagedThreadId,
             () => { },
             _ => { });
@@ -89,6 +91,7 @@ public class LoadingActionRunnerTests
                 reportingThread = Environment.CurrentManagedThreadId;
                 progress.Report(0.25d);
             }).ConfigureAwait(false),
+            LoadingActionThread.Main,
             value =>
             {
                 forwardingThread = Environment.CurrentManagedThreadId;
@@ -114,6 +117,7 @@ public class LoadingActionRunnerTests
 
         await LoadingActionRunner.RunAsync(
             _ => Task.CompletedTask,
+            LoadingActionThread.Main,
             _ => { },
             () => completions++,
             _ => failures++);
@@ -136,6 +140,7 @@ public class LoadingActionRunnerTests
 
         await LoadingActionRunner.RunAsync(
             _ => Task.FromException(thrown),
+            LoadingActionThread.Main,
             _ => { },
             () => completions++,
             failure => failures.Add(failure));

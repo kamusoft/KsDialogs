@@ -202,6 +202,9 @@ public static class SampleText
     /// <summary>ローディングの処理が終わったときの結果表示。結果値を持たないので書式ではなく固定の文言にする。</summary>
     public const string LoadingCompletedResult = "結果: 完了";
 
+    /// <summary>ローディングの処理が始まったときの結果表示。処理の中から直接書き込む。</summary>
+    public const string LoadingProcessingResult = "結果: 処理中";
+
     /// <summary>演出の時間の表示 (ミリ秒)。</summary>
     /// <param name="milliseconds">片道の時間。</param>
     /// <returns>調整部に出す文言。</returns>

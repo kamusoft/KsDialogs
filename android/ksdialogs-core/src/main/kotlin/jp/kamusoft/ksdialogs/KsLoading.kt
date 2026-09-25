@@ -113,13 +113,31 @@ public interface KsLoading {
      * 失敗 (例外・キャンセル) も合流1件の終了として数えたうえで呼び出し元へ伝播する。
      * 合流最後の1件なら器の撤去まで待ってから戻り、そうでなければ処理の完了時点で戻る。
      *
+     * 処理は、呼び出し元のスレッドに関係なく [actionThread] で指定したスレッドで始まる。
+     * 既定は UI スレッドで、処理の中から View に直接触れる。UI に触れない重い処理は
+     * [LoadingActionThread.BACKGROUND] を指定して UI スレッド外で始める。
+     * ここでの「始まる」は処理の最初の文を実行するスレッドを指し、処理の中で中断した後の再開先は
+     * コルーチンの通常の規則 (処理が動いている dispatcher) に従う。
+     *
+     * ```
+     * Loading.instance.start { report ->
+     *     imageView.setImageBitmap(resized)          // UI スレッドで始まる
+     * }
+     * Loading.instance.start(actionThread = LoadingActionThread.BACKGROUND) { report ->
+     *     heavyWork(report)                           // UI スレッド外で始まる
+     * }
+     * ```
+     *
      * @param message 表示するメッセージ。null ならスタイルの既定メッセージ
      * @param placement 配置。null なら契約の既定値
+     * @param actionThread 処理を始めるスレッド。既定の [LoadingActionThread.MAIN] は UI スレッド、
+     *   [LoadingActionThread.BACKGROUND] は UI スレッド外で、呼び出し元のスレッドに関係なくそのスレッドで始まる
      * @param action 実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)
      */
     public suspend fun <T> start(
         message: String? = null,
         placement: DialogPlacement? = null,
+        actionThread: LoadingActionThread = LoadingActionThread.MAIN,
         action: suspend ((Double) -> Unit) -> T,
     ): T
 
@@ -127,14 +145,18 @@ public interface KsLoading {
      * 登録済みのカスタム Loading View を表示したまま処理を実行し、その戻り値を返す。
      *
      * 未登録の ViewModel 型は構成ミスとして失敗し、処理は実行されない (fail-fast)。
+     * 処理が始まるスレッドは既定ローディングのスコープ形と同じで、既定は UI スレッドである。
      *
      * @param viewModel 表示するカスタム Loading の ViewModel
      * @param placement 配置。null なら View への添付、添付もなければ契約の既定値
+     * @param actionThread 処理を始めるスレッド。既定の [LoadingActionThread.MAIN] は UI スレッド、
+     *   [LoadingActionThread.BACKGROUND] は UI スレッド外で、呼び出し元のスレッドに関係なくそのスレッドで始まる
      * @param action 実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)
      */
     public suspend fun <T> start(
         viewModel: LoadingViewModel,
         placement: DialogPlacement? = null,
+        actionThread: LoadingActionThread = LoadingActionThread.MAIN,
         action: suspend ((Double) -> Unit) -> T,
     ): T
 
@@ -142,16 +164,20 @@ public interface KsLoading {
      * 登録せずに、その場で渡した factory の中身を表示したまま処理を実行する (core/ADR-0013)。
      *
      * レジストリの状態は一切変わらない。それ以外は登録経路のスコープ形とまったく同じである。
+     * 処理が始まるスレッドも既定ローディングのスコープ形と同じで、既定は UI スレッドである。
      *
      * @param viewModel 表示するカスタム Loading の ViewModel
      * @param placement 配置。null なら View への添付、添付もなければ契約の既定値
      * @param factory 中身の View を生成する関数。レシーバは提示先画面の [Context]
+     * @param actionThread 処理を始めるスレッド。既定の [LoadingActionThread.MAIN] は UI スレッド、
+     *   [LoadingActionThread.BACKGROUND] は UI スレッド外で、呼び出し元のスレッドに関係なくそのスレッドで始まる
      * @param action 実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)
      */
     public suspend fun <VM : LoadingViewModel, T> start(
         viewModel: VM,
         placement: DialogPlacement? = null,
         factory: Context.(VM) -> View,
+        actionThread: LoadingActionThread = LoadingActionThread.MAIN,
         action: suspend ((Double) -> Unit) -> T,
     ): T
 
@@ -161,16 +187,21 @@ public interface KsLoading {
      * ViewModel の生成・configure・失敗の扱いは型を渡す [show] と同じで、開始 → 処理の実行 →
      * 終了の対と戻り値の扱いはインスタンス渡しのスコープ形と同じである。
      * ViewModel factory が未登録の場合と、生成・configure が失敗した場合は処理を実行しない。
+     * 処理が始まるスレッドは既定ローディングのスコープ形と同じで、既定は UI スレッドである
+     * (生成と configure は指定に関係なく UI スレッドで実行される)。
      *
      * @param viewModelClass 表示するカスタム Loading の ViewModel のクラス参照
      * @param placement 配置。null なら View への添付、添付もなければ契約の既定値
      * @param configure 生成した ViewModel の状態を整える関数。中断関数として書ける
+     * @param actionThread 処理を始めるスレッド。既定の [LoadingActionThread.MAIN] は UI スレッド、
+     *   [LoadingActionThread.BACKGROUND] は UI スレッド外で、呼び出し元のスレッドに関係なくそのスレッドで始まる
      * @param action 実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)
      */
     public suspend fun <VM : LoadingViewModel, T> start(
         viewModelClass: KClass<VM>,
         placement: DialogPlacement? = null,
         configure: (suspend (VM) -> Unit)? = null,
+        actionThread: LoadingActionThread = LoadingActionThread.MAIN,
         action: suspend ((Double) -> Unit) -> T,
     ): T
 }
