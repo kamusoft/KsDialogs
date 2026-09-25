@@ -1,6 +1,6 @@
 ---
 id: 0037
-title: Loading のスコープ形の action は既定で UI スレッドで始め、UI スレッド外で始めるフラグを入口に持たせる
+title: Loading のスコープ形の action は既定で UI スレッドで始め、UI スレッド外で始める指定を入口に持たせる
 status: proposed
 date: 2026-09-25
 ---
@@ -27,9 +27,14 @@ ColorAnalyzer が AiForms.Maui.Dialogs から KsDialogs.Maui へ移行したと�
 ## Decision
 
 - スコープ形の action は、**既定で UI スレッドで始まる**。全形態 (iOS Native / Android Native / MAUI / KMP) で同じとする
-- スコープ形の入口にフラグを持たせる。指定すると、action は **UI スレッド外で始まる**
-- フラグは**どちらの値でも、始まるスレッドを保証する**。「どこで始まってもよい (保証なし)」にあたる値は置かない
-- フラグの型 (真偽値か列挙か) と名前は提案段階で決める
+- スコープ形の入口で「UI スレッド外で始める」を指定できるようにする。指定すると、action は **UI スレッド外で始まる**
+- 指定は**どちらの場合も、始まるスレッドを保証する**。「どこで始まってもよい (保証なし)」にあたる選択肢は置かない
+- 指定の表し方は、形態の言語機構に合わせる (change define-loading-action-thread の design で確定)
+  - Swift (iOS Native): action の型を `@MainActor` にし、UI スレッド外で始めるには利用者がクロージャに `@concurrent` を付ける。引数は足さない
+  - Kotlin (Android Native / KMP) と C# (MAUI): 入口に列挙型 `LoadingActionThread` の引数を足す。既定値は UI スレッド側
+- 保証の範囲には、次の 2 つの定めがある
+  - 処理自身が実行スレッドを型で宣言している場合 (Swift の isolation) は、その宣言が優先される。isolation の指定が無い async 関数を名前で渡すと、UI スレッド外で始まる
+  - 保証の対象は、UI スレッドを持つ実行環境 (iOS / Android) だけである。UI スレッドを持たない環境 (MAUI の素の .NET) では、指定に関係なくその場で実行する
 
 ## Alternatives Considered
 
@@ -48,7 +53,8 @@ ColorAnalyzer が AiForms.Maui.Dialogs から KsDialogs.Maui へ移行したと�
 - 正: action の中が UI スレッドかどうかが、呼び出しの 1 行を見れば分かる
 - 正: AiForms から移行したコードは、何も付けなければ UI スレッドで始まるので、そのまま動く
 - 正: 利用者のコードを UI スレッドで呼ぶ既存の箇所 (core/ADR-0027・0035) と規則が揃う
-- 負: スコープ形の入口すべて (4 形態 × UIKit / SwiftUI / 従来 View / Compose) に引数が 1 つ増える
+- 負: Kotlin と C# では、スコープ形の入口すべて (Android Native・Compose・KMP・MAUI) に引数が 1 つ増える
+- 負: Swift では、isolation の指定が無い async 関数を名前で渡すと、その関数自身の isolation が優先され、UI スレッド外で始まる (言語規則)。ただし型の上でも UI スレッドではないと分かるため、中で UIKit に触るとコンパイルエラーになる
 - 負: 次の形態では、既定の動きが変わる
   - iOS Native と MAUI iOS: 今はメインスレッド外で始まる
   - Android Native と KMP: 今はバックグラウンドから呼ぶと、そのスレッドで始まる
