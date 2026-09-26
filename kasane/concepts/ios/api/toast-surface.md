@@ -110,7 +110,7 @@ factory 閉包だけ `throws` を持たせているのは、Kotlin / C# の fact
 
 ## 関連
 
-- [Toast のルール](../../core/api/toast-semantics.md) — duration・失敗モデル・多重表示・非対話 (契約の正)
+- [Toast のルール](../../core/api/toast-semantics.md) — duration・失敗モデル・多重表示・非対話 (契約の記述はこちら)
 - [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) — 型指定 show の順序保証と VM factory 解決 (3 機能共通の契約)
 - [iOS の Loading 公開面](loading-surface.md) — 操作の多い側との対比
 - [iOS のレイアウト公開面](layout-surface.md) — `DialogPlacement` の型と添付面

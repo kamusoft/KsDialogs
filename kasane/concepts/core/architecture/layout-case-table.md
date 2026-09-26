@@ -16,7 +16,7 @@ timestamp: 2026-09-27
 
 規則を文章で書くだけでは、曖昧さがそのまま実装差になる。そこで規則と対になる**共通ケース表**を単一の正として置く: リポジトリルートの `core/layout-spec/cases.json` ([core/ADR-0009](../../../decisions/core/0009-layout-spec-test-case-table.md))。
 
-表全体は `{ "tolerance": <許容誤差>, "cases": [ <ケース>, … ] }` の形をしている。
+表全体は `comment` (改訂の経緯)・`unit` (論理単位)・`tolerance` (許容誤差)・`defaults` (`attributes` に書かれていない属性の既定値)・`cases` (ケースの列) を持つ。1 ケースは `id`・`requirements` (検証している規則の名前)・`screen`・`insets`・`contentSize`・`attributes`・`expected` を持ち、補足が要るケースには `note` が付く。
 
 ## ケースの読み方
 
@@ -51,7 +51,9 @@ ID は**参照の安定を優先して欠番方式**で運用する。廃止さ�
 
 ## 誰が全量検証を課されるか
 
-**全量検証を課すのは Native 2 実装だけである。** iOS は XCTest がシミュレータ上でレイアウト完了後の実 frame を、Android は instrumented test が実 View の rect を測る。rect を計算する関数だけを単体検証しても、レイアウト機構への反映漏れを見逃すため、実測でなければ受け入れ条件を満たさない。
+**全量検証を課すのは Native 2 実装だけである。** iOS は Swift Testing のテストがシミュレータ上でレイアウト完了後の実 frame を、Android は instrumented test が実 View の rect を測る。rect を計算する関数だけを単体検証しても、レイアウト機構への反映漏れを見逃すため、実測でなければ受け入れ条件を満たさない。
+
+全量検証は Dialog の器だけでなく、Loading と Toast の器にも課す (Android は Compose の中身でも Dialog の器で同じ表を測る)。器ごとに中身の載せ方が違い、反映漏れも器ごとに起きるためである。`C23` は Toast の契約既定配置 (core/ADR-0032) を固定するケースで、Toast では既定のまま表示して測り、他の器では同じ実効値を渡したケースとして読む。
 
 MAUI / KMP はケース表を読まず、属性が値のまま Native へ届くことだけを検証する。
 

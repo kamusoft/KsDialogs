@@ -97,7 +97,7 @@ Swift から `start` (処理だけを渡す版と ViewModel を渡す版) を直
 
 ## 関連
 
-- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の正)
+- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の記述はこちら)
 - [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) — 型指定 show の共通の決まりと KMP での見え方
 - [KMP 利用者の iOS ホスト統合](ios-host-integration.md) — Swift 向けの型付き公開面と登録手順
 - [KMP の Dialog 公開面](dialog-surface.md) — 共有コードの呼び出し面の基本形・型指定 show の決まりの表・添付の面が無いこと

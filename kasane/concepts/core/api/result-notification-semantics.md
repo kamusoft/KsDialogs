@@ -3,16 +3,16 @@ type: concept
 title: 結果通知のルール (show が返すもの)
 description: ダイアログの show 呼び出しが何を返すかの core 契約 — completed(結果) か cancelled をちょうど1回返す。どの操作がキャンセルになるか、結果が確定する時点と呼び出し元へ渡る時点 (ラッチと配送)、移植元の型安全性の弱点をどう解消するかも定める
 tags: [dialog, result, contract]
-timestamp: 2026-09-02
+timestamp: 2026-09-26
 ---
 
 # 結果通知のルール (show が返すもの)
 
 この文書は、全形態 (iOS Native / Android Native / MAUI / KMP) 共通の「ダイアログを表示した呼び出し元が、結果をどう受け取るか」のルールを定める。読むと、show の呼び出しが何を返し、「OK で閉じた」と「キャンセルされた」がどう区別され、結果がいつ確定していつ呼び出し元へ届くかが分かる。
 
-本文中の**移植元**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す。参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)、リポジトリの在り処は [参考リポジトリの在り処](../../cross/reference/reference-repositories.md) が定める。
+本文中の**移植元**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す。参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)。ローカルでは `../AiForms.Maui.Dialogs` で参照する。
 
-**この文書が正であり、実装はここに合わせる**。根拠決定は [core/ADR-0003](../../../decisions/core/0003-result-notification-async-typed.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」で、「何が成り立つか」の正はこの文書側にある)。
+この文書は、4 形態の実装とテストが満たしている挙動を記述する (一次情報はコードとテスト)。根拠決定は [core/ADR-0003](../../../decisions/core/0003-result-notification-async-typed.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」)。
 
 core は「全形態が共有する契約」の層 (層の区分は [concepts 配置ルール](../../rules.md))。公開名・署名・コード例は各形態の公開面が持つ (末尾の「形態別の公開面」)。
 
@@ -87,7 +87,7 @@ iOS には戻るボタンに相当するキャンセル経路を設けない (�
 | Android Native / KMP | 言語のキャンセル規約どおりキャンセルの通知が伝播する (内部の結果は cancelled で確定済み) |
 | MAUI | **この経路がない** — show が呼び出し元のキャンセル手段を引数で受け取らない |
 
-Android / KMP でキャンセルの通知を握りつぶして cancelled を返す形にはしない。構造化並行性 (親のキャンセルが子へ伝わる仕組み) を壊すためである。キャンセルの通知がどの型で届くか、iOS で返る結果の綴りがどうなるかは、各形態の公開面の「失敗とキャンセルの形」が定める ([iOS](../../ios/api/dialog-surface.md) / [Android](../../android/api/dialog-surface.md) / [MAUI](../../maui/api/dialog-surface.md) / [KMP](../../kmp/api/dialog-surface.md))。なお、待機を打ち切ったあとでもダイアログの退出アニメーションは最後まで完遂される ([トランジションのルール](transition-semantics.md))。
+Android / KMP でキャンセルの通知を握りつぶして cancelled を返す形にはしない。構造化並行性 (親のキャンセルが子へ伝わる仕組み) を壊すためである。キャンセルの通知がどの型で届くか、iOS で返る結果の綴りがどうなるかは、各形態の公開面の「失敗とキャンセルの形」(KMP は「失敗とキャンセルの届き方」) が定める ([iOS](../../ios/api/dialog-surface.md) / [Android](../../android/api/dialog-surface.md) / [MAUI](../../maui/api/dialog-surface.md) / [KMP](../../kmp/api/dialog-surface.md))。なお、ダイアログが表示中のときに待機を打ち切った場合、退出アニメーションは最後まで完遂される。出現アニメーションの途中や退出の途中で打ち切ったときの扱いは [トランジションのルール](transition-semantics.md) が定める。
 
 ## 表示 API の動詞
 
@@ -104,9 +104,14 @@ ViewModel の型を渡す起動モード (型指定 show) は [ViewModel 主導�
 
 したがって **show が返ったときには、ダイアログはもう画面にない**。演出を何も指定していなくても、既定の退出アニメーション (クロスフェード 250 ミリ秒) の分だけ show の完了は遅れる — show が即座に返ることを前提にしたコードは影響を受ける。アニメーションの差し替えと、退出中に何が起きたときにどう配送されるかは [トランジションのルール](transition-semantics.md) が定める。
 
-## まだ決めていないこと (実物と一緒に決める)
+## Loading / Toast の結果の扱い
 
-- **Loading / Toast の結果の扱い**: Loading (移植元は結果を返さない) は Loading 機能の実装時に、Toast (移植元で廃止予定のため新実装) は Toast 再構築時に決める
+この文書の結果通知 (completed / cancelled の確定と配送) は Dialog だけのものである。Loading と Toast はダイアログの結果を持たない:
+
+| 機能 | 呼び出し元へ返るもの | 根拠 |
+|---|---|---|
+| Loading | 表示 (show)・閉鎖 (hide) は結果を返さない。スコープ形 (start) は渡した処理の戻り値をそのまま返す | core/ADR-0022 ([Loading のルール](loading-semantics.md)) |
+| Toast | 何も返さない (fire-and-forget)。表示の終了を待つ手段もない | core/ADR-0031 ([Toast のルール](toast-semantics.md)) |
 
 ## 形態別の公開面
 

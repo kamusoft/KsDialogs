@@ -35,3 +35,4 @@ Toast は完全非対話とする。
 - 実装で判明した帰結 (出典: 実装結果): show が戻った後の失敗 (factory の例外・View の実体化失敗・器の取り付け失敗) は呼び出し元へ返せないため、「警告ログを出してその表示だけを破棄し、後続表示は継続する」という受理後の失敗モデルが契約に必要になった (dialog-contract の失敗モデル 3 段階のうちの 1 つ)
 
 出典: kasane/roadmaps/library-foundation/phases/phase-8-toast-rebuild/history.md (2026-08-27 Toast との対話と消え方) / kasane/changes/archive/2026-08-28-add-toast/specs/dialog-contract/spec.md (失敗モデル)
+関連: kasane/concepts/core/api/toast-semantics.md「失敗モデル (3 段階)」— Consequences の実装観測 (受理後の失敗は警告ログを出してその表示だけを破棄する) の現在の記述先 (2026-09-26 ksn-drift で確認)

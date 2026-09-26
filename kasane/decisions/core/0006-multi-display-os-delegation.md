@@ -35,6 +35,7 @@ OS 間の挙動差は共通仕様テストで記録し、仕様側に明記し�
 - 負: OS 側の都合で器だけが消える経路 (提示関係の解除・画面の破棄・ウィンドウの取り外し) を各 Native 実装が個別に検知する必要があり、検知漏れは show の宙吊りとして現れる
 - 負: 「全部閉じる」等のスタック横断操作を将来入れる場合、OS 委譲の枠内で設計する制約を負う
 
-出典: kasane/roadmaps/library-foundation/phases/phase-1-architecture-research/history.md (2026-08-13: 多段表示の core 契約表現) / kasane/roadmaps/library-foundation/roadmap.md (前提: 移植元の実装知識)
+出典: kasane/roadmaps/archive/2026-09-04-library-foundation/phases/phase-1-architecture-research/history.md (2026-08-13: 多段表示の core 契約表現) / kasane/roadmaps/archive/2026-09-04-library-foundation/roadmap.md (前提: 移植元の実装知識)
 
-現行照合: 2026-08-15 確認。ios/Sources/KsDialogs/Presentation/UIKitDialogPresentationSurface.swift と android/ksdialogs/src/main/kotlin/jp/kamusoft/ksdialogs/ActivityDialogPresentationSurface.kt が OS の提示機構へ委譲し、段数の状態を持たない。器の消失検知は DialogContainerViewController.swift / ActivityDestroyObserver.kt が担う。判定: 維持
+現行照合: 2026-08-15 確認。ios/Sources/KsDialogs/Presentation/UIKitDialogPresentationSurface.swift と android/ksdialogs-core/src/main/kotlin/jp/kamusoft/ksdialogs/ActivityDialogPresentationSurface.kt が OS の提示機構へ委譲し、段数の状態を持たない。器の消失検知は DialogContainerViewController.swift / ActivityDestroyObserver.kt が担う。判定: 維持
+現行照合: 2026-09-26 確認 (ksn-drift)。提示面は iOS `UIKitDialogPresentationSurface.swift` が最前面の VC を毎回たどって present し、Android `ActivityDialogPresentationSurface.kt` が 1 枚ごとの Dialog ウィンドウを出し、どちらも段数の状態を持たない。保証 4 点と下の段を先に閉じたときの OS 差は同名 Scenario (PB-MD-01〜05) が両 Native で固定している (`ios/Tests/KsDialogsTests/DialogMultiDisplayTests.swift`・`DialogMultiDisplayPresentationTests.swift`、`android/ksdialogs-core/src/test/.../DialogMultiDisplayTests.kt`・`src/androidTest/.../DialogMultiDisplayPresentationTests.kt`)。iOS の PB-MD-04 / 05 は UIKit の連鎖 dismiss を模したテスト用提示面で検証しており、実 UIKit の挙動は 2026-08-15 の実測が根拠。判定: 維持

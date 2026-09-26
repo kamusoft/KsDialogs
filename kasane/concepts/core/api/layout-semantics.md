@@ -10,11 +10,11 @@ timestamp: 2026-09-27
 
 この文書は、全形態 (iOS Native / Android Native / MAUI / KMP) 共通の「ダイアログがどれだけの大きさで画面のどこに出るか」と「外側をタップしたら閉じるか」のルールを定める。読むと、ダイアログの器に渡せるメタ属性とその既定値、属性をどこから渡せて競合したらどれが勝つか、最終的な位置とサイズがどう導かれるかが分かる。
 
-**この文書が正であり、実装はここに合わせる**。根拠決定は [core/ADR-0007](../../../decisions/core/0007-layout-spec-not-shared-code.md)・[core/ADR-0008](../../../decisions/core/0008-layout-attributes-deliberate-deviations.md)・[core/ADR-0009](../../../decisions/core/0009-layout-spec-test-case-table.md)・[core/ADR-0014](../../../decisions/core/0014-contract-keeps-only-container-meta-attributes.md)・[core/ADR-0015](../../../decisions/core/0015-attribute-supply-content-attachment.md) (いずれも最初の実装での検証を経て accepted 済み)。
+この文書は、4 形態の実装とテストが満たしている挙動を記述する (一次情報はコードとテスト)。根拠決定は [core/ADR-0007](../../../decisions/core/0007-layout-spec-not-shared-code.md)・[core/ADR-0008](../../../decisions/core/0008-layout-attributes-deliberate-deviations.md)・[core/ADR-0009](../../../decisions/core/0009-layout-spec-test-case-table.md)・[core/ADR-0014](../../../decisions/core/0014-contract-keeps-only-container-meta-attributes.md)・[core/ADR-0015](../../../decisions/core/0015-attribute-supply-content-attachment.md) (いずれも最初の実装での検証を経て accepted 済み)。
 
 読む前に押さえておく前提:
 
-本文中の**原典**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す (参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)、リポジトリの在り処は [参考リポジトリの在り処](../../cross/reference/reference-repositories.md) が定める)。本文中の**現行実装**は、この契約を導入する前の本ライブラリのコード (原典から移植して動いている状態) を指す。原典と現行実装は別物で、既定値の根拠としてどちらを採ったかは節ごとに明示する。
+本文中の**原典**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す (参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)。ローカルでは `../AiForms.Maui.Dialogs` で参照する)。本文中の**現行実装**は、この契約を導入する前の本ライブラリのコード (原典から移植して動いている状態) を指す。原典と現行実装は別物で、既定値の根拠としてどちらを採ったかは節ごとに明示する。
 
 - 規則と対になる**共通ケース表**を単一の正として持ち、本文の規則から機械的に導いた期待値を固定している (表の形と運用は [レイアウト共通ケース表と OS 差の統制](../architecture/layout-case-table.md))
 - core は「全形態が共有する契約」の層 (層の区分は [concepts 配置ルール](../../rules.md))。公開名・署名・コード例は各形態の公開面が持つ (末尾の「形態別の公開面」)

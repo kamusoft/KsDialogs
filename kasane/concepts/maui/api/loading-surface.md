@@ -138,7 +138,7 @@ Loading.Instance.Style = Loading.Instance.Style with { DefaultMessage = "処理�
 
 ## 関連
 
-- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の正)
+- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の記述はこちら)
 - [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) — 型指定 show の順序保証と VM factory 解決 (3 機能共通の契約)
 - [MAUI の DI 連携と登録糖衣](di-registration.md) — サービス登録と 1 行登録の規則
 - [MAUI のレイアウト公開面](layout-surface.md) — `DialogOptions` / `DialogPlacement` と添付プロパティ

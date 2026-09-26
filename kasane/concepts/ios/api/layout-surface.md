@@ -145,11 +145,15 @@ DialogCurrentPage.provider = { [weak container] in
 - **可視領域は safe area** である。`DialogLayoutArea.visibleArea` を選んだときに控除される insets は UIKit の safe area insets にあたる
 - **表示中のページを指定してもページが得られないとき**は `.visibleArea` と同じ結果になり、理由を英語の警告ログ (`The current page could not be resolved, so the visible area is used instead.` で始まる文) に出す
 - **数値の単位は pt**。Android の dp と同じ論理単位の役割だが、値の意味は各 OS の論理座標系に従う
-- レイアウト計算は iOS 側が実 frame として行う。`UIView` の制約や frame を中身の側で上書きしても、器が決めた外形 rect は変わらない
+- **レイアウトは Auto Layout の制約で反映する**。計算は iOS 側が実 frame として行い、器が中身の View に制約を張る (次の小節)
+
+### 中身の側の制約との関係
+
+上限 (有効領域による頭打ち) と位置の制約は必須なので、中身の側で何をしても守られる。比率・fill で決めたサイズの制約は優先度 999 で、中身の固有サイズの主張には勝つが、中身が必須 (1000) の幅・高さ制約を持つとそちらが勝つ。frame を直接代入しても Auto Layout に上書きされる。
 
 ## 関連
 
-- [レイアウトのルール](../../core/api/layout-semantics.md) — 属性の意味・既定値・優先順位・rect の決まり方 (契約の正)
+- [レイアウトのルール](../../core/api/layout-semantics.md) — 属性の意味・既定値・優先順位・rect の決まり方 (契約の記述はこちら)
 - [core/ADR-0038](../../../decisions/core/0038-current-page-layout-area-via-registered-provider.md) — 決定 (表示中のページは器が探さず、登録された取得元から得る)
 - [iOS の Dialog 公開面](dialog-surface.md) — 登録・表示・結果の受け取りの公開面
 - [iOS のトランジション公開面](transition-surface.md) — 出入りの演出の添付面とフックの型

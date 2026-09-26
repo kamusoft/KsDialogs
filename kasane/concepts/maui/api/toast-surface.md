@@ -93,7 +93,7 @@ Toast.Instance.Style = Toast.Instance.Style with { DefaultDuration = 2000 };
 
 ## 関連
 
-- [Toast のルール](../../core/api/toast-semantics.md) — duration・失敗モデル・多重表示・非対話 (契約の正)
+- [Toast のルール](../../core/api/toast-semantics.md) — duration・失敗モデル・多重表示・非対話 (契約の記述はこちら)
 - [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) — 型指定 show の順序保証と VM factory 解決 (3 機能共通の契約)
 - [MAUI の Loading 公開面](loading-surface.md) — 操作の多い側との対比
 - [MAUI の DI 連携と登録糖衣](di-registration.md) — サービス登録と 1 行登録の規則

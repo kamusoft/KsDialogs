@@ -70,7 +70,7 @@ Android Native のレジストリにも VM factory のスロットがあるが�
 
 ## 関連
 
-- [Toast のルール](../../core/api/toast-semantics.md) — duration・失敗モデル・多重表示・非対話 (契約の正)
+- [Toast のルール](../../core/api/toast-semantics.md) — duration・失敗モデル・多重表示・非対話 (契約の記述はこちら)
 - [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) — 型指定 show の共通の決まりと KMP での見え方 (Toast の同期伝播)
 - [KMP 利用者の iOS ホスト統合](ios-host-integration.md) — Swift 向けの型付き公開面と登録手順
 - [KMP の Loading 公開面](loading-surface.md) — 操作の多い側との対比

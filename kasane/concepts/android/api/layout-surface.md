@@ -153,7 +153,7 @@ Compose の modifier は `:ksdialogs` にあり、台帳の本体は `:ksdialogs
 
 ## 関連
 
-- [レイアウトのルール](../../core/api/layout-semantics.md) — 属性の意味・既定値・優先順位・rect の決まり方 (契約の正)
+- [レイアウトのルール](../../core/api/layout-semantics.md) — 属性の意味・既定値・優先順位・rect の決まり方 (契約の記述はこちら)
 - [core/ADR-0038](../../../decisions/core/0038-current-page-layout-area-via-registered-provider.md) — 決定 (表示中のページは器が探さず、登録された取得元から得る。Android は既定の探し方を持たない)
 - [Android の Dialog 公開面](dialog-surface.md) — 登録・表示・結果の受け取りの公開面
 - [Android のトランジション公開面](transition-surface.md) — 出入りの演出の添付面とフックの型

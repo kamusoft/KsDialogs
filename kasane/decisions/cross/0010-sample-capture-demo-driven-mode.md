@@ -46,3 +46,4 @@ Sample の撮影自動化は**デモ駆動モード**で行い、専用の撮影
 - 実装結果: sample-parity.md への枠外追記は実装と同時に実施済み。自動再生の one-shot 消費は4ルートとも「自動再生入口の先頭でプロセス単位のフラグを検査・消費」する構造で実現され、画面再生成での再発火をコードの形で防いでいる
 
 出典: kasane/changes/archive/2026-08-27-add-sample-capture-automation/exploration.md (決定事項・調査所見) / kasane/changes/archive/2026-08-27-add-sample-capture-automation/proposal.md (What Changes・2026-08-27 改訂記録) / kasane/changes/archive/2026-08-27-add-sample-capture-automation/design.md (Decision 4 改訂注記) / kasane/changes/archive/2026-08-27-add-sample-capture-automation/deviation.md
+関連: kasane/handbook/cross/sample-parity.md「撮影支援の起動引数」— Consequences の実装観測 (自動再生はプロセス起動につき 1 回で、画面の再生成では繰り返さない) の現在の記述先 (2026-09-26 ksn-drift で確認)
