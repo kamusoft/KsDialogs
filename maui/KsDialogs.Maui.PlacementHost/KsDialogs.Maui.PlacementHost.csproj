@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    基準領域「表示中のページ」の実配置を、両 OS の実機 / シミュレータ上で確かめるテストホストアプリ。
+    起動すると代表的なページ構成 (TabbedPage + NavigationPage・Shell・モーダル・FlyoutPage・素の ContentPage・
+    利用者の上書き・受け付けられない上書きからの戻り) を順に組み、それぞれでダイアログを出して、ダイアログの位置と表示中のページの領域を突き合わせる。
+    結果は 1 シナリオ 1 行でコンソール (iOS は標準出力、Android は logcat) と画面に出す。
+
+    素の net10.0 のユニットテストでは platform view が無く実配置を見られないため、別プロジェクトにしている。
+    `dotnet test` の対象 (KsDialogs.slnx) には含めない (実行には Simulator / 端末が要る)。
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-android;net10.0-ios</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>KsDialogs.PlacementHost</RootNamespace>
+    <AssemblyName>KsDialogs.Maui.PlacementHost</AssemblyName>
+    <ApplicationId>jp.kamusoft.ksdialogs.maui.placementhost</ApplicationId>
+    <ApplicationTitle>KsDialogs Placement Host</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' ">
+    <SupportedOSPlatformVersion>$(KsDialogsMinIOSVersion)</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' ">
+    <SupportedOSPlatformVersion>$(KsDialogsMinAndroidApi)</SupportedOSPlatformVersion>
+    <!-- adb で直接 install するため、assembly を apk に同梱する -->
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../KsDialogs.Maui/KsDialogs.Maui.csproj" />
+  </ItemGroup>
+
+  <!--
+    互換面 (静的 framework) だけを直したときも再リンクさせる。Sample の同名の配線と同じ理由で、
+    SDK の再リンク判定の入力に静的 framework の実バイナリが含まれないため。
+  -->
+  <Target Name="_AddKsBridgeBinaryToNativeLinkInputs"
+      AfterTargets="_ComputeLinkNativeExecutableInputs"
+      Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <ItemGroup>
+      <_LinkNativeExecutableInputs Include="@(_FrameworkNativeReference)"
+          Condition="'%(Filename)' == 'KsDialogsMauiBridge'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

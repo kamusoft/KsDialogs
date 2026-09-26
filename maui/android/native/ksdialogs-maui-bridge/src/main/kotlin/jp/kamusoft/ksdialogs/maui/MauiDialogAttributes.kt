@@ -28,6 +28,9 @@ public enum class MauiDialogLayoutArea {
 
     /** ウィンドウからシステムバーなどが占める余白を控除した可視領域。 */
     VISIBLE_AREA,
+
+    /** 表示中のページの矩形のうち、可視領域と重なる部分。 */
+    CURRENT_PAGE,
 }
 
 /**
@@ -103,6 +106,7 @@ internal fun MauiDialogAlignment.toDialogAlignment(): DialogAlignment = when (th
 internal fun MauiDialogLayoutArea.toDialogLayoutArea(): DialogLayoutArea = when (this) {
     MauiDialogLayoutArea.WINDOW -> DialogLayoutArea.WINDOW
     MauiDialogLayoutArea.VISIBLE_AREA -> DialogLayoutArea.VISIBLE_AREA
+    MauiDialogLayoutArea.CURRENT_PAGE -> DialogLayoutArea.CURRENT_PAGE
 }
 
 /** 互換面の静的メタ属性を Native ライブラリの型へ写す。 */

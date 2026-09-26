@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 属性調整パネルのタブのアイコン (一覧)。色はタブバーが選択状態に応じて塗り直す -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <circle cx="4.5" cy="6" r="1.5" fill="#000000"/>
+  <circle cx="4.5" cy="12" r="1.5" fill="#000000"/>
+  <circle cx="4.5" cy="18" r="1.5" fill="#000000"/>
+  <rect x="8" y="5" width="13" height="2" rx="1" fill="#000000"/>
+  <rect x="8" y="11" width="13" height="2" rx="1" fill="#000000"/>
+  <rect x="8" y="17" width="13" height="2" rx="1" fill="#000000"/>
+</svg>

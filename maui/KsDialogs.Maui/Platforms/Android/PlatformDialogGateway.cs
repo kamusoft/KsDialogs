@@ -16,6 +16,9 @@ namespace KsDialogs;
 /// </remarks>
 internal sealed class PlatformDialogGateway : IDialogGateway
 {
+    /// <summary>基準領域「表示中のページ」のページを Native 実装へ教える口を、最初の表示より前に登録しておく。</summary>
+    public PlatformDialogGateway() => PlatformCurrentPage.EnsureInstalled();
+
     /// <inheritdoc/>
     public async Task<DialogOutcome> PresentAsync(DialogPresentationRequest request)
     {
@@ -27,7 +30,7 @@ internal sealed class PlatformDialogGateway : IDialogGateway
         MauiDialogPresentation presentation = await MainThread.InvokeOnMainThreadAsync(() =>
         {
             // platform view 化に要る文脈が取れない時点で提示先が無いため、View を作らずに失敗させる
-            IMauiContext mauiContext = PlatformDialogContent.ResolveMauiContext()
+            IMauiContext mauiContext = PlatformDialogContent.ResolvePresentationTarget()?.MauiContext
                 ?? throw new DialogException.PresentationHostUnavailable();
 
             return MauiDialogBridge.Shared!.Present(

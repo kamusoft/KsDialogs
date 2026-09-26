@@ -35,7 +35,8 @@ internal object ToastLayoutMeasurement {
     /**
      * ケースの画面条件で Toast の器を組み立て、その外形を論理単位 (dp) で返す。
      *
-     * @param layoutCase 画面サイズ・システム領域の余白・内容サイズを与えるケース
+     * @param layoutCase 画面サイズ・システム領域の余白・内容サイズを与えるケース。
+     *   表示中ページの矩形を持つケースでは、Activity 側にその位置のページ領域の View を置いて組み立てる
      * @param options 中身の View に添付する静的メタ属性。null なら添付しない
      * @param attachedPlacement 中身の View に添付する動的メタ属性。null なら添付しない
      * @param showPlacement 表示 API の引数に相当する配置。null でなければ添付を置換する
@@ -52,6 +53,7 @@ internal object ToastLayoutMeasurement {
         val measured = AtomicReference<Rect>()
         val density = AtomicReference(1f)
         val laidOut = CountDownLatch(1)
+        val pageView = layoutCase.pageArea?.let { CurrentPageAreaFixture.place(scenario, it) }
 
         scenario.onActivity { activity ->
             val displayDensity = activity.resources.displayMetrics.density
@@ -82,7 +84,8 @@ internal object ToastLayoutMeasurement {
                     )
                 },
             )
-            val host = container.layoutHost
+            // 器の面は初めて読まれた時点で組み立てられ、そのときの登録内容を捕まえる
+            val host = CurrentPageAreaFixture.registeringPage(pageView) { container.layoutHost }
 
             val observer = activity.hostContainer.viewTreeObserver
             observer.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {

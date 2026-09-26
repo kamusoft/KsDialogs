@@ -22,8 +22,10 @@ enum SampleDialogRegistration {
                 onComplete: { notifier.complete(true) }
             )
             // 基準領域は中身の性質として扱う静的メタ属性なので、View への添付で供給する
+            // 余白は全辺 0 にして、カードが基準領域の端に接するかで置かれた領域を見分けられるようにする
             view.ksDialogOptions = DialogOptions(
-                layoutArea: viewModel.usesVisibleArea ? .visibleArea : .window
+                layoutArea: viewModel.layoutArea,
+                dialogMargin: .zero
             )
             return view
         }

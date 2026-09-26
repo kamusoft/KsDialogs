@@ -98,6 +98,7 @@ internal class ToastContainer(
             DialogWindowSystemBars.makeSystemBarBackgroundsTransparent(this)
         }
         setContentView(layoutHost)
+        markAsKsDialogsContainerWindow()
         if (!playsPresentation && layoutSnapshot.isFrozen) {
             // 固定済みの実効値で載せ直す経路では、レイアウトパスの節目 (固定の瞬間) が
             // もう訪れないため、進行はこの時点から始める

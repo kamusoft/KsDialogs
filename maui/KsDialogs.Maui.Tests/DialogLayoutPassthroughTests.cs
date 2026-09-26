@@ -62,6 +62,34 @@ public class DialogLayoutPassthroughTests
         });
     }
 
+    /// <summary>XAML で指定した基準領域「表示中のページ」が、値のまま委譲面へ届く。</summary>
+    [Test]
+    [Description("XAML で指定した CurrentPage が委譲面へ届く")]
+    public async Task CurrentPageDeclaredInXamlReachesTheGateway()
+    {
+        DialogPresentationContent delegated = await PresentAsync(new CurrentPageAttributeTestView());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(delegated.Options.LayoutArea, Is.EqualTo(DialogLayoutArea.CurrentPage));
+            Assert.That(delegated.Placement.HorizontalAlignment, Is.EqualTo(DialogAlignment.End));
+            Assert.That(delegated.Placement.VerticalAlignment, Is.EqualTo(DialogAlignment.End));
+        });
+    }
+
+    /// <summary>コードで添付した基準領域「表示中のページ」が、値のまま委譲面へ届く。</summary>
+    [Test]
+    [Description("コードで添付した CurrentPage が委譲面へ届く")]
+    public async Task CurrentPageAttachedInCodeReachesTheGateway()
+    {
+        View contentView = LayoutTestContentViews.WithoutAttributes();
+        Dialog.SetLayoutArea(contentView, DialogLayoutArea.CurrentPage);
+
+        DialogPresentationContent delegated = await PresentAsync(contentView);
+
+        Assert.That(delegated.Options.LayoutArea, Is.EqualTo(DialogLayoutArea.CurrentPage));
+    }
+
     /// <summary>覆いの色は ARGB 32bit 整数として、成分の値を保ったまま委譲面へ届く。</summary>
     [Test]
     [Description("色は ARGB 32bit 整数で値を保って届く")]

@@ -3,7 +3,7 @@ import KsDialogs
 /// 属性調整パネルが選べる配置。
 ///
 /// 契約の配置には有効領域いっぱいに広げる選択肢もあるが、パネルは寄せ先の3択だけを扱う。
-enum SampleAlignmentChoice: CaseIterable, Identifiable {
+enum SampleAlignmentChoice: SampleSegmentChoice {
     case start
     case center
     case end

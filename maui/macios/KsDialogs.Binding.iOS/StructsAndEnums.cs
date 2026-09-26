@@ -45,4 +45,7 @@ public enum MauiDialogLayoutArea : long
 
     /// <summary>ウィンドウからシステムバーなどが占める余白を控除した可視領域。</summary>
     VisibleArea = 1,
+
+    /// <summary>表示中のページの safe area の内側。</summary>
+    CurrentPage = 2,
 }

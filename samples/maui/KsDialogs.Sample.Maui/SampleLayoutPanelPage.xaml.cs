@@ -1,7 +1,4 @@
 using System.Globalization;
-#if ANDROID
-using Microsoft.Maui.Platform;
-#endif
 
 namespace KsDialogs.Sample.Maui;
 
@@ -87,23 +84,6 @@ public partial class SampleLayoutPanelPage : ContentPage
 #endif
     }
 
-    /// <summary>基準領域のトグルの塗りを共有の配色に合わせる。</summary>
-    /// <param name="sender">対象のトグル。</param>
-    /// <param name="e">未使用。</param>
-    /// <remarks>
-    /// Android の既定のトラックは半透明で寸法も異なり、指定した配色どおりに出ない。
-    /// 状態ごとのトラックとノブを自前で与えて、他ルートと同じ寸法・配色に揃える。
-    /// </remarks>
-    private void OnVisibleAreaSwitchHandlerChanged(object? sender, EventArgs e)
-    {
-#if ANDROID
-        if (sender is Switch { Handler.PlatformView: AndroidX.AppCompat.Widget.SwitchCompat platformSwitch } toggle)
-        {
-            ApplySwitchSkin(platformSwitch, toggle);
-        }
-#endif
-    }
-
 #if ANDROID
     /// <summary>指で押す仕掛けしか持たない TextView を、ボタンとして読み上げ・操作できるようにする委譲。</summary>
     /// <param name="onClick">読み上げから起動されたときに行う操作。</param>
@@ -146,72 +126,6 @@ public partial class SampleLayoutPanelPage : ContentPage
             return base.PerformAccessibilityAction(host, action, args);
         }
     }
-
-    /// <summary>区切り線の色の資源キー。トグルの off 側のトラックに使う。</summary>
-    private const string DividerColorKey = "SampleDivider";
-
-    /// <summary>トグルのトラックの幅。</summary>
-    private const float TrackWidthDp = 46f;
-
-    /// <summary>トグルのトラックの高さ。</summary>
-    private const float TrackHeightDp = 28f;
-
-    /// <summary>トグルのノブの直径。</summary>
-    private const float ThumbSizeDp = 24f;
-
-    /// <summary>トグルのトラックとノブに、状態ごとの塗りを与える。</summary>
-    /// <param name="platformSwitch">塗りを与える platform のトグル。</param>
-    /// <param name="toggle">配色の指定元。</param>
-    private static void ApplySwitchSkin(AndroidX.AppCompat.Widget.SwitchCompat platformSwitch, Switch toggle)
-    {
-        Android.Content.Context context = platformSwitch.Context!;
-        Android.Graphics.Color offColor = ((Color)Application.Current!.Resources[DividerColorKey]).ToPlatform();
-
-        // 自前の塗りに色合いが重ならないよう、既定の色合いを外す
-        platformSwitch.TrackTintList = null;
-        platformSwitch.ThumbTintList = null;
-
-        Android.Graphics.Drawables.StateListDrawable track = new();
-        track.AddState([Android.Resource.Attribute.StateChecked], SwitchTrack(context, toggle.OnColor.ToPlatform()));
-        track.AddState([], SwitchTrack(context, offColor));
-        platformSwitch.TrackDrawable = track;
-
-        Android.Graphics.Drawables.GradientDrawable thumb = new();
-        thumb.SetShape(Android.Graphics.Drawables.ShapeType.Oval);
-        thumb.SetColor(toggle.ThumbColor.ToPlatform());
-        thumb.SetSize(Dp(context, ThumbSizeDp), Dp(context, ThumbSizeDp));
-        platformSwitch.ThumbDrawable = thumb;
-
-        // 塗りを差し替えたあとの寸法で置き場所を測り直す
-        platformSwitch.SwitchMinWidth = Dp(context, TrackWidthDp);
-        platformSwitch.ThumbTextPadding = 0;
-        toggle.WidthRequest = TrackWidthDp;
-        toggle.HeightRequest = TrackHeightDp;
-        platformSwitch.RequestLayout();
-    }
-
-    /// <summary>トグルのトラックの塗りを作る。</summary>
-    /// <param name="context">寸法の変換に使う context。</param>
-    /// <param name="color">トラックの色。</param>
-    /// <returns>作ったトラックの塗り。</returns>
-    private static Android.Graphics.Drawables.GradientDrawable SwitchTrack(
-        Android.Content.Context context,
-        Android.Graphics.Color color)
-    {
-        Android.Graphics.Drawables.GradientDrawable drawable = new();
-        drawable.SetShape(Android.Graphics.Drawables.ShapeType.Rectangle);
-        drawable.SetCornerRadius(Dp(context, TrackHeightDp / 2));
-        drawable.SetColor(color);
-        drawable.SetSize(Dp(context, TrackWidthDp), Dp(context, TrackHeightDp));
-        return drawable;
-    }
-
-    /// <summary>密度非依存の寸法を実際のピクセル数へ変換する。</summary>
-    /// <param name="context">変換に使う context。</param>
-    /// <param name="value">密度非依存の寸法。</param>
-    /// <returns>実際のピクセル数。</returns>
-    private static int Dp(Android.Content.Context context, float value) =>
-        (int)(value * context.Resources!.DisplayMetrics!.Density);
 #endif
 
     /// <summary>戻る導線が押されたときにメニュー画面へ戻る。</summary>
@@ -225,10 +139,16 @@ public partial class SampleLayoutPanelPage : ContentPage
         await Navigation.PopModalAsync();
     }
 
+    /// <summary>表示操作が押されたときに、調整した属性でダイアログを表示する。</summary>
+    /// <param name="sender">未使用。</param>
+    /// <param name="e">未使用。</param>
+    private void OnShowSelected(object? sender, EventArgs e) => ShowLayoutDialog();
+
     /// <summary>調整した属性でダイアログを表示し、結果をパネルとメニューの両方へ出す。</summary>
-    private async void OnShowSelected(object? sender, EventArgs e)
+    /// <remarks>説明のタブの表示操作からも呼ばれ、パネルの設定をそのまま使う。</remarks>
+    public async void ShowLayoutDialog()
     {
-        LayoutDialogViewModel viewModel = new(SampleText.LayoutDialogMessage, VisibleAreaSwitch.IsToggled);
+        LayoutDialogViewModel viewModel = new(SampleText.LayoutDialogMessage, LayoutAreaSegments.Selection);
 
         // 置き場所は呼び出しごとに変わるので Show の引数で渡す
         DialogPlacement placement = new()

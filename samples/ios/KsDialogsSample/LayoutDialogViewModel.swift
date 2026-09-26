@@ -10,12 +10,12 @@ final class LayoutDialogViewModel: DialogViewModel {
     /// ダイアログに表示するメッセージ。
     let message: String
 
-    /// サイズと位置の計算に可視領域を使うか。
+    /// サイズと位置の計算に使う基準領域。
     /// 静的メタ属性は中身の性質なので、View factory が作った View への添付として供給する。
-    let usesVisibleArea: Bool
+    let layoutArea: DialogLayoutArea
 
-    init(message: String, usesVisibleArea: Bool) {
+    init(message: String, layoutArea: DialogLayoutArea) {
         self.message = message
-        self.usesVisibleArea = usesVisibleArea
+        self.layoutArea = layoutArea
     }
 }

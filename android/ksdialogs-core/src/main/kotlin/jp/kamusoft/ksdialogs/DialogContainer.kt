@@ -130,6 +130,7 @@ internal class DialogContainer(
             DialogWindowSystemBars.makeSystemBarBackgroundsTransparent(this)
         }
         setContentView(buildContentHierarchy())
+        markAsKsDialogsContainerWindow()
         window?.decorView?.addOnAttachStateChangeListener(windowDetachObserver)
     }
 

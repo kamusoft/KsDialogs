@@ -75,6 +75,7 @@ class DialogLayoutCaseAttributes(
         fun layoutArea(name: String?): DialogLayoutArea? = when (name) {
             "window" -> DialogLayoutArea.WINDOW
             "visibleArea" -> DialogLayoutArea.VISIBLE_AREA
+            "currentPage" -> DialogLayoutArea.CURRENT_PAGE
             null -> null
             else -> throw AssertionError("基準領域の指定を解釈できなかった: $name")
         }

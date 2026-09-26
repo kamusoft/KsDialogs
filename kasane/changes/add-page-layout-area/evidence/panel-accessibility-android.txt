@@ -1,0 +1,41 @@
+# android: 属性調整パネルの accessibility ノード (uiautomator dump から、操作できるノードを抜粋)
+# 取得: 2026-09-26、Android エミュレータ (Small_Phone AVD, API 35, 720x1280)、--es demo layout-dialog で起動
+# 状態: initial = 起動直後 / changed = Current page・Horizontal End・Vertical Start を選択 / info-tab = Info タブへ切替
+# 列: class (ノード自身) / name (自身か子孫の content-desc、無ければ text) / role (自身か子孫の擬似ノードが示す部品種別) / 状態
+# Compose は名前と役割を操作ノードの子の擬似ノードとして出し、読み上げはそれを親へ統合する。選択状態は Role.Tab 以外では checkable/checked に載る
+## initial
+  class=View name='Horizontal Start' text='Start' role=Button checkable=true checked=false selected=false
+  class=View name='Horizontal Center' text='Center' role=Button checkable=true checked=true selected=false
+  class=View name='Horizontal End' text='End' role=Button checkable=true checked=false selected=false
+  class=View name='Vertical Start' text='Start' role=Button checkable=true checked=false selected=false
+  class=View name='Vertical Center' text='Center' role=Button checkable=true checked=true selected=false
+  class=View name='Vertical End' text='End' role=Button checkable=true checked=false selected=false
+  class=EditText name='OffsetX' text='0' role=EditText checkable=false checked=false selected=false
+  class=EditText name='OffsetY' text='0' role=EditText checkable=false checked=false selected=false
+  class=View name='Window' text='Window' role=Button checkable=true checked=false selected=false
+  class=View name='Visible area' text='Visible area' role=Button checkable=true checked=true selected=false
+  class=View name='Current page' text='Current page' role=Button checkable=true checked=false selected=false
+  class=View name='戻る' text='‹' role=Button checkable=false checked=false selected=false
+  class=View name='Show' text='Show' role=Button checkable=false checked=false selected=false
+  class=View name='Panel' text='Panel' role=- checkable=false checked=false selected=true
+  class=View name='Info' text='Info' role=- checkable=false checked=false selected=false
+## changed
+  class=View name='Horizontal Start' text='Start' role=Button checkable=true checked=false selected=false
+  class=View name='Horizontal Center' text='Center' role=Button checkable=true checked=false selected=false
+  class=View name='Horizontal End' text='End' role=Button checkable=true checked=true selected=false
+  class=View name='Vertical Start' text='Start' role=Button checkable=true checked=true selected=false
+  class=View name='Vertical Center' text='Center' role=Button checkable=true checked=false selected=false
+  class=View name='Vertical End' text='End' role=Button checkable=true checked=false selected=false
+  class=EditText name='OffsetX' text='0' role=EditText checkable=false checked=false selected=false
+  class=EditText name='OffsetY' text='0' role=EditText checkable=false checked=false selected=false
+  class=View name='Window' text='Window' role=Button checkable=true checked=false selected=false
+  class=View name='Visible area' text='Visible area' role=Button checkable=true checked=false selected=false
+  class=View name='Current page' text='Current page' role=Button checkable=true checked=true selected=false
+  class=View name='戻る' text='‹' role=Button checkable=false checked=false selected=false
+  class=View name='Show' text='Show' role=Button checkable=false checked=false selected=false
+  class=View name='Panel' text='Panel' role=- checkable=false checked=false selected=true
+  class=View name='Info' text='Info' role=- checkable=false checked=false selected=false
+## info-tab
+  class=View name='Show' text='Show' role=Button checkable=false checked=false selected=false
+  class=View name='Panel' text='Panel' role=- checkable=false checked=false selected=false
+  class=View name='Info' text='Info' role=- checkable=false checked=false selected=true

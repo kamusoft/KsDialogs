@@ -53,6 +53,10 @@ dependencies {
     // 中身の composable を組み立てるための Compose 基盤 (レイアウト・文字・押下)
     implementation("androidx.compose.foundation:foundation:${libs.versions.androidx.compose.get()}")
 
+    // 属性調整パネルの画面を OS 標準の部品 (Scaffold・TopAppBar・NavigationBar) で組むための Material 3。
+    // 依存する Compose 基盤の版は上の foundation の版へ解決される
+    implementation("androidx.compose.material3:material3:1.3.1")
+
     // suspend な Presenter を呼ぶためのスコープに Android の Main ディスパッチャを使う
     implementation(libs.kotlinx.coroutines.android)
 

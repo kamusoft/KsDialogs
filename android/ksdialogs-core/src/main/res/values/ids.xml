@@ -4,4 +4,6 @@
     <item name="ksdialogs_dialog_options" type="id" />
     <item name="ksdialogs_dialog_placement" type="id" />
     <item name="ksdialogs_dialog_transition" type="id" />
+    <!-- KsDialogs 自身の器 (Dialog / Loading / Toast) のウィンドウであることの印。表示中のページの候補から外すのに使う -->
+    <item name="ksdialogs_container_window" type="id" />
 </resources>
