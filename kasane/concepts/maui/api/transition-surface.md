@@ -90,7 +90,7 @@ var transition = new DialogTransition(DialogTransition.Zoom().Presentation, myDi
 
 ## 関連
 
-- [トランジションのルール](../../core/api/transition-semantics.md) — 演出の採用時点・既定の演出・結果が返る時点 (契約の正)
+- [トランジションのルール](../../core/api/transition-semantics.md) — 演出の採用時点・既定の演出・結果が返る時点 (契約の記述はこちら)
 - [MAUI の Dialog 公開面](dialog-surface.md) — 登録・表示・結果の受け取りの公開面
 - [MAUI のレイアウト公開面](layout-surface.md) — 添付プロパティと型 (演出と同じ添付の規律)
 - [MAUI の DI 連携と登録糖衣](di-registration.md) — 1行登録と fallback resolver

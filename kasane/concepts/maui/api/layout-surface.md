@@ -70,7 +70,7 @@ DialogResult<bool> result = await Dialog.Instance.ShowAsync(
 
 ## 関連
 
-- [レイアウトのルール](../../core/api/layout-semantics.md) — 属性の意味・既定値・優先順位・rect の決まり方 (契約の正)
+- [レイアウトのルール](../../core/api/layout-semantics.md) — 属性の意味・既定値・優先順位・rect の決まり方 (契約の記述はこちら)
 - [MAUI の Dialog 公開面](dialog-surface.md) — 登録・表示・結果の受け取りの公開面
 - [MAUI の DI 連携と登録糖衣](di-registration.md) — 1行登録と fallback resolver
 - [MAUI のトランジション公開面](transition-surface.md) — 出入りの演出の添付とフックの型

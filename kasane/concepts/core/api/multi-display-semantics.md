@@ -3,16 +3,16 @@ type: concept
 title: 多段表示のルール (ダイアログの重ね出し)
 description: ダイアログ表示中にさらにダイアログを出したときの core 契約 — ライブラリはスタックを管理せず OS の提示機構に任せる。保証する挙動4点と、保証しない挙動を定める
 tags: [dialog, multi-display, contract]
-timestamp: 2026-08-22
+timestamp: 2026-09-26
 ---
 
 # 多段表示のルール (ダイアログの重ね出し)
 
 この文書は、全形態 (iOS Native / Android Native / MAUI / KMP) 共通の「ダイアログ表示中に、さらにダイアログを出す (重ね出しする)」ときのルールを定める。読むと、重ね出しで何が保証され、何が OS 任せで保証されないかが分かる。
 
-本文中の**移植元**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す。参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)、リポジトリの在り処は [参考リポジトリの在り処](../../cross/reference/reference-repositories.md) が定める。
+本文中の**移植元**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す。参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)。ローカルでは `../AiForms.Maui.Dialogs` で参照する。
 
-**この文書が正であり、実装はここに合わせる**。根拠決定は [core/ADR-0006](../../../decisions/core/0006-multi-display-os-delegation.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」で、「何が成り立つか」の正はこの文書側にある)。OS ごとの挙動差が実測で判明したら、この文書に追記して吸収する。
+この文書は、4 形態の実装とテストが満たしている挙動を記述する (一次情報はコードとテスト)。根拠決定は [core/ADR-0006](../../../decisions/core/0006-multi-display-os-delegation.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」)。OS ごとの挙動差が実測で判明したら、この文書に追記して吸収する。
 
 - core は「全形態が共有する契約」の層 (層の区分は [concepts 配置ルール](../../rules.md))。公開名・署名・コード例は各形態の公開面が持つ (末尾の「形態別の公開面」)
 - ここに書いた観察可能な挙動には Scenario ID `PB-MD-01`〜`PB-MD-05` が振られており、両 Native 実装の同名テストで固定されている ([core/ADR-0016](../../../decisions/core/0016-behavior-spec-scenario-tests.md))
@@ -59,7 +59,15 @@ Android でソフトキーボードが出ているときの1回目の戻るボ�
 
 ### Toast / Loading とダイアログの前後関係
 
-移植元は platform 間で実装方式が揃っておらず (iOS の Loading はウィンドウへ直接ビューを貼る方式、Android はダイアログ方式)、重なり順が一致しない。ここのルール化は Loading / Toast 各機能の実装時に行う。
+Loading と Toast の器は、ここで述べた OS の提示の連なりに**参加しない**専用の器である (core/ADR-0026・0030)。そのためダイアログとの前後関係は、多段表示の仕組みではなく各機能の決定で決まる:
+
+| 組み合わせ | 前後関係 | 根拠 |
+|---|---|---|
+| Loading とダイアログ | 視覚・入力の双方で常に Loading が手前 | core/ADR-0022 ([Loading のルール](loading-semantics.md) の「器の性質」) |
+| Toast とダイアログ | 契約で保証しない (多段表示と同じく、重なり順を数えも公開もしない) | core/ADR-0006 の線を core/ADR-0030 が維持 ([Toast のルール](toast-semantics.md) の「機能間の前後関係」) |
+| Loading と Toast | 起動順によらず常に Loading が前面 | core/ADR-0030 |
+
+移植元は platform 間で実装方式が揃っておらず (iOS の Loading はウィンドウへ直接ビューを貼る方式、Android はダイアログ方式)、重なり順が一致しなかった。上の表はこの不揃いを本ライブラリの決定で揃えたものである。
 
 ## 形態別の公開面
 
@@ -72,7 +80,7 @@ Android でソフトキーボードが出ているときの1回目の戻るボ�
 
 ## 出典
 
-- [core/ADR-0006](../../../decisions/core/0006-multi-display-os-delegation.md) — 決定 (OS の提示機構への委譲)。OS 差の明文化に至った経緯は同 ADR の「実装結果」節
+- [core/ADR-0006](../../../decisions/core/0006-multi-display-os-delegation.md) — 決定 (OS の提示機構への委譲)。下の段を先に閉じたときの OS 差は同 ADR の Consequences と現行照合 footer にある
 - [core/ADR-0016](../../../decisions/core/0016-behavior-spec-scenario-tests.md) — 決定 (挙動系の共通仕様は同名 Scenario テストで検証し、OS 間差はこの文書の差分表を正とする)
 - 縦串スライス (Dialog 1本の4形態貫通) での実測 (2026-08-15): iPhone 17 Simulator (iOS 26.5) と Android Emulator API 35 (1080x2340) での実機観測。上から順に閉じる / 重ね出し中の外側タップ / 下を先に閉じる / キーボード表示中の戻るボタン の4ケース
 - 移植元の挙動調査 (2026-08-14): 下記の調査記録を参照

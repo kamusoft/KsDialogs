@@ -100,6 +100,6 @@ DialogTransition(presentation = DialogTransition.zoom().presentation, dismissal 
 
 ## 関連
 
-- [トランジションのルール](../../core/api/transition-semantics.md) — 演出の採用時点・既定の演出・結果が返る時点 (契約の正)
+- [トランジションのルール](../../core/api/transition-semantics.md) — 演出の採用時点・既定の演出・結果が返る時点 (契約の記述はこちら)
 - [Android の Dialog 公開面](dialog-surface.md) — 登録・表示・結果の受け取りの公開面
 - [Android のレイアウト公開面](layout-surface.md) — 属性の添付面と型 (演出と同じ添付の規律)

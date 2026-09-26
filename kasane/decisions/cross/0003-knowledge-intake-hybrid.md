@@ -31,3 +31,4 @@ KsDialogs は先例リポジトリ (KsSettingsView / KsAppKMP) に蓄積され�
 - 負: 原則だけでは機械的に決まらない判断が都度発生する
 
 出典: kasane/roadmaps/library-foundation/phases/phase-1-architecture-research/history.md (2026-08-13: 既存資産知識の取り込み方針) / KsAppKMP core/ADR-0006 (判断型の踏襲元)
+関連: Decision 2 が参照の経由先として名指しする `reference-repositories.md` (concepts cross/reference/) は 2026-09-26 の ksn-drift でオーナー判断により廃止した。他リポジトリの資産は `../<リポジトリ名>/<パス>` の形で参照する (Kasane の paths 規約。現行の ADR 出典も同じ形)。「使うフェーズまで取り込まず参照に留める」という決定そのものは変わらない

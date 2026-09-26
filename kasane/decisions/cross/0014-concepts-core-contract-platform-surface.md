@@ -49,3 +49,4 @@ KsDialogs の concepts は `core/api/` の 8 本 (約 1,300 行) が 4 形態 (N
 
 ---
 出典: kasane/changes/archive/2026-09-06-split-concepts-platform-surface/exploration.md (検討した選択肢・決定事項) / kasane/changes/archive/2026-09-06-split-concepts-platform-surface/design.md (Decision 1〜3) / kasane/changes/archive/2026-09-05-rollout-user-docs/second-opinion-code-001.md (Suggestion 8) / ../KsSettingsView/kasane/concepts/index.md (翻案元の構造)
+関連: kasane/concepts/log.md の 2026-09-26 ksn-drift の行 — Consequences の実装観測 (core の layout / transition の契約が散文 10,000 字を超えたまま) を棚卸しで扱った記録。layout-semantics の分割は進行中の add-page-layout-area / fix-layout-contract-gaps の蒸留後に検討する

@@ -13,7 +13,7 @@ timestamp: 2026-09-15
 先に [結果通知のルール](result-notification-semantics.md) を読むと分かりやすい (show が completed / cancelled をちょうど1回返すという原則と、中身のコードが結果報告口で結果を**報告**するという形は同文書が定める)。演出は**器**の属性と同じ**添付**という経路で供給するため、[レイアウトのルール](layout-semantics.md) の「属性の渡し方と優先順位」も前提になる。
 
 - **器**とは、ライブラリが中身 (利用者が書いたダイアログの表示物) を載せて画面に出すための入れ物である。背後を覆うオーバーレイと、中身を載せる View を抱えており、出入りの演出を駆動するのもこの器である
-- **この文書が正であり、実装はここに合わせる**。根拠決定は [core/ADR-0017](../../../decisions/core/0017-animation-hooks-transition-attachment.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」で、「何が成り立つか」の正はこの文書側にある)
+- この文書は、4 形態の実装とテストが満たしている挙動を記述する (一次情報はコードとテスト)。根拠決定は [core/ADR-0017](../../../decisions/core/0017-animation-hooks-transition-attachment.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」)
 - 本文中の**原典**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す。参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)
 - core は「全形態が共有する契約」の層 (層の区分は [concepts 配置ルール](../../rules.md))。添付の面の書き方・フックの型・プリセットの綴り・コード例は各形態の公開面が持つ (末尾の「形態別の公開面」)
 

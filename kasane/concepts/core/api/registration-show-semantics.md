@@ -3,7 +3,7 @@ type: concept
 title: 登録と表示の呼び出し面のルール (中身の書き方と show の呼び方)
 description: ダイアログの中身を用意して表示するまでの core 契約 — 真偽値の結果なら結果型を書かずに済む省略形・中身を従来 View 系と宣言的 UI 系 (SwiftUI / Compose) のどちらで書いても挙動が同じであること・宣言的 UI での属性の添付・登録せずにその場で表示するインライン show
 tags: [dialog, api, registration, contract]
-timestamp: 2026-09-06
+timestamp: 2026-09-26
 ---
 
 # 登録と表示の呼び出し面のルール (中身の書き方と show の呼び方)
@@ -15,13 +15,13 @@ timestamp: 2026-09-06
 - 本文中の**移植元**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す。参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)
 - core は「全形態が共有する契約」の層 (層の区分は [concepts 配置ルール](../../rules.md))。公開名・署名・コード例は各形態の公開面が持つ (末尾の「形態別の公開面」)
 
-**この文書が正であり、実装はここに合わせる**。根拠決定は [core/ADR-0010](../../../decisions/core/0010-dual-content-view-technology.md)・[core/ADR-0011](../../../decisions/core/0011-dual-content-registration-overloads.md)・[core/ADR-0012](../../../decisions/core/0012-default-result-type-bool.md)・[core/ADR-0013](../../../decisions/core/0013-inline-factory-show.md)・[kmp/ADR-0003](../../../decisions/kmp/0003-swift-facing-registration-in-swift-package.md)・[kmp/ADR-0004](../../../decisions/kmp/0004-swift-facing-typed-generic-facade.md)。これらは最初の実装での検証を経て確定する運用のためまだ proposed だが、確定の前後を通じて「何が成り立つか」の正はこの文書側にある (ADR が持つのは「なぜそう決めたか」)。
+この文書は、4 形態の実装とテストが満たしている挙動を記述する (一次情報はコードとテスト)。根拠決定は [core/ADR-0010](../../../decisions/core/0010-dual-content-view-technology.md)・[core/ADR-0011](../../../decisions/core/0011-dual-content-registration-overloads.md)・[core/ADR-0012](../../../decisions/core/0012-default-result-type-bool.md)・[core/ADR-0013](../../../decisions/core/0013-inline-factory-show.md)・[kmp/ADR-0003](../../../decisions/kmp/0003-swift-facing-registration-in-swift-package.md)・[kmp/ADR-0004](../../../decisions/kmp/0004-swift-facing-typed-generic-facade.md)。いずれも accepted 済みで、ADR が持つのは「なぜそう決めたか」である。
 
 ## 基本形: 登録してから show する
 
 利用者は「ViewModel の型 → 中身を作る関数 (**factory**)」の紐付けを **register** で登録しておき、**show** に ViewModel のインスタンスを渡して表示し、結果を待つ。factory は show のたびに呼ばれ、ViewModel と `DialogNotifier` を受け取って中身を返す ([core/ADR-0004](../../../decisions/core/0004-di-view-factory-registry.md)・[core/ADR-0005](../../../decisions/core/0005-no-view-reuse-mechanism.md))。notifier 引数を省いた1引数形の factory と、ViewModel の型だけを渡す表示 (型指定 show) は [ViewModel 主導の呼び出しのルール](model-binding-semantics.md) が定める。
 
-呼び出し先は2つに分かれる。**登録は `DialogViewRegistry` のメソッド**で、全ての入口が同じレジストリを共有する。**表示は表示エントリのメソッド**である。表示エントリとは、表示契約 `KsDialog` を実装したオブジェクトのことで、形態ごとに既定のシングルトンが用意されている。それを直接使ってもよいし、同じ契約を DI で注入したインスタンスを使ってもよい — どちらも同じレジストリを共有する ([core/ADR-0002](../../../decisions/core/0002-public-api-shape.md))。既定エントリの綴りは形態ごとに違うので、各形態の公開面を参照する。
+呼び出し先は2つに分かれる。**登録先は `DialogViewRegistry`** で、全ての入口が同じレジストリを共有する (多くの形態ではそのメソッドを直接呼ぶ。KMP の iOS ホストの Swift 窓口や MAUI の DI 拡張のように、別の入口から同じレジストリへ登録する経路もある — 綴りは各形態の公開面)。**表示は表示エントリのメソッド**である。表示エントリとは、表示契約 `KsDialog` を実装したオブジェクトのことで、形態ごとに既定のシングルトンが用意されている。それを直接使ってもよいし、同じ契約を DI で注入したインスタンスを使ってもよい — どちらも同じレジストリを共有する ([core/ADR-0002](../../../decisions/core/0002-public-api-shape.md))。既定エントリの綴りは形態ごとに違うので、各形態の公開面を参照する。
 
 show は ViewModel のほかに**置き場所 (`DialogPlacement`) を引数で受け取れる**。渡した値は中身に添付されている置き場所をオブジェクトまるごと置き換える (フィールド単位では混ぜない)。属性の供給経路と優先順位は [レイアウトのルール](layout-semantics.md) が定める。
 
@@ -31,7 +31,7 @@ show は ViewModel のほかに**置き場所 (`DialogPlacement`) を引数で�
 
 ダイアログの結果は「OK か否か」の真偽値であることが大半で、カスタムの結果型 (入力された文字列・選んだ項目など) が要るのは一部にとどまる。にもかかわらず全 ViewModel に結果型の宣言を課すと、多数派に少数派向けの記述を強要することになる。そこで **ViewModel が結果型を宣言しなければ真偽値**とする ([core/ADR-0012](../../../decisions/core/0012-default-result-type-bool.md))。
 
-言語ごとに「省略できる場所」が違うため、**省略形の書き方は形態ごとに異なる**。契約の型引数に既定値を持てる言語は宣言そのものを省き、持てない言語は真偽値専用の別名か、型引数を取らない専用の公開型を用意する。KMP の共有コードだけは省略できず、結果型を常に明示する — 共有コードの契約は各 OS の実体へ解決される宣言 (expect 宣言) であり、その型引数に既定値を置けないためである。具体的な綴りは各形態の公開面を参照する。
+言語ごとに「省略できる場所」が違うため、**省略形の書き方は形態ごとに異なる**。契約の型引数に既定値を持てる言語は宣言そのものを省き、持てない言語は真偽値専用の別名か、型引数を取らない専用の公開型を用意する。KMP の共有コードには真偽値の別名を置いていないため、共有コードでは結果型を常に明示する (Swift から KMP を呼ぶ面には結果型を省略すると真偽値になる形がある)。具体的な綴りは各形態の公開面を参照する。
 
 show が返すのは `DialogResult` で、その完了状態 (completed) が結果値を運ぶ ([結果通知のルール](result-notification-semantics.md))。省略形で宣言した ViewModel なら戻り値も factory が受け取る `DialogNotifier` も真偽値に型付く。
 
@@ -70,14 +70,16 @@ SwiftUI で同じ属性を入れ子の内側と外側の両方に添付した場
 
 ## 登録せずにその場で表示する (インライン show)
 
-1回しか使わないダイアログのために登録の手間を課さない経路として、**factory を show に直接渡す**形を用意する ([core/ADR-0013](../../../decisions/core/0013-inline-factory-show.md))。factory の形は登録経路とまったく同じで、型付きの `DialogNotifier`・技術別の呼び分け・結果型の省略形をそのまま使える。
+1回しか使わないダイアログのために登録の手間を課さない経路として、**factory を show に直接渡す**形を用意する ([core/ADR-0013](../../../decisions/core/0013-inline-factory-show.md))。factory は登録経路の基本形と同じく ViewModel と型付きの `DialogNotifier` を受け取る形で、技術別の呼び分け・結果型の省略形をそのまま使える。notifier 引数を省いた factory の形はインライン show には無い (ViewModel から報告口を取り出す経路は [ViewModel 主導の呼び出しのルール](model-binding-semantics.md))。
 
 インライン show は**レジストリの状態を一切変えない** — 一時的にも登録せず、当然その解除も起こらない。ここから次が従う:
 
 - 同じ ViewModel 型が登録済みでも、インライン show はその登録を使わず、渡された factory を使う。**登録の内容はインライン show の前後で変わらない**
-- インライン show で表示したからといって、その ViewModel 型が登録済みになるわけではない。あとからレジストリ経由で show すれば未登録の失敗になる (失敗の扱いは [結果通知のルール](result-notification-semantics.md) の構成ミス)
+- インライン show で表示したからといって、その ViewModel 型が登録済みになるわけではない。あとからレジストリ経由で show すれば、他に解決手段が無い限り未登録の失敗になる (失敗の扱いは [結果通知のルール](result-notification-semantics.md) の構成ミス)
 - 同じ ViewModel 型のインライン show を並行して表示しても、factory・`DialogNotifier`・結果はそれぞれ独立する。片方を閉じても他方は表示されたまま未確定である
 - show の placement 引数の意味は登録経由と同じ (添付された置き場所をオブジェクトまるごと置換する)
+
+「他に解決手段」とは MAUI の fallback resolver を指す。設定していれば、登録の無い型もそちらで解決される ([MAUI の DI 登録](../../maui/api/di-registration.md))。
 
 「一時的に登録して show して解除する」実装にすると、同じ型の並行表示でキーが衝突し、解除のタイミングが既存の登録を壊す。レジストリを触らないのはこの構造的な問題を避けるためである。
 
@@ -122,7 +124,7 @@ SwiftUI で同じ属性を入れ子の内側と外側の両方に添付した場
 | 全閉鎖経路 | ダイアログが閉じる4経路 (完了 / キャンセル / 呼び出し元キャンセル / 画面破棄) のすべて |
 | インライン show | 登録せずに factory を show へ直接渡す表示 |
 | 添付 | ダイアログの中身の定義に器の属性を結びつける供給経路 ([レイアウトのルール](layout-semantics.md)) |
-| 表示契約 | 各機能の表示メソッドを定めた interface / protocol。型名は `Ks` + 機能名の単数形 (`KsDialog` / `KsLoading` / `KsToast`、MAUI は `I` 接頭辞)。複数形の `KsDialogs` は製品名 (モジュール・パッケージ・NuGet ID) であって型名ではない ([core/ADR-0034](../../../decisions/core/0034-contract-type-name-singular-feature.md)) |
+| 表示契約 | 各機能の表示メソッドを定めた interface / protocol。型名は `Ks` + 機能名の単数形 (`KsDialog` / `KsLoading` / `KsToast`、MAUI は `I` 接頭辞)。複数形の `KsDialogs` は製品名 (モジュール・パッケージ・NuGet ID) であって型名ではない ([core/ADR-0034](../../../decisions/core/0034-contract-type-name-singular-feature.md))。改名したのは型名だけで、契約を受ける変数・引数名 (`dialogs`) には複数形が残っている |
 | 表示エントリ | 表示契約 `KsDialog` を実装したオブジェクト。形態ごとに既定のシングルトンがあり、DI で注入したインスタンスでもよい |
 | 移植元 | 本ライブラリの移植元である AiForms.Maui.Dialogs |
 
