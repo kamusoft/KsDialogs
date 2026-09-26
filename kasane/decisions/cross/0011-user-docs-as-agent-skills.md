@@ -65,3 +65,4 @@ KsDialogs で追加した部分の代替案:
 
 ---
 出典: kasane/roadmaps/package-distribution/phases/phase-1-skills-foundation/agenda.md (決定事項の各節) / kasane/roadmaps/package-distribution/phases/phase-1-skills-foundation/history.md (2026-09-04 の論点 1・2・2b・3・4) / kasane/changes/archive/2026-09-04-adopt-docs-refresh/proposal.md (What Changes・Impact) / kasane/changes/archive/2026-09-04-adopt-docs-refresh/deviation.md (`/tmp` 固有化) / ../KsSettingsView/kasane/decisions/cross/0022-user-docs-as-agent-skills.md (翻案元。踏襲部分の Decision・Alternatives・Consequences の原文)
+関連: .agents/skills/docs-refresh/SKILL.md (対象一覧のパスを環境変数 `DOCS_REFRESH_TARGETS` で渡す節) — Consequences の実装観測 (一時ファイル名と翻案元との差分) の現在の記述先。Decision が manifest の `excluded` の初期値として名指しする `kasane/concepts/cross/reference/reference-repositories.md` は 2026-09-26 の ksn-drift でオーナー判断により廃止した (外部リポジトリは `../<リポジトリ名>/` で参照する)。manifest からの除去は docs-refresh の次回実行で行う

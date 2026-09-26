@@ -18,6 +18,6 @@
 | [diagnostic-message-language.md](diagnostic-message-language.md) | ライブラリ本体 (4 形態) に失敗型の case・例外文言・警告ログを足すか変えるとき・Skills の診断表で実装文言を引用するとき | rule |
 | [ci-flaky-test-policy.md](ci-flaky-test-policy.md) | 実機・Simulator 上で状態遷移を観測するテストを書くとき・CI の間欠失敗を切り分けるとき・CI 上だけ skip してよいかを判断するとき・skip の印や許可リスト (`lint.ci-skip.allow`) を足すとき・どのテストルートであれテストを実行から外したくなったとき | rule |
 | [ci-script-deletion.md](ci-script-deletion.md) | `scripts/**`・`.github/workflows/**`・`verification/**` のスクリプトを作る・翻案する・レビューするとき (削除操作を含むもの) | rule |
-| [aiforms-origin-reference.md](aiforms-origin-reference.md) | 未移植の Dialog / Loading 機能を実装するとき・Dialog / Loading の不具合や挙動差を調査するとき (移植完了で廃止する時限規約) | rule |
+| [aiforms-origin-reference.md](aiforms-origin-reference.md) | 未移植の Dialog / Loading 機能を実装するとき・Dialog / Loading の不具合や挙動差を調査するとき (時限規約。廃止は延期中で棚卸しのたびに見直す) | rule |
 
-外部参考リポジトリのローカルパスは規範ではなく記述のため、concepts 側の [参考リポジトリの在り処](../../concepts/cross/reference/reference-repositories.md) が持つ。comment-policy.md (配布物) が許容する「他リポジトリのコード識別子」の参照先 (移植元 AiForms.Maui.Dialogs・先例 KsSettingsView / KsAppKMP) の在り処も同文書が唯一の情報源。
+外部の参考リポジトリ (移植元 AiForms.Maui.Dialogs・先例 KsSettingsView / KsAppKMP 等) は `../<リポジトリ名>/` で参照する。リポジトリ群が同じ親ディレクトリに clone されていることが前提で、ローカルの絶対パスは書かない。

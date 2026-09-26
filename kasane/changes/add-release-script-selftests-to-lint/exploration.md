@@ -22,9 +22,11 @@ release workflow (`.github/workflows/release.yml`) と `scripts/release/` の判
 
 (未探索)
 
-## ADR 候補 (作成済み: なし / 未起票: cross/ADR-0022 の一部改訂)
+## ADR 候補 (作成済み: なし / 未起票: cross/ADR-0029 の一部改訂)
 
 lint job の検査の集合は cross/ADR-0022 (accepted、8 検査) が持つ。1 と 2 を載せるなら検査の集合が変わるため、0022 を amends する ADR を起票する (0020 → 0021 → 0022 と同じ型)。
+
+**前提の更新 (2026-09-26、ksn-drift)**: その後、検査の集合は cross/ADR-0026 (11 検査、項目 1 の自己テストを含む) と cross/ADR-0029 (12 検査) で改訂された。残る項目 2 (`actionlint`) と 3 (tag 照合のスクリプト化) を載せるなら、amends の相手は現行の系譜の末尾である cross/ADR-0029 になる。
 
 ## 未決の論点
 
@@ -49,4 +51,4 @@ phase-9 agenda の申し送り「actionlint の CI 未搭載」もここに紐�
 
 ## 変更級の推奨: 未判定
 
-暫定: `ci.yml` の lint job への step 追加と `scripts/release/` の小改修、cross/ADR-0022 の amends 1 本のため **S 級 + ADR** (独立レビューは必須)。`main` は保護済みのため、変更は `develop` → リリース PR の経路で `main` に入る。
+暫定: `ci.yml` の lint job への step 追加と `scripts/release/` の小改修、cross/ADR-0029 の amends 1 本のため **S 級 + ADR** (独立レビューは必須)。`main` は保護済みのため、変更は `develop` → リリース PR の経路で `main` に入る。

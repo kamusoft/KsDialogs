@@ -12,7 +12,7 @@ timestamp: 2026-09-08
 
 先に core の [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) (型指定 show・VM factory・`vm.Notifier`) と [登録と表示の呼び出し面のルール](../../core/api/registration-show-semantics.md) (register / show の基本形) を読むと分かりやすい。この文書はその MAUI 固有の上乗せだけを扱う。
 
-**この文書が正であり、実装はここに合わせる**。根拠決定は [maui/ADR-0005](../../../decisions/maui/0005-fallback-resolver-sugar.md) (fallback resolver の採用と static 差し込み口の廃止)・[core/ADR-0021](../../../decisions/core/0021-vm-factory-registry-resolution.md) (VM factory による解決)・[core/ADR-0035](../../../decisions/core/0035-loading-toast-typed-show-vm-factory.md) (Loading / Toast のレジストリへの VM factory スロット追加)。
+この文書は、MAUI 形態の実装とテストが満たしている DI 登録の挙動を記述する (一次情報はコードとテスト)。根拠決定は [maui/ADR-0005](../../../decisions/maui/0005-fallback-resolver-sugar.md) (fallback resolver の採用と static 差し込み口の廃止)・[core/ADR-0021](../../../decisions/core/0021-vm-factory-registry-resolution.md) (VM factory による解決)・[core/ADR-0035](../../../decisions/core/0035-loading-toast-typed-show-vm-factory.md) (Loading / Toast のレジストリへの VM factory スロット追加)。
 
 この糖衣は **MAUI 限定**である。Native (Swift / Kotlin) / KMP には持ち込まない — Swift / Kotlin はクロージャの型推論で factory 登録が既に1行なのに対し、C# は部分的型引数推論を持たないため、低水準の `Register` では型引数とラムダの両方を書かされて原典 (移植元 AiForms.Maui.Dialogs) 比で書き味が後退する。その回復がこの糖衣の存在理由であり、Native にはその後退がない。
 

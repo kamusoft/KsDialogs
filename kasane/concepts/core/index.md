@@ -1,6 +1,6 @@
 # core concepts 目次
 
-全 platform が共有するダイアログ契約 (この層の文書が正 — 実装はここに合わせる)。
+全 platform が共有するダイアログ契約。4 形態の実装とテストが満たしている挙動を、platform 非依存の言葉で記述する (一次情報はコードとテスト)。
 
 api/ は**挙動の契約**だけを持ち、公開名・署名・コード例は各 platform の公開面 concept にある ([rules.md の「配置判断」](../rules.md)・cross/ADR-0014) → [ios](../ios/index.md) / [android](../android/index.md) / [maui](../maui/index.md) / [kmp](../kmp/index.md)。
 

@@ -39,3 +39,4 @@ ADR-0002 の命名ポリシーは「原典命名が非対称な箇所は対称�
 - 4 機能目以降の表示系契約を足すとき、または既存の機能名が単数形で表せない概念に変わったとき (前提 (Context) の「Ks + 機能名 (単数)」が崩れたとき)
 
 出典: kasane/changes/archive/2026-09-06-rename-dialog-contract-singular/exploration.md (課題 / 動機・検討した選択肢・決定事項) / kasane/changes/archive/2026-09-06-rename-dialog-contract-singular/review-001.md (実装結果: 負の検査と残る複数形の識別子) / kasane/decisions/core/0002-public-api-shape.md (命名ポリシー) / kasane/decisions/kmp/0002-thin-facade-native-registry.md (契約名の初出)
+関連: kasane/handbook/cross/test-execution.md「負の検査」(`LEGACY_CONTRACT_NAME` / `legacyContractName` の行) と kasane/concepts/core/api/registration-show-semantics.md の用語「表示契約」— Consequences の実装観測 (旧名の負のコンパイル検証・変数名や引数名に残る複数形) の現在の記述先 (2026-09-26 ksn-drift で移送)
