@@ -5,7 +5,7 @@ applies-when:
   tasks: [テストの実行, テスト結果の報告, 変更の完了判定]
 title: テスト実行規約
 description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査 (CI が回す範囲は verification-ci.md)
-timestamp: 2026-09-25
+timestamp: 2026-09-26
 ---
 
 # テスト実行規約
@@ -14,21 +14,21 @@ timestamp: 2026-09-25
 
 テストが 1 件も実行されなくてもコマンド自体は成功で終わり得るため、終了コードだけでは検証したことにならない。**実行件数を確認するところまでが検証**であり、テスト結果を報告するときはビルドルートを問わず実行件数 (`N tests / M failures`) を併記する。反復中の絞り込み実行は使ってよいが、**完了判定には絞り込みなしの全件実行を使う**。
 
-コマンドと件数は 2026-09-25 に全 7 ルートを実測した (instrumented は API 33 の 1 台で全件成功。API 29 / 33 / 36 の 3 台で全件成功を確かめたのは 2026-09-07)。テスト構成が育って実態が変わったら本規約を実測で更新する。
+本規約は件数の実測値を持たない。件数はテストを足すたびに変わる状態で、規約に置くとすぐ古くなるため。実行した件数は、その変更の証跡 (`kasane/changes/<id>/evidence/`) に残す。完了判定では、ルートごとの件数が 0 でないことと、その変更で足したテストが結果 (結果 XML・コンソールの件数行) に現れていることを確かめる。
 
-| ビルドルート | 全件実行コマンド | 実測件数 (実測日は上記の但し書き) |
-|---|---|---|
-| ios/ | `xcodebuild test -scheme KsDialogs -destination 'platform=iOS Simulator,name=iPhone 17'` | 286 tests (2026-09-25) |
-| android/ | `./gradlew test --rerun-tasks` | 68 tests / 0 failures (2026-09-25) |
-| android/ (instrumented) | `./gradlew connectedDebugAndroidTest` | 344 tests / 0 failures (`:ksdialogs-core` 304 + `:ksdialogs` 40。1 台分の件数 (API 33 実機)。API レベルによる skip あり — 後述。2026-09-25) |
-| kmp/ | `./gradlew allTests --rerun-tasks` | 166 tests / 0 failures (iosSimulatorArm64 85 + androidHostTest 81。2026-09-25) |
-| maui/ | `dotnet test` | 172 tests / 0 failures (2026-09-25) |
-| maui/android/native/ | `./gradlew :ksdialogs-maui-bridge:test --rerun-tasks` | 34 tests / 0 failures (2026-09-25) |
-| maui/macios/native/ | `xcodebuild test -project KsDialogsMauiBridge.xcodeproj -scheme KsDialogsMauiBridge -destination 'platform=iOS Simulator,name=iPhone 17'` | 7 tests / 4 suites (2026-09-25) |
+| ビルドルート | 全件実行コマンド |
+|---|---|
+| ios/ | `xcodebuild test -scheme KsDialogs -destination 'platform=iOS Simulator,name=iPhone 17'` |
+| android/ | `./gradlew test --rerun-tasks` |
+| android/ (instrumented) | `./gradlew connectedDebugAndroidTest` |
+| kmp/ | `./gradlew allTests --rerun-tasks` |
+| maui/ | `dotnet test` |
+| maui/android/native/ | `./gradlew :ksdialogs-maui-bridge:test --rerun-tasks` |
+| maui/macios/native/ | `xcodebuild test -project KsDialogsMauiBridge.xcodeproj -scheme KsDialogsMauiBridge -destination 'platform=iOS Simulator,name=iPhone 17'` |
 
 **android/ 系の Gradle ビルドを同時に走らせない**: `maui/android/native/` は `android/` を複合ビルドで巻き込むため、`android/` のタスク (`test` / `connectedDebugAndroidTest`) と同時に実行すると build ディレクトリの取り合いで双方が壊れる (2026-08-26 実測)。上表の実行は逐次で回す。
 
-これに加えて、公開 API 形状の検証が 2 種類ある (後述の「公開 API 形状の検証」)。正の検査は上表の既定実行に含まれるが、**負の検査 62 本はフラグを付けないと 1 本も走らない**。
+これに加えて、公開 API 形状の検証が 2 種類ある (後述の「公開 API 形状の検証」)。正の検査は上表の既定実行に含まれるが、**負の検査はフラグを付けないと 1 本も走らない**。
 
 android/ にはもう 1 つ、実行ではなく依存グラフを見る検査がある (後述の「本体の Compose 非依存の検証」)。こちらは上表の `./gradlew test` に含まれる。
 
@@ -81,7 +81,7 @@ adb devices          # 実機かエミュレータが1台以上 device 状態で
 
 ### API レベルで走る / 走らない Scenario
 
-**API レベルで走る / 走らない Scenario がある**。旧経路 (`systemUiVisibility`) のシステムバー引き継ぎなど、特定の API レベルでしか成立しない挙動のテストは `assumeTrue` で自分を skip し、結果 XML では `skipped` に数えられる。全件を実行したと言えるのは**対象 API レベルをそれぞれ1台ずつ回したとき**で、手元の環境は API 29 のエミュレータ (`ksn_api29`、旧経路用) と API 30 以上の実機 / エミュレータの組み合わせ。件数表の 344 は 1 台分で、skip の内訳は XML の `skipped` 属性で確認する。API 依存の `assumeTrue` はすべて API 30 を境にしており、skipped は API 30 以上で 1 (旧経路でだけ判定できる `DialogSystemBarsTests.PB_SB_04_旧経路でも非表示状態が維持される` — 逆向きの 1 本。2026-09-25 実測)・API 29 で 6 (`WindowInsetsController` 経路のシステムバー 5 本と IME の出し入れ 1 本。どちらも API 30 以上でだけ判定できる。2026-09-06 実測)
+**API レベルで走る / 走らない Scenario がある**。旧経路 (`systemUiVisibility`) のシステムバー引き継ぎなど、特定の API レベルでしか成立しない挙動のテストは `assumeTrue` で自分を skip し、結果 XML では `skipped` に数えられる。全件を実行したと言えるのは**対象 API レベルをそれぞれ1台ずつ回したとき**で、手元の環境は API 29 のエミュレータ (`ksn_api29`、旧経路用) と API 30 以上の実機 / エミュレータの組み合わせ。1 回の実行の件数は 1 台分で、skip の内訳は XML の `skipped` 属性で確認する。API 依存の `assumeTrue` はすべて API 30 を境にしている。API 30 以上の端末では旧経路でだけ判定できるテスト (`DialogSystemBarsTests.PB_SB_04_旧経路でも非表示状態が維持される`) が、API 29 の端末では `WindowInsetsController` 経路のシステムバーと IME の出し入れのテストが skip される
 
 **戻る操作を数えるテスト用画面は 2 経路の受け皿を持つ**。テスト APK の targetSdk は compileSdk (36) に追随し、予測型バック (predictive back) が既定で有効な端末では `Activity.onBackPressed()` が呼ばれず、システム既定の戻るで画面が閉じる。戻るが届いたことを数える画面は、`onBackPressed()` に加えて API 33 以上で `OnBackInvokedDispatcher` にコールバックを登録する (`ToastInputTestActivity` が先例。同時に両方へ届くことはない)。片方だけだと API レベルによって「戻るが届かない」のではなく「画面が破棄される」形で落ちる
 
@@ -144,7 +144,7 @@ cd maui/android/native
 ./gradlew :ksdialogs-maui-bridge:test --rerun-tasks
 ```
 
-件数の確認と up-to-date スキップの注意は android/ と同じ。この 34 件が MAUI Android 経路の「結果がちょうど1つ届く」「演出の完了通知がちょうど1回届く」「factory の失敗が 1 枚だけの破棄に合流する」保証を持つ。
+件数の確認と up-to-date スキップの注意は android/ と同じ。このルートのテストが MAUI Android 経路の「結果がちょうど1つ届く」「演出の完了通知がちょうど1回届く」「factory の失敗が 1 枚だけの破棄に合流する」保証を持つ。
 
 互換面 (Swift) のテストも同じく .NET 側からは走らない。bridge の Xcode プロジェクトを scheme 指定で回す:
 
@@ -156,7 +156,7 @@ xcodebuild test -project KsDialogsMauiBridge.xcodeproj -scheme KsDialogsMauiBrid
 
 - scheme は framework と共用の `KsDialogsMauiBridge`。テスト標的とテスト用ホストアプリは TestAction にだけ結線してあり、BuildAction (binding の xcframework 生成が呼ぶ側) には入らない
 - 件数の 2 系統と単体指定の `()` は ios/ と同じ。現在のテストはすべて Swift Testing 製で、XCTest 側は `Executed 0 tests` になる
-- この 7 件が MAUI iOS 経路の「中身なしの供給が互換面の失敗として届く」保証 (Scenario ID `BV-MA-`) を持つ
+- このルートのテストが MAUI iOS 経路の「中身なしの供給が互換面の失敗として届く」保証 (Scenario ID `BV-MA-`) を持つ
 
 テスト標的は Host Application (`KsDialogsMauiBridgeTestHost`) 付きで走る。互換面は公開 init で実物の提示先解決 (前面アクティブなシーンの key window) を使うため、ホストアプリなしの Unit Testing Bundle では window を作って key にしてもシーンが前面アクティブにならず、提示先不在で 1 本も提示に入れない (2026-09-02 実測)。bridge のテストを増やすときはこの標的に足し、ホストなしの標的を別に作らない。
 
@@ -181,11 +181,11 @@ maui の完了判定には `dotnet test`・Android 互換面・iOS 互換面の 
 | kmp/ | `./gradlew allTests` → `:api-surface-check:compileKotlinIosSimulatorArm64` |
 | maui/ | `dotnet test` → `KsDialogs.Maui.ApiSurfaceCheck` のビルド (テストプロジェクトが ProjectReference で巻き込む) |
 
-### 負の検査 (フラグなしでは走らない) — 62 本
+### 負の検査 (フラグなしでは走らない)
 
 「あってはならない呼び出しが弾かれる」側は、**ビルドが失敗することが期待結果**の条件つきコンパイルで行う。検証用のソースは既定のビルドから除外されているため、**フラグを付けずに実行すると何も検証されないまま成功する**。
 
-禁止形状ごとに別のフラグへ分けてあり、**1 回のビルドに入る誤りは 1 つだけ**である。62 本を 1 本ずつ順に回し、それぞれが下表の診断で失敗することを確認する。診断は原則 1 件だが、**解決できない型を import と使用の両方で書いていると 2 件出る** — その場合は下表に両方を書いてある。誤った引数名を `show` に渡す検査は、ルートによって件数が違う — android/ の `show` 系 5 本は候補不適合の 1 件だけ、kmp/ の `showOptions` は候補不適合と引数名不明の 2 件 (どちらも 2026-09-25 実測)。まとめて回すと、別の誤りの診断で失敗しても「効いた」と読めてしまい、個別の禁止形状を証明できない。
+禁止形状ごとに別のフラグへ分けてあり、**1 回のビルドに入る誤りは 1 つだけ**である。下表の検査を 1 本ずつ順に回し、それぞれが下表の診断で失敗することを確認する。診断は原則 1 件だが、**解決できない型を import と使用の両方で書いていると 2 件出る** — その場合は下表に両方を書いてある。誤った引数名を `show` に渡す検査は、ルートによって件数が違う — android/ の `show` 系 5 本は候補不適合の 1 件だけ、kmp/ の `showOptions` は候補不適合と引数名不明の 2 件 (どちらも 2026-09-25 実測)。まとめて回すと、別の誤りの診断で失敗しても「効いた」と読めてしまい、個別の禁止形状を証明できない。
 
 ルートごとのコマンドの形:
 

@@ -224,7 +224,7 @@ public final class Loading: KsLoading {
     ///
     /// 失敗を握り潰さずに伝播させつつ終了を数えるので、例外・キャンセルで表示が閉じ残らない。
     ///
-    /// 処理の型は MainActor 隔離なので、ここから呼ぶだけで処理は UI スレッドで始まる。
+    /// 処理の型は MainActor 隔離なので、ここから呼ぶだけで処理は UI スレッドで始まる (core/ADR-0037)。
     /// 利用者が `@concurrent` を付けたクロージャや、自分の isolation を持つ関数を渡した場合は、
     /// その isolation が優先される。どちらも言語の規則による移送で、ここに切り替えの処理は持たない。
     private func runScope<T: Sendable>(

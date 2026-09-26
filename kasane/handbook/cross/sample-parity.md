@@ -6,7 +6,7 @@ applies-when:
   tasks: [Sample のデモ項目の追加・変更, Sample の文言・色トークンの変更, Sample の OS 操作 (戻る・回転) への反応の変更, Sample の撮影支援の起動引数の変更]
 title: Sample パリティ規約
 description: samples/ の4ルート (ios / android / maui / kmp) が一致させるデモ項目・文言・色トークンと、Sample を検証装置として保つための禁止事項
-timestamp: 2026-09-04
+timestamp: 2026-09-26
 ---
 
 # Sample パリティ規約
@@ -58,6 +58,7 @@ Sample は**プラットフォーム間パリティの検証装置**である。
 | Model Dialog のメッセージ | `ViewModel から表示しています` (Basic と同一デザイン。差は実装経路 — ViewModel 主導の呼び出し — のみ) |
 | Default Loading の開始メッセージ | `Loading...` |
 | Default Loading の途中更新メッセージ | `Soon...` (setMessage による差し替えのデモ) |
+| Default Loading の処理中の結果表示 | `結果: 処理中` (スコープ形の処理の最初の文で結果表示を直接更新する中間表示。UI スレッドへ明示的に移す書き方は使わず、処理が既定で UI スレッドで始まることに任せる。完了後は `結果: 完了` に変わる) |
 | Custom Loading のカスタム View 内の見出し | `カスタムローディング` |
 | Custom Loading の百分率表示 (書式) | `<進捗>%` (0〜100 の整数。進捗の帯とともに VM の進捗受け口経由で更新される) |
 | Loading 完了の結果表示 | `結果: 完了` (Default / Custom 共通。Loading は結果値を持たないため completed 書式は使わない) |
