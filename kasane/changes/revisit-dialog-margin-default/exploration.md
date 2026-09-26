@@ -5,7 +5,7 @@
 ダイアログの余白 `dialogMargin` の既定値 (全辺 24) を 0 に見直したい (オーナー要望、2026-09-26)。
 
 - 既定値が 0 なら、配置 (Start / End) と基準領域 (window / visibleArea / currentPage) の結果がそのまま基準の端に接して見え、利用者が挙動を理解しやすい
-- 発見の文脈: add-page-layout-area の Sample 撮影証跡を見たオーナーが、カードが基準領域の端から 24 離れていて「ぱっと見検証しにくい」と指摘。同 change では Layout Dialog パネルのダイアログだけ dialogMargin を全辺 0 に指定した (`kasane/changes/add-page-layout-area/deviation.md` 最終項。archive 後は `archive/*-add-page-layout-area/`)
+- 発見の文脈: add-page-layout-area の Sample 撮影証跡を見たオーナーが、カードが基準領域の端から 24 離れていて「ぱっと見検証しにくい」と指摘。同 change では Layout Dialog パネルのダイアログだけ dialogMargin を全辺 0 に指定した (`kasane/changes/archive/2026-09-27-add-page-layout-area/deviation.md` の Sample の余白の項)
 
 現状:
 

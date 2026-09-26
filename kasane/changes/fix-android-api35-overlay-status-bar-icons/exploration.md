@@ -10,7 +10,7 @@ Android の API 35 で、透明な覆いのダイアログを出している間�
 - CI (API 36) と API 33 の実機では再現していない
 - 観測環境: 専用 AVD (Small_Phone、API 35)
 
-発見の文脈: add-page-layout-area の tasks 6.1 (全ルートの全件実行)。この change は覆いとシステムバーの扱いに触れていない。記録は `kasane/changes/add-page-layout-area/evidence/distill-handoff.md` の失敗 A (archive 後は `archive/*-add-page-layout-area/`)。
+発見の文脈: add-page-layout-area の tasks 6.1 (全ルートの全件実行)。この change は覆いとシステムバーの扱いに触れていない。記録は `kasane/changes/archive/2026-09-27-add-page-layout-area/evidence/distill-handoff.md` の失敗 A。
 
 ## 検討した選択肢 (却下案と理由を含む)
 

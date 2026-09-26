@@ -3,6 +3,7 @@ id: 0030
 title: Toast の器は Loading の器の非モーダル派生とし、1 Toast 1器・重なりは追加順・Loading が常に前面とする
 status: accepted
 date: 2026-08-27
+amended-by: 0038
 ---
 
 ## Context

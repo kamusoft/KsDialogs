@@ -6,7 +6,7 @@ applies-when:
   tasks: [Sample のデモ項目の追加・変更, Sample の文言・色トークンの変更, Sample の OS 操作 (戻る・回転) への反応の変更, Sample の撮影支援の起動引数の変更]
 title: Sample パリティ規約
 description: samples/ の4ルート (ios / android / maui / kmp) が一致させるデモ項目・文言・色トークンと、Sample を検証装置として保つための禁止事項
-timestamp: 2026-09-26
+timestamp: 2026-09-27
 ---
 
 # Sample パリティ規約
@@ -111,6 +111,7 @@ Sample は**プラットフォーム間パリティの検証装置**である。
 | 基準領域の行 | 項目名の下に 3 択のセグメントを全幅で置き、選択肢の幅を等分する (部品は配置のセグメントと同じ) |
 | 表示中のページの名乗り | iOS Native と KMP (iOS) は各タブの中身の枠に SwiftUI の `.ksDialogCurrentPage()`、Android Native と KMP (Android) は各タブの中身の枠 (Scaffold のバーの内側) に Compose の `Modifier.ksDialogCurrentPage()`、MAUI は登録せず MAUI 層の既定の探し方に任せる |
 | タブを切り替えたとき | 配置・移動量・基準領域の設定は保たれる |
+| パネルが出すダイアログの余白 | dialogMargin を全辺 0 にして添付する (各ルートの `SampleDialogRegistration` で Layout Dialog の中身に付ける。iOS 系は `.zero`、Android 系は `DialogEdgeInsets.ZERO`、MAUI は `Thickness(0)`)。カードが基準領域の端 (タブバーの上端・ナビゲーションバーの下端・ステータスバーの下端) に接し、基準領域どおりに置かれたかを見た目で判定できるようにするため。1 ルートでも契約の既定値 (全辺 24) のままだと、並べた画面の差が基準領域の差か余白の差か区別できない (オーナー指示 2026-09-26) |
 
 パネルの初期値は**契約の既定値** (中央配置・移動なし・可視領域基準) と一致させる。パネルは表示操作のあとも開いたままにし、配置を続けて試せるようにする。メニューへは `Panel` タブのナビゲーションバーの戻る記号で戻る。
 
