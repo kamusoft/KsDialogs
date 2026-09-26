@@ -125,46 +125,50 @@ public sealed class Loading : IKsLoading
     public Task StartAsync(
         Func<IProgress<double>, Task> action,
         string? message = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
     {
         ArgumentNullException.ThrowIfNull(action);
 
-        return _gateway.RunAsync(LoadingPresenter.Builtin(message, placement), action);
+        return _gateway.RunAsync(LoadingPresenter.Builtin(message, placement), action, actionThread);
     }
 
     /// <inheritdoc/>
     public Task<T> StartAsync<T>(
         Func<IProgress<double>, Task<T>> action,
         string? message = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
     {
         ArgumentNullException.ThrowIfNull(action);
 
-        return RunWithValueAsync(LoadingPresenter.Builtin(message, placement), action);
+        return RunWithValueAsync(LoadingPresenter.Builtin(message, placement), action, actionThread);
     }
 
     /// <inheritdoc/>
     public Task StartAsync(
         ILoadingViewModel viewModel,
         Func<IProgress<double>, Task> action,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(action);
 
-        return _gateway.RunAsync(LoadingPresenter.Resolve(viewModel, Registry, placement), action);
+        return _gateway.RunAsync(LoadingPresenter.Resolve(viewModel, Registry, placement), action, actionThread);
     }
 
     /// <inheritdoc/>
     public Task<T> StartAsync<T>(
         ILoadingViewModel viewModel,
         Func<IProgress<double>, Task<T>> action,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(action);
 
-        return RunWithValueAsync(LoadingPresenter.Resolve(viewModel, Registry, placement), action);
+        return RunWithValueAsync(LoadingPresenter.Resolve(viewModel, Registry, placement), action, actionThread);
     }
 
     /// <inheritdoc/>
@@ -172,7 +176,8 @@ public sealed class Loading : IKsLoading
         TViewModel viewModel,
         Func<TViewModel, View> factory,
         Func<IProgress<double>, Task> action,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel
     {
         ArgumentNullException.ThrowIfNull(viewModel);
@@ -181,7 +186,8 @@ public sealed class Loading : IKsLoading
 
         return _gateway.RunAsync(
             LoadingPresenter.ResolveInline(viewModel, LoadingViewFactories.Erase(factory), placement),
-            action);
+            action,
+            actionThread);
     }
 
     /// <inheritdoc/>
@@ -189,7 +195,8 @@ public sealed class Loading : IKsLoading
         TViewModel viewModel,
         Func<TViewModel, View> factory,
         Func<IProgress<double>, Task<T>> action,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel
     {
         ArgumentNullException.ThrowIfNull(viewModel);
@@ -198,57 +205,62 @@ public sealed class Loading : IKsLoading
 
         return RunWithValueAsync(
             LoadingPresenter.ResolveInline(viewModel, LoadingViewFactories.Erase(factory), placement),
-            action);
+            action,
+            actionThread);
     }
 
     /// <inheritdoc/>
     public Task StartAsync<TViewModel>(
         Func<IProgress<double>, Task> action,
         Action<TViewModel>? configure = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel
     {
         ArgumentNullException.ThrowIfNull(action);
 
-        return StartTypedAsync(action, ToAsynchronous(configure), placement);
+        return StartTypedAsync(action, ToAsynchronous(configure), placement, actionThread);
     }
 
     /// <inheritdoc/>
     public Task StartAsync<TViewModel>(
         Func<IProgress<double>, Task> action,
         Func<TViewModel, Task> configure,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(configure);
 
-        return StartTypedAsync(action, configure, placement);
+        return StartTypedAsync(action, configure, placement, actionThread);
     }
 
     /// <inheritdoc/>
     public Task<T> StartAsync<TViewModel, T>(
         Func<IProgress<double>, Task<T>> action,
         Action<TViewModel>? configure = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel
     {
         ArgumentNullException.ThrowIfNull(action);
 
-        return StartTypedAsync<TViewModel, T>(action, ToAsynchronous(configure), placement);
+        return StartTypedAsync<TViewModel, T>(action, ToAsynchronous(configure), placement, actionThread);
     }
 
     /// <inheritdoc/>
     public Task<T> StartAsync<TViewModel, T>(
         Func<IProgress<double>, Task<T>> action,
         Func<TViewModel, Task> configure,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(configure);
 
-        return StartTypedAsync<TViewModel, T>(action, configure, placement);
+        return StartTypedAsync<TViewModel, T>(action, configure, placement, actionThread);
     }
 
     /// <summary>型指定 show の本体。解決 → 生成 → configure → 提示の順序をここで固定する。</summary>
@@ -272,17 +284,19 @@ public sealed class Loading : IKsLoading
     /// <param name="action">実行する処理。</param>
     /// <param name="configure">生成した ViewModel の状態を整える処理。省略時は <see langword="null"/>。</param>
     /// <param name="placement">start の引数で渡された置き場所。</param>
+    /// <param name="actionThread">処理を始めるスレッド。</param>
     /// <returns>処理と (最後の 1 件なら) 撤去の完了。</returns>
     private async Task StartTypedAsync<TViewModel>(
         Func<IProgress<double>, Task> action,
         Func<TViewModel, Task>? configure,
-        DialogPlacement? placement)
+        DialogPlacement? placement,
+        LoadingActionThread actionThread)
         where TViewModel : class, ILoadingViewModel
     {
         LoadingPresentationRequest request =
             await ResolveTypedAsync(configure, placement).ConfigureAwait(false);
 
-        await _gateway.RunAsync(request, action).ConfigureAwait(false);
+        await _gateway.RunAsync(request, action, actionThread).ConfigureAwait(false);
     }
 
     /// <summary>値を返す型指定 start の本体。</summary>
@@ -291,17 +305,19 @@ public sealed class Loading : IKsLoading
     /// <param name="action">実行する処理。</param>
     /// <param name="configure">生成した ViewModel の状態を整える処理。省略時は <see langword="null"/>。</param>
     /// <param name="placement">start の引数で渡された置き場所。</param>
+    /// <param name="actionThread">処理を始めるスレッド。</param>
     /// <returns>処理の戻り値。</returns>
     private async Task<T> StartTypedAsync<TViewModel, T>(
         Func<IProgress<double>, Task<T>> action,
         Func<TViewModel, Task>? configure,
-        DialogPlacement? placement)
+        DialogPlacement? placement,
+        LoadingActionThread actionThread)
         where TViewModel : class, ILoadingViewModel
     {
         LoadingPresentationRequest request =
             await ResolveTypedAsync(configure, placement).ConfigureAwait(false);
 
-        return await RunWithValueAsync(request, action).ConfigureAwait(false);
+        return await RunWithValueAsync(request, action, actionThread).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -360,13 +376,19 @@ public sealed class Loading : IKsLoading
     /// <typeparam name="T">処理が返す値の型。</typeparam>
     /// <param name="request">その表示の中身と供給値。</param>
     /// <param name="action">実行する処理。</param>
+    /// <param name="actionThread">処理を始めるスレッド。</param>
     /// <returns>処理の戻り値。</returns>
     private async Task<T> RunWithValueAsync<T>(
         LoadingPresentationRequest request,
-        Func<IProgress<double>, Task<T>> action)
+        Func<IProgress<double>, Task<T>> action,
+        LoadingActionThread actionThread)
     {
         T value = default!;
-        await _gateway.RunAsync(request, async progress => value = await action(progress).ConfigureAwait(false))
+        // 包んだ処理の最初の文が利用者の処理の呼び出しなので、始まるスレッドは利用者の処理と同じになる
+        await _gateway.RunAsync(
+                request,
+                async progress => value = await action(progress).ConfigureAwait(false),
+                actionThread)
             .ConfigureAwait(false);
         return value;
     }

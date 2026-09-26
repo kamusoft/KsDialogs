@@ -76,6 +76,9 @@ TEST_EXT = {".swift", ".kt", ".kts", ".java", ".cs", ".m", ".h"}
 # 検証コマンドと出力の記録で受け入れる。
 # MB-MA-14 は修正前後のビルドを同じ実環境で走らせて呼び出し元へ届く例外を見る Scenario で、
 # 判定が実機・エミュレータの画面であるため実機証跡で受け入れる。
+# LD-HS-01 / LD-HS-02 は Sample の Default Loading / Custom Loading の通しと、処理の中から
+# 結果表示を書き換える見本を対象とする Scenario で、判定が Sample アプリの画面 (MAUI は実ホストの
+# UI スレッド) であるため実機証跡で受け入れる。
 DEFAULT_ALLOW_MISSING = {
     "PB-SM-01": "Sample アプリのデモ項目。Sample 通しの実機証跡で受け入れる",
     "PB-SM-02": "Sample アプリのデモ項目。Sample 通しの実機証跡で受け入れる",
@@ -112,6 +115,8 @@ DEFAULT_ALLOW_MISSING = {
     "DM-KM-04": "ライブラリ本体に日本語の文字列リテラルが残らないこと。静的 grep の記録で受け入れる",
     "DM-MA-05": "ライブラリ本体に日本語の文字列リテラルが残らないこと。静的 grep の記録で受け入れる",
     "MB-MA-14": "修正前後のビルドを同じ実環境で走らせる A/B 観測。実機証跡で受け入れる",
+    "LD-HS-01": "Sample アプリのデモ項目。Sample 通しの実機証跡で受け入れる",
+    "LD-HS-02": "Sample アプリのデモ項目。Sample 通しの実機証跡で受け入れる",
 }
 
 # 両 Native に同じ ID のテストを置く領域 (--require-mirror のときだけ検査する)。
@@ -132,6 +137,7 @@ MIRROR_AREAS = {
     ("LD", "ST"),
     ("LD", "CV"),
     ("LD", "TR"),
+    ("LD", "TH"),
     # TS (toast): 挙動を定める領域はすべて両 Native ミラーの対象。
     # 形態別の公開面 (TS-IO / TS-AN / TS-MA / TS-KM) と Sample (TS-SA) は対象外
     ("TS", "CO"),

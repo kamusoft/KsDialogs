@@ -203,6 +203,9 @@ object SampleText {
     /** ローディングの処理が終わったときの結果表示。結果値を持たないので書式ではなく固定の文言にする。 */
     const val LOADING_COMPLETED_RESULT: String = "結果: 完了"
 
+    /** ローディングの処理が始まったときの結果表示。処理の中から直接書き込む。 */
+    const val LOADING_PROCESSING_RESULT: String = "結果: 処理中"
+
     /** 演出の時間の表示 (ミリ秒)。 */
     fun durationValue(milliseconds: Int): String = "$milliseconds ms"
 

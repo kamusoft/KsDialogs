@@ -27,17 +27,33 @@ internal class AndroidLoadingGateway(
         native.setMessage(message)
     }
 
+    // 処理を始めるスレッドの切り替えは Native ライブラリが行う。ここでは指定を同型へ写して渡すだけにし、
+    // 切り替えを 2 重にしない
     override suspend fun <T> start(
         message: String?,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
-    ): T = native.start(message, placement?.toNative(), action)
+    ): T = native.start(
+        message = message,
+        placement = placement?.toNative(),
+        actionThread = actionThread.toNative(),
+        action = action,
+    )
 
     override suspend fun <T> start(
         viewModel: LoadingViewModel,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
-    ): T = delegating { native.start(viewModel, placement?.toNative(), action) }
+    ): T = delegating {
+        native.start(
+            viewModel = viewModel,
+            placement = placement?.toNative(),
+            actionThread = actionThread.toNative(),
+            action = action,
+        )
+    }
 
     /**
      * Native ライブラリの構成エラーを共有コードの契約 (throw 系チャネル) に載せ替える。
@@ -51,3 +67,10 @@ internal class AndroidLoadingGateway(
             throw DialogException(failure.message ?: failure.toString(), failure)
         }
 }
+
+/** 共有コードの処理を始めるスレッドの指定を、Android Native ライブラリの同型へ写す。 */
+internal fun LoadingActionThread.toNative(): jp.kamusoft.ksdialogs.LoadingActionThread =
+    when (this) {
+        LoadingActionThread.MAIN -> jp.kamusoft.ksdialogs.LoadingActionThread.MAIN
+        LoadingActionThread.BACKGROUND -> jp.kamusoft.ksdialogs.LoadingActionThread.BACKGROUND
+    }

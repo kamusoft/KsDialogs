@@ -182,11 +182,13 @@ internal class MainActivity : ComponentActivity() {
      * Default Loading を実行し、完了を直近の結果として取り込む。
      *
      * スコープ形の start は処理の間だけ既定ローディングを出し、処理の完了で自動的に閉じる。
-     * 処理は 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
+     * 処理は UI スレッドで始まるため、最初の文で結果表示を直接「処理中」に書き換える。
+     * そのあと 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
      */
     private fun runDefaultLoading() {
         scope.launch {
             Loading.instance.start(message = SampleText.LOADING_START_MESSAGE) { report ->
+                menuView.showResult(SampleText.LOADING_PROCESSING_RESULT)
                 for (step in 0..LOADING_STEP_COUNT) {
                     report(step.toDouble() / LOADING_STEP_COUNT)
                     if (step == LOADING_MESSAGE_UPDATE_STEP) {

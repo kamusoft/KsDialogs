@@ -29,7 +29,9 @@ final class SampleMenuModel {
     /// 共有 Presenter の外にあるデモ (Inline・パネル系) はこの経路では何も起こらない。
     func autoPlay(_ demo: SampleDemoId) async {
         do {
-            if let result = try await presenter.autoPlay(demo: demo) {
+            if let result = try await presenter.autoPlay(demo: demo, showInterimResult: { result in
+                self.lastResult = result
+            }) {
                 lastResult = result
             }
         } catch {
@@ -83,9 +85,12 @@ final class SampleMenuModel {
     /// Default Loading を実行し、完了を直近の結果として取り込む。
     ///
     /// 呼び出しは共有 Presenter に閉じており、この型は結果の文言を受け取るだけである。
+    /// 処理中の文言は処理の中から UI スレッドで渡されるので、そのまま結果表示へ出す。
     func runDefaultLoading() async {
         do {
-            lastResult = try await presenter.runDefaultLoading()
+            lastResult = try await presenter.runDefaultLoading(showInterimResult: { result in
+                self.lastResult = result
+            })
         } catch {
             // 処理の失敗は呼び出し元へ伝わる。Sample の処理は失敗しないので開発中に気づけるよう止める
             assertionFailure("ローディングの処理が失敗しました: \(error)")

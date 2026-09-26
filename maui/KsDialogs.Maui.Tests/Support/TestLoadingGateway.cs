@@ -34,6 +34,9 @@ internal sealed class TestLoadingGateway : ILoadingGateway
     /// <summary>報告された進捗を報告順に記録したもの。</summary>
     public List<double> ReportedProgress { get; } = [];
 
+    /// <summary>スコープ形で受け取った、処理を始めるスレッドの指定を呼ばれた順に記録したもの。</summary>
+    public List<LoadingActionThread> ActionThreads { get; } = [];
+
     /// <summary>更新されたメッセージを更新順に記録したもの。</summary>
     public List<string?> UpdatedMessages { get; } = [];
 
@@ -54,9 +57,14 @@ internal sealed class TestLoadingGateway : ILoadingGateway
     }
 
     /// <inheritdoc/>
-    public Task RunAsync(LoadingPresentationRequest request, Func<IProgress<double>, Task> action)
+    public Task RunAsync(
+        LoadingPresentationRequest request,
+        Func<IProgress<double>, Task> action,
+        LoadingActionThread actionThread)
     {
         Accept(request);
+        // スレッドの振り分けは platform の委譲面の手順が行うため、ここでは指定を記録するだけにする
+        ActionThreads.Add(actionThread);
         return action(new RecordingProgress(this, request.ProgressReceiver));
     }
 

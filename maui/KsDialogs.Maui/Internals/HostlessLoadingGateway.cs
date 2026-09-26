@@ -27,11 +27,16 @@ internal sealed class HostlessLoadingGateway : ILoadingGateway
     public Task ShowAsync(LoadingPresentationRequest request) => Task.CompletedTask;
 
     /// <inheritdoc/>
-    public Task RunAsync(LoadingPresentationRequest request, Func<IProgress<double>, Task> action)
+    public Task RunAsync(
+        LoadingPresentationRequest request,
+        Func<IProgress<double>, Task> action,
+        LoadingActionThread actionThread)
     {
         ArgumentNullException.ThrowIfNull(action);
 
-        // 表示は成立しないが、渡された処理は実行される。報告先が無いので進捗は捨てる
+        // 表示は成立しないが、渡された処理は実行される。報告先が無いので進捗は捨てる。
+        // この実行環境には UI スレッドが無く、始めるスレッドの指定は意味を持たないため、
+        // 指定に関係なく呼び出し元のスレッドでそのまま始める
         return action(new Progress<double>(static _ => { }));
     }
 

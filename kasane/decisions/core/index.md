@@ -40,5 +40,5 @@
 | [0034](0034-contract-type-name-singular-feature.md) | 契約の型名は「Ks + 機能名 (単数)」で揃え、Dialog の契約は KsDialogs から KsDialog へ改名する | accepted | 2026-09-06 |
 | [0035](0035-loading-toast-typed-show-vm-factory.md) | Loading / Toast のレジストリに VM factory スロットを追加し、型指定 show を Dialog と同型で提供する | accepted | 2026-09-06 |
 | [0036](0036-maui-android-content-supply-symmetry.md) | MAUI Android の Dialog / Loading の中身供給も managed 側の預かり口を通し、3 面を対称化する (0033 の amends — 却下案「Android は配線しない」を置き換え) | accepted | 2026-09-08 |
-| [0037](0037-loading-action-starts-on-ui-thread.md) | Loading のスコープ形の action は既定で UI スレッドで始め、UI スレッド外で始める指定を入口に持たせる | proposed | 2026-09-25 |
+| [0037](0037-loading-action-starts-on-ui-thread.md) | Loading のスコープ形の action は既定で UI スレッドで始め、UI スレッド外で始める指定を入口に持たせる | accepted | 2026-09-25 |
 | [0038](0038-current-page-layout-area-via-registered-provider.md) | 基準領域に「表示中のページ」を足し、器は登録された現在ページ provider から矩形を得る (iOS / MAUI は既定 provider 内蔵、Android Native は登録制。0030・0032 の amends — 「器はページ構造を知らない」に Dialog の基準領域だけ例外) | proposed | 2026-09-25 |

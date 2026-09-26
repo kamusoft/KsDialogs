@@ -145,15 +145,28 @@ public interface IKsLoading
     /// 合流 1 件の開始と終了が処理の開始・完了に対応する。処理は表示状態によらず必ず実行され、
     /// 失敗も合流 1 件の終了として数えたうえで呼び出し元へ伝播する。
     /// 合流最後の 1 件なら器の撤去まで待ってから戻り、そうでなければ処理の完了時点で戻る。
+    /// <para>
+    /// 処理は、呼び出し元のスレッドによらず既定で UI スレッドで始まり、その中から画面の要素へ
+    /// UI スレッドへ移し直さずに触れられる。UI に触れない重い処理は
+    /// <c>actionThread: LoadingActionThread.Background</c> を渡すと UI スレッド外で始まる。
+    /// 保証するのは処理の最初の文を実行するスレッドで、<see langword="await"/> の後の実行先は C# の規則に従う
+    /// (<c>ConfigureAwait(false)</c> を書くと UI スレッドへは戻らない)。
+    /// 他のスコープ形の <c>StartAsync</c> も同じ。
+    /// </para>
     /// </remarks>
     /// <param name="action">実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)。</param>
     /// <param name="message">表示するメッセージ。<see langword="null"/> ならスタイルの既定メッセージ。</param>
     /// <param name="placement">置き場所。<see langword="null"/> なら契約の既定値。</param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理と (最後の 1 件なら) 撤去の完了。</returns>
     Task StartAsync(
         Func<IProgress<double>, Task> action,
         string? message = null,
-        DialogPlacement? placement = null);
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main);
 
     /// <summary>既定ローディングを表示したまま処理を実行し、その戻り値を返す。</summary>
     /// <remarks>戻り値を返す点以外は値を返さない形と同じ。</remarks>
@@ -161,33 +174,48 @@ public interface IKsLoading
     /// <param name="action">実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)。</param>
     /// <param name="message">表示するメッセージ。<see langword="null"/> ならスタイルの既定メッセージ。</param>
     /// <param name="placement">置き場所。<see langword="null"/> なら契約の既定値。</param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理の戻り値。</returns>
     Task<T> StartAsync<T>(
         Func<IProgress<double>, Task<T>> action,
         string? message = null,
-        DialogPlacement? placement = null);
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main);
 
     /// <summary>登録済みのカスタム Loading View を表示したまま処理を実行する。</summary>
     /// <remarks>未登録の ViewModel 型は構成ミスとして失敗し、処理は実行されない (fail-fast)。</remarks>
     /// <param name="viewModel">表示するカスタム Loading の ViewModel。</param>
     /// <param name="action">実行する処理。引数の報告口へ 0〜1 の進捗を報告できる。</param>
     /// <param name="placement">置き場所。<see langword="null"/> なら View への添付。</param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理と (最後の 1 件なら) 撤去の完了。</returns>
     Task StartAsync(
         ILoadingViewModel viewModel,
         Func<IProgress<double>, Task> action,
-        DialogPlacement? placement = null);
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main);
 
     /// <summary>登録済みのカスタム Loading View を表示したまま処理を実行し、その戻り値を返す。</summary>
     /// <typeparam name="T">処理が返す値の型。</typeparam>
     /// <param name="viewModel">表示するカスタム Loading の ViewModel。</param>
     /// <param name="action">実行する処理。引数の報告口へ 0〜1 の進捗を報告できる。</param>
     /// <param name="placement">置き場所。<see langword="null"/> なら View への添付。</param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理の戻り値。</returns>
     Task<T> StartAsync<T>(
         ILoadingViewModel viewModel,
         Func<IProgress<double>, Task<T>> action,
-        DialogPlacement? placement = null);
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main);
 
     /// <summary>
     /// 登録せずに、その場で渡した factory の中身を表示したまま処理を実行する (core/ADR-0013)。
@@ -198,12 +226,17 @@ public interface IKsLoading
     /// <param name="factory">中身の MAUI View を生成する関数。</param>
     /// <param name="action">実行する処理。引数の報告口へ 0〜1 の進捗を報告できる。</param>
     /// <param name="placement">この呼び出しでの置き場所。</param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理と (最後の 1 件なら) 撤去の完了。</returns>
     Task StartAsync<TViewModel>(
         TViewModel viewModel,
         Func<TViewModel, View> factory,
         Func<IProgress<double>, Task> action,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel;
 
     /// <summary>
@@ -216,12 +249,17 @@ public interface IKsLoading
     /// <param name="factory">中身の MAUI View を生成する関数。</param>
     /// <param name="action">実行する処理。引数の報告口へ 0〜1 の進捗を報告できる。</param>
     /// <param name="placement">この呼び出しでの置き場所。</param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理の戻り値。</returns>
     Task<T> StartAsync<TViewModel, T>(
         TViewModel viewModel,
         Func<TViewModel, View> factory,
         Func<IProgress<double>, Task<T>> action,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel;
 
     /// <summary>
@@ -239,11 +277,16 @@ public interface IKsLoading
     /// <param name="placement">
     /// 置き場所。<see langword="null"/> なら View への添付、添付もなければ契約の既定値。
     /// </param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理と (最後の 1 件なら) 撤去の完了。</returns>
     Task StartAsync<TViewModel>(
         Func<IProgress<double>, Task> action,
         Action<TViewModel>? configure = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel;
 
     /// <summary>
@@ -260,11 +303,16 @@ public interface IKsLoading
     /// <param name="placement">
     /// 置き場所。<see langword="null"/> なら View への添付、添付もなければ契約の既定値。
     /// </param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理と (最後の 1 件なら) 撤去の完了。</returns>
     Task StartAsync<TViewModel>(
         Func<IProgress<double>, Task> action,
         Func<TViewModel, Task> configure,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel;
 
     /// <summary>
@@ -279,11 +327,16 @@ public interface IKsLoading
     /// <param name="placement">
     /// 置き場所。<see langword="null"/> なら View への添付、添付もなければ契約の既定値。
     /// </param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理の戻り値。</returns>
     Task<T> StartAsync<TViewModel, T>(
         Func<IProgress<double>, Task<T>> action,
         Action<TViewModel>? configure = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel;
 
     /// <summary>
@@ -298,10 +351,15 @@ public interface IKsLoading
     /// <param name="placement">
     /// 置き場所。<see langword="null"/> なら View への添付、添付もなければ契約の既定値。
     /// </param>
+    /// <param name="actionThread">
+    /// 処理を始めるスレッド。既定の <see cref="LoadingActionThread.Main"/> は UI スレッドで、
+    /// <see cref="LoadingActionThread.Background"/> は UI スレッド外 (スレッドプール) で始める。
+    /// </param>
     /// <returns>処理の戻り値。</returns>
     Task<T> StartAsync<TViewModel, T>(
         Func<IProgress<double>, Task<T>> action,
         Func<TViewModel, Task> configure,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        LoadingActionThread actionThread = LoadingActionThread.Main)
         where TViewModel : class, ILoadingViewModel;
 }
