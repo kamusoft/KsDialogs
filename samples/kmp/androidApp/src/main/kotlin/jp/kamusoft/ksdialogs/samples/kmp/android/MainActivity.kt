@@ -1,8 +1,11 @@
 package jp.kamusoft.ksdialogs.samples.kmp.android
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.compose.ui.platform.ComposeView
+import androidx.core.view.WindowCompat
 import jp.kamusoft.ksdialogs.Dialog
 import jp.kamusoft.ksdialogs.DialogAlignment
 import jp.kamusoft.ksdialogs.DialogPlacement
@@ -24,7 +27,10 @@ internal class MainActivity : ComponentActivity() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var presenter: SamplePresenter
     private lateinit var menuView: SampleMenuView
-    private var layoutPanelView: SampleLayoutPanelView? = null
+    private var layoutPanelView: ComposeView? = null
+
+    /** 属性調整パネルの調整値。パネルを閉じて開き直しても保つ。 */
+    private val layoutPanelState = SampleLayoutPanelState()
     private var transitionPanelView: SampleTransitionPanelView? = null
 
     /**
@@ -70,6 +76,11 @@ internal class MainActivity : ComponentActivity() {
         )
         setContentView(menuView)
         onBackPressedDispatcher.addCallback(this, panelBackCallback)
+        // Android 15 以降は画面が端から端まで広がり、ステータスバーが白い地の上に重なる。
+        // 既定の白いアイコンのままでは読めないため、明るい地向けの暗いアイコンにする
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = true
+        }
 
         if (savedInstanceState == null) {
             autoPlay(SampleCaptureAutoPlay.consumeDemo(options))
@@ -266,13 +277,17 @@ internal class MainActivity : ComponentActivity() {
         }
     }
 
-    /** 属性調整パネルを開く。開いている間の状態は同じ View に保たれる。 */
+    /** 属性調整パネルを開く。開き直しても調整値は同じ状態に保たれる。 */
     private fun openLayoutPanel() {
-        val panel = layoutPanelView ?: SampleLayoutPanelView(
-            context = this,
-            onBack = ::closeLayoutPanel,
-            onShow = ::showLayoutDialog,
-        ).also { layoutPanelView = it }
+        val panel = layoutPanelView ?: ComposeView(this).apply {
+            setContent {
+                SampleLayoutPanelScreen(
+                    state = layoutPanelState,
+                    onBack = ::closeLayoutPanel,
+                    onShow = ::showLayoutDialog,
+                )
+            }
+        }.also { layoutPanelView = it }
         setContentView(panel)
         panelBackCallback.isEnabled = true
     }
@@ -285,10 +300,10 @@ internal class MainActivity : ComponentActivity() {
 
     /** パネルで調整した属性でダイアログを表示し、結果をパネルとメニューの両方へ出す。 */
     private fun showLayoutDialog() {
-        val panel = layoutPanelView ?: return
+        val panel = layoutPanelState
         scope.launch {
-            val result = presenter.showLayoutDialog(panel.placement(), panel.usesVisibleArea)
-            panel.showResult(result)
+            val result = presenter.showLayoutDialog(panel.placement(), panel.layoutArea.preset)
+            panel.lastResult = result
             menuView.showResult(result)
         }
     }

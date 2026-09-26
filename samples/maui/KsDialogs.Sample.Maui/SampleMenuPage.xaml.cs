@@ -431,7 +431,7 @@ public partial class SampleMenuPage : ContentPage
     /// <returns>画面遷移を表す待機可能な操作。</returns>
     private async Task OpenLayoutPanelAsync()
     {
-        SampleLayoutPanelPage panel = new(ShowResult);
+        SampleLayoutPanelTabbedPage panel = new(ShowResult);
         await Navigation.PushModalAsync(panel);
     }
 

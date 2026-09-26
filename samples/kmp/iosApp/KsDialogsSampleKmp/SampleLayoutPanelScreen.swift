@@ -1,7 +1,12 @@
 import SampleShared
+import KsDialogs
 import SwiftUI
 
 /// レイアウト属性を調整してからダイアログを表示する画面。
+///
+/// 下部のタブバーで、ナビゲーションバーを持つパネルのタブと、タイトルバーを持たない説明のタブを切り替える。
+/// 基準領域「表示中のページ」がバーを除いた領域になることを 2 つのタブで見比べられるよう、
+/// 各タブの中身の枠 (バーの内側) を表示中のページとして名乗らせる。
 struct SampleLayoutPanelScreen: View {
     /// 確定した結果をメニュー画面へ渡す。
     let onResult: (String) -> Void
@@ -9,58 +14,33 @@ struct SampleLayoutPanelScreen: View {
     let onClose: () -> Void
 
     @State private var model = SampleLayoutPanelModel()
+    @State private var selectedTab = SampleLayoutPanelTab.panel
 
     var body: some View {
-        VStack(spacing: 0) {
-            SampleLayoutPanelHeader(
-                onBack: onClose,
-                onShow: { Task { await showLayoutDialog() } }
-            )
-            SampleDivider()
-
-            SampleSettingRow(title: SampleText.shared.HORIZONTAL_LABEL) {
-                SampleAlignmentSegments(
-                    axisLabel: SampleText.shared.HORIZONTAL_LABEL,
-                    selection: $model.horizontalAlignment
-                )
+        TabView(selection: $selectedTab) {
+            NavigationStack {
+                SampleLayoutPanelForm(model: model)
+                    .ksDialogCurrentPage()
+                    .background { SampleTheme.surface.ignoresSafeArea() }
+                    .navigationTitle(SampleText.shared.LAYOUT_DIALOG_ITEM)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        SampleLayoutPanelToolbar(
+                            onBack: onClose,
+                            onShow: { Task { await showLayoutDialog() } }
+                        )
+                    }
             }
-            SampleDivider()
+            .tabItem { Label(SampleText.shared.PANEL_TAB, systemImage: "list.bullet") }
+            .tag(SampleLayoutPanelTab.panel)
 
-            SampleSettingRow(title: SampleText.shared.VERTICAL_LABEL) {
-                SampleAlignmentSegments(
-                    axisLabel: SampleText.shared.VERTICAL_LABEL,
-                    selection: $model.verticalAlignment
-                )
-            }
-            SampleDivider()
-
-            SampleSettingRow(title: SampleText.shared.OFFSET_X_LABEL) {
-                SampleOffsetField(label: SampleText.shared.OFFSET_X_LABEL, text: $model.offsetX)
-            }
-            SampleDivider()
-
-            SampleSettingRow(title: SampleText.shared.OFFSET_Y_LABEL) {
-                SampleOffsetField(label: SampleText.shared.OFFSET_Y_LABEL, text: $model.offsetY)
-            }
-            SampleDivider()
-
-            SampleSettingRow(title: SampleText.shared.USE_VISIBLE_AREA_LABEL) {
-                Toggle("", isOn: $model.usesVisibleArea)
-                    .labelsHidden()
-                    .tint(SampleTheme.primary)
-                    // 行の項目名は別の要素なので、トグル自身にも読み上げ名を与える
-                    .accessibilityLabel(SampleText.shared.USE_VISIBLE_AREA_LABEL)
-            }
-            SampleDivider()
-
-            if let lastResult = model.lastResult {
-                SampleResultArea(result: lastResult)
-                    .background(SampleTheme.surfaceVariant)
-            }
-
-            Spacer(minLength: 0)
+            SampleLayoutInfoPage(onShow: { Task { await showLayoutDialog() } })
+                .ksDialogCurrentPage()
+                .background { SampleTheme.surface.ignoresSafeArea() }
+                .tabItem { Label(SampleText.shared.INFO_TAB, systemImage: "info.circle") }
+                .tag(SampleLayoutPanelTab.info)
         }
-        .background { SampleTheme.surface.ignoresSafeArea() }
+        .tint(SampleTheme.primary)
     }
 
     private func showLayoutDialog() async {
@@ -69,3 +49,4 @@ struct SampleLayoutPanelScreen: View {
         }
     }
 }
+

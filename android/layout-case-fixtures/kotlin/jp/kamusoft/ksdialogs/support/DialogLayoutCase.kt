@@ -5,6 +5,9 @@ package jp.kamusoft.ksdialogs.support
  *
  * 「画面サイズ・システム領域の余白・内容サイズ・レイアウト属性 → 期待 rect」の組。
  * 数値はすべて論理単位 (dp)。
+ *
+ * [pageArea] は基準領域が表示中のページのケースだけが持つ入力で、表示中ページの View の矩形
+ * (原点はウィンドウの左上)。それ以外のケースでは null。
  */
 class DialogLayoutCase(
     val id: String,
@@ -13,6 +16,7 @@ class DialogLayoutCase(
     val contentSize: Size,
     val attributes: DialogLayoutCaseAttributes,
     val expected: Rect,
+    val pageArea: Rect? = null,
 ) {
     /** 幅と高さ。 */
     class Size(val w: Double, val h: Double)

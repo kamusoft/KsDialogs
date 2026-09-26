@@ -81,6 +81,7 @@ internal static class PlatformDialogContent
     private static MauiDialogLayoutArea ToBridgeLayoutArea(DialogLayoutArea area) => area switch
     {
         DialogLayoutArea.Window => MauiDialogLayoutArea.Window!,
+        DialogLayoutArea.CurrentPage => MauiDialogLayoutArea.CurrentPage!,
         _ => MauiDialogLayoutArea.VisibleArea!,
     };
 
@@ -102,25 +103,28 @@ internal static class PlatformDialogContent
     }
 
     /// <summary>
-    /// platform view 化に使う文脈を、Native 実装が提示先に選ぶ画面から解決する。
+    /// Native 実装が提示先に選ぶ画面と、platform view 化に使うその画面の文脈を一組で解決する。
     /// </summary>
     /// <remarks>
     /// Native 実装は現在表に出ている Activity を提示先に選ぶため、その Activity を platform view として
-    /// 持つ画面の文脈を使う。見つからない場合だけ、文脈を持つ最初の画面へ落とす。
+    /// 持つ画面を選ぶ。見つからない場合だけ、文脈を持つ最初の画面へ落とす。
     /// アプリ全体の文脈はテーマを持たず、これで作った View は組み立ての時点で失敗するため使わない。
     /// 画面の文脈が取れない状態は提示先が無い状態にあたる。
     /// </remarks>
-    /// <returns>解決できた文脈。無ければ <see langword="null"/>。</returns>
-    public static IMauiContext? ResolveMauiContext()
+    /// <returns>解決できた画面と文脈の組。無ければ <see langword="null"/>。</returns>
+    public static DialogPresentationTarget? ResolvePresentationTarget()
     {
         IReadOnlyList<Window> windows = Application.Current?.Windows ?? [];
         Activity? presentationHost = ActivityStateManager.Default.GetCurrentActivity();
 
-        Window? hostWindow = windows
-            .FirstOrDefault(window => ReferenceEquals(window.Handler?.PlatformView, presentationHost));
+        Window? hostWindow = windows.FirstOrDefault(window =>
+            window.Handler?.MauiContext is not null
+            && ReferenceEquals(window.Handler.PlatformView, presentationHost));
+        hostWindow ??= windows.FirstOrDefault(window => window.Handler?.MauiContext is not null);
 
-        return hostWindow?.Handler?.MauiContext
-            ?? windows.Select(window => window.Handler?.MauiContext).FirstOrDefault(context => context is not null);
+        return hostWindow?.Handler?.MauiContext is IMauiContext context
+            ? new DialogPresentationTarget(hostWindow, context)
+            : null;
     }
 
     /// <summary>初回のネイティブレイアウトパスの節目で、MAUI 側の添付を器が読む添付面へ写す。</summary>

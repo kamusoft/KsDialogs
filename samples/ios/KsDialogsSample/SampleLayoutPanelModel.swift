@@ -15,8 +15,8 @@ final class SampleLayoutPanelModel {
     var offsetX: String = "0"
     /// 垂直方向の移動量の入力。
     var offsetY: String = "0"
-    /// サイズと位置の計算に可視領域を使うか。
-    var usesVisibleArea: Bool = true
+    /// サイズと位置の計算に使う基準領域。
+    var layoutArea: SampleLayoutAreaChoice = .visibleArea
 
     /// 直近の結果の表示文言。まだ一度もダイアログを閉じていない間は nil。
     private(set) var lastResult: String?
@@ -28,7 +28,7 @@ final class SampleLayoutPanelModel {
     func showLayoutDialog() async -> String? {
         let viewModel = LayoutDialogViewModel(
             message: SampleText.layoutDialogMessage,
-            usesVisibleArea: usesVisibleArea
+            layoutArea: layoutArea.layoutArea
         )
         // 置き場所は呼び出しごとに変わるので show の引数で渡す
         let placement = DialogPlacement(

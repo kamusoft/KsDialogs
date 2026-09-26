@@ -85,6 +85,7 @@ internal static class PlatformDialogContent
     private static MauiDialogLayoutArea ToBridgeLayoutArea(DialogLayoutArea area) => area switch
     {
         DialogLayoutArea.Window => MauiDialogLayoutArea.Window,
+        DialogLayoutArea.CurrentPage => MauiDialogLayoutArea.CurrentPage,
         _ => MauiDialogLayoutArea.VisibleArea,
     };
 
@@ -106,30 +107,38 @@ internal static class PlatformDialogContent
     }
 
     /// <summary>
-    /// platform view 化に使う文脈を、Native 実装が提示先に選ぶ画面から解決する。
+    /// Native 実装が提示先に選ぶ画面と、platform view 化に使うその画面の文脈を一組で解決する。
     /// </summary>
     /// <remarks>
     /// Native 実装は前面のシーンの key window から提示先を辿るため、その window を platform view として
-    /// 持つ画面の文脈を使う。見つからない場合だけ、文脈を持つ最初の画面へ落とす。
+    /// 持つ画面を選ぶ。見つからない場合だけ、文脈を持つ最初の画面へ落とす。
     /// アプリ全体の文脈は画面に紐づく情報を持たず、これで作った View は提示に耐えないため使わない。
     /// 画面の文脈が取れない状態は提示先が無い状態にあたる。
     /// </remarks>
-    /// <returns>解決できた文脈。無ければ <see langword="null"/>。</returns>
-    public static IMauiContext? ResolveMauiContext()
+    /// <returns>解決できた画面と文脈の組。無ければ <see langword="null"/>。</returns>
+    public static DialogPresentationTarget? ResolvePresentationTarget()
     {
         IReadOnlyList<Window> windows = Application.Current?.Windows ?? [];
-        UIWindow? presentationHost = UIApplication.SharedApplication.ConnectedScenes
+        UIWindow? presentationHost = FindPresentationHost();
+
+        Window? hostWindow = windows.FirstOrDefault(window =>
+            window.Handler?.MauiContext is not null
+            && ReferenceEquals(window.Handler.PlatformView, presentationHost));
+        hostWindow ??= windows.FirstOrDefault(window => window.Handler?.MauiContext is not null);
+
+        return hostWindow?.Handler?.MauiContext is IMauiContext context
+            ? new DialogPresentationTarget(hostWindow, context)
+            : null;
+    }
+
+    /// <summary>Native 実装が提示先に選ぶ window (前面アクティブなシーンの key window)。</summary>
+    /// <returns>提示先の window。無ければ <see langword="null"/>。</returns>
+    public static UIWindow? FindPresentationHost() =>
+        UIApplication.SharedApplication.ConnectedScenes
             .OfType<UIWindowScene>()
             .Where(scene => scene.ActivationState == UISceneActivationState.ForegroundActive)
             .SelectMany(scene => scene.Windows)
             .FirstOrDefault(window => window.IsKeyWindow);
-
-        Window? hostWindow = windows
-            .FirstOrDefault(window => ReferenceEquals(window.Handler?.PlatformView, presentationHost));
-
-        return hostWindow?.Handler?.MauiContext
-            ?? windows.Select(window => window.Handler?.MauiContext).FirstOrDefault(context => context is not null);
-    }
 
     /// <summary>
     /// 中身の MAUI View を器のレイアウトに乗せるための入れ物。

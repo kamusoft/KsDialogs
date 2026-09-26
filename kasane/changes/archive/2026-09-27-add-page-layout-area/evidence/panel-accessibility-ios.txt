@@ -1,0 +1,84 @@
+# ios: 属性調整パネルの accessibility 階層 (XCUITest の app.debugDescription から操作部の行だけを抜粋。アドレスと座標は除去)
+# 取得: 2026-09-26、iOS Simulator (iPhone 17 Pro / iOS 26.5)、使い捨てプローブ (XCUIApplication(bundleIdentifier:) + --demo layout-dialog)
+# 状態: initial = 起動直後 / changed = Current page・Horizontal End・Vertical Start を選択 / info-tab = Info タブへ切替
+## initial
+  Button, label: 'Basic Dialog, ›'
+  Button, label: 'Layout Dialog, ›'
+  Button, label: 'Declarative Dialog, ›'
+  Button, label: 'Text Input Dialog, ›'
+  Button, label: 'Inline Dialog, ›'
+  Button, label: 'Transition Dialog, ›'
+  Button, label: 'Model Dialog, ›'
+  Button, label: 'Default Loading, ›'
+  Button, label: 'Custom Loading, ›'
+  Button, label: 'Default Toast, ›'
+  Button, label: 'Custom Toast, ›'
+  Button, label: 'Toast Stack, ›'
+  Button, label: 'Toast Placement, ›'
+  Button, label: 'Toast Overlap, ›'
+  Button, label: '戻る'
+  Button, label: 'Show'
+  Button, label: 'Horizontal Start'
+  Button, label: 'Horizontal Center', Selected
+  Button, label: 'Horizontal End'
+  Button, label: 'Vertical Start'
+  Button, label: 'Vertical Center', Selected
+  Button, label: 'Vertical End'
+  TextField, label: 'OffsetX', value: 0
+  TextField, label: 'OffsetY', value: 0
+  Button, label: 'Window'
+  Button, label: 'Visible area', Selected
+  Button, label: 'Current page'
+  TabBar, label: 'Tab Bar'
+  Button, label: 'Panel', Selected
+  Button, label: 'Info'
+## changed
+  Button, label: 'Basic Dialog, ›'
+  Button, label: 'Layout Dialog, ›'
+  Button, label: 'Declarative Dialog, ›'
+  Button, label: 'Text Input Dialog, ›'
+  Button, label: 'Inline Dialog, ›'
+  Button, label: 'Transition Dialog, ›'
+  Button, label: 'Model Dialog, ›'
+  Button, label: 'Default Loading, ›'
+  Button, label: 'Custom Loading, ›'
+  Button, label: 'Default Toast, ›'
+  Button, label: 'Custom Toast, ›'
+  Button, label: 'Toast Stack, ›'
+  Button, label: 'Toast Placement, ›'
+  Button, label: 'Toast Overlap, ›'
+  Button, label: '戻る'
+  Button, label: 'Show'
+  Button, label: 'Horizontal Start'
+  Button, label: 'Horizontal Center'
+  Button, label: 'Horizontal End', Selected
+  Button, label: 'Vertical Start', Selected
+  Button, label: 'Vertical Center'
+  Button, label: 'Vertical End'
+  TextField, label: 'OffsetX', value: 0
+  TextField, label: 'OffsetY', value: 0
+  Button, label: 'Window'
+  Button, label: 'Visible area'
+  Button, label: 'Current page', Selected
+  TabBar, label: 'Tab Bar'
+  Button, label: 'Panel', Selected
+  Button, label: 'Info'
+## info-tab
+  Button, label: 'Basic Dialog, ›'
+  Button, label: 'Layout Dialog, ›'
+  Button, label: 'Declarative Dialog, ›'
+  Button, label: 'Text Input Dialog, ›'
+  Button, label: 'Inline Dialog, ›'
+  Button, label: 'Transition Dialog, ›'
+  Button, label: 'Model Dialog, ›'
+  Button, label: 'Default Loading, ›'
+  Button, label: 'Custom Loading, ›'
+  Button, label: 'Default Toast, ›'
+  Button, label: 'Custom Toast, ›'
+  Button, label: 'Toast Stack, ›'
+  Button, label: 'Toast Placement, ›'
+  Button, label: 'Toast Overlap, ›'
+  Button, label: 'Show'
+  TabBar, label: 'Tab Bar'
+  Button, label: 'Panel'
+  Button, label: 'Info', Selected

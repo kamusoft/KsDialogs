@@ -1,7 +1,7 @@
 package jp.kamusoft.ksdialogs.samples.kmp.android
 
 import jp.kamusoft.ksdialogs.Dialog
-import jp.kamusoft.ksdialogs.DialogLayoutArea
+import jp.kamusoft.ksdialogs.DialogEdgeInsets
 import jp.kamusoft.ksdialogs.DialogOptions
 import jp.kamusoft.ksdialogs.compose.registerCompose
 import jp.kamusoft.ksdialogs.ksDialogOptions
@@ -40,12 +40,10 @@ internal object SampleDialogRegistration {
                 onComplete = { notifier.complete(true) },
             ).apply {
                 // 基準領域は中身の性質として扱う静的メタ属性なので、View への添付で供給する
+                // 余白は全辺 0 にして、カードが基準領域の端に接するかで置かれた領域を見分けられるようにする
                 ksDialogOptions = DialogOptions(
-                    layoutArea = if (viewModel.usesVisibleArea) {
-                        DialogLayoutArea.VISIBLE_AREA
-                    } else {
-                        DialogLayoutArea.WINDOW
-                    },
+                    layoutArea = viewModel.layoutArea.toLayoutArea(),
+                    dialogMargin = DialogEdgeInsets.ZERO,
                 )
             }
         }

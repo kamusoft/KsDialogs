@@ -119,8 +119,21 @@ enum SampleText {
     static let offsetXLabel = "OffsetX"
     /// 垂直方向の移動量を入れる行の項目名。
     static let offsetYLabel = "OffsetY"
-    /// 基準領域に可視領域を使うかを切り替える行の項目名。
-    static let useVisibleAreaLabel = "Use visible area"
+    /// 基準領域を選ぶ行の項目名。
+    static let layoutAreaLabel = "Layout area"
+    /// 基準領域の選択肢 (ウィンドウ全体)。
+    static let layoutAreaWindow = "Window"
+    /// 基準領域の選択肢 (可視領域)。
+    static let layoutAreaVisibleArea = "Visible area"
+    /// 基準領域の選択肢 (表示中のページ)。
+    static let layoutAreaCurrentPage = "Current page"
+    /// 属性調整パネルのタブ名。
+    static let panelTab = "Panel"
+    /// 説明文だけを置くタブのタブ名。
+    static let infoTab = "Info"
+    /// 説明文だけを置くタブの本文。
+    static let infoTabBody =
+        "このタブにはタイトルバーがありません。Current page を選ぶと、ダイアログはタブバーの内側 (このページの領域) を基準に置かれます。"
     /// 属性調整パネルの表示操作。
     static let showAction = "Show"
     /// 完了操作の表示。

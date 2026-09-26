@@ -9,10 +9,10 @@ import jp.kamusoft.ksdialogs.kmp.DialogViewModel
  * 共有コードで定義したこのクラスがそのまま各 OS のレジストリの登録キーになる。
  *
  * @property message ダイアログに表示するメッセージ
- * @property usesVisibleArea サイズと位置の計算に可視領域を使うか。
+ * @property layoutArea サイズと位置の計算に使う基準領域。
  *   静的メタ属性は各 OS の View 定義側で完結するため、View factory が作った View への添付として供給する
  */
 class LayoutDialogViewModel(
     val message: String,
-    val usesVisibleArea: Boolean,
+    val layoutArea: SampleLayoutAreaPreset,
 ) : DialogViewModel<Boolean>

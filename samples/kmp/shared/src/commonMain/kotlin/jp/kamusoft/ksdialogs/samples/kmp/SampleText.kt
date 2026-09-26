@@ -182,8 +182,27 @@ object SampleText {
     /** 垂直方向の移動量を入れる行の項目名。 */
     const val OFFSET_Y_LABEL: String = "OffsetY"
 
-    /** 基準領域に可視領域を使うかを切り替える行の項目名。 */
-    const val USE_VISIBLE_AREA_LABEL: String = "Use visible area"
+    /** 基準領域を選ぶ行の項目名。 */
+    const val LAYOUT_AREA_LABEL: String = "Layout area"
+
+    /** 基準領域の選択肢 (ウィンドウ全体)。 */
+    const val LAYOUT_AREA_WINDOW: String = "Window"
+
+    /** 基準領域の選択肢 (可視領域)。 */
+    const val LAYOUT_AREA_VISIBLE_AREA: String = "Visible area"
+
+    /** 基準領域の選択肢 (表示中のページ)。 */
+    const val LAYOUT_AREA_CURRENT_PAGE: String = "Current page"
+
+    /** 属性調整パネルのタブ名。 */
+    const val PANEL_TAB: String = "Panel"
+
+    /** 説明文だけを置くタブのタブ名。 */
+    const val INFO_TAB: String = "Info"
+
+    /** 説明文だけを置くタブの本文。 */
+    const val INFO_TAB_BODY: String =
+        "このタブにはタイトルバーがありません。Current page を選ぶと、ダイアログはタブバーの内側 (このページの領域) を基準に置かれます。"
 
     /** 属性調整パネルの表示操作。 */
     const val SHOW_ACTION: String = "Show"

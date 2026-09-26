@@ -175,6 +175,23 @@ interface MauiDialogPresentation
     void Dismiss();
 }
 
+/// <summary>表示中のページの View を返す口。見つからなければ null を返す。</summary>
+[return: NullAllowed]
+delegate UIView MauiDialogCurrentPageProvider();
+
+/// <summary>基準領域「表示中のページ」のページを MAUI 側から教える口。</summary>
+[BaseType(typeof(NSObject), Name = "KSDMauiDialogCurrentPage")]
+interface MauiDialogCurrentPage
+{
+    /// <summary>
+    /// 表示中のページの View を返す関数を登録する。null を渡すと登録を解除する。
+    /// 差し替えは次の表示から効く。UI スレッドから呼ぶ。
+    /// </summary>
+    [Static]
+    [Export("setProvider:")]
+    void SetProvider([NullAllowed] MauiDialogCurrentPageProvider provider);
+}
+
 /// <summary>既定ローディングの表示テキストを組み立てる口。</summary>
 /// <remarks>進捗が未報告のときは <c>progress</c> が null になる。</remarks>
 delegate string MauiLoadingProgressFormat(

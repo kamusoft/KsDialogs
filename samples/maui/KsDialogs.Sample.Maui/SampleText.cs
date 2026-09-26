@@ -181,8 +181,27 @@ public static class SampleText
     /// <summary>垂直方向の移動量を入れる行の項目名。</summary>
     public const string OffsetYLabel = "OffsetY";
 
-    /// <summary>基準領域に可視領域を使うかを切り替える行の項目名。</summary>
-    public const string UseVisibleAreaLabel = "Use visible area";
+    /// <summary>基準領域を選ぶ行の項目名。</summary>
+    public const string LayoutAreaLabel = "Layout area";
+
+    /// <summary>基準領域の選択肢 (ウィンドウ全体)。</summary>
+    public const string LayoutAreaWindow = "Window";
+
+    /// <summary>基準領域の選択肢 (可視領域)。</summary>
+    public const string LayoutAreaVisibleArea = "Visible area";
+
+    /// <summary>基準領域の選択肢 (表示中のページ)。</summary>
+    public const string LayoutAreaCurrentPage = "Current page";
+
+    /// <summary>属性調整パネルのタブ名。</summary>
+    public const string PanelTab = "Panel";
+
+    /// <summary>説明文だけを置くタブのタブ名。</summary>
+    public const string InfoTab = "Info";
+
+    /// <summary>説明文だけを置くタブの本文。</summary>
+    public const string InfoTabBody =
+        "このタブにはタイトルバーがありません。Current page を選ぶと、ダイアログはタブバーの内側 (このページの領域) を基準に置かれます。";
 
     /// <summary>属性調整パネルの表示操作。</summary>
     public const string ShowAction = "Show";

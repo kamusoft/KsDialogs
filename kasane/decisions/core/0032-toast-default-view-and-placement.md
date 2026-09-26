@@ -3,6 +3,7 @@ id: 0032
 title: Toast の既定 View は OS 慣習寄せのピルとし、既定配置は下部中央 + ボトムバー回避オフセット、styling とアプリ既定配置は ToastStyle で受ける
 status: accepted
 date: 2026-08-27
+amended-by: 0038
 ---
 
 ## Context

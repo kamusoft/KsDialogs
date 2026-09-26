@@ -25,12 +25,17 @@
 		B1000001000000000000A00F /* LayoutDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A00F /* LayoutDialogCard.swift */; };
 		B1000001000000000000A010 /* LayoutDialogCardHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A010 /* LayoutDialogCardHostView.swift */; };
 		B1000001000000000000A011 /* SampleAlignmentChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A011 /* SampleAlignmentChoice.swift */; };
-		B1000001000000000000A012 /* SampleAlignmentSegments.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A012 /* SampleAlignmentSegments.swift */; };
+		B1000001000000000000A012 /* SampleSegments.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A012 /* SampleSegments.swift */; };
 		B1000001000000000000A013 /* SampleSettingRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A013 /* SampleSettingRow.swift */; };
 		B1000001000000000000A014 /* SampleOffsetField.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A014 /* SampleOffsetField.swift */; };
-		B1000001000000000000A015 /* SampleLayoutPanelHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A015 /* SampleLayoutPanelHeader.swift */; };
+		B1000001000000000000A015 /* SampleLayoutPanelToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A015 /* SampleLayoutPanelToolbar.swift */; };
 		B1000001000000000000A016 /* SampleLayoutPanelModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A016 /* SampleLayoutPanelModel.swift */; };
 		B1000001000000000000A017 /* SampleLayoutPanelScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A017 /* SampleLayoutPanelScreen.swift */; };
+		8A1F2A345CBE06EEE1D748F9 /* SampleLayoutInfoPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A436A9CBB12CECB46FACF120 /* SampleLayoutInfoPage.swift */; };
+		468EE5CC84E4603003F6B936 /* SampleLayoutPanelForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BEA69A47CCB06EB8C35F7A9 /* SampleLayoutPanelForm.swift */; };
+		0E758E9B988482325DCF7FCE /* SampleLayoutPanelTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C0D822EE842ABD43533784 /* SampleLayoutPanelTab.swift */; };
+		92FAA132226BB5D9C862339B /* SampleLayoutAreaChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAADC7A0C59A63CD9C201D2 /* SampleLayoutAreaChoice.swift */; };
+		876CA5C661CA5BED317ABB35 /* SampleSegmentChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80EAB39320E61691E2188F27 /* SampleSegmentChoice.swift */; };
 		B1000001000000000000A018 /* DeclarativeDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A018 /* DeclarativeDialogViewModel.swift */; };
 		B1000001000000000000A019 /* DeclarativeDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A019 /* DeclarativeDialogCard.swift */; };
 		B1000001000000000000A01A /* TextInputDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A01A /* TextInputDialogViewModel.swift */; };
@@ -85,12 +90,17 @@
 		B1000002000000000000A00F /* LayoutDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutDialogCard.swift; sourceTree = "<group>"; };
 		B1000002000000000000A010 /* LayoutDialogCardHostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutDialogCardHostView.swift; sourceTree = "<group>"; };
 		B1000002000000000000A011 /* SampleAlignmentChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleAlignmentChoice.swift; sourceTree = "<group>"; };
-		B1000002000000000000A012 /* SampleAlignmentSegments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleAlignmentSegments.swift; sourceTree = "<group>"; };
+		B1000002000000000000A012 /* SampleSegments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleSegments.swift; sourceTree = "<group>"; };
 		B1000002000000000000A013 /* SampleSettingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleSettingRow.swift; sourceTree = "<group>"; };
 		B1000002000000000000A014 /* SampleOffsetField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleOffsetField.swift; sourceTree = "<group>"; };
-		B1000002000000000000A015 /* SampleLayoutPanelHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelHeader.swift; sourceTree = "<group>"; };
+		B1000002000000000000A015 /* SampleLayoutPanelToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelToolbar.swift; sourceTree = "<group>"; };
 		B1000002000000000000A016 /* SampleLayoutPanelModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelModel.swift; sourceTree = "<group>"; };
 		B1000002000000000000A017 /* SampleLayoutPanelScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelScreen.swift; sourceTree = "<group>"; };
+		A436A9CBB12CECB46FACF120 /* SampleLayoutInfoPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutInfoPage.swift; sourceTree = "<group>"; };
+		5BEA69A47CCB06EB8C35F7A9 /* SampleLayoutPanelForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelForm.swift; sourceTree = "<group>"; };
+		50C0D822EE842ABD43533784 /* SampleLayoutPanelTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelTab.swift; sourceTree = "<group>"; };
+		0BAADC7A0C59A63CD9C201D2 /* SampleLayoutAreaChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutAreaChoice.swift; sourceTree = "<group>"; };
+		80EAB39320E61691E2188F27 /* SampleSegmentChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleSegmentChoice.swift; sourceTree = "<group>"; };
 		B1000002000000000000A018 /* DeclarativeDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeclarativeDialogViewModel.swift; sourceTree = "<group>"; };
 		B1000002000000000000A019 /* DeclarativeDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeclarativeDialogCard.swift; sourceTree = "<group>"; };
 		B1000002000000000000A01A /* TextInputDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInputDialogViewModel.swift; sourceTree = "<group>"; };
@@ -166,12 +176,17 @@
 				B1000002000000000000A00F /* LayoutDialogCard.swift */,
 				B1000002000000000000A010 /* LayoutDialogCardHostView.swift */,
 				B1000002000000000000A011 /* SampleAlignmentChoice.swift */,
-				B1000002000000000000A012 /* SampleAlignmentSegments.swift */,
+				B1000002000000000000A012 /* SampleSegments.swift */,
 				B1000002000000000000A013 /* SampleSettingRow.swift */,
 				B1000002000000000000A014 /* SampleOffsetField.swift */,
-				B1000002000000000000A015 /* SampleLayoutPanelHeader.swift */,
+				B1000002000000000000A015 /* SampleLayoutPanelToolbar.swift */,
 				B1000002000000000000A016 /* SampleLayoutPanelModel.swift */,
 				B1000002000000000000A017 /* SampleLayoutPanelScreen.swift */,
+				A436A9CBB12CECB46FACF120 /* SampleLayoutInfoPage.swift */,
+				5BEA69A47CCB06EB8C35F7A9 /* SampleLayoutPanelForm.swift */,
+				50C0D822EE842ABD43533784 /* SampleLayoutPanelTab.swift */,
+				0BAADC7A0C59A63CD9C201D2 /* SampleLayoutAreaChoice.swift */,
+				80EAB39320E61691E2188F27 /* SampleSegmentChoice.swift */,
 				B1000002000000000000A018 /* DeclarativeDialogViewModel.swift */,
 				B1000002000000000000A019 /* DeclarativeDialogCard.swift */,
 				B1000002000000000000A01A /* TextInputDialogViewModel.swift */,
@@ -309,12 +324,17 @@
 				B1000001000000000000A00F /* LayoutDialogCard.swift in Sources */,
 				B1000001000000000000A010 /* LayoutDialogCardHostView.swift in Sources */,
 				B1000001000000000000A011 /* SampleAlignmentChoice.swift in Sources */,
-				B1000001000000000000A012 /* SampleAlignmentSegments.swift in Sources */,
+				B1000001000000000000A012 /* SampleSegments.swift in Sources */,
 				B1000001000000000000A013 /* SampleSettingRow.swift in Sources */,
 				B1000001000000000000A014 /* SampleOffsetField.swift in Sources */,
-				B1000001000000000000A015 /* SampleLayoutPanelHeader.swift in Sources */,
+				B1000001000000000000A015 /* SampleLayoutPanelToolbar.swift in Sources */,
 				B1000001000000000000A016 /* SampleLayoutPanelModel.swift in Sources */,
 				B1000001000000000000A017 /* SampleLayoutPanelScreen.swift in Sources */,
+				8A1F2A345CBE06EEE1D748F9 /* SampleLayoutInfoPage.swift in Sources */,
+				468EE5CC84E4603003F6B936 /* SampleLayoutPanelForm.swift in Sources */,
+				0E758E9B988482325DCF7FCE /* SampleLayoutPanelTab.swift in Sources */,
+				92FAA132226BB5D9C862339B /* SampleLayoutAreaChoice.swift in Sources */,
+				876CA5C661CA5BED317ABB35 /* SampleSegmentChoice.swift in Sources */,
 				B1000001000000000000A018 /* DeclarativeDialogViewModel.swift in Sources */,
 				B1000001000000000000A019 /* DeclarativeDialogCard.swift in Sources */,
 				B1000001000000000000A01A /* TextInputDialogViewModel.swift in Sources */,

@@ -1,8 +1,9 @@
 ---
 id: 0038
-title: 基準領域に「表示中のページ」を足し、器は登録された現在ページ provider から矩形を得る (iOS / MAUI は既定 provider 内蔵、Android Native は登録制)
-status: proposed
+title: 基準領域に「表示中のページ」を足し、器はページを自分で探さずアプリが登録した現在ページ provider から矩形を得る
+status: accepted
 date: 2026-09-25
+amends: 0030, 0032
 ---
 
 ## Context
@@ -16,13 +17,19 @@ ColorAnalyzer の移行 (AiForms.Maui.Dialogs → KsDialogs.Maui) で、右下�
 - 呼び出しは KMP commonMain や ViewModel などの共有層から行うのが基本なので、show ごとに基準 View を渡す形は成立しない
 - Android には iOS の view controller 階層にあたる OS 標準の画面遷移機構がない。Jetpack Navigation はライブラリで、Compose の NavHost / Scaffold は View を持たず、ライブラリ側から「ページ」の矩形を取る手段がない
 
+前提: ダイアログの呼び出しは View を持たない共有層から行われる。基準 rect の計算は窓からの 4 辺の inset を入力とする純関数のまま保たれる。
+
 ## Decision
 
-1. **基準領域 `layoutArea` に 3 つ目の値「表示中のページ (currentPage)」を足す**。基準になる矩形は「表示中ページの矩形のうち、そのページ自身の safe area / システム insets の内側」(UIKit 標準ではページ view がバーの下まで伸びるため、view の矩形ではなく safe area を採る。Android はページの矩形 ∩ 可視領域)。器はこれを窓座標の 4 辺 inset に変換し、既存の rect 決定手順 (基準 rect R → 有効領域 A) にそのまま流す。水平・垂直の両軸に効かせる (原典の垂直のみは ADR-0008 の線で正す)
-2. **器はページ構造を自分で探索せず、登録された「現在ページ provider」に問い合わせる**。provider はアプリ (ホスト) が起動時に一度登録し、以後の全表示に効く (`ToastStyle.defaultPlacement` / Loading のアプリ既定 options と同じ「一度設定して各表示の開始時に読む」規律)。利用者向けの登録口は形態ごとに 1 つ — UIKit / Android View は「ページの View を返す provider」、Compose / SwiftUI は「付けた composable / View を現在ページとして名乗らせる modifier」(attach 中のものを台帳に持ち、窓外は除外・入れ子は内側・それ以外は最後に配置されたものが勝ち・detach で残りへ戻る)。取得元の優先順位は modifier の台帳 > 登録 provider > 既定 provider で、上位が空なら下位へ進む。候補は提示先と同じ window / Activity に属するものに限る。「窓座標の矩形を返す provider」は内部の共通型で公開しない
-3. **既定 provider**: iOS Native と MAUI は既定を内蔵する — iOS = 提示先 window の view controller 階層を presented → navigation の top → tab の selected と先端まで走査した VC の view (KsDialogs 自身の器は通り抜けて提示元へ戻る。保証は UIKit コンテナまでで、SwiftUI の TabView / NavigationStack は modifier が正規の経路)、MAUI = MAUI 層でページ木を辿る (ModalStack の先頭があればそれ、無ければ `Window.Page` を起点に Shell / FlyoutPage / TabbedPage / NavigationPage を容れ物でなくなるまで降りる。Shell の有無を問わない) 先端ページの PlatformView を Native の provider へ流す。Android Native に既定が無いため MAUI 層で持ち、両 OS で同じ 1 本にする。Android Native は既定を持たない (登録制)。どの形態でもアプリは provider を上書きできる
-4. **未解決時は可視領域へ落とす**: provider が未登録、または矩形を返せないときは `visibleArea` と同じ結果にする
-5. **ADR-0030・0032 の「器はページ構造を知らない」は Dialog の基準領域に限って例外とする (0030・0032 の amends)**。器がページを見つけるのではなく、教えてもらう (provider) 形なので、Toast のタブバー自動検知の却下 (ADR-0032) はそのまま据え置く
+基準領域 `layoutArea` に 3 つ目の値「表示中のページ (currentPage)」を足す。基準は表示中ページの矩形のうち、そのページ自身のバー (ナビゲーションバー・タブバー) とシステムバーを除いた内側で、水平・垂直の両軸に効かせる (原典の垂直のみは ADR-0008 の線で正す)。器はこの矩形を窓からの inset に変換し、既存の rect 決定手順にそのまま流す。
+
+器はページ構造を自分で探索しない。アプリ (ホスト) が一度登録した「現在ページ provider」に表示のたびに問い合わせて矩形を教えてもらう。利用者向けの登録口は各 UI 技術の慣用に合わせ、従来 View 系は「ページの View を返す関数」、宣言的 UI 系は「付けた View を現在ページとして名乗らせる modifier」とする。窓座標の矩形そのものを返す口は利用者に開かない (座標系の変換を利用者に負わせないため)。
+
+ページの階層を確実に辿れる形態は既定の provider を内蔵し、登録なしで効くようにする。iOS Native は UIKit のコンテナ階層、MAUI は MAUI 層のページ木 (両 OS で同じ辿り方) を辿る。Android Native は「ページ」が OS の概念に無いため既定を持たず、登録制とする。どの形態でもアプリは provider を上書きできる。
+
+provider から矩形が得られないとき (未登録・未描画・候補なし) は `visibleArea` と同じ結果にし、表示は失敗させない。
+
+ADR-0030・0032 の「器はページ構造を知らない」は、Dialog の基準領域に限って例外とする (0030・0032 の amends)。器がページを見つけるのではなく教えてもらう形なので、Toast のタブバー自動検知の却下 (ADR-0032) はそのまま据え置く。
 
 ## Alternatives Considered
 
@@ -34,13 +41,13 @@ ColorAnalyzer の移行 (AiForms.Maui.Dialogs → KsDialogs.Maui) で、右下�
 
 ## Consequences
 
-- 正: `UseCurrentPageLocation=true` の移行先ができ、MAUI では原典が扱えなかった Shell・モーダルも正しく辿れる
+- 正: `UseCurrentPageLocation=true` の移行先ができ、MAUI では原典が扱えなかった Shell・モーダルも辿れる
 - 正: 基準 rect の計算部は変えず、入力 (inset) の供給元が増えるだけ
-- 正: 共有層からは `layoutArea = currentPage` と書くだけで、ホストの Navigation 機構の知識は provider に閉じる
-- 負: 公開 enum の値と登録口が増え、MAUI では C# の enum・iOS binding・bridge 2 つ・写像の最低 5 箇所に波及する。KMP は commonMain に layoutArea が無く、持たせるなら別途の設計が要る
-- 負: 共通ケース表 `core/layout-spec/cases.json` は任意の矩形を表せず、スキーマ拡張が要る
-- 負: Android Native は登録しなければ可視領域と同じで、「currentPage を指定したのに効かない」状態が起こり得る (ドキュメントでの明記が要る)
-- ADR-0008 は「visibleArea = システムバー除外領域」が原典の基準 (ページ領域) からの再定義であることを乖離として書いていない。本 ADR がその再定義と、ページ領域を別の値として復活させたことを記録する (ADR-0008 の Decision 3 への注記)
+- 正: 共有層からは `layoutArea = currentPage` と書くだけで、ホストの画面遷移の知識は provider に閉じる
+- 負: 公開 enum の値と登録口が全形態に増え、MAUI では C# の enum から binding・bridge・写像まで波及する。KMP は commonMain に layoutArea が無く、持たせるなら別途の設計が要る
+- 負: 共通ケース表は窓とシステムの insets しか表せなかったため、任意のページ矩形を入力に持つスキーマ拡張が要る
+- 負: Android Native は登録しなければ可視領域と同じ結果になり、「currentPage を指定したのに効かない」状態が起こり得る (診断ログとドキュメントで知らせる)
+- 負: provider が返す View と器のウィンドウは別物になり得るため、どの View を候補として受け付けるか (提示先との同一性・座標の原点) の規則を形態ごとに持つ必要がある
 
 ## Revisit When
 
@@ -48,4 +55,5 @@ ColorAnalyzer の移行 (AiForms.Maui.Dialogs → KsDialogs.Maui) で、右下�
 - Android に OS またはデファクトの「表示中ページ」機構が定着し、既定 provider を安全に内蔵できるようになったとき
 - iOS / MAUI の既定 provider が SwiftUI や Shell の内部構造の変化で外れる事例が出たとき
 
-出典: kasane/changes/add-page-layout-area/exploration.md (2026-09-25 の探索: 論点 A の議論、案 1〜3 の比較、Android の Navigation 機構の整理、既定 provider の 3 案) / second-opinion-spec-001.md (2026-09-26 の相方スペックレビュー: 器の通り抜け・SwiftUI の経路・優先順位・ウィンドウ同一性)
+出典: kasane/changes/archive/2026-09-27-add-page-layout-area/exploration.md (2026-09-25 の探索: 論点 A の議論、案 1〜3 の比較、Android の Navigation 機構の整理、既定 provider の 3 案) / second-opinion-spec-001.md (2026-09-26 の相方スペックレビュー: 器の通り抜け・SwiftUI の経路・優先順位・ウィンドウ同一性) / deviation.md (実装時の判断: Android の同じ Activity のウィンドウの解釈・台帳の非表示除外)
+関連: core/ADR-0008 (Decision 3 の基準領域「可視領域」は原典のページ領域からの再定義であり、本 ADR がページ領域を別の値として復活させた)

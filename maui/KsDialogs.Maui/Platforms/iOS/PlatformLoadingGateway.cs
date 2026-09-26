@@ -15,6 +15,9 @@ namespace KsDialogs;
 /// </remarks>
 internal sealed class PlatformLoadingGateway : ILoadingGateway
 {
+    /// <summary>基準領域「表示中のページ」のページを Native 実装へ教える口を、最初の表示より前に登録しておく。</summary>
+    public PlatformLoadingGateway() => PlatformCurrentPage.EnsureInstalled();
+
     /// <inheritdoc/>
     public void ApplyStyle(LoadingStyle style) =>
         MauiLoadingBridge.Shared.ApplyStyle(ToBridgeStyle(style));
@@ -139,7 +142,7 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
                 () => PlatformDialogContent.Create(
                     request.CreateContent(),
                     // 供給元が呼ばれるのは器が提示先を確保した後なので、この時点では文脈が取れる
-                    PlatformDialogContent.ResolveMauiContext()
+                    PlatformDialogContent.ResolvePresentationTarget()?.MauiContext
                         ?? throw new DialogException.PresentationHostUnavailable()),
                 contentFailure),
             placement,

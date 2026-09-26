@@ -191,12 +191,12 @@ class SamplePresenter(
      * 調整した属性で Layout Dialog を表示し、結果を表示用の文言にして返す。
      *
      * @param placement この呼び出しでの置き場所
-     * @param usesVisibleArea サイズと位置の計算に可視領域を使うか
+     * @param layoutArea サイズと位置の計算に使う基準領域
      * @return 結果表示エリアに出す文言
      */
     @Throws(DialogException::class, CancellationException::class)
-    suspend fun showLayoutDialog(placement: DialogPlacement, usesVisibleArea: Boolean): String {
-        val viewModel = LayoutDialogViewModel(SampleText.LAYOUT_DIALOG_MESSAGE, usesVisibleArea)
+    suspend fun showLayoutDialog(placement: DialogPlacement, layoutArea: SampleLayoutAreaPreset): String {
+        val viewModel = LayoutDialogViewModel(SampleText.LAYOUT_DIALOG_MESSAGE, layoutArea)
         return when (val result = dialogs.show(viewModel, placement)) {
             is DialogResult.Completed -> SampleText.completedResult(result.value)
             DialogResult.Cancelled -> SampleText.CANCELLED_RESULT

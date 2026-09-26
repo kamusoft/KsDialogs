@@ -31,9 +31,9 @@ public static class SampleDialogRegistration
                     onComplete: () => notifier.Complete(true));
 
                 // 基準領域は中身の性質として扱う静的メタ属性なので、View への添付で供給する
-                Dialog.SetLayoutArea(
-                    view,
-                    viewModel.UsesVisibleArea ? DialogLayoutArea.VisibleArea : DialogLayoutArea.Window);
+                // 余白は全辺 0 にして、カードが基準領域の端に接するかで置かれた領域を見分けられるようにする
+                Dialog.SetLayoutArea(view, viewModel.LayoutArea);
+                Dialog.SetDialogMargin(view, new Thickness(0));
 
                 return view;
             });
