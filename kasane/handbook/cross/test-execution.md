@@ -4,8 +4,8 @@ applies-when:
   always: false
   tasks: [テストの実行, テスト結果の報告, 変更の完了判定]
 title: テスト実行規約
-description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査 (CI が回す範囲は verification-ci.md)
-timestamp: 2026-09-26
+description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)、MAUI の実配置テストホスト (dotnet test 対象外のアプリとして両 OS で走らせる位置と大きさの検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査 (CI が回す範囲は verification-ci.md)
+timestamp: 2026-09-27
 ---
 
 # テスト実行規約
@@ -160,7 +160,21 @@ xcodebuild test -project KsDialogsMauiBridge.xcodeproj -scheme KsDialogsMauiBrid
 
 テスト標的は Host Application (`KsDialogsMauiBridgeTestHost`) 付きで走る。互換面は公開 init で実物の提示先解決 (前面アクティブなシーンの key window) を使うため、ホストアプリなしの Unit Testing Bundle では window を作って key にしてもシーンが前面アクティブにならず、提示先不在で 1 本も提示に入れない (2026-09-02 実測)。bridge のテストを増やすときはこの標的に足し、ホストなしの標的を別に作らない。
 
-maui の完了判定には `dotnet test`・Android 互換面・iOS 互換面の **3 つの実行すべて**が要る。
+maui の完了判定には `dotnet test`・Android 互換面・iOS 互換面の **3 つの実行すべて**が要る。MAUI 層の platform 別の実装 (`maui/KsDialogs.Maui/Platforms/`) に触れた変更では、これに加えて次の実配置テストホストを両 OS で回す。
+
+### 実配置テストホスト (両 OS の実機 / シミュレータ)
+
+`maui/KsDialogs.Maui.PlacementHost` は、MAUI 層が中身を器へ渡したあとの実配置 — 基準領域「表示中のページ」での位置と、Dialog / Loading / Toast の中身の大きさ — を見るテストホストアプリである。素の `net10.0` の `dotnet test` には platform view が無く、この 2 つは見られない。ホストは `KsDialogs.slnx`・`dotnet test`・検証 CI のどれにも含まれないため、**回さなければ黙って検証されない**。
+
+| OS | ビルドと起動 | 結果の読み口 |
+|---|---|---|
+| iOS | `dotnet build -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64` → `xcrun simctl install <UDID> <.app>` → `xcrun simctl launch --console-pty <UDID> jp.kamusoft.ksdialogs.maui.placementhost` | 標準出力 |
+| Android | `dotnet build -f net10.0-android` → `adb -s <serial> install <.apk>` → アプリを起動 | logcat の `DOTNET` タグ |
+
+- 起動すると全シナリオを順に実行し、1 シナリオ 1 行を `KSDPLACEMENT|<OS>|<シナリオ>|PASS または FAIL|…` で出す。件数は最後の `KSDPLACEMENT|<OS>|SUMMARY|passed=N|failed=M` で確かめ、両 OS の SUMMARY 行を変更の証跡に残す。Android だけのシナリオがあるため、件数は iOS のほうが少ない
+- 位置のシナリオと大きさのシナリオは見るものが違う。大きさのシナリオは中身のルートの矩形と Width / Height を宣言サイズと比べるので、「外形だけが大きく、中身は宣言サイズで中央に置かれる」形の崩れは見えない。この形は位置のシナリオ (端に寄せた中身の端の位置) が検出する
+- 他の実行 (instrumented テスト・別のホスト) が使っている端末では回さない。提示先を取り合い、位置のシナリオが提示先なしの失敗で落ちる (2026-09-27 実測)。使用中なら別の AVD / Simulator を起動して使う
+- 組んだ apk を `adb install` で直接入れて起動が abort するときは、Debug ビルドの Fast Deployment で assembly が apk に入っていない。`-p:EmbedAssembliesIntoApk=true` を付けて組み直す (2026-09-27 に `samples/maui` で実測)
 
 ### 演出の動きは検証できない
 

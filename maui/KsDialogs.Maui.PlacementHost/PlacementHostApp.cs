@@ -2,7 +2,7 @@ using Microsoft.Maui.Controls;
 
 namespace KsDialogs.PlacementHost;
 
-/// <summary>テストホストのアプリケーション。起動すると全シナリオを 1 回実行する。</summary>
+/// <summary>テストホストのアプリケーション。起動すると位置と大きさの全シナリオを 1 回実行する。</summary>
 public sealed class PlacementHostApp : Application
 {
     private bool _started;

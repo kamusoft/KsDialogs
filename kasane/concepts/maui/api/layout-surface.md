@@ -104,6 +104,8 @@ DialogCurrentPage.Provider = () => mainPage.ContentArea;
 - **余白は `Thickness`** で渡す。MAUI の標準型をそのまま使い、契約の 4 辺の余白へ写す
 - **覆いの色は `Color`**。添付そのものが無ければ契約の既定値 (黒 40%) で、`null` を明示的に添付したときだけ透明になる。境界を渡るときは ARGB 32bit 整数になる
 - **MAUI 層はレイアウト計算を行わない**。添付された値を無変換で Native へ渡すだけで、実際の rect は iOS / Android の実装が決める ([レイアウトのルール](../../core/api/layout-semantics.md))
+- **内容サイズは中身のルートの `WidthRequest` / `HeightRequest` (と `Minimum*Request`) を含めて MAUI の測り方で決まる**。ルートが `ContentView` でも `Grid` でも両 OS で同じ大きさになる。Dialog・Loading・Toast のカスタム View に共通
+- **比率指定や fill で器が大きさを決めた軸では、明示サイズを持つルートは外形いっぱいに広がらない**。宣言サイズのまま外形の中央に置かれる (両 OS で同じ)。外形いっぱいに広げたいときはその軸の明示サイズを外す
 
 ## 移植元 (AiForms.Maui.Dialogs) の属性名との対応
 
