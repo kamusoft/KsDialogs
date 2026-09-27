@@ -48,16 +48,16 @@ public class MauiDialogOptions {
     public var layoutArea: MauiDialogLayoutArea = MauiDialogLayoutArea.VISIBLE_AREA
 
     /** 基準 rect の上辺から控除する余白。 */
-    public var marginTop: Double = 24.0
+    public var marginTop: Double = 0.0
 
     /** 基準 rect の左辺から控除する余白。 */
-    public var marginLeft: Double = 24.0
+    public var marginLeft: Double = 0.0
 
     /** 基準 rect の下辺から控除する余白。 */
-    public var marginBottom: Double = 24.0
+    public var marginBottom: Double = 0.0
 
     /** 基準 rect の右辺から控除する余白。 */
-    public var marginRight: Double = 24.0
+    public var marginRight: Double = 0.0
 
     /** 基準 rect の幅に対する比率。0 以下は未指定。 */
     public var proportionalWidth: Double = -1.0

@@ -12,8 +12,10 @@ import jp.kamusoft.ksdialogs.DialogViewModel
  * @property message ダイアログに表示するメッセージ
  * @property layoutArea サイズと位置の計算に使う基準領域。
  *   静的メタ属性は中身の性質なので、View factory が作った View への添付として供給する
+ * @property dialogMargin 全辺そろえで添付する余白 (dp)。基準領域と同じく View への添付で供給する
  */
 internal class LayoutDialogViewModel(
     val message: String,
     val layoutArea: DialogLayoutArea,
+    val dialogMargin: Double,
 ) : DialogViewModel<Boolean>

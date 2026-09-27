@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * 属性調整パネルのタブの中身。配置・移動量・基準領域の行と結果表示エリアを並べる。
+ * 属性調整パネルのタブの中身。配置・移動量・基準領域・余白の行と結果表示エリアを並べる。
  *
  * @param state 調整値を持つ画面の状態
  * @param modifier 中身の枠に掛ける修飾
@@ -76,6 +76,18 @@ internal fun SampleLayoutPanelForm(state: SampleLayoutPanelState, modifier: Modi
                     .fillMaxWidth()
                     .padding(top = AREA_LABEL_SPACING_DP.dp),
                 fillsWidth = true,
+            )
+        }
+        SampleDivider()
+
+        SampleSettingRow(SampleText.MARGIN_LABEL) {
+            // 余白の選択肢は数字だけでは何の値か読めないため、行の項目名と組にした読み上げ名にする
+            SampleSegments(
+                choices = SampleMarginChoice.entries,
+                selection = state.margin,
+                label = { it.label },
+                onSelect = { state.margin = it },
+                axisLabel = SampleText.MARGIN_LABEL,
             )
         }
         SampleDivider()

@@ -4,7 +4,9 @@ import android.graphics.Rect
 import android.view.View
 import androidx.test.platform.app.InstrumentationRegistry
 import jp.kamusoft.ksdialogs.LoadingContainer
+import jp.kamusoft.ksdialogs.windowVisibleAreaInsets
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.math.roundToInt
 
 /**
  * ウィンドウに載った Loading の器のレイアウト結果を観察する。
@@ -46,6 +48,16 @@ internal object LoadingLayoutObservation {
     /** 器の面の大きさ (px)。 */
     fun hostSize(container: LoadingContainer): Pair<Int, Int> = readOnMain {
         container.layoutHost.width to container.layoutHost.height
+    }
+
+    /**
+     * 器の面が基準にする可視領域の下端 (器の面の座標・px)。
+     *
+     * 器が配置の計算に使うのと同じ求め方 (ウィンドウが報告するシステム領域の幅) で求める。
+     */
+    fun visibleAreaBottom(container: LoadingContainer): Int = readOnMain {
+        val host = container.layoutHost
+        host.height - windowVisibleAreaInsets(host).bottom.roundToInt()
     }
 
     /** 中身の外形 (画面座標・px)。実入力の注入に使う。 */

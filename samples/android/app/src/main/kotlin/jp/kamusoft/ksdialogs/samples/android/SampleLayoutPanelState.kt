@@ -9,7 +9,7 @@ import jp.kamusoft.ksdialogs.DialogPlacement
  * 属性調整パネルの画面が持つ状態。
  *
  * パネルを閉じて開き直しても、タブを切り替えても調整値を保つため、画面の composition の外に置く。
- * 初期値は契約の既定値 (中央配置・移動なし・可視領域基準) に揃える。
+ * 初期値は契約の既定値 (中央配置・移動なし・可視領域基準・余白 0) に揃える。
  */
 internal class SampleLayoutPanelState {
     /** 水平方向の配置。 */
@@ -26,6 +26,9 @@ internal class SampleLayoutPanelState {
 
     /** サイズと位置の計算に使う基準領域。 */
     var layoutArea by mutableStateOf(SampleLayoutAreaChoice.VISIBLE_AREA)
+
+    /** 全辺そろえの余白。 */
+    var margin by mutableStateOf(SampleMarginChoice.ZERO)
 
     /** 表示中のタブ。 */
     var selectedTab by mutableStateOf(SampleLayoutPanelTab.PANEL)

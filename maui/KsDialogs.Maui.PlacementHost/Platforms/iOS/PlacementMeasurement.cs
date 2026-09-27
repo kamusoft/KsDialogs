@@ -7,8 +7,8 @@ namespace KsDialogs.PlacementHost;
 /// <summary>iOS での矩形の測り方。すべて window 座標 (pt) で測る。</summary>
 internal static class PlacementMeasurement
 {
-    /// <summary>ダイアログの既定の余白 (pt)。</summary>
-    public const double Margin = 24d;
+    /// <summary>ダイアログの既定の余白 (pt)。契約の既定値は全辺 0 (core/ADR-0039)。</summary>
+    public const double Margin = 0d;
 
     /// <summary>位置の比較に許す誤差 (pt)。</summary>
     public const double Tolerance = 1d;

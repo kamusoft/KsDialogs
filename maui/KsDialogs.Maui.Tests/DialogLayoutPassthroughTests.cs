@@ -117,7 +117,7 @@ public class DialogLayoutPassthroughTests
         Assert.Multiple(() =>
         {
             Assert.That(delegated.Options.LayoutArea, Is.EqualTo(DialogLayoutArea.VisibleArea));
-            Assert.That(delegated.Options.DialogMargin, Is.EqualTo(new Thickness(24d)));
+            Assert.That(delegated.Options.DialogMargin, Is.EqualTo(new Thickness(0d)));
             Assert.That(delegated.Options.ProportionalWidth, Is.EqualTo(-1d));
             Assert.That(delegated.Options.ProportionalHeight, Is.EqualTo(-1d));
             Assert.That(delegated.Options.OverlayColorArgb, Is.EqualTo(0x66000000));

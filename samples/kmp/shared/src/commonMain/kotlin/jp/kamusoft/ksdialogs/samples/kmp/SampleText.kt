@@ -194,6 +194,18 @@ object SampleText {
     /** 基準領域の選択肢 (表示中のページ)。 */
     const val LAYOUT_AREA_CURRENT_PAGE: String = "Current page"
 
+    /** 余白を選ぶ行の項目名。 */
+    const val MARGIN_LABEL: String = "Margin"
+
+    /** 余白の選択肢 (0 — 契約の既定値)。 */
+    const val MARGIN_0: String = "0"
+
+    /** 余白の選択肢 (24)。 */
+    const val MARGIN_24: String = "24"
+
+    /** 余白の選択肢 (48)。 */
+    const val MARGIN_48: String = "48"
+
     /** 属性調整パネルのタブ名。 */
     const val PANEL_TAB: String = "Panel"
 

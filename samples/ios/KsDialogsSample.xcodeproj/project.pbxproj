@@ -35,6 +35,7 @@
 		468EE5CC84E4603003F6B936 /* SampleLayoutPanelForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BEA69A47CCB06EB8C35F7A9 /* SampleLayoutPanelForm.swift */; };
 		0E758E9B988482325DCF7FCE /* SampleLayoutPanelTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C0D822EE842ABD43533784 /* SampleLayoutPanelTab.swift */; };
 		92FAA132226BB5D9C862339B /* SampleLayoutAreaChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAADC7A0C59A63CD9C201D2 /* SampleLayoutAreaChoice.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E101 /* SampleMarginChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E102 /* SampleMarginChoice.swift */; };
 		876CA5C661CA5BED317ABB35 /* SampleSegmentChoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80EAB39320E61691E2188F27 /* SampleSegmentChoice.swift */; };
 		B1000001000000000000A018 /* DeclarativeDialogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A018 /* DeclarativeDialogViewModel.swift */; };
 		B1000001000000000000A019 /* DeclarativeDialogCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A019 /* DeclarativeDialogCard.swift */; };
@@ -100,6 +101,7 @@
 		5BEA69A47CCB06EB8C35F7A9 /* SampleLayoutPanelForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelForm.swift; sourceTree = "<group>"; };
 		50C0D822EE842ABD43533784 /* SampleLayoutPanelTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutPanelTab.swift; sourceTree = "<group>"; };
 		0BAADC7A0C59A63CD9C201D2 /* SampleLayoutAreaChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLayoutAreaChoice.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E102 /* SampleMarginChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleMarginChoice.swift; sourceTree = "<group>"; };
 		80EAB39320E61691E2188F27 /* SampleSegmentChoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleSegmentChoice.swift; sourceTree = "<group>"; };
 		B1000002000000000000A018 /* DeclarativeDialogViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeclarativeDialogViewModel.swift; sourceTree = "<group>"; };
 		B1000002000000000000A019 /* DeclarativeDialogCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeclarativeDialogCard.swift; sourceTree = "<group>"; };
@@ -186,6 +188,7 @@
 				5BEA69A47CCB06EB8C35F7A9 /* SampleLayoutPanelForm.swift */,
 				50C0D822EE842ABD43533784 /* SampleLayoutPanelTab.swift */,
 				0BAADC7A0C59A63CD9C201D2 /* SampleLayoutAreaChoice.swift */,
+				A1B2C3D4E5F6A7B8C9D0E102 /* SampleMarginChoice.swift */,
 				80EAB39320E61691E2188F27 /* SampleSegmentChoice.swift */,
 				B1000002000000000000A018 /* DeclarativeDialogViewModel.swift */,
 				B1000002000000000000A019 /* DeclarativeDialogCard.swift */,
@@ -334,6 +337,7 @@
 				468EE5CC84E4603003F6B936 /* SampleLayoutPanelForm.swift in Sources */,
 				0E758E9B988482325DCF7FCE /* SampleLayoutPanelTab.swift in Sources */,
 				92FAA132226BB5D9C862339B /* SampleLayoutAreaChoice.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E101 /* SampleMarginChoice.swift in Sources */,
 				876CA5C661CA5BED317ABB35 /* SampleSegmentChoice.swift in Sources */,
 				B1000001000000000000A018 /* DeclarativeDialogViewModel.swift in Sources */,
 				B1000001000000000000A019 /* DeclarativeDialogCard.swift in Sources */,

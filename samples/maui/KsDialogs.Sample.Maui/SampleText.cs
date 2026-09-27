@@ -193,6 +193,18 @@ public static class SampleText
     /// <summary>基準領域の選択肢 (表示中のページ)。</summary>
     public const string LayoutAreaCurrentPage = "Current page";
 
+    /// <summary>余白を選ぶ行の項目名。</summary>
+    public const string MarginLabel = "Margin";
+
+    /// <summary>余白の選択肢 (0 — 契約の既定値)。</summary>
+    public const string Margin0 = "0";
+
+    /// <summary>余白の選択肢 (24)。</summary>
+    public const string Margin24 = "24";
+
+    /// <summary>余白の選択肢 (48)。</summary>
+    public const string Margin48 = "48";
+
     /// <summary>属性調整パネルのタブ名。</summary>
     public const string PanelTab = "Panel";
 
