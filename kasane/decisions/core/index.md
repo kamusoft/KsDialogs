@@ -42,3 +42,5 @@
 | [0036](0036-maui-android-content-supply-symmetry.md) | MAUI Android の Dialog / Loading の中身供給も managed 側の預かり口を通し、3 面を対称化する (0033 の amends — 却下案「Android は配線しない」を置き換え) | accepted | 2026-09-08 |
 | [0037](0037-loading-action-starts-on-ui-thread.md) | Loading のスコープ形の action は既定で UI スレッドで始め、UI スレッド外で始める指定を入口に持たせる | accepted | 2026-09-25 |
 | [0038](0038-current-page-layout-area-via-registered-provider.md) | 基準領域に「表示中のページ」を足し、器はページを自分で探さずアプリが登録した現在ページ provider から矩形を得る | accepted | 2026-09-25 |
+| [0039](0039-wait-for-host-appearance.md) | 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる | proposed | 2026-09-27 |
+| [0040](0040-content-created-after-host-secured.md) | Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める (0033 の amends — Loading の失敗の合流先を、提示先が無いまま始まった表示に限って置き換え) | proposed | 2026-09-27 |
