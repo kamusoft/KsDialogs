@@ -1,7 +1,7 @@
 ---
 id: 0039
 title: 余白の契約既定値を原典と同じ 0 に戻し、既定 Toast のピルだけは従来の余白を自分で持つ
-status: proposed
+status: accepted
 date: 2026-09-27
 amends: 0008
 ---
@@ -50,5 +50,5 @@ core/ADR-0008 の決定のうち、既定値の乖離 3 件の余白 (全辺 24)
 - 既定 Toast に利用者が余白を渡す口 (一括設定の項目など) を足すとき
 - 前提 (Context) が崩れたとき
 
-出典: kasane/changes/revisit-dialog-margin-default/exploration.md (2026-09-27 の探索: 余白の既定値の改訂と Toast の扱い) / kasane/changes/archive/2026-09-27-add-page-layout-area/deviation.md (Sample の余白の項)
+出典: kasane/changes/archive/2026-09-27-revisit-dialog-margin-default/exploration.md (2026-09-27 の探索: 余白の既定値の改訂と Toast の扱い) / kasane/changes/archive/2026-09-27-add-page-layout-area/deviation.md (Sample の余白の項)
 関連: core/ADR-0032 (Toast の既定配置の上方向オフセット。本決定は既定 Toast の余白を保つことでボトムバーを上回る意図を維持する) / core/ADR-0022 (Loading は Dialog と同じ属性を共有するため、本決定がそのまま効く)
