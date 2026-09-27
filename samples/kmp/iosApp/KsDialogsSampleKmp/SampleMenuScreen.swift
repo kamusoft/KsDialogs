@@ -1,12 +1,12 @@
 import SampleShared
 import SwiftUI
-import UIKit
 
 /// Sample のメニュー画面。デモ項目の一覧と直近の結果を表示する。
 struct SampleMenuScreen: View {
     @State private var model = SampleMenuModel()
     @State private var showsLayoutPanel = false
     @State private var showsTransitionPanel = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         VStack(spacing: 0) {
@@ -91,7 +91,15 @@ struct SampleMenuScreen: View {
                 onClose: { showsTransitionPanel = false }
             )
         }
-        .task { await autoPlay() }
+        .onChange(of: scenePhase, initial: true) { _, newPhase in
+            // 自動再生は、シーンが前面でアクティブになってから始める。
+            // ライブラリは前面でアクティブなシーンの key window を提示先にするため、
+            // それより前に再生すると Dialog は提示先が無いとして失敗し、Loading と Toast は画面に出ない。
+            // 取り出しは 1 回限りなので、背面から戻って再びアクティブになっても繰り返さない。
+            // シーンの状態が変わっても再生中のデモを打ち切らないよう、この画面の task ではなく独立した Task で走らせる
+            guard newPhase == .active else { return }
+            Task { await autoPlay() }
+        }
     }
 
     /// 起動引数で指定されたデモを、メニュー項目のタップと同じ入口で自動再生する。
@@ -104,12 +112,6 @@ struct SampleMenuScreen: View {
         ) else {
             return
         }
-        // コールド起動の直後は key window がまだ無く、ライブラリが「提示できる画面がありません」で
-        // 失敗することがある (Debug では assertionFailure で止まる)。提示先が出来るまで待ってから再生する
-        await waitUntilPresentationHostIsReady()
-        // 初回表示と同じターンで画面状態を変えると全画面表示の提示を取りこぼしたため、
-        // MainActor のターンを 1 回譲ってから再生する (9 デモの通し撮影で安定を確認済み)
-        await Task.yield()
         switch demo {
         case SampleDemoId.inlineDialog: await model.showInlineDialog()
         case SampleDemoId.transitionDialog: showsTransitionPanel = true
@@ -119,33 +121,4 @@ struct SampleMenuScreen: View {
         default: await model.autoPlay(demo)
         }
     }
-
-    /// ライブラリの提示先 (前面でアクティブなシーンの key window の rootViewController) が出来るまで待つ。
-    ///
-    /// 判定はライブラリの提示可否と同じ条件に揃える。上限を超えたら待たずに進み、
-    /// 失敗はそのまま結果表示側 (assertionFailure) に任せる。この画面の Task がキャンセルされたら待ちを打ち切る。
-    private func waitUntilPresentationHostIsReady() async {
-        for _ in 0..<presentationHostWaitAttempts {
-            if hasPresentationHost { return }
-            do {
-                try await Task.sleep(for: .milliseconds(presentationHostWaitIntervalMilliseconds))
-            } catch {
-                return
-            }
-        }
-    }
-
-    /// 前面でアクティブなシーンに rootViewController 付きの key window があるか。
-    private var hasPresentationHost: Bool {
-        UIApplication.shared.connectedScenes.contains { scene in
-            guard let windowScene = scene as? UIWindowScene,
-                  windowScene.activationState == .foregroundActive else { return false }
-            return windowScene.windows.contains { $0.isKeyWindow && $0.rootViewController != nil }
-        }
-    }
 }
-
-/// 提示先の準備待ちの刻み (ミリ秒)。
-private let presentationHostWaitIntervalMilliseconds = 50
-/// 提示先の準備待ちの上限回数 (50ms × 40 = 2 秒)。
-private let presentationHostWaitAttempts = 40
