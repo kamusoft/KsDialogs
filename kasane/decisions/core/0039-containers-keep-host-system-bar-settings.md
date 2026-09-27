@@ -1,7 +1,7 @@
 ---
 id: 0039
 title: Dialog / Loading / Toast の器は、提示先の画面のシステムバーの指定を変えない
-status: proposed
+status: accepted
 date: 2026-09-27
 ---
 
@@ -38,10 +38,11 @@ Dialog / Loading / Toast の器は、表示中も提示先の画面のシステ�
 - 負: Android では Loading / Toast の器にも提示先からの写しが要る。器の種類を増やすたびに同じ扱いが要り、写し漏れはそのまま約束違反になる
 - 負: 暗幕による OS の文字色の調整は約束の外なので、暗幕を敷く器の表示中にステータスバーの文字色が変わる場合 (iOS のダーク外観など) があることを、利用者向けに説明する必要がある
 - 負: Android では、OS が値を返さない書き方 (旧来のフラグだけ) で指定された明暗も約束の対象になるため、非推奨の API からの読み取りを持ち続ける必要がある
+- 負: Android では、提示先がプラットフォームの WindowInsetsController での明示と旧来の明るいフラグを食い違わせると、器の明暗が見えと食い違い得る。公開 API ではテーマ由来の明暗とコードでの明示を常には見分けられず、約束は見分けられる範囲で守る (androidx の WindowInsetsControllerCompat 経由の指定では起きない)
 
 ## Revisit When
 
 前提 (Context) が崩れたとき。
 
-出典: kasane/changes/fix-android-container-system-bar-appearance/exploration.md (2026-09-27 の探索: 実測 2 回の結果、Loading / Toast で何を引き継ぐかと約束の置き場の比較)
+出典: kasane/changes/archive/2026-09-27-fix-android-container-system-bar-appearance/exploration.md (2026-09-27 の探索: 実測 2 回の結果、Loading / Toast で何を引き継ぐかと約束の置き場の比較)・同 deviation.md (明暗の読み取り規則と受け入れる取りこぼし)
 関連: core/ADR-0008 (Decision 4 の透明な覆いの正式対応。本 ADR がその約束を Dialog / Loading / Toast の器全体のシステムバーの指定へ広げた)
