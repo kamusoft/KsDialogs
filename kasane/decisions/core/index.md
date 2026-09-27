@@ -43,3 +43,4 @@
 | [0037](0037-loading-action-starts-on-ui-thread.md) | Loading のスコープ形の action は既定で UI スレッドで始め、UI スレッド外で始める指定を入口に持たせる | accepted | 2026-09-25 |
 | [0038](0038-current-page-layout-area-via-registered-provider.md) | 基準領域に「表示中のページ」を足し、器はページを自分で探さずアプリが登録した現在ページ provider から矩形を得る | accepted | 2026-09-25 |
 | [0039](0039-dialog-margin-default-zero.md) | 余白の契約既定値を原典と同じ 0 に戻し、既定 Toast のピルだけは従来の余白を自分で持つ (0008 を一部改訂) | accepted | 2026-09-27 |
+| [0040](0040-containers-keep-host-system-bar-settings.md) | Dialog / Loading / Toast の器は、提示先の画面のシステムバーの指定を変えない | accepted | 2026-09-27 |

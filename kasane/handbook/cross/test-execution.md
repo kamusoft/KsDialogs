@@ -2,9 +2,9 @@
 kind: rule
 applies-when:
   always: false
-  tasks: [テストの実行, テスト結果の報告, 変更の完了判定]
+  tasks: [テストの実行, テスト結果の報告, 変更の完了判定, 提示先のシステムバーを隠す Android の instrumented テストを書く]
 title: テスト実行規約
-description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)、MAUI の実配置テストホスト (dotnet test 対象外のアプリとして両 OS で走らせる位置と大きさの検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査 (CI が回す範囲は verification-ci.md)
+description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)・システムバーを隠す instrumented テストでの全画面表示の確認の抑止、MAUI の実配置テストホスト (dotnet test 対象外のアプリとして両 OS で走らせる位置と大きさの検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査 (CI が回す範囲は verification-ci.md)
 timestamp: 2026-09-27
 ---
 
@@ -81,9 +81,11 @@ adb devices          # 実機かエミュレータが1台以上 device 状態で
 
 ### API レベルで走る / 走らない Scenario
 
-**API レベルで走る / 走らない Scenario がある**。旧経路 (`systemUiVisibility`) のシステムバー引き継ぎなど、特定の API レベルでしか成立しない挙動のテストは `assumeTrue` で自分を skip し、結果 XML では `skipped` に数えられる。全件を実行したと言えるのは**対象 API レベルをそれぞれ1台ずつ回したとき**で、手元の環境は API 29 のエミュレータ (`ksn_api29`、旧経路用) と API 30 以上の実機 / エミュレータの組み合わせ。1 回の実行の件数は 1 台分で、skip の内訳は XML の `skipped` 属性で確認する。API 依存の `assumeTrue` はすべて API 30 を境にしている。API 30 以上の端末では旧経路でだけ判定できるテスト (`DialogSystemBarsTests.PB_SB_04_旧経路でも非表示状態が維持される`) が、API 29 の端末では `WindowInsetsController` 経路のシステムバーと IME の出し入れのテストが skip される
+**API レベルで走る / 走らない Scenario がある**。旧経路 (`systemUiVisibility`) のシステムバー引き継ぎなど、特定の API レベルでしか成立しない挙動のテストは `assumeTrue` で自分を skip し、結果 XML では `skipped` に数えられる。全件を実行したと言えるのは**対象 API レベルをそれぞれ1台ずつ回したとき**で、手元の環境は API 29 のエミュレータ (`ksn_api29`、旧経路用) と API 30 以上の実機 / エミュレータの組み合わせ。1 回の実行の件数は 1 台分で、skip の内訳は XML の `skipped` 属性で確認する。API 30 以上の端末では旧経路でだけ判定できるテスト (`DialogSystemBarsTests.PB_SB_04_旧経路でも非表示状態が維持される`) が、API 29 の端末では `WindowInsetsController` 経路のシステムバーと IME の出し入れのテストが skip される。API 30 以外の境界も 2 つある — API 31 未満では、再表示の作法を指定していない画面の作法を OS の既定として判定できないため `PB_SB_10` が、API 35 未満では、テーマ由来の明暗とコードでの明示を見分ける読み取りが無いため `PB_SB_09` のテーマのテスト 2 本が skip される
 
 **戻る操作を数えるテスト用画面は 2 経路の受け皿を持つ**。テスト APK の targetSdk は compileSdk (36) に追随し、予測型バック (predictive back) が既定で有効な端末では `Activity.onBackPressed()` が呼ばれず、システム既定の戻るで画面が閉じる。戻るが届いたことを数える画面は、`onBackPressed()` に加えて API 33 以上で `OnBackInvokedDispatcher` にコールバックを登録する (`ToastInputTestActivity` が先例。同時に両方へ届くことはない)。片方だけだと API レベルによって「戻るが届かない」のではなく「画面が破棄される」形で落ちる
+
+**提示先のシステムバーを隠すテストは、全画面表示の確認を止めた中で検証する**。API 36 (CI の API) では、バーを隠した画面で器がフォーカスを取った瞬間に OS の全画面表示の確認ウィンドウが出て、フォーカスとバーの制御を取り、提示先のバーが一瞬再出現する (2026-09-27 実測。API 35 では出ない)。検証は `support/ImmersiveModeConfirmation.whileSuppressed { … }` の中で行う — テストの間だけ `immersive_mode_confirmations` を `confirmed` にし、終了時 (失敗時を含む) に元の値へ戻す。守れたかは、`systemBars()` や `statusBars()` を hide する提示先を使うテストが、すべて `whileSuppressed` の中で判定していることから判定する
 
 ### JVM では走らない Scenario
 

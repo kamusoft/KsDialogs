@@ -138,6 +138,7 @@ MIRROR_AREAS = {
     ("LD", "CV"),
     ("LD", "TR"),
     ("LD", "TH"),
+    ("LD", "SB"),
     # TS (toast): 挙動を定める領域はすべて両 Native ミラーの対象。
     # 形態別の公開面 (TS-IO / TS-AN / TS-MA / TS-KM) と Sample (TS-SA) は対象外
     ("TS", "CO"),
@@ -146,6 +147,7 @@ MIRROR_AREAS = {
     ("TS", "AT"),
     ("TS", "TR"),
     ("TS", "AC"),
+    ("TS", "SB"),
 }
 
 # ミラー検査での役割の振り分け (リポジトリルートからの先頭セグメント)

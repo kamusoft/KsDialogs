@@ -26,4 +26,4 @@ relations の overlap の `samples` に当たる。KsSettingsView も同じ Nati
 
 API 35 のエミュレータ (または実機) で KsSettingsView の Android Sample を開き、明るい背景の画面でステータスバーのアイコンが見えるか、`AndroidView` 経由の入力欄があれば初期値が出ているかを確かめる。同じ症状があれば上の対処が参考になる。採るかどうか・直し方は KsSettingsView 側の判断に任せる。
 
-なお、KsDialogs のライブラリ本体でも「透明な覆いのダイアログを出している間、API 35 でステータスバーのアイコンが白地に溶ける」挙動が見つかっており、別途起票して調べている (`kasane/changes/fix-android-api35-overlay-status-bar-icons/`)。同じ系統の原因なら、結果をあらためて知らせる。
+なお、同じ時期に KsDialogs のライブラリ本体でも「API 35 で透明な覆いのダイアログを出している間、ステータスバーのアイコンが白地に溶ける」ように見える現象があり、別途調べた (`kasane/changes/archive/2026-09-27-fix-android-container-system-bar-appearance/`)。原因は、テスト用の画面が暗いアイコンを指定していなかったこと (テストの測り方) と、ライブラリの Loading / Toast の器が画面のシステムバーの指定を引き継いでいなかったことで、上の Sample の件とは別の系統だった。overlap に当たる範囲の話ではないため、KsSettingsView への追いの知らせは無い。
