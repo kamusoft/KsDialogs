@@ -6,8 +6,10 @@ using KsDialogs.Bridge;
 using Microsoft.Maui;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Platform;
 using Activity = Android.App.Activity;
+using Context = Android.Content.Context;
 
 namespace KsDialogs;
 
@@ -15,7 +17,7 @@ namespace KsDialogs;
 /// MAUI の中身を互換面が受け取る形へ写す、器によらない共通部品。
 /// </summary>
 /// <remarks>
-/// 提示先の文脈の解決・platform view 化・メタ属性と演出の写しは、ダイアログの器でも
+/// 提示先の文脈の解決・platform view 化と測定・メタ属性と演出の写しは、ダイアログの器でも
 /// ローディングの器でも同じである。二重実装を避けるため、どちらの委譲面もここを通る
 /// (core/ADR-0022 の「共有部品を両方の器から使う」の MAUI 側)。
 /// </remarks>
@@ -29,11 +31,13 @@ internal static class PlatformDialogContent
     public static MauiDialogContent Create(DialogPresentationContent content, IMauiContext mauiContext)
     {
         Android.Views.View platformView = content.ContentView.ToPlatform(mauiContext);
+        DialogContentView contentView = new(content, platformView);
         MauiDialogContent bridgeContent = new(
-            platformView,
+            contentView,
             ToBridgeOptions(content.Options),
             ToBridgePlacement(content.Placement));
-        ObserveFirstLayoutPass(platformView, content, bridgeContent);
+        // 添付面への写しと演出の結び付けはこの組を通すため、レイアウトの節目で使えるよう渡しておく
+        contentView.BindToBridgeContent(bridgeContent);
         return bridgeContent;
     }
 
@@ -127,37 +131,6 @@ internal static class PlatformDialogContent
             : null;
     }
 
-    /// <summary>初回のネイティブレイアウトパスの節目で、MAUI 側の添付を器が読む添付面へ写す。</summary>
-    /// <remarks>
-    /// 添付は「初回のネイティブレイアウトパス完了時点」の値が採用される (core/ADR-0015)。
-    /// 画面に載る直前に暫定の値を渡し、配置まで終わったところで固定した値を渡し直すことで、
-    /// そのパスの中で届いた変更まで器へ伝わる。以降の変更は反映しない。
-    /// 出入りの演出も同じ節目で結び付ける (core/ADR-0017)。
-    /// </remarks>
-    /// <param name="platformView">器が中身として受け取る platform view。</param>
-    /// <param name="content">提示する中身と、その提示に効くメタ属性。</param>
-    /// <param name="bridgeContent">互換面へ渡す中身と属性の組。</param>
-    private static void ObserveFirstLayoutPass(
-        Android.Views.View platformView,
-        DialogPresentationContent content,
-        MauiDialogContent bridgeContent)
-    {
-        DialogAttributeSnapshotRelay relay = new(
-            content,
-            attributes =>
-            {
-                MauiDialogContent.ApplyAttributes(
-                    platformView,
-                    ToBridgeOptions(attributes.Options),
-                    ToBridgePlacement(attributes.Placement));
-                InstallTransition(bridgeContent, content.ContentView, attributes.Transition);
-            });
-
-        platformView.ViewAttachedToWindow += (_, _) => relay.TransferBeforeLayout();
-        // 配置は View の layout の中で終わるため、この通知の時点でそのパスは完了している
-        platformView.LayoutChange += (_, _) => relay.FreezeAndTransfer();
-    }
-
     /// <summary>添付された演出を、互換面の実行口として器が読む添付面へ結び付ける。</summary>
     /// <param name="bridgeContent">互換面へ渡す中身と属性の組。</param>
     /// <param name="contentView">フックへ渡す中身の MAUI View。</param>
@@ -202,6 +175,91 @@ internal static class PlatformDialogContent
         {
             // 完了通知は演出が終わるまで持ち越すため、その間 Java 側の実体を掴んだままにする
             runner.Run(completion.Run);
+        }
+    }
+
+    /// <summary>
+    /// 中身の MAUI View を器のレイアウトに乗せるための入れ物。
+    /// </summary>
+    /// <remarks>
+    /// MAUI の View は自前の測定・配置で寸法が決まる。platform view をそのまま器へ渡すと器が Android の測り方で
+    /// 直接測ることになり、ルートが自分で宣言した大きさ (WidthRequest など) が効かない
+    /// (ContentView 系のルートは中の要素の大きさまで縮む)。ルート自身を配置する親もいなくなり、
+    /// ルートの Width / Height が決まらない。この入れ物が MAUI の測り方で測った結果を寸法として器へ伝え、
+    /// 器が決めた領域へ MAUI の配置を流し込む。
+    /// <para>
+    /// 器が中身として受け取るのはこの入れ物なので、添付面への写しと初回レイアウトパスの節目の監視もここで行う。
+    /// タップは受け止めず、そのまま中身へ流す (Toast の器のタッチの素通しを妨げない)。
+    /// </para>
+    /// </remarks>
+    private sealed class DialogContentView : Android.Views.ViewGroup
+    {
+        private readonly View _contentView;
+        private readonly DialogAttributeSnapshotRelay _attributeRelay;
+        private MauiDialogContent? _bridgeContent;
+
+        /// <param name="content">提示する中身と、その提示に効くメタ属性。</param>
+        /// <param name="platformView">その View の platform view。</param>
+        public DialogContentView(DialogPresentationContent content, Android.Views.View platformView)
+            : base(platformView.Context)
+        {
+            _contentView = content.ContentView;
+            _attributeRelay = new DialogAttributeSnapshotRelay(content, ApplyAttributes);
+            // 出入りの演出で中身がこの入れ物の外へ動く (滑り出し等) ため、中身を切り取らない
+            SetClipChildren(false);
+            AddView(platformView);
+        }
+
+        /// <summary>添付面への写しを行う互換面の組を結び付ける。</summary>
+        /// <param name="bridgeContent">この View を中身として持つ組。</param>
+        public void BindToBridgeContent(MauiDialogContent bridgeContent) => _bridgeContent = bridgeContent;
+
+        protected override void OnAttachedToWindow()
+        {
+            base.OnAttachedToWindow();
+            // 器は画面に載ったあとのパスの計算で添付面を読むため、計算に入る前にその時点の値を渡しておく
+            _attributeRelay.TransferBeforeLayout();
+        }
+
+        protected override void OnMeasure(int widthMeasureSpec, int heightMeasureSpec)
+        {
+            Context context = Context!;
+            // 測定は MAUI の配置と同じ面 (IView) で行う。制約の無い軸 (UNSPECIFIED) は無限大として渡る
+            Size measured = ((IView)_contentView).Measure(
+                widthMeasureSpec.ToDouble(context),
+                heightMeasureSpec.ToDouble(context));
+            // 器が大きさを決めた軸 (EXACTLY) はその大きさに、上限つきの軸 (AT_MOST) は上限までに収める
+            SetMeasuredDimension(
+                ResolveSize((int)context.ToPixels(measured.Width), widthMeasureSpec),
+                ResolveSize((int)context.ToPixels(measured.Height), heightMeasureSpec));
+        }
+
+        protected override void OnLayout(bool changed, int l, int t, int r, int b)
+        {
+            Context context = Context!;
+            ((IView)_contentView).Arrange(new Rect(0, 0, context.FromPixels(r - l), context.FromPixels(b - t)));
+            // 採用時点は器を画面に載せたあとの初回パスの完了時点 (core/ADR-0015)。
+            // 中身の配置まで終えたこの時点で固定し、パスの中で届いた変更まで渡し直す
+            if (IsAttachedToWindow)
+            {
+                _attributeRelay.FreezeAndTransfer();
+            }
+        }
+
+        /// <summary>MAUI 側で合成した実効値を、器が読む添付面へ写す。</summary>
+        /// <param name="attributes">その時点のメタ属性の実効値。</param>
+        private void ApplyAttributes(DialogAttributes attributes)
+        {
+            if (_bridgeContent is null)
+            {
+                return;
+            }
+
+            MauiDialogContent.ApplyAttributes(
+                this,
+                ToBridgeOptions(attributes.Options),
+                ToBridgePlacement(attributes.Placement));
+            InstallTransition(_bridgeContent, _contentView, attributes.Transition);
         }
     }
 }
