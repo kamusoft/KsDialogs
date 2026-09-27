@@ -127,6 +127,14 @@ enum SampleText {
     static let layoutAreaVisibleArea = "Visible area"
     /// 基準領域の選択肢 (表示中のページ)。
     static let layoutAreaCurrentPage = "Current page"
+    /// 余白を選ぶ行の項目名。
+    static let marginLabel = "Margin"
+    /// 余白の選択肢 (0 — 契約の既定値)。
+    static let margin0 = "0"
+    /// 余白の選択肢 (24)。
+    static let margin24 = "24"
+    /// 余白の選択肢 (48)。
+    static let margin48 = "48"
     /// 属性調整パネルのタブ名。
     static let panelTab = "Panel"
     /// 説明文だけを置くタブのタブ名。

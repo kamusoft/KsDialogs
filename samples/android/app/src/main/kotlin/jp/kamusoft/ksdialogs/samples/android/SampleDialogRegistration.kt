@@ -31,11 +31,10 @@ internal object SampleDialogRegistration {
                 onCancel = { notifier.cancel() },
                 onComplete = { notifier.complete(true) },
             ).apply {
-                // 基準領域は中身の性質として扱う静的メタ属性なので、View への添付で供給する
-                // 余白は全辺 0 にして、カードが基準領域の端に接するかで置かれた領域を見分けられるようにする
+                // 基準領域と余白は中身の性質として扱う静的メタ属性なので、パネルで選んだ値を View への添付で供給する
                 ksDialogOptions = DialogOptions(
                     layoutArea = viewModel.layoutArea,
-                    dialogMargin = DialogEdgeInsets.ZERO,
+                    dialogMargin = DialogEdgeInsets(viewModel.dialogMargin),
                 )
             }
         }

@@ -11,8 +11,8 @@ internal static class PlacementMeasurement
     /// <summary>MAUI の単位 (dp) 1 あたりの px。</summary>
     public static double Scale => Android.App.Application.Context.Resources?.DisplayMetrics?.Density ?? 1f;
 
-    /// <summary>ダイアログの既定の余白 (px)。契約の 24 を画面の密度で px にする。</summary>
-    public static double Margin => 24d * Scale;
+    /// <summary>ダイアログの既定の余白 (px)。契約の既定値は全辺 0 (core/ADR-0039) なので、画面の密度に依らず 0 になる。</summary>
+    public const double Margin = 0d;
 
     /// <summary>位置と大きさの比較に許す誤差 (px)。dp から px への丸めの分を見込む。</summary>
     public const double Tolerance = 2d;

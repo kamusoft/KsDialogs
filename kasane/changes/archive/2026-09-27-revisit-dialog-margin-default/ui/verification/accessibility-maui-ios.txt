@@ -1,0 +1,81 @@
+# maui-ios: 属性調整パネルの accessibility 階層 (XCUITest の app.debugDescription から操作部の行だけを抜粋。アドレスと座標は除去)
+# 取得: 2026-09-27、iOS Simulator (iPhone 17 / iOS 26.5)、使い捨てプローブ (XCUIApplication(bundleIdentifier:) + --demo layout-dialog)
+# 状態: initial = 起動直後 / changed = Current page・Horizontal End・Vertical End・Margin 24 を選択 / back-to-panel = Horizontal Start・Vertical Start にして Info タブで Show → キャンセル → Panel タブへ戻る
+## initial
+  Button, label: '戻る'
+  Button, label: 'Show'
+  StaticText, label: 'Show'
+  Button, label: 'Horizontal Start'
+  Button, label: 'Horizontal Center', Selected
+  Button, label: 'Horizontal End'
+  Button, label: 'Vertical Start'
+  Button, label: 'Vertical Center', Selected
+  Button, label: 'Vertical End'
+  TextField, label: 'OffsetX', value: 0
+  StaticText, label: 'OffsetX'
+  TextField, label: 'OffsetY', value: 0
+  StaticText, label: 'OffsetY'
+  Button, label: 'Window'
+  StaticText, label: 'Window'
+  Button, label: 'Visible area', Selected
+  StaticText, label: 'Visible area'
+  Button, label: 'Current page'
+  StaticText, label: 'Current page'
+  Button, label: 'Margin 0', Selected
+  Button, label: 'Margin 24'
+  Button, label: 'Margin 48'
+  StaticText, label: 'Margin'
+  Button, label: 'Panel', Selected
+  Button, label: 'Info'
+## changed
+  Button, label: '戻る'
+  Button, label: 'Show'
+  StaticText, label: 'Show'
+  Button, label: 'Horizontal Start'
+  Button, label: 'Horizontal Center'
+  Button, label: 'Horizontal End', Selected
+  Button, label: 'Vertical Start'
+  Button, label: 'Vertical Center'
+  Button, label: 'Vertical End', Selected
+  TextField, label: 'OffsetX', value: 0
+  StaticText, label: 'OffsetX'
+  TextField, label: 'OffsetY', value: 0
+  StaticText, label: 'OffsetY'
+  Button, label: 'Window'
+  StaticText, label: 'Window'
+  Button, label: 'Visible area'
+  StaticText, label: 'Visible area'
+  Button, label: 'Current page', Selected
+  StaticText, label: 'Current page'
+  Button, label: 'Margin 0'
+  Button, label: 'Margin 24', Selected
+  Button, label: 'Margin 48'
+  StaticText, label: 'Margin'
+  Button, label: 'Panel', Selected
+  Button, label: 'Info'
+## back-to-panel
+  Button, label: '戻る'
+  Button, label: 'Show'
+  StaticText, label: 'Show'
+  Button, label: 'Horizontal Start', Selected
+  Button, label: 'Horizontal Center'
+  Button, label: 'Horizontal End'
+  Button, label: 'Vertical Start', Selected
+  Button, label: 'Vertical Center'
+  Button, label: 'Vertical End'
+  TextField, label: 'OffsetX', value: 0
+  StaticText, label: 'OffsetX'
+  TextField, label: 'OffsetY', value: 0
+  StaticText, label: 'OffsetY'
+  Button, label: 'Window'
+  StaticText, label: 'Window'
+  Button, label: 'Visible area'
+  StaticText, label: 'Visible area'
+  Button, label: 'Current page', Selected
+  StaticText, label: 'Current page'
+  Button, label: 'Margin 0'
+  Button, label: 'Margin 24', Selected
+  Button, label: 'Margin 48'
+  StaticText, label: 'Margin'
+  Button, label: 'Panel', Selected
+  Button, label: 'Info'

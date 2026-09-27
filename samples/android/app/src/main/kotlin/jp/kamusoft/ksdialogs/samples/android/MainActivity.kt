@@ -366,6 +366,7 @@ internal class MainActivity : ComponentActivity() {
             val viewModel = LayoutDialogViewModel(
                 message = SampleText.LAYOUT_DIALOG_MESSAGE,
                 layoutArea = panel.layoutArea.layoutArea,
+                dialogMargin = panel.margin.value,
             )
             // 置き場所は呼び出しごとに変わるので show の引数で渡す
             val result = displayText(Dialog.instance.show(viewModel, panel.placement()))

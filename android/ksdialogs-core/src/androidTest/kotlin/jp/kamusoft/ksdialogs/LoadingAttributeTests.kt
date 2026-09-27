@@ -117,6 +117,35 @@ class LoadingAttributeTests {
     }
 
     @Test
+    fun 余白を添付しない既定ローディングとカスタム_Loading_は末尾寄せで可視領域の下端に接する() = runBlocking<Unit> {
+        // 余白の契約既定値は全辺 0 (core/ADR-0039)。一括設定の options も添付も余白を与えない
+        val endPlacement = DialogPlacement(verticalAlignment = DialogAlignment.END, offsetY = 0.0)
+        val harness = newHarness()
+        registerCustomView(harness, options = null, placement = null)
+
+        harness.loading.show(placement = endPlacement)
+        val builtin = settledContentRect(harness)
+        val builtinVisibleBottom = LoadingLayoutObservation.visibleAreaBottom(requireNotNull(harness.container))
+        harness.loading.hide()
+
+        harness.loading.show(LoadingTestViewModel(), placement = endPlacement)
+        val custom = settledContentRect(harness)
+        val customVisibleBottom = LoadingLayoutObservation.visibleAreaBottom(requireNotNull(harness.container))
+        harness.loading.hide()
+
+        assertNear(
+            "既定ローディングの下端が可視領域の下端に接していない",
+            builtinVisibleBottom.toFloat(),
+            builtin.bottom,
+        )
+        assertNear(
+            "カスタム Loading の下端が可視領域の下端に接していない",
+            customVisibleBottom.toFloat(),
+            custom.bottom,
+        )
+    }
+
+    @Test
     fun LD_AT_03_外側タップで閉じず_背後にも透過しない() = runBlocking<Unit> {
         val harness = newHarness()
         val backgroundTaps = addBackgroundTapRecorder()

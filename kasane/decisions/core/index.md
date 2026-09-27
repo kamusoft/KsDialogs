@@ -11,7 +11,7 @@
 | [0005](0005-no-view-reuse-mechanism.md) | View 再利用機構は契約に持ち込まず、show は毎回生成の使い捨てモデルとする | accepted | 2026-08-13 |
 | [0006](0006-multi-display-os-delegation.md) | 多段表示は OS の提示機構への委譲とし、契約は観察可能な意味論のみを規定する | accepted | 2026-08-13 |
 | [0007](0007-layout-spec-not-shared-code.md) | レイアウト計算は観察可能な規則を core 仕様として1本化し、実装は各 OS のレイアウト機構に委ねる | accepted | 2026-08-13 |
-| [0008](0008-layout-attributes-deliberate-deviations.md) | レイアウト属性は原典踏襲を基本とし、実装都合の歪みは仕様の一貫性で意図的に乖離する | accepted | 2026-08-18 |
+| [0008](0008-layout-attributes-deliberate-deviations.md) | レイアウト属性は原典踏襲を基本とし、実装都合の歪みは仕様の一貫性で意図的に乖離する (一部改訂: 0039 — 余白の既定値を全辺 0 に戻す) | accepted | 2026-08-18 |
 | [0009](0009-layout-spec-test-case-table.md) | レイアウト共通仕様テストは共通ケース表を単一の正とし、全量検証は Native 2実装・ラッパーはパススルー検証とする | accepted | 2026-08-18 |
 | [0010](0010-dual-content-view-technology.md) | ダイアログコンテンツは従来 View 系 (Android.View / UIView) と宣言的 UI 系 (Compose / SwiftUI) の両対応を必須とする | accepted | 2026-08-17 |
 | [0011](0011-dual-content-registration-overloads.md) | 両対応の登録 API は技術別オーバーロードを公開面とし、内部は単一の型消去表現に収束する | accepted | 2026-08-17 |
@@ -42,3 +42,4 @@
 | [0036](0036-maui-android-content-supply-symmetry.md) | MAUI Android の Dialog / Loading の中身供給も managed 側の預かり口を通し、3 面を対称化する (0033 の amends — 却下案「Android は配線しない」を置き換え) | accepted | 2026-09-08 |
 | [0037](0037-loading-action-starts-on-ui-thread.md) | Loading のスコープ形の action は既定で UI スレッドで始め、UI スレッド外で始める指定を入口に持たせる | accepted | 2026-09-25 |
 | [0038](0038-current-page-layout-area-via-registered-provider.md) | 基準領域に「表示中のページ」を足し、器はページを自分で探さずアプリが登録した現在ページ provider から矩形を得る | accepted | 2026-09-25 |
+| [0039](0039-dialog-margin-default-zero.md) | 余白の契約既定値を原典と同じ 0 に戻し、既定 Toast のピルだけは従来の余白を自分で持つ (0008 を一部改訂) | accepted | 2026-09-27 |
