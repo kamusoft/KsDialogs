@@ -1,0 +1,123 @@
+# MAUI 実配置テストホスト (maui/KsDialogs.Maui.PlacementHost) の KSDPLACEMENT 行の抜粋
+# 端末 (1〜3): Android エミュレータ (API 35、密度 2、画面 720x1280 px。この実測のために別に boot した AVD) / iOS Simulator (iPhone 17、iOS 26.5。起動中の既存デバイスとは別に作成して boot)
+# Android は logcat、iOS は simctl launch --console-pty の出力から KSDPLACEMENT 行だけを抜いた。生ログは手元保管
+# 位置のシナリオの dialog=/area= は OS の単位 (Android は画面座標 px、iOS は window 座標 pt)。大きさのシナリオの shown=/expected=/rootBounds= は MAUI の単位 (dp / pt)
+# 大きさのシナリオの合否: 表示されたルートの矩形 (shown) と、ルート自身の Width x Height (rootBounds。MAUI の配置が届いていなければ -1) がどちらも宣言サイズ (最小値指定では最小値) と許容差内で一致すること
+# proportional-fill は幅を比率 0.8・高さを fill にしたダイアログ。outer= は外形 (器が中身として受け取る View) の矩形、root= はルートの矩形 (どちらも OS の単位)。
+#   外形が契約どおり (幅 = 可視領域の幅 x 0.8、高さ = 可視領域の高さ - 余白 24 x 2) で、ルートが宣言サイズのままその中央に置かれることも合否に入れている
+
+## 観測 (比率指定・fill の軸): 修正後は両 OS とも、外形は契約どおりの大きさになり、WidthRequest / HeightRequest を明示したルートは宣言サイズ (160x100) のまま外形の中央に置かれる。修正前の Android ではルートが外形いっぱい (288x544 dp) に広がっていた (1 と 2 の size-dialog-contentview-proportional-fill の行)
+
+## 1. Android・修正前 (PlatformDialogContent.cs だけを HEAD の版へ一時的に戻したビルド。実行後に修正後の版へ戻し、md5 の一致を確かめた)
+KSDPLACEMENT|Android|tabbed-navigation|PASS|dialog=(598,1034)-(672,1072)|area=(0,160)-(720,1120)|visible=(0,48)-(720,1232)|barBelowPage=True
+KSDPLACEMENT|Android|shell|PASS|dialog=(598,1034)-(672,1072)|area=(0,160)-(720,1120)|visible=(0,48)-(720,1232)|barBelowPage=True
+KSDPLACEMENT|Android|modal|PASS|dialog=(598,1146)-(672,1184)|area=(0,48)-(720,1232)|visible=(0,48)-(720,1232)|underneath=(0,48)-(720,1120)|distinct=True
+KSDPLACEMENT|Android|modal-navigation|PASS|dialog=(598,1146)-(672,1184)|area=(0,160)-(720,1232)|visible=(0,48)-(720,1232)|barAbovePage=True|startDialog=(48,208)-(122,246)|startPlaced=True|underneath=(0,48)-(720,1120)|distinct=True
+KSDPLACEMENT|Android|flyout|PASS|dialog=(598,1146)-(672,1184)|area=(0,160)-(720,1232)|visible=(0,48)-(720,1232)|barAbovePage=True|startDialog=(48,208)-(122,246)|startPlaced=True
+KSDPLACEMENT|Android|plain-content-page|PASS|dialog=(598,1146)-(672,1184)|area=(0,48)-(720,1232)|visible=(0,48)-(720,1232)|visibleAreaDialog=(598,1146)-(672,1184)|sameAsVisibleArea=True
+KSDPLACEMENT|Android|provider-override|PASS|dialog=(598,698)-(672,736)|area=(0,384)-(720,784)|visible=(0,48)-(720,1232)|underneath=(0,48)-(720,1120)|distinct=True
+KSDPLACEMENT|Android|provider-empty-falls-back|PASS|dialog=(598,1034)-(672,1072)|area=(0,48)-(720,1120)|visible=(0,48)-(720,1232)|barBelowPage=True
+KSDPLACEMENT|Android|provider-container-falls-back|PASS|dialog=(598,1034)-(672,1072)|area=(0,48)-(720,1120)|visible=(0,48)-(720,1232)|barBelowPage=True
+KSDPLACEMENT|Android|size-dialog-contentview|FAIL|shown=26.5x19|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-dialog-grid|FAIL|shown=160x100|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-loading-contentview|FAIL|shown=26.5x19|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-loading-grid|FAIL|shown=160x100|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-toast-contentview|FAIL|shown=26.5x19|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-toast-grid|FAIL|shown=160x100|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-dialog-contentview-minimum|FAIL|shown=200x120|expected=200x120|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-dialog-contentview-proportional-fill|FAIL|shown=288x544|expected=160x100|rootBounds=-1x-1|outer=(72,96)-(648,1184)|root=(72,96)-(648,1184)|visible=(0,48)-(720,1232)|expectedOuter=576x1088|outerMatches=True|rootCentered=True
+KSDPLACEMENT|Android|SUMMARY|passed=9|failed=8
+
+## 2. Android・修正後
+KSDPLACEMENT|Android|tabbed-navigation|PASS|dialog=(432,912)-(672,1072)|area=(0,160)-(720,1120)|visible=(0,48)-(720,1232)|barBelowPage=True
+KSDPLACEMENT|Android|shell|PASS|dialog=(432,912)-(672,1072)|area=(0,160)-(720,1120)|visible=(0,48)-(720,1232)|barBelowPage=True
+KSDPLACEMENT|Android|modal|PASS|dialog=(432,1024)-(672,1184)|area=(0,48)-(720,1232)|visible=(0,48)-(720,1232)|underneath=(0,48)-(720,1120)|distinct=True
+KSDPLACEMENT|Android|modal-navigation|PASS|dialog=(432,1024)-(672,1184)|area=(0,160)-(720,1232)|visible=(0,48)-(720,1232)|barAbovePage=True|startDialog=(48,208)-(288,368)|startPlaced=True|underneath=(0,48)-(720,1120)|distinct=True
+KSDPLACEMENT|Android|flyout|PASS|dialog=(432,1024)-(672,1184)|area=(0,160)-(720,1232)|visible=(0,48)-(720,1232)|barAbovePage=True|startDialog=(48,208)-(288,368)|startPlaced=True
+KSDPLACEMENT|Android|plain-content-page|PASS|dialog=(432,1024)-(672,1184)|area=(0,48)-(720,1232)|visible=(0,48)-(720,1232)|visibleAreaDialog=(432,1024)-(672,1184)|sameAsVisibleArea=True
+KSDPLACEMENT|Android|provider-override|PASS|dialog=(432,576)-(672,736)|area=(0,384)-(720,784)|visible=(0,48)-(720,1232)|underneath=(0,48)-(720,1120)|distinct=True
+KSDPLACEMENT|Android|provider-empty-falls-back|PASS|dialog=(432,912)-(672,1072)|area=(0,48)-(720,1120)|visible=(0,48)-(720,1232)|barBelowPage=True
+KSDPLACEMENT|Android|provider-container-falls-back|PASS|dialog=(432,912)-(672,1072)|area=(0,48)-(720,1120)|visible=(0,48)-(720,1232)|barBelowPage=True
+KSDPLACEMENT|Android|size-dialog-contentview|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|Android|size-dialog-grid|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|Android|size-loading-contentview|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|Android|size-loading-grid|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|Android|size-toast-contentview|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|Android|size-toast-grid|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|Android|size-dialog-contentview-minimum|PASS|shown=200x120|expected=200x120|rootBounds=200x120
+KSDPLACEMENT|Android|size-dialog-contentview-proportional-fill|PASS|shown=160x100|expected=160x100|rootBounds=160x100|outer=(72,96)-(648,1184)|root=(200,540)-(520,740)|visible=(0,48)-(720,1232)|expectedOuter=576x1088|outerMatches=True|rootCentered=True
+KSDPLACEMENT|Android|SUMMARY|passed=17|failed=0
+
+## 3. iOS・修正後 (iOS 側のライブラリのコードはこの変更で触れていないため、修正前のビルドは取っていない)
+KSDPLACEMENT|iOS|tabbed-navigation|PASS|dialog=(258,687)-(378,767)|area=(0,116)-(402,791)|visible=(0,62)-(402,840)|barBelowPage=True
+KSDPLACEMENT|iOS|shell|PASS|dialog=(258,687)-(378,767)|area=(0,116)-(402,791)|visible=(0,62)-(402,840)|barBelowPage=True
+KSDPLACEMENT|iOS|modal|PASS|dialog=(258,736)-(378,816)|area=(0,62)-(402,840)|visible=(0,62)-(402,840)|underneath=(0,62)-(402,791)|distinct=True
+KSDPLACEMENT|iOS|modal-navigation|PASS|dialog=(258,736)-(378,816)|area=(0,116)-(402,840)|visible=(0,62)-(402,840)|barAbovePage=True|startDialog=(24,140)-(144,220)|startPlaced=True|underneath=(0,62)-(402,791)|distinct=True
+KSDPLACEMENT|iOS|flyout|PASS|dialog=(258,736)-(378,816)|area=(0,116)-(402,840)|visible=(0,62)-(402,840)|barAbovePage=True|startDialog=(24,140)-(144,220)|startPlaced=True
+KSDPLACEMENT|iOS|plain-content-page|PASS|dialog=(258,736)-(378,816)|area=(0,62)-(402,840)|visible=(0,62)-(402,840)|visibleAreaDialog=(258,736)-(378,816)|sameAsVisibleArea=True
+KSDPLACEMENT|iOS|provider-override|PASS|dialog=(258,422.7)-(378,502.7)|area=(0,326.5)-(402,526.5)|visible=(0,62)-(402,840)|underneath=(0,62)-(402,791)|distinct=True
+KSDPLACEMENT|iOS|provider-empty-falls-back|PASS|dialog=(258,736)-(378,816)|area=(0,116)-(402,840)|visible=(0,62)-(402,840)|barAbovePage=True|startDialog=(24,140)-(144,220)|startPlaced=True
+KSDPLACEMENT|iOS|size-dialog-contentview|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-dialog-grid|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-loading-contentview|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-loading-grid|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-toast-contentview|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-toast-grid|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-dialog-contentview-minimum|PASS|shown=200x120|expected=200x120|rootBounds=200x120
+KSDPLACEMENT|iOS|size-dialog-contentview-proportional-fill|PASS|shown=160x100|expected=160x100|rootBounds=160x100|outer=(40.3,86)-(361.7,816)|root=(121,401)-(281,501)|visible=(0,62)-(402,840)|expectedOuter=321.6x730|outerMatches=True|rootCentered=True
+KSDPLACEMENT|iOS|SUMMARY|passed=16|failed=0
+
+## 4. 参考: rootBounds と外形を合否に入れる前の判定での実行 (Android エミュレータ API 31、密度 2.625、画面 1080x2400 px)
+### 4-1. Android・修正前
+KSDPLACEMENT|Android|tabbed-navigation|PASS|dialog=(922,2015)-(1017,2064)|area=(0,210)-(1080,2127)|visible=(0,63)-(1080,2274)|barBelowPage=True
+KSDPLACEMENT|Android|shell|PASS|dialog=(922,2015)-(1017,2064)|area=(0,210)-(1080,2127)|visible=(0,63)-(1080,2274)|barBelowPage=True
+KSDPLACEMENT|Android|modal|PASS|dialog=(922,2162)-(1017,2211)|area=(0,63)-(1080,2274)|visible=(0,63)-(1080,2274)|underneath=(0,63)-(1080,2127)|distinct=True
+KSDPLACEMENT|Android|modal-navigation|PASS|dialog=(922,2162)-(1017,2211)|area=(0,210)-(1080,2274)|visible=(0,63)-(1080,2274)|barAbovePage=True|startDialog=(63,273)-(158,322)|startPlaced=True|underneath=(0,63)-(1080,2127)|distinct=True
+KSDPLACEMENT|Android|flyout|PASS|dialog=(922,2162)-(1017,2211)|area=(0,210)-(1080,2274)|visible=(0,63)-(1080,2274)|barAbovePage=True|startDialog=(63,273)-(158,322)|startPlaced=True
+KSDPLACEMENT|Android|plain-content-page|PASS|dialog=(922,2162)-(1017,2211)|area=(0,63)-(1080,2274)|visible=(0,63)-(1080,2274)|visibleAreaDialog=(922,2162)-(1017,2211)|sameAsVisibleArea=True
+KSDPLACEMENT|Android|provider-override|PASS|dialog=(922,1246)-(1017,1295)|area=(0,833)-(1080,1358)|visible=(0,63)-(1080,2274)|underneath=(0,63)-(1080,2127)|distinct=True
+KSDPLACEMENT|Android|provider-empty-falls-back|PASS|dialog=(922,2015)-(1017,2064)|area=(0,63)-(1080,2127)|visible=(0,63)-(1080,2274)|barBelowPage=True
+KSDPLACEMENT|Android|provider-container-falls-back|PASS|dialog=(922,2015)-(1017,2064)|area=(0,63)-(1080,2127)|visible=(0,63)-(1080,2274)|barBelowPage=True
+KSDPLACEMENT|Android|size-dialog-contentview|FAIL|shown=25.5x18.7|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-dialog-grid|PASS|shown=160x100.2|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-loading-contentview|FAIL|shown=25.5x18.7|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-loading-grid|PASS|shown=160x100.2|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-toast-contentview|FAIL|shown=25.5x18.7|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-toast-grid|PASS|shown=160x100.2|expected=160x100|rootBounds=-1x-1
+KSDPLACEMENT|Android|size-dialog-contentview-minimum|PASS|shown=200x120|expected=200x120|rootBounds=-1x-1
+KSDPLACEMENT|Android|SUMMARY|passed=13|failed=3
+### 4-2. Android・修正後
+KSDPLACEMENT|Android|tabbed-navigation|PASS|dialog=(702,1854)-(1017,2064)|area=(0,210)-(1080,2127)|visible=(0,63)-(1080,2274)|barBelowPage=True
+KSDPLACEMENT|Android|shell|PASS|dialog=(702,1854)-(1017,2064)|area=(0,210)-(1080,2127)|visible=(0,63)-(1080,2274)|barBelowPage=True
+KSDPLACEMENT|Android|modal|PASS|dialog=(702,2001)-(1017,2211)|area=(0,63)-(1080,2274)|visible=(0,63)-(1080,2274)|underneath=(0,63)-(1080,2127)|distinct=True
+KSDPLACEMENT|Android|modal-navigation|PASS|dialog=(702,2001)-(1017,2211)|area=(0,210)-(1080,2274)|visible=(0,63)-(1080,2274)|barAbovePage=True|startDialog=(63,273)-(378,483)|startPlaced=True|underneath=(0,63)-(1080,2127)|distinct=True
+KSDPLACEMENT|Android|flyout|PASS|dialog=(702,2001)-(1017,2211)|area=(0,210)-(1080,2274)|visible=(0,63)-(1080,2274)|barAbovePage=True|startDialog=(63,273)-(378,483)|startPlaced=True
+KSDPLACEMENT|Android|plain-content-page|PASS|dialog=(702,2001)-(1017,2211)|area=(0,63)-(1080,2274)|visible=(0,63)-(1080,2274)|visibleAreaDialog=(702,2001)-(1017,2211)|sameAsVisibleArea=True
+KSDPLACEMENT|Android|provider-override|PASS|dialog=(702,1085)-(1017,1295)|area=(0,833)-(1080,1358)|visible=(0,63)-(1080,2274)|underneath=(0,63)-(1080,2127)|distinct=True
+KSDPLACEMENT|Android|provider-empty-falls-back|PASS|dialog=(702,1854)-(1017,2064)|area=(0,63)-(1080,2127)|visible=(0,63)-(1080,2274)|barBelowPage=True
+KSDPLACEMENT|Android|provider-container-falls-back|PASS|dialog=(702,1854)-(1017,2064)|area=(0,63)-(1080,2127)|visible=(0,63)-(1080,2274)|barBelowPage=True
+KSDPLACEMENT|Android|size-dialog-contentview|PASS|shown=160x100.2|expected=160x100|rootBounds=160x100.2
+KSDPLACEMENT|Android|size-dialog-grid|PASS|shown=160x100.2|expected=160x100|rootBounds=160x100.2
+KSDPLACEMENT|Android|size-loading-contentview|PASS|shown=160x100.2|expected=160x100|rootBounds=160x100.2
+KSDPLACEMENT|Android|size-loading-grid|PASS|shown=160x100.2|expected=160x100|rootBounds=160x100.2
+KSDPLACEMENT|Android|size-toast-contentview|PASS|shown=160x100.2|expected=160x100|rootBounds=160x100.2
+KSDPLACEMENT|Android|size-toast-grid|PASS|shown=160x100.2|expected=160x100|rootBounds=160x100.2
+KSDPLACEMENT|Android|size-dialog-contentview-minimum|PASS|shown=200x120|expected=200x120|rootBounds=200x120
+KSDPLACEMENT|Android|SUMMARY|passed=16|failed=0
+### 4-3. iOS・修正後
+KSDPLACEMENT|iOS|tabbed-navigation|PASS|dialog=(258,687)-(378,767)|area=(0,116)-(402,791)|visible=(0,62)-(402,840)|barBelowPage=True
+KSDPLACEMENT|iOS|shell|PASS|dialog=(258,687)-(378,767)|area=(0,116)-(402,791)|visible=(0,62)-(402,840)|barBelowPage=True
+KSDPLACEMENT|iOS|modal|PASS|dialog=(258,736)-(378,816)|area=(0,62)-(402,840)|visible=(0,62)-(402,840)|underneath=(0,62)-(402,791)|distinct=True
+KSDPLACEMENT|iOS|modal-navigation|PASS|dialog=(258,736)-(378,816)|area=(0,116)-(402,840)|visible=(0,62)-(402,840)|barAbovePage=True|startDialog=(24,140)-(144,220)|startPlaced=True|underneath=(0,62)-(402,791)|distinct=True
+KSDPLACEMENT|iOS|flyout|PASS|dialog=(258,736)-(378,816)|area=(0,116)-(402,840)|visible=(0,62)-(402,840)|barAbovePage=True|startDialog=(24,140)-(144,220)|startPlaced=True
+KSDPLACEMENT|iOS|plain-content-page|PASS|dialog=(258,736)-(378,816)|area=(0,62)-(402,840)|visible=(0,62)-(402,840)|visibleAreaDialog=(258,736)-(378,816)|sameAsVisibleArea=True
+KSDPLACEMENT|iOS|provider-override|PASS|dialog=(258,422.7)-(378,502.7)|area=(0,326.5)-(402,526.5)|visible=(0,62)-(402,840)|underneath=(0,62)-(402,791)|distinct=True
+KSDPLACEMENT|iOS|provider-empty-falls-back|PASS|dialog=(258,736)-(378,816)|area=(0,116)-(402,840)|visible=(0,62)-(402,840)|barAbovePage=True|startDialog=(24,140)-(144,220)|startPlaced=True
+KSDPLACEMENT|iOS|size-dialog-contentview|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-dialog-grid|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-loading-contentview|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-loading-grid|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-toast-contentview|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-toast-grid|PASS|shown=160x100|expected=160x100|rootBounds=160x100
+KSDPLACEMENT|iOS|size-dialog-contentview-minimum|PASS|shown=200x120|expected=200x120|rootBounds=200x120
+KSDPLACEMENT|iOS|SUMMARY|passed=15|failed=0
