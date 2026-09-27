@@ -24,6 +24,15 @@
             android:exported="false"
             android:theme="@android:style/Theme.Material.Light.NoActionBar"
             android:windowSoftInputMode="adjustResize" />
+
+        <!--
+          器がシステムバーの指定を変えないことを確かめるための提示先。
+          アイコンの明暗の指定のしかたを起動時の引数で選ぶ
+        -->
+        <activity
+            android:name="jp.kamusoft.ksdialogs.support.SystemBarsTestActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
 
 </manifest>

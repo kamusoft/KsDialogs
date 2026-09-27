@@ -226,6 +226,16 @@ internal class ToastCoordinator(
         removeDisplay(display)
     }
 
+    /**
+     * 表示中のすべての Toast を、演出も期限も待たずに捨てる。UI スレッドで呼ぶ。
+     *
+     * 公開の入口からは呼ばれない。検証の後始末で、器だけでなく表示と計時も残さないために使う
+     * (期限まで表示が残ると、中身の View を通じて終わった画面を握り続けるため)。
+     */
+    fun discardAll() {
+        displays.toList().forEach(::discard)
+    }
+
     /** 表示を成立しなかったものとして捨てる。演出は走らせない。 */
     private fun discard(display: ToastDisplay) {
         display.isFinishing = true
