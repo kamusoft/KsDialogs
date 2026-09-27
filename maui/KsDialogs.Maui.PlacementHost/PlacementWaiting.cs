@@ -19,6 +19,17 @@ internal static class PlacementWaiting
         }
     }
 
+    /// <summary>要素が画面から外れるまで待つ。</summary>
+    /// <param name="element">待つ要素。</param>
+    public static async Task UntilDetachedAsync(VisualElement element)
+    {
+        DateTime deadline = DateTime.UtcNow + s_timeout;
+        while (PlacementMeasurement.ContentRect(element) is not null && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(s_interval);
+        }
+    }
+
     /// <summary>測った値が空でなく、一定時間続けて変わらなくなるまで待つ。</summary>
     /// <param name="measure">値を測る操作。測れなければ <see langword="null"/>。</param>
     /// <param name="stable">変わらないことを求める時間。</param>

@@ -8,10 +8,13 @@ namespace KsDialogs.PlacementHost;
 /// <remarks>ダイアログは Activity とは別のウィンドウに載るため、画面座標を共通の原点にする。</remarks>
 internal static class PlacementMeasurement
 {
+    /// <summary>MAUI の単位 (dp) 1 あたりの px。</summary>
+    public static double Scale => Android.App.Application.Context.Resources?.DisplayMetrics?.Density ?? 1f;
+
     /// <summary>ダイアログの既定の余白 (px)。契約の既定値は全辺 0 (core/ADR-0039) なので、画面の密度に依らず 0 になる。</summary>
     public const double Margin = 0d;
 
-    /// <summary>位置の比較に許す誤差 (px)。dp から px への丸めの分を見込む。</summary>
+    /// <summary>位置と大きさの比較に許す誤差 (px)。dp から px への丸めの分を見込む。</summary>
     public const double Tolerance = 2d;
 
     /// <summary>要素を基準にしたときに期待する領域 (要素の矩形 ∩ 可視領域)。</summary>
@@ -33,6 +36,14 @@ internal static class PlacementMeasurement
     public static PlacementRect? ContentRect(VisualElement content) =>
         content.Handler?.PlatformView is AView { IsAttachedToWindow: true } view && view.Width > 0
             ? ScreenRect(view)
+            : null;
+
+    /// <summary>ダイアログの外形 (中身のルートの platform view を直接持つ View) の矩形。</summary>
+    /// <param name="content">ダイアログの中身のルート。</param>
+    /// <returns>外形の矩形。まだ画面に載っていなければ <see langword="null"/>。</returns>
+    public static PlacementRect? OuterRect(VisualElement content) =>
+        content.Handler?.PlatformView is AView { IsAttachedToWindow: true, Parent: Android.Views.ViewGroup parent } && parent.Width > 0
+            ? ScreenRect(parent)
             : null;
 
     /// <summary>要素が載っている画面の可視領域。</summary>
