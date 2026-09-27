@@ -31,7 +31,7 @@ public sealed partial class Dialog
         typeof(Dialog),
         s_defaultOptions.LayoutArea);
 
-    /// <summary>基準 rect の各辺から控除する余白。最大サイズと配置の両方に効く。既定は全辺 24。</summary>
+    /// <summary>基準 rect の各辺から控除する余白。最大サイズと配置の両方に効く。既定は全辺 0。</summary>
     public static readonly BindableProperty DialogMarginProperty = BindableProperty.CreateAttached(
         "DialogMargin",
         typeof(Thickness),

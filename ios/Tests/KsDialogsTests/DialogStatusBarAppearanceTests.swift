@@ -5,7 +5,7 @@ import UIKit
 @testable import KsDialogs
 
 /// ダイアログの表示が、提示元の画面のステータスバーの指定 (表示/非表示・アイコンの明暗) を
-/// 変えないことを確かめる (core/ADR-0039)。
+/// 変えないことを確かめる (core/ADR-0040)。
 ///
 /// UIKit がステータスバーの見えを尋ねる相手は、全画面でない提示では
 /// `modalPresentationCapturesStatusBarAppearance` が true の提示先だけである。
@@ -44,7 +44,7 @@ struct DialogStatusBarAppearanceTests {
     }
 
     /// 判定するのはステータスバーの明暗を決める画面が提示元のままであることで、実際に描かれた文字色ではない。
-    /// 覆いがステータスバーの下を暗くしたときに OS が文字色を合わせるのは約束の外 (core/ADR-0039)。
+    /// 覆いがステータスバーの下を暗くしたときに OS が文字色を合わせるのは約束の外 (core/ADR-0040)。
     @Test("[PB-SB-08] 明るい地向けの明暗を指定した画面でダイアログを出しても、明暗の指定は変わらない")
     func PB_SB_08_dialogKeepsPresenterStatusBarStyle() throws {
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))

@@ -1,7 +1,7 @@
 import SampleShared
 import SwiftUI
 
-/// 属性調整パネルのタブの中身。配置・移動量・基準領域の行と結果表示エリアを並べる。
+/// 属性調整パネルのタブの中身。配置・移動量・基準領域・余白の行と結果表示エリアを並べる。
 struct SampleLayoutPanelForm: View {
     @Bindable var model: SampleLayoutPanelModel
 
@@ -36,6 +36,12 @@ struct SampleLayoutPanelForm: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(EdgeInsets(top: 10, leading: 16, bottom: 12, trailing: 16))
+            SampleDivider()
+
+            // 余白の選択肢は数字だけでは何の値か読めないため、行の項目名と組にした読み上げ名にする
+            SampleSettingRow(title: SampleText.shared.MARGIN_LABEL) {
+                SampleSegments(axisLabel: SampleText.shared.MARGIN_LABEL, selection: $model.margin)
+            }
             SampleDivider()
 
             if let lastResult = model.lastResult {

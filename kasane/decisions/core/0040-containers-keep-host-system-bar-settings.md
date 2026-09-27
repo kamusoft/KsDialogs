@@ -1,5 +1,5 @@
 ---
-id: 0039
+id: 0040
 title: Dialog / Loading / Toast の器は、提示先の画面のシステムバーの指定を変えない
 status: accepted
 date: 2026-09-27

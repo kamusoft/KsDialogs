@@ -84,7 +84,7 @@ class DialogPresentedWindowTests {
             density.set(activity.resources.displayMetrics.density)
         }
 
-        // 基準領域と余白は既定値 (可視領域・全辺 24) のまま、上寄せだけを添付する
+        // 基準領域と余白は既定値 (可視領域・全辺 0) のまま、上寄せだけを添付する
         val container = presentContainer(
             DialogPlacement(verticalAlignment = DialogAlignment.START),
         )
@@ -97,7 +97,7 @@ class DialogPresentedWindowTests {
         }
         dismiss(container)
 
-        // 可視領域 (システム領域の内側) の上端から、余白の分だけ下がった位置になる
+        // 可視領域 (システム領域の内側) の上端から、余白の分だけ下がった位置になる (既定の余白は 0)
         val expected = statusBarTop.get() +
             (DEFAULT_MARGIN_DP * density.get()).roundToInt()
         assertTrue("提示先の画面でシステム領域が観測できていない", statusBarTop.get() > 0)
@@ -178,7 +178,7 @@ class DialogPresentedWindowTests {
         /** 位置の比較で許す差 (px)。丸めの分だけを見込む。 */
         const val POSITION_TOLERANCE_PIXELS = 2
 
-        /** 契約が定める余白の既定値 (dp)。 */
-        const val DEFAULT_MARGIN_DP = 24.0
+        /** 契約が定める余白の既定値 (dp)。全辺 0 (core/ADR-0039)。 */
+        const val DEFAULT_MARGIN_DP = 0.0
     }
 }

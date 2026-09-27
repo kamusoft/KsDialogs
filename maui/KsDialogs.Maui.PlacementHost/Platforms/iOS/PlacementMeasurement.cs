@@ -7,10 +7,13 @@ namespace KsDialogs.PlacementHost;
 /// <summary>iOS での矩形の測り方。すべて window 座標 (pt) で測る。</summary>
 internal static class PlacementMeasurement
 {
-    /// <summary>ダイアログの既定の余白 (pt)。</summary>
-    public const double Margin = 24d;
+    /// <summary>MAUI の単位 1 あたりの pt (同じ単位なので 1)。</summary>
+    public const double Scale = 1d;
 
-    /// <summary>位置の比較に許す誤差 (pt)。</summary>
+    /// <summary>ダイアログの既定の余白 (pt)。契約の既定値は全辺 0 (core/ADR-0039)。</summary>
+    public const double Margin = 0d;
+
+    /// <summary>位置と大きさの比較に許す誤差 (pt)。</summary>
     public const double Tolerance = 1d;
 
     /// <summary>要素を基準にしたときに期待する領域 (safe area の内側 ∩ 可視領域)。</summary>
@@ -38,6 +41,19 @@ internal static class PlacementMeasurement
         }
 
         return ToRect(view.ConvertRectToView(view.Bounds, window));
+    }
+
+    /// <summary>ダイアログの外形 (中身のルートの platform view を直接持つ View) の矩形。</summary>
+    /// <param name="content">ダイアログの中身のルート。</param>
+    /// <returns>外形の矩形。まだ画面に載っていなければ <see langword="null"/>。</returns>
+    public static PlacementRect? OuterRect(VisualElement content)
+    {
+        if (content.Handler?.PlatformView is not UIView { Superview: UIView parent } || parent.Window is not UIWindow window)
+        {
+            return null;
+        }
+
+        return ToRect(parent.ConvertRectToView(parent.Bounds, window));
     }
 
     /// <summary>要素が載っている window の可視領域。</summary>

@@ -3,7 +3,7 @@ import SampleShared
 
 /// 属性調整パネルが持つ状態。
 ///
-/// 初期値は契約の既定値 (中央配置・移動なし・可視領域基準) に揃える。
+/// 初期値は契約の既定値 (中央配置・移動なし・可視領域基準・余白 0) に揃える。
 /// 表示と結果の言い換えは共有 Presenter が受け持つ。
 @MainActor
 @Observable
@@ -20,6 +20,8 @@ final class SampleLayoutPanelModel {
     var offsetY: String = "0"
     /// サイズと位置の計算に使う基準領域。
     var layoutArea: SampleLayoutAreaChoice = .visibleArea
+    /// 全辺そろえの余白。
+    var margin: SampleMarginChoice = .zero
 
     /// 直近の結果の表示文言。まだ一度もダイアログを閉じていない間は nil。
     private(set) var lastResult: String?
@@ -39,7 +41,8 @@ final class SampleLayoutPanelModel {
         do {
             lastResult = try await presenter.showLayoutDialog(
                 placement: placement,
-                layoutArea: layoutArea.preset
+                layoutArea: layoutArea.preset,
+                dialogMargin: margin.value
             )
             return lastResult
         } catch {

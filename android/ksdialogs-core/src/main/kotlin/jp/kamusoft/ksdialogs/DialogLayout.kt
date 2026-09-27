@@ -46,7 +46,7 @@ internal class DialogLayout(
 
     companion object {
         /** 契約が定める余白の既定値。非有限値の辺を戻す先になる。 */
-        private val DEFAULT_MARGIN: DialogEdgeInsets = DialogEdgeInsets(24.0)
+        private val DEFAULT_MARGIN: DialogEdgeInsets = DialogOptions().dialogMargin
 
         /** 比率指定を有効域 0 < 値 ≤ 1 に収める。0 以下と非有限値は未指定。 */
         private fun normalizedProportion(value: Double): Double? =

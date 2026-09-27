@@ -26,6 +26,7 @@
 - 1 は「個別規則を先に適用し、非有限値はその後に一般規則」か「非有限値を先に既定へ戻してから個別規則」か。実装が形態ごとに違うならテスト (core/ADR-0016 の Scenario テスト) を足す
 - 3 は「最も内側が勝つ」(SwiftUI と逆) か「外側が勝つ」(SwiftUI と同じ) か、あるいは「複数添付は未定義動作として禁止」か
 - 3 件を 1 change で扱うか、3 (添付競合) だけ別に切るか
+- (2026-09-27 追記) revisit-dialog-margin-default で dialogMargin の既定値が全辺 0 になる (core/ADR-0039 proposed)。-Infinity の Margin 辺は「既定へ戻す」「下限 0」のどちらで読んでも 0 になるので、1 のうち余白の分はその change で解消する。比率の +Infinity の衝突は残る
 
 ## UI 素材 (ui/references/ の一覧と注釈)
 

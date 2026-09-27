@@ -3,6 +3,7 @@ id: 0008
 title: レイアウト属性は原典踏襲を基本とし、実装都合の歪みは仕様の一貫性で意図的に乖離する
 status: accepted
 date: 2026-08-18
+amended-by: 0039
 ---
 
 ## Context
