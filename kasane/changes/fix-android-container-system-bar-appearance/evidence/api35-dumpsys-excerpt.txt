@@ -1,0 +1,109 @@
+# API 35 (Small_Phone, emulator-5560) dumpsys 抜粋  2026-09-27
+# テスト APK: jp.kamusoft.ksdialogs.test targetSdk=36 minSdk=24 (API 35 で edge-to-edge 強制: pfl=EDGE_TO_EDGE_ENFORCED)
+
+## [A] 提示先 DialogLayoutTestActivity 単独 (ダイアログなし・スプラッシュ撤去後) run1 t=4.52s
+(file 1790475568349.disp.txt)
+  mLastAppearance=LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mFocusedWindow=Window{5329947 u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}
+  mTopFullscreenOpaqueWindowState=Window{5329947 u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}
+  mLastStatusBarAppearanceRegions=
+  AppearanceRegion{ bounds=[0,0][720,1280]}
+  Window #8 Window{5329947 u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=pan forwardNavigation} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION wanim=0x1030309
+  pfl=NO_MOVE_ANIMATION EDGE_TO_EDGE_ENFORCED FORCE_DRAW_STATUS_BAR_BACKGROUND FIT_INSETS_CONTROLLED
+  apr=LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  bhv=DEFAULT
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+  -> 画面: ステータスバー帯 平均輝度 255.0 (白地に白アイコン = アイコン不可視)  [test-overlay-before-settled.png]
+
+## [B] 失敗回 m1 (単体メソッド実行): 表示前の計測時点 t=1.88-2.60s  -> 失敗メッセージ 表示前 244.29 / 表示中 255.0
+-- splash が top (t≈2.39s)  (file 1790475781096.disp.txt)
+  mLastAppearance=LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mFocusedWindow=Window{4456538 u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}
+  mTopFullscreenOpaqueWindowState=Window{d4eecf0 u0 Splash Screen jp.kamusoft.ksdialogs.test}
+  mLastStatusBarAppearanceRegions= AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1280]}
+  Window #8 Window{d4eecf0 u0 Splash Screen jp.kamusoft.ksdialogs.test}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=pan} layoutInDisplayCutoutMode=always ty=APPLICATION_STARTING fmt=TRANSLUCENT wanim=0x1030309
+  apr=LIGHT_STATUS_BARS LIGHT_NAVIGATION_BARS
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+  Window #9 Window{4456538 u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=pan forwardNavigation} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION wanim=0x1030309
+  apr=LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+-- splash 撤去直後・ダイアログ前 (t≈2.60s)  (file 1790475781304.disp.txt)
+  mLastAppearance=LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mFocusedWindow=Window{4456538 u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}
+  mTopFullscreenOpaqueWindowState=Window{4456538 u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}
+  mLastStatusBarAppearanceRegions= AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1280]}
+  Window #8 Window{d4eecf0 u0 Splash Screen jp.kamusoft.ksdialogs.test EXITING}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=pan} layoutInDisplayCutoutMode=always ty=APPLICATION_STARTING fmt=TRANSLUCENT wanim=0x1030309
+  apr=LIGHT_STATUS_BARS LIGHT_NAVIGATION_BARS
+  mViewVisibility=0x8 mHaveFrame=true mObscured=false
+  Window #9 Window{4456538 u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=pan forwardNavigation} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION wanim=0x1030309
+  apr=LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+  -> 画面: 帯 244.3 (濃色アイコン)。ステータスバーの外観を決めている top fullscreen はまだ起動スプラッシュ (APPLICATION_STARTING, apr=LIGHT_STATUS_BARS)。撤去直後も region は LIGHT_STATUS_BARS のまま数百 ms 残り、空に切り替わったのはダイアログ出現とほぼ同時 (t≈2.8s)
+
+## [C] 同 m1: 透明の覆いのダイアログ表示中 t=2.81-3.06s
+(file 1790475781512.disp.txt)
+  mLastBehavior=DEFAULT
+  mFocusedWindow=Window{b811c3f u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}
+  mTopFullscreenOpaqueWindowState=Window{b811c3f u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}
+  (mLastAppearance 行なし = 0)
+  mLastStatusBarAppearanceRegions=
+  AppearanceRegion{ bounds=[0,0][720,1280]}
+  InsetsSource id=26430000 type=statusBars frame=[0,0][720,48] visible=true flags= sideHint=TOP boundingRects=null
+  Window #8 Window{b811c3f u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}:
+  mAttrs={(0,0)(fillxfill) gr=CENTER sim={adjust=pan forwardNavigation} layoutInDisplayCutoutMode=always ty=APPLICATION fmt=TRANSPARENT wanim=0x1030000
+  bhv=DEFAULT
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+  Window #9 Window{4456538 u0 jp.kamusoft.ksdialogs.test/jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=pan forwardNavigation} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION wanim=0x1030309
+  apr=LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  bhv=DEFAULT
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+  -> 画面: 帯 255.0。statusBars visible=true (バーは隠れていない)。器ウィンドウは apr 行なし (=0) で、run1〜5 / m1〜5 の全ダンプで一度も LIGHT_STATUS_BARS を持たなかった
+
+## [D] Sample (MainActivity は isAppearanceLightStatusBars=true)
+### sample-menu
+  mLastAppearance=LIGHT_STATUS_BARS LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mTopFullscreenOpaqueWindowState=Window{52590df u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1280]}
+  Window #8 Window{52590df u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=resize forwardNavigation} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION wanim=0x1030309
+  apr=LIGHT_STATUS_BARS LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+### sample-basic-dialog
+  mLastAppearance=LIGHT_STATUS_BARS
+  mTopFullscreenOpaqueWindowState=Window{d64bf49 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1280]}
+  Window #8 Window{d64bf49 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}:
+  mAttrs={(0,0)(fillxfill) gr=CENTER sim={adjust=pan forwardNavigation} layoutInDisplayCutoutMode=always ty=APPLICATION fmt=TRANSPARENT wanim=0x103000
+  apr=LIGHT_STATUS_BARS
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+  Window #9 Window{7faee7f u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=resize} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION wanim=0x1030309
+  apr=LIGHT_STATUS_BARS LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+### sample-default-loading
+  mTopFullscreenOpaqueWindowState=Window{b8992a u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  AppearanceRegion{ bounds=[0,0][720,1280]}
+  Window #8 Window{b8992a u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}:
+  mAttrs={(0,0)(fillxfill) gr=CENTER sim={adjust=pan forwardNavigation} layoutInDisplayCutoutMode=always ty=APPLICATION fmt=TRANSPARENT wanim=0x103000
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+  Window #9 Window{29ea92b u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=resize} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION wanim=0x1030309
+  apr=LIGHT_STATUS_BARS LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+### sample-default-toast
+  mLastAppearance=LIGHT_STATUS_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mTopFullscreenOpaqueWindowState=Window{9b8cb00 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  AppearanceRegion{ bounds=[0,0][720,1280]}
+  Window #7 Window{9b8cb00 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}:
+  mAttrs={(0,0)(fillxfill) gr=CENTER sim={adjust=pan forwardNavigation} layoutInDisplayCutoutMode=always ty=APPLICATION fmt=TRANSPARENT wanim=0x103000
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
+  Window #9 Window{505a185 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}:
+  mAttrs={(0,0)(fillxfill) sim={adjust=resize} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION wanim=0x1030309
+  apr=LIGHT_STATUS_BARS LIGHT_NAVIGATION_BARS FORCE_LIGHT_NAVIGATION_BARS
+  mViewVisibility=0x0 mHaveFrame=true mObscured=false
