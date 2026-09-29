@@ -3,7 +3,7 @@ type: concept
 title: MAUI の Loading 公開面
 description: .NET MAUI (C#) で Loading を使うときの公開名と署名 — 契約と既定エントリ・ShowAsync / HideAsync / SetMessage / StartAsync の署名・処理を始めるスレッドの指定 (LoadingActionThread)・IProgress の報告口と進捗受け口・カスタム View の登録と DI 糖衣・型指定 show / start と VM factory 登録 (オーバーロード束縛の注意)・LoadingStyle と器メタ属性・中身は MAUI の View だけであること
 tags: [maui, loading, api, surface]
-timestamp: 2026-09-26
+timestamp: 2026-09-29
 ---
 
 # MAUI の Loading 公開面
@@ -131,10 +131,12 @@ Loading.Instance.Style = Loading.Instance.Style with { DefaultMessage = "処理�
 - **カスタム View への属性・演出の添付はダイアログと同じ添付プロパティ** (`ksd:Dialog.*`) を使う ([MAUI のレイアウト公開面](layout-surface.md))。既定ローディングには添付する View が無いため `Loading.Instance.Options` がその代わりになる
 - **`IsCanceledOnTouchOutside` は Loading では常に無効**で、添付しても設定しても効かない
 - **VM factory 未登録の型指定 show / start は `DialogException.ViewModelFactoryNotRegistered`** で失敗する (View factory 未登録とは別の例外)
-- **`RegisterForLoading` で 1 行登録した View を組み立てられなかった場合は `DialogException.ViewCreationFailed`** で show / start が失敗する (元の失敗は `InnerException`)。包む範囲は [MAUI の DI 連携と登録糖衣](di-registration.md)
+- **`RegisterForLoading` で 1 行登録した View を組み立てられなかった場合は `DialogException.ViewCreationFailed`** で show / start が失敗する (元の失敗は `InnerException`)。包む範囲は [MAUI の DI 連携と登録糖衣](di-registration.md)。下記の場合を除く
 - **fallback resolver は Loading には効かない** — `AddKsDialogs` の fallback は Dialog レジストリの機構で、Loading は明示登録か 1 行登録のみ
 - **レイアウト計算は Native 側**で行う。MAUI の面は属性を無変換で渡すパススルーである
 - **カスタム View 版の演出**は中身への `DialogTransition` 添付で差し替える ([MAUI のトランジション公開面](transition-surface.md))。既定ローディングにはこの口が無い
+
+提示先が無いまま始まった表示では、中身を提示先が現れた時点で作る。そこでの生成の失敗 (`ViewCreationFailed` や利用者の factory の例外) は show / start へは返らず、警告を残して表示だけを諦める。処理はそのまま続く ([Loading のルール](../../core/api/loading-semantics.md) の「提示先が無いまま始まった表示」)。
 
 ## 関連
 

@@ -36,11 +36,11 @@
 | [0030](0030-toast-container-implementation-form.md) | Toast の器は Loading の器の非モーダル派生とし、1 Toast 1器・重なりは追加順・Loading が常に前面とする (一部改訂: 0038 — 「器はページ構造を知らない」に Dialog の基準領域だけ例外) | accepted | 2026-08-27 |
 | [0031](0031-toast-non-interactive-fire-and-forget.md) | Toast は完全非対話とし、時間経過でのみ消える fire-and-forget の表示とする | accepted | 2026-08-27 |
 | [0032](0032-toast-default-view-and-placement.md) | Toast の既定 View は OS 慣習寄せのピルとし、既定配置は下部中央 + ボトムバー回避オフセット、styling とアプリ既定配置は ToastStyle で受ける (一部改訂: 0038 — 「器はページ構造を知らない」に Dialog の基準領域だけ例外) | accepted | 2026-08-27 |
-| [0033](0033-user-factory-failure-boundary.md) | 利用者 View factory の失敗は言語境界の内側で捕捉し、各機能の既存失敗契約へ合流させる (一部改訂: 0036 — MAUI Android の Dialog / Loading も預かり口を通す) | accepted | 2026-08-28 |
+| [0033](0033-user-factory-failure-boundary.md) | 利用者 View factory の失敗は言語境界の内側で捕捉し、各機能の既存失敗契約へ合流させる (一部改訂: 0036 — MAUI Android の Dialog / Loading も預かり口を通す / 一部改訂: 0040 — 提示先が無いまま始まった Loading の生成失敗は表示だけを諦める) | accepted | 2026-08-28 |
 | [0034](0034-contract-type-name-singular-feature.md) | 契約の型名は「Ks + 機能名 (単数)」で揃え、Dialog の契約は KsDialogs から KsDialog へ改名する | accepted | 2026-09-06 |
 | [0035](0035-loading-toast-typed-show-vm-factory.md) | Loading / Toast のレジストリに VM factory スロットを追加し、型指定 show を Dialog と同型で提供する | accepted | 2026-09-06 |
 | [0036](0036-maui-android-content-supply-symmetry.md) | MAUI Android の Dialog / Loading の中身供給も managed 側の預かり口を通し、3 面を対称化する (0033 の amends — 却下案「Android は配線しない」を置き換え) | accepted | 2026-09-08 |
 | [0037](0037-loading-action-starts-on-ui-thread.md) | Loading のスコープ形の action は既定で UI スレッドで始め、UI スレッド外で始める指定を入口に持たせる | accepted | 2026-09-25 |
 | [0038](0038-current-page-layout-area-via-registered-provider.md) | 基準領域に「表示中のページ」を足し、器はページを自分で探さずアプリが登録した現在ページ provider から矩形を得る | accepted | 2026-09-25 |
-| [0039](0039-wait-for-host-appearance.md) | 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる | proposed | 2026-09-27 |
-| [0040](0040-content-created-after-host-secured.md) | Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める (0033 の amends — Loading の失敗の合流先を、提示先が無いまま始まった表示に限って置き換え) | proposed | 2026-09-27 |
+| [0039](0039-wait-for-host-appearance.md) | 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる | accepted | 2026-09-27 |
+| [0040](0040-content-created-after-host-secured.md) | Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める (0033 の amends — Loading の失敗の合流先を、提示先が無いまま始まった表示に限って置き換え) | accepted | 2026-09-27 |

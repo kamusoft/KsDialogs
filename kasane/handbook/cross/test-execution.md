@@ -5,7 +5,7 @@ applies-when:
   tasks: [テストの実行, テスト結果の報告, 変更の完了判定]
 title: テスト実行規約
 description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)、MAUI の実配置テストホスト (dotnet test 対象外のアプリとして両 OS で走らせる位置と大きさの検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査 (CI が回す範囲は verification-ci.md)
-timestamp: 2026-09-27
+timestamp: 2026-09-29
 ---
 
 # テスト実行規約
@@ -120,7 +120,17 @@ cd kmp
 
 ### iosSimulatorArm64Test では実提示が起きない
 
-**`iosSimulatorArm64Test` では実際の提示が起きない**。テストの実行体は `UIApplicationMain` を通らず key window が無いため、提示先が常に不在になる (既存の `InteropBridgeContractTests` が `No screen is available to present the Dialog.` の失敗で解決の成否を判定しているのと同じ制約)。Kotlin 側のテストは委譲面の差し替えで配管 (取り消しがちょうど1回届く・`CancellationException` の伝播) だけを見ており、実際に閉じることは ios/ 側のテスト (`KsDialogsKmpCancellationTests` 等) が担保する。KMP 経由で「画面に出た」ことを見たければ ios/ のテストか Sample を使う
+**`iosSimulatorArm64Test` では実際の提示が起きない**。テストの実行体は `UIApplicationMain` を通らず key window が無いため、提示先が常に不在になる。`testAndroidHostTest` も resumed な Activity を持たないので同じである。Kotlin 側のテストは委譲面の差し替えで配管 (取り消しがちょうど1回届く・`CancellationException` の伝播) だけを見ており、実際に閉じることは ios/ 側のテスト (`KsDialogsKmpCancellationTests` 等) が担保する。KMP 経由で「画面に出た」ことを見たければ ios/ のテストか Sample を使う
+
+提示先が無いとき、登録済みの ViewModel の show は失敗も完了もせずに提示先の出現を待つ (core/ADR-0039)。Toast・Loading の中身は提示先を確保してから作るので (core/ADR-0040)、View factory も呼ばれない。KMP のテストは、View factory を引き当てたことを次の形で判定する。
+
+| 機能 | 判定の仕方 |
+|---|---|
+| Dialog | show が待っていることを確かめてから打ち切り、cancelled (互換面のハンドル) かキャンセルの伝播 (コルーチン) で終わることを見る。未登録なら待たずにその場で失敗するので、この違いが解決の成否になる。共通の手順は `cancelWhileWaitingForHost` (iosTest は `support/MainLoopPump.kt`、androidHostTest は `support/WaitingShowProbe.kt`) |
+| Toast | 互換面の show の同期の結果 (未登録なら同期にエラーを返す) |
+| Loading | 開始が失敗しないことと、表示の前に報告した進捗が VM の受け口へ届くこと |
+
+待たせた Dialog の show は、テストの中で必ず打ち切って終える。打ち切らずに放置すると、返らない show がテストを時間切れまで止め、失敗の場所が分からなくなる。
 
 ## maui/
 
@@ -173,7 +183,7 @@ maui の完了判定には `dotnet test`・Android 互換面・iOS 互換面の 
 
 - 起動すると全シナリオを順に実行し、1 シナリオ 1 行を `KSDPLACEMENT|<OS>|<シナリオ>|PASS または FAIL|…` で出す。件数は最後の `KSDPLACEMENT|<OS>|SUMMARY|passed=N|failed=M` で確かめ、両 OS の SUMMARY 行を変更の証跡に残す。Android だけのシナリオがあるため、件数は iOS のほうが少ない
 - 位置のシナリオと大きさのシナリオは見るものが違う。大きさのシナリオは中身のルートの矩形と Width / Height を宣言サイズと比べるので、「外形だけが大きく、中身は宣言サイズで中央に置かれる」形の崩れは見えない。この形は位置のシナリオ (端に寄せた中身の端の位置) が検出する
-- 他の実行 (instrumented テスト・別のホスト) が使っている端末では回さない。提示先を取り合い、位置のシナリオが提示先なしの失敗で落ちる (2026-09-27 実測)。使用中なら別の AVD / Simulator を起動して使う
+- 他の実行 (instrumented テスト・別のホスト) が使っている端末では回さない。提示先を取り合い、位置のシナリオが落ちる (2026-09-27 実測)。使用中なら別の AVD / Simulator を起動して使う
 - 組んだ apk を `adb install` で直接入れて起動が abort するときは、Debug ビルドの Fast Deployment で assembly が apk に入っていない。`-p:EmbedAssembliesIntoApk=true` を付けて組み直す (2026-09-27 に `samples/maui` で実測)
 
 ### 演出の動きは検証できない

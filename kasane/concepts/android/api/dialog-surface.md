@@ -1,9 +1,9 @@
 ---
 type: concept
 title: Android の Dialog 公開面
-description: Android Native (Kotlin) からダイアログを使うときの公開名と署名 — 既定エントリと登録の入口・真偽値の別名・従来 View 系と Compose の別名での呼び分けと配布モジュール・Compose の属性宣言・インライン show・結果報告口の取得・構成ミスの例外型・型指定 show
+description: Android Native (Kotlin) からダイアログを使うときの公開名と署名 — 既定エントリと登録の入口・真偽値の別名・従来 View 系と Compose の別名での呼び分けと配布モジュール・Compose の属性宣言・インライン show・結果報告口の取得・構成ミスの例外型・出す先の画面が無いときの待ちとコルーチンのキャンセルでの打ち切り・型指定 show
 tags: [android, dialog, api, surface]
-timestamp: 2026-09-08
+timestamp: 2026-09-29
 ---
 
 # Android の Dialog 公開面
@@ -105,14 +105,15 @@ show は `suspend` 関数で、結果は `DialogResult` の sealed interface (`C
 | 事象 | 例外 |
 |---|---|
 | View factory 未登録 | `DialogException.ViewFactoryNotRegistered` |
-| 提示先の画面が無い | `DialogException.PresentationHostUnavailable` |
 | VM factory 未登録 (型指定 show) | `DialogException.ViewModelFactoryNotRegistered` |
 | 同一 ViewModel インスタンスの並行 show | `DialogException.ViewModelAlreadyShowing` |
 | value class を ViewModel にした | `DialogException.ValueClassViewModel` |
 
 `ValueClassViewModel` という名前は Kotlin の語彙 (value class) に合わせたもので、C# 側とは意図的に非対称である。並行 show の `ViewModelAlreadyShowing` と VM factory 未登録の `ViewModelFactoryNotRegistered` は C# と同名である。
 
-呼び出し元のコルーチンをキャンセルしたときは、コルーチン規約どおり `CancellationException` が伝播する (内部の結果は cancelled で確定済み)。キャンセル済みのコルーチンからでも退出の演出と撤去は最後まで完遂される。
+出す先の画面 (resumed な Activity) が無いときは例外を投げず、Activity が resume するのを待ってから表示する。Activity が破棄されただけでは表示されず、次の Activity の resume で表示される。待ちに上限は無いので、画面が現れない場所から呼ぶ show は、呼び出し元のコルーチンをキャンセルして止められるようにする。
+
+呼び出し元のコルーチンをキャンセルしたときは、提示先を待っている間でも表示中でも、コルーチン規約どおり `CancellationException` が伝播する (内部の結果は cancelled で確定済み)。キャンセル済みのコルーチンからでも退出の演出と撤去は最後まで完遂される。
 
 ## 関連
 

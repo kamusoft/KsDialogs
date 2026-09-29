@@ -2,10 +2,10 @@
 kind: rule
 applies-when:
   always: false
-  tasks: [実行時挙動が絡む不具合の原因調査, 実行時挙動が絡む不具合修正の完了判定]
+  tasks: [実行時挙動が絡む不具合の原因調査, 実行時挙動が絡む不具合修正の完了判定, iOS Simulator でシーンの状態を観測する実測]
 title: 実行時挙動の検証規約
-description: 実行時挙動 (表示/dismiss アニメーション・多段表示のタイミング・IME・OS 提示機構との連携) が絡む不具合修正を「完了」と判定する条件 — 実環境での再現確立 (自然再現しないときは強制失敗で代替) と、修正後の同一手順による解消確認、テキストで残す証跡。MAUI iOS の互換面を直した後の Sample は .app のシンボルで入れ替わりを確かめてから観測する
-timestamp: 2026-09-26
+description: 実行時挙動 (表示/dismiss アニメーション・多段表示のタイミング・IME・OS 提示機構との連携) が絡む不具合修正を「完了」と判定する条件 — 実環境での再現確立 (自然再現しないときは強制失敗で代替) と、修正後の同一手順による解消確認、テキストで残す証跡。MAUI iOS の互換面を直した後の Sample は .app のシンボルで入れ替わりを確かめてから観測する。iOS Simulator でシステムの許可ダイアログを使ってシーンの状態を観測するときは毎回 Simulator を再起動する
+timestamp: 2026-09-29
 ---
 
 # 実行時挙動の検証規約
@@ -41,6 +41,12 @@ timestamp: 2026-09-26
 本リポジトリは ios / android / kmp / maui の4ビルドルート ([cross/ADR-0004](../../decisions/cross/0004-monorepo-four-build-roots.md)) を持つ。再現は**症状が報告された形態の実環境**で行う — MAUI 経由の症状は MAUI の Sample で、KMP 経由の症状は KMP で再現する。委譲先の Native 単体で再現しても、binding 層に原因がある症状は捕まえられない。
 
 MAUI iOS の互換面 (`maui/macios/native/KsDialogsMauiBridge/`) を直した後に Sample で観測するときは、配備された .app の実行ファイルに変更後のシンボルが載っていることを先に確かめる — `nm -a <.app>/<実行ファイル>` で Swift の mangled 名を、または `strings -a` で ObjC セレクタ名を grep する。モノレポの ProjectReference 構成では互換面の更新を再ビルド判定に追随させる手当てが入っているが ([maui/ADR-0003](../../decisions/maui/0003-build-wiring-xcodeproject-and-gradle-exec.md) の現行照合)、SDK の更新でその前提が外れると、ビルドは成功のまま修正前のバイナリが配備され、ライブラリ欠陥の誤診を招く (2026-08-28 に実例)。
+
+### iOS Simulator でシーンの状態を観測するとき
+
+システムの許可ダイアログ (通知の許可など) でシーンを一時的に非アクティブにして観測するときは、観測の回ごとに Simulator を shutdown / boot してから Sample を入れて起動する。Sample を terminate して入れ直すだけでは、前のプロセスの許可ダイアログがシステム側に残り、次に起動したプロセスのシーンが一度もアクティブにならない。そのまま観測すると「提示先が現れない」という、ライブラリの不具合と見分けのつかない症状になる (実測は `kasane/changes/archive/2026-09-29-wait-for-host-appearance/evidence/after-fix-measurement.md` の「期待と違った点」)。
+
+許可ダイアログが、操作なしに消えることもある。`xcrun simctl io screenshot` の直後などに「許可」の結果が届き、ダイアログが閉じた回があった (原因は未調査)。閉じる操作を観測する回では、許可ダイアログが出ている間は撮影せず、閉じたのがタップであることを、タップするまで結果が届かなかったことで確かめる。
 
 ## なぜ
 

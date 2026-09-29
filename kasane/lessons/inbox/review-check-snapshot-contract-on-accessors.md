@@ -2,11 +2,12 @@
 scope: code-review
 kind: pain
 severity: normal
-count: 1
+count: 2
 first-seen: 2026-08-25
-last-seen: 2026-08-25
+last-seen: 2026-09-28
 evidence:
   - add-model-binding-di (review-001 が KMP/iOS の notifier アクセサ `notifier(for:result:)` の結果型検証が「現在のレジストリ」を参照している点を見逃し、相方 second-opinion-code-001 が Major で検出。design は「show 時の解決は呼び出し時点のエントリのスナップショット」と定めており、表示中に同じ VM 型を別結果型で再登録すると既存ダイアログの notifier 取得が誤型で成立しうる。修正は紐付けに show 時の宣言結果型を保持する形。修正サイクル1周が発生)
+  - wait-for-host-appearance (review-001 が、iOS の登録経路の Toast が受理の時点では factory の存在だけを確かめ、提示先が現れた時点で引き直している点を見逃し、相方 second-opinion-code-001 が Major で検出。受理後に同じ VM 型の factory を登録し直すと、待っている Toast が後の factory で表示される。Android は受理時点で解決した factory を持つので姉妹面が食い違っていた。修正は受理時点で解決した factory を表示要求に持たせる形)
 ---
 
 ## ルール文
@@ -16,3 +17,4 @@ evidence:
 ## 経緯
 
 - 2026-08-25 add-model-binding-di: ホストレビューは show 経路のスナップショット解決 (エントリのコピー) は確認したが、show の後から呼べるアクセサが同じ契約に従うかまで視線が届かなかった。時間差のある読み出し口は共有状態の変化と組み合わせて初めて破れが見える
+- 2026-09-28 wait-for-host-appearance: 提示先の出現を待つようになったことで、受理から中身の生成までに時間差ができ、その間の共有状態 (レジストリ) の書き換えがスナップショットの契約を破った。時間差を新しく生む変更 (待ちの追加) では、その間に共有状態を書き換えるテストの有無を見る

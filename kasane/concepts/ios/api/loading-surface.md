@@ -3,7 +3,7 @@ type: concept
 title: iOS の Loading 公開面
 description: iOS Native (Swift) で Loading を使うときの公開名と署名 — 契約と既定エントリ・show / hide / setMessage / スコープ形の署名・スコープ形の処理の型 (@MainActor) と UI スレッド外で始める @concurrent・進捗報告口と進捗受け口・カスタム View の登録 (UIKit / SwiftUI)・型指定 show / start と VM factory 登録・LoadingStyle と器メタ属性・MainActor と throws の注意
 tags: [ios, loading, api, surface]
-timestamp: 2026-09-26
+timestamp: 2026-09-29
 ---
 
 # iOS の Loading 公開面
@@ -136,12 +136,14 @@ Loading.shared.style = LoadingStyle(indicatorColor: .systemBlue, defaultMessage:
 
 ## framework 固有の注意
 
-- **factory は `throws`** — 中身の組み立てで失敗を投げられる。投げた失敗は表示の開始そのものの失敗として呼び出し元へ返る
+- **factory は `throws`** — 中身の組み立てで失敗を投げられる。開始時点で提示先があれば、投げた失敗は表示の開始そのものの失敗として呼び出し元へ返る (提示先が無いまま始まった表示は下記)
 - **未登録の ViewModel 型で表示すると `DialogError.viewFactoryNotRegistered` が throw される** (Dialog と同じ enum の case — [iOS の Dialog 公開面](dialog-surface.md))
 - **型指定 show / start は VM factory と View factory の両方を呼び出し時点で解決する** — 欠けているスロットに応じて別の case で失敗する (下表)。VM factory と configure は `@MainActor` で実行される
 - **factory と進捗受け口は `@MainActor`** なので、中で UIKit の API をそのまま呼べる
 - **`show` / `start` は任意スレッドから `await` できる**。内部で main へ移して受理順に直列化される。スコープ形の処理が始まるスレッドは呼び出し元ではなく処理の isolation で決まる (「スコープ形の処理が始まるスレッド」)
 - **カスタム View 版の演出**は中身への `DialogTransition` 添付で差し替える ([iOS のトランジション公開面](transition-surface.md))。既定ローディングにはこの口が無い
+
+提示先が無いまま始まった表示では、factory は提示先が現れた時点で呼ばれる。そこで投げた失敗は呼び出し元へ返らず、警告ログを残して表示だけを諦める。処理はそのまま続く ([Loading のルール](../../core/api/loading-semantics.md) の「提示先が無いまま始まった表示」)。
 
 型指定 show / start が呼び出し時点で失敗する構成ミスは次の 2 つで、判定は VM factory が先である。
 

@@ -3,7 +3,7 @@ type: concept
 title: MAUI のトランジション公開面
 description: .NET MAUI (C#) でダイアログの出入りの演出を差し替えるときの公開名と署名 — 演出の型とフックのデリゲート型・code-behind からの添付プロパティ・プリセット factory と辺の綴り・duration と easing の型・ミリ秒表現に収まらない時間の扱い
 tags: [maui, transition, api, surface]
-timestamp: 2026-09-06
+timestamp: 2026-09-29
 ---
 
 # MAUI のトランジション公開面
@@ -85,7 +85,7 @@ var transition = new DialogTransition(DialogTransition.Zoom().Presentation, myDi
 
 - **成立しない `duration`** — 0 以下に加えて、**ミリ秒表現に収まらない大きさ** (総ミリ秒が `uint` の上限を超える値。`TimeSpan.MaxValue` を含む) — では演出を省いて最終状態へ直ちに飛ぶ。MAUI のアニメーション API が時間を `uint` のミリ秒で受け取るためで、丸めも例外もしない
 - **フックは UI スレッドで開始される**ので、フックの中で MAUI の API をそのまま呼べる
-- **MAUI には呼び出し元キャンセルの経路がない**ため、終わらないフックからの脱出口は OS 発の器の消失だけである (契約は core)
+- **終わらないフックからの脱出口**は、OS 発の器の消失と、`ShowAsync` の `CancellationToken` による打ち切り (Native の打ち切りへ中継される) である (契約は core)
 - **フックの失敗** (返した `Task` が fault で終わること) は器が吸収し、show の結果には影響しない
 
 ## 関連

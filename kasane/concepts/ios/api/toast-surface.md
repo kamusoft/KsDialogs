@@ -3,7 +3,7 @@ type: concept
 title: iOS の Toast 公開面
 description: iOS Native (Swift) で Toast を使うときの公開名と署名 — 契約と既定エントリ・4 経路の show の署名・カスタム View の登録 (UIKit / SwiftUI)・型指定 show と VM factory 登録・ToastStyle のプロパティ・factory 閉包が throws である理由と持たない操作
 tags: [ios, toast, api, surface]
-timestamp: 2026-09-07
+timestamp: 2026-09-29
 ---
 
 # iOS の Toast 公開面
@@ -73,7 +73,7 @@ try Toast.shared.show(NoticeViewModel.self, duration: 2000) { vm in
 }
 ```
 
-VM factory のクロージャは `@MainActor @Sendable () -> VM` で **非 throwing** である (Dialog の VM factory と同じ)。configure は `throws` で書けるが、投げた失敗は show の呼び出し元へは返らず「受理後の失敗」(警告を残してその 1 枚だけ破棄) になる — show が同期に戻ったあと MainActor で実行されるためである。
+VM factory のクロージャは `@MainActor @Sendable () -> VM` で **非 throwing** である (Dialog の VM factory と同じ)。configure は `throws` で書けるが、投げた失敗は show の呼び出し元へは返らず「受理後の失敗」(警告を残してその 1 枚だけ破棄) になる — show が同期に戻ったあと、提示先に取り付ける時点で MainActor で実行されるためである。提示先が現れないまま満了した表示では、VM factory も configure も呼ばれない ([Toast のルール](../../core/api/toast-semantics.md) の「中身を作る時点」)。
 
 ## `ToastStyle` のプロパティ
 
