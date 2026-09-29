@@ -11,7 +11,7 @@ import UIKit
 /// 「ViewModel 生成 → configure 完了 → 中身の生成 → 表示」で固定される。
 /// ViewModel factory 未登録だけが呼び出し時点の同期の失敗で、生成と configure の失敗は
 /// 受理後の失敗 (その表示1枚だけの破棄) に分類される。
-@Suite("Toast の ViewModel の型を渡す表示", .serialized)
+@Suite("Toast の ViewModel の型を渡す表示", .serialized, .awaitsMainActorResponsive)
 @MainActor
 struct ToastTypedShowTests {
     private static let contentSize = CGSize(width: 200, height: 60)

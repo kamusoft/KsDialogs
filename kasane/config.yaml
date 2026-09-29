@@ -144,6 +144,8 @@ ui:
                   --es demo <デモID> --es loading-step-interval-ms <ms>
                 (数値も string extra で渡す。--ei で渡した値は読まれない)
       撮影:     adb -s <serial> exec-out screencap -p > <保存先.png>
+      MAUI:     MAUI Android の Debug APK を adb install で入れるときは、ビルドに
+                -p:EmbedAssembliesIntoApk=true を付ける (高速配備のままだと起動直後に落ちる)
       タップ:   adb -s <serial> shell input tap <x> <y>   (座標は物理ピクセル。wm size で確認)
       戻る:     adb -s <serial> shell input keyevent 4
       IME:      ハードウェアキーボード接続時にソフトキーボードを出すには

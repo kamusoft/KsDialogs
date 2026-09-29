@@ -79,6 +79,11 @@ TEST_EXT = {".swift", ".kt", ".kts", ".java", ".cs", ".m", ".h"}
 # LD-HS-01 / LD-HS-02 は Sample の Default Loading / Custom Loading の通しと、処理の中から
 # 結果表示を書き換える見本を対象とする Scenario で、判定が Sample アプリの画面 (MAUI は実ホストの
 # UI スレッド) であるため実機証跡で受け入れる。
+# CA-SA-08 / CA-SA-09 は Sample の起動直後の自動再生 (指定デモの表示と、シーンの状態を待たない
+# 作り) を対象とする Scenario で、判定が Sample アプリの画面とそのソースであるため、
+# 実機証跡とコードレビューで受け入れる。
+# PB-MH-02 は MAUI の中身の供給で画面の文脈が取れない場合の防御を対象とする Scenario で、
+# Native の提示先を確保した後には到達させる手段が無いため、コードレビューで受け入れる。
 DEFAULT_ALLOW_MISSING = {
     "PB-SM-01": "Sample アプリのデモ項目。Sample 通しの実機証跡で受け入れる",
     "PB-SM-02": "Sample アプリのデモ項目。Sample 通しの実機証跡で受け入れる",
@@ -117,6 +122,9 @@ DEFAULT_ALLOW_MISSING = {
     "MB-MA-14": "修正前後のビルドを同じ実環境で走らせる A/B 観測。実機証跡で受け入れる",
     "LD-HS-01": "Sample アプリのデモ項目。Sample 通しの実機証跡で受け入れる",
     "LD-HS-02": "Sample アプリのデモ項目。Sample 通しの実機証跡で受け入れる",
+    "CA-SA-08": "Sample の起動直後の自動再生の表示。手で通した実機証跡で受け入れる",
+    "CA-SA-09": "Sample の自動再生がシーンの状態を待たない作り。コードレビューで受け入れる",
+    "PB-MH-02": "提示先の確保後には到達させる手段が無い防御。コードレビューで受け入れる",
 }
 
 # 両 Native に同じ ID のテストを置く領域 (--require-mirror のときだけ検査する)。
@@ -128,6 +136,9 @@ MIRROR_AREAS = {
     ("PB", "TR"),
     ("PB", "MD"),
     ("PB", "WN"),
+    # PB-HW (提示先の出現待ち) は両 Native に同じ ID を置く。
+    # iOS 専用の PB-HI と Android 専用の PB-HA は対象外
+    ("PB", "HW"),
     # LD (loading): 挙動を定める領域はすべて両 Native ミラーの対象。
     # 形態別の公開面 (LD-IO / LD-AN / LD-MA / LD-KM) と Sample (LD-SA) は対象外
     ("LD", "CO"),
@@ -138,6 +149,7 @@ MIRROR_AREAS = {
     ("LD", "CV"),
     ("LD", "TR"),
     ("LD", "TH"),
+    ("LD", "HW"),
     ("LD", "SB"),
     # TS (toast): 挙動を定める領域はすべて両 Native ミラーの対象。
     # 形態別の公開面 (TS-IO / TS-AN / TS-MA / TS-KM) と Sample (TS-SA) は対象外
@@ -147,6 +159,7 @@ MIRROR_AREAS = {
     ("TS", "AT"),
     ("TS", "TR"),
     ("TS", "AC"),
+    ("TS", "HW"),
     ("TS", "SB"),
 }
 

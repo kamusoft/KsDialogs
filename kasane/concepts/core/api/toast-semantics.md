@@ -1,9 +1,9 @@
 ---
 type: concept
 title: Toast のルール
-description: Toast (fire-and-forget の非対話通知表示) の core 契約 — 呼び出し面の構成 (メッセージ入口・登録経路・インライン経路・型指定経路)・duration の時間モデル・失敗モデル・非モーダルと多重表示・機能間の前後関係・配置と一括設定・デフォルト View とカスタム View・持たない機能
+description: Toast (fire-and-forget の非対話通知表示) の core 契約 — 呼び出し面の構成 (メッセージ入口・登録経路・インライン経路・型指定経路)・中身を作る時点 (提示先に取り付ける時点)・duration の時間モデル・失敗モデル・非モーダルと多重表示・機能間の前後関係・配置と一括設定・デフォルト View とカスタム View・持たない機能
 tags: [toast, api, contract]
-timestamp: 2026-09-27
+timestamp: 2026-09-29
 ---
 
 # Toast のルール
@@ -40,11 +40,19 @@ timestamp: 2026-09-27
 
 - show は **fire-and-forget** (core/ADR-0031): 同期・戻り値なしで、表示終了を待つ手段を契約に設けない。閉じる操作・メッセージ更新・処理ブロックを渡すスコープ形・進捗の報告口 ([Loading の公開面の構成](loading-semantics.md) にある操作) は持たない
 - 表示の開始処理は受理順に UI スレッド上で順に行う (スレッド安全性のための順序化であって、表示を1枚ずつ順番待ちさせる意味ではない — 多重表示は並存する)。呼び出しは任意スレッドからできる
-- 型指定経路の実行順序は「VM 生成 → configure 完了 → View 生成 → 提示」で固定され、VM factory と configure は View factory と同じく UI スレッドで受理順に実行される。解決は呼び出し時点のレジストリのスナップショットで、生成した VM は器が撤去まで保持する
+- 型指定経路の実行順序は「VM 生成 → configure 完了 → View 生成 → 提示」で固定され、VM factory と configure は View factory と同じく、提示先に取り付ける時点に UI スレッドで実行される (下記「中身を作る時点」)。解決は呼び出し時点のレジストリのスナップショットで、生成した VM は器が撤去まで保持する
 - カスタム View の factory は従来 View 系 + 宣言的 UI 系の技術別オーバーロード (Dialog と同じ呼び分け — core/ADR-0010・0011)。factory が失敗を表明できるかどうかは形態の言語事情で違い、綴りと理由は各形態の公開面が定める
 - レジストリと一括設定は 1 OS プロセス内で単一で、Native のすべての入口が同じ状態を共有する。KMP は View factory のレジストリを Native へ委譲して共有し、VM factory の表だけを共有コード側に持つ (kmp/ADR-0002・0006)、MAUI のレジストリは C# 層にあり Native とは層が別 (maui/ADR-0001)
 
 KMP の共有コードの型指定経路だけは、VM factory と configure を呼び出しスレッドで済ませてから受理へ渡す (UI スレッドでの実行にならない — [ViewModel 主導の呼び出しのルール](model-binding-semantics.md) の「KMP での見え方」)。
+
+### 中身を作る時点
+
+中身 (View) は、提示先 (iOS は前面でアクティブなシーンの key window、Android は resumed な Activity) に取り付ける時点で作る。提示先があれば受理と同じ UI スレッド上の手番、無ければ提示先が現れた時点になる。型指定経路の VM factory と configure も同じ時点で走る。これは iOS Native・Android Native・MAUI の 3 形態で同じである (core/ADR-0042)。
+
+提示先の無い受理の時点では中身を作れない形態 (Android は提示先の Activity を文脈にして View を作る) と、作ると失敗しうる形態 (MAUI の中身は MAUI の画面の文脈を要する) があるため、中身は提示先を確保してから作る。期限を過ぎた表示は中身を作らずに捨てるので、提示先が現れないまま満了した表示では、View factory も型指定経路の VM factory と configure も一度も呼ばれない (`TS-HW-02`)。
+
+KMP の共有コードの型指定経路だけは、VM factory と configure を受理の前に呼び出しスレッドで済ませてから各 OS の経路へ渡す (上記の注記)。そのため、満了して捨てられた表示でも VM factory と configure は呼ばれている。View の生成は各 OS の経路で、ほかの形態と同じく取り付けの時点になる。
 
 ## duration の時間モデル
 
@@ -60,7 +68,7 @@ duration はミリ秒の整数で show 引数に指定する (KMP の共有コ�
 |---|---|
 | **解決の失敗** (登録経路で View factory 未登録の VM 型・型指定経路で VM factory と View factory のどちらかが未登録の VM 型 — 種類は区別する) | show の呼び出し時点で構成ミスとして同期に失敗する (形態のイディオムの例外)。表示は行われない (Dialog / Loading と同じ)。メッセージ入口とインライン経路にこの失敗はない。Swift から KMP の共有コードを直接呼ぶときの届き方は [KMP の Toast 公開面](../../kmp/api/toast-surface.md) が定める |
 | **受理後の失敗** (View factory の例外・型指定経路の VM factory と configure の例外・View の実体化失敗・器の取り付け失敗) | show は既に戻っているため呼び出し元へ返せない。警告ログを出してその表示 **1 枚だけ**を破棄し、器・タイマー・factory 参照などの資源を解放する。他の表示・後続の show には影響しない (core/ADR-0033) |
-| **提示環境の不在** (取り付け先ウィンドウ / resumed Activity が無い) | 呼び出しは失敗せず、提示先の出現を待って表示する。計時は受理時点から消費しているため、提示先が現れないまま duration が満了した表示は**表示されずに破棄**される (エラーではなく通常の満了として扱う)。中身の生成をいつ行うかは OS で違う (承認済みの差): 提示先の確保後に生成する Android では、この破棄で型指定経路の VM factory と configure が一度も呼ばれない。受理時点で生成する iOS では、呼ばれたあとに破棄される |
+| **提示環境の不在** (取り付け先ウィンドウ / resumed Activity が無い) | 呼び出しは失敗せず、提示先の出現を待って表示する (`TS-HW-01`)。計時は受理時点から消費しているため、提示先が現れないまま duration が満了した表示は**表示されずに破棄**される (エラーではなく通常の満了として扱う)。期限を過ぎた表示は、期限の処理より先に提示先が現れても表示されない (`TS-HW-03`)。中身は取り付けの時点で作るので、破棄された表示では中身も作られない (「中身を作る時点」) |
 
 「値の妥当性の問題は丸め (duration)、構成の誤りは同期の失敗 (未登録 VM)、受理後の問題は破棄」という書き分けになっている。型指定経路は VM factory と View factory の両方を呼び出し時点で解決するので、どちらが欠けていても同期に失敗する (判定は VM factory が先で、両方欠けているときは VM factory 未登録として返る)。型指定経路の VM factory / configure の例外が「受理後の問題」側なのは、show が同期に戻ったあと UI スレッドで実行されるため呼び出し元へ返せないからである (Dialog / Loading の型指定 show では呼び出し元へ伝播する — 3 機能の違いは [ViewModel 主導の呼び出しのルール](model-binding-semantics.md))。KMP の共有コードの型指定経路は例外で、生成と configure を呼び出しスレッドで済ませてから受理へ渡すため、VM factory 未登録・型不一致・VM factory / configure の例外はいずれも show から同期に呼び出し元へ伝播する。
 
@@ -168,3 +176,5 @@ Toast は器メタ属性のうち覆い・外側タップに関わるもの (覆
 | [ADR-0032](../../../decisions/core/0032-toast-default-view-and-placement.md) | 既定 View と配置・ToastStyle |
 | [ADR-0033](../../../decisions/core/0033-user-factory-failure-boundary.md) | factory 失敗の境界 |
 | [ADR-0035](../../../decisions/core/0035-loading-toast-typed-show-vm-factory.md) | VM factory スロットと型指定経路 |
+| [ADR-0041](../../../decisions/core/0041-wait-for-host-appearance.md) | 提示先が無いまま受理された表示は出現を待つ (寿命は duration) |
+| [ADR-0042](../../../decisions/core/0042-content-created-after-host-secured.md) | 中身は提示先を確保してから作る |

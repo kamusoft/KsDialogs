@@ -189,20 +189,24 @@ class DialogInlineShowTests : DialogUiThreadTest() {
     }
 
     @Test
-    fun `提示先が無ければインライン show も View を作らずに失敗する`() {
+    fun `提示先が無ければインライン show も View を作らずに待ち、現れたら表示する`() = runBlocking {
         val harness = DialogTestHarness(hasPresentationHost = false)
-        val createdViews = CopyOnWriteArrayList<View>()
+        val recorder = DialogTestRecorder<Boolean>()
 
-        assertThrows<DialogException.PresentationHostUnavailable> {
-            runBlocking {
-                harness.dialogs.show(BasicTestDialogViewModel("こんにちは")) { _, _ ->
-                    View(this).also { createdViews.add(it) }
-                }
+        val showTask = async {
+            harness.dialogs.show(BasicTestDialogViewModel("こんにちは")) { _, notifier ->
+                View(this).also { recorder.record(it, notifier) }
             }
         }
-
-        assertTrue(createdViews.isEmpty())
+        assertTrue(harness.waitForWaitingCount(1), "インライン show も提示先を待つ列に並ぶ")
+        assertTrue(recorder.createdViews.isEmpty(), "提示先が無い間は factory が呼ばれない")
         assertTrue(harness.presentedContainers.isEmpty())
+
+        harness.makeHostAppear()
+        recorder.awaitNotifier(0).complete(true)
+
+        assertEquals(DialogResult.Completed(true), showTask.await())
+        assertEquals(1, recorder.createdViews.size)
     }
 
     @Test

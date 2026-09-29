@@ -32,8 +32,11 @@ private class UnregisteredLoadingProbeViewModel : LoadingViewModel
  * 共有コードからのローディング呼び出しが、iOS Native ライブラリの互換面を通って
  * 状態の正へ届くかを実測する。
  *
- * 提示先の画面を持たないテストランナーでは器の取り付けまで到達しないが、合流状態と進捗の転送は
- * 提示先の有無によらず成立する — 実際に画面へ出ることは ios/ 側のテストと Sample が担う。
+ * 提示先の画面を持たないテストランナーでは器の取り付けまで到達せず、中身の View も作られない
+ * (中身は提示先を確保してから作る)。一方、合流状態と進捗の転送は提示先の有無によらず成立する。
+ * そこで型キーによる View factory の引き当ては、開始が失敗しないこと (未登録は開始の時点で失敗する) と、
+ * 表示の前に報告した進捗が共有 VM の受け口へ届くことで判定する。引き当てた factory から中身が
+ * 作られることと、実際に画面へ出ることは ios/ 側のテストと Sample が担う。
  */
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 class InteropLoadingBridgeContractTests {
@@ -71,6 +74,7 @@ class InteropLoadingBridgeContractTests {
         registerProbeViewFactory()
         val viewModel = RegisteredLoadingProbeViewModel()
 
+        // 未登録なら開始の時点で構成エラーになる。開始できて進捗が届けば、共有 VM の型キーで引き当てられている
         try {
             loading.start(viewModel) { report ->
                 report(0.25)
@@ -117,6 +121,7 @@ class InteropLoadingBridgeContractTests {
             RegisteredLoadingProbeViewModel().also { created = it }
         }
 
+        // 生成した VM が Swift 側レジストリで引き当てられなければ、開始の時点で構成エラーになる
         try {
             loading.start(RegisteredLoadingProbeViewModel::class) { report -> report(0.25) }
         } finally {

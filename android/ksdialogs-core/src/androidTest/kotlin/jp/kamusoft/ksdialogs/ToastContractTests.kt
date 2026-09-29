@@ -2,10 +2,12 @@ package jp.kamusoft.ksdialogs
 
 import android.app.Activity
 import android.content.Context
+import android.os.SystemClock
 import android.view.View
 import android.widget.TextView
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import jp.kamusoft.ksdialogs.support.ConfigurableToastTestViewModel
 import jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity
 import jp.kamusoft.ksdialogs.support.DialogTransitionGate
 import jp.kamusoft.ksdialogs.support.DialogTransitionProbe
@@ -229,46 +231,82 @@ class ToastContractTests {
     }
 
     @Test
-    fun 提示先が無い間は表示を保留し現れたら表示する() = runBlocking<Unit> {
+    fun TS_HW_01_提示先が無いまま受理された_Toast_は_提示先が現れた時点で表示される() = runBlocking<Unit> {
         val surface = ToastTestPresentationSurface(null)
         val harness = newHarness(surface)
+        val viewFactoryCalls = AtomicInteger(0)
+        harness.registry.register(ToastTestViewModel::class) { viewModel ->
+            viewFactoryCalls.incrementAndGet()
+            newTextContent(viewModel.message)
+        }
 
-        harness.toast.show("提示先待ち", durationMs = LONG_DURATION_MILLIS)
+        val acceptedAt = SystemClock.uptimeMillis()
+        harness.toast.show(ToastTestViewModel("提示先待ち"), durationMs = HOST_WAIT_DURATION_MILLIS)
 
         assertTrue(
             "提示先が無くても受理は成立する",
             InstrumentedDialogWaiting.waitUntil { harness.displayCount == 1 },
         )
         assertFalse("まだ器は取り付かない", harness.isPresenting)
+        assertEquals("提示先が無い間は View factory が呼ばれない", 0, viewFactoryCalls.get())
 
-        withContext(Dispatchers.Main) { surface.changeHost(currentActivity()) }
+        delay(HOST_APPEARANCE_DELAY_MILLIS)
+        val activity = currentActivity()
+        withContext(Dispatchers.Main) { surface.changeHost(activity) }
 
         assertTrue("提示先の出現で表示される", harness.waitUntilPresenting())
-        assertEquals("提示先待ち", harness.defaultContentViews.single().displayedText)
+        assertEquals("提示先が現れた時点で中身が作られる", 1, viewFactoryCalls.get())
         assertTrue(harness.waitUntilEmpty())
+        val elapsed = SystemClock.uptimeMillis() - acceptedAt
+        assertTrue(
+            "受理時点から数えた duration の到達で消える (経過 $elapsed ms)",
+            elapsed < HOST_WAIT_DURATION_MILLIS + HOST_APPEARANCE_DELAY_MILLIS,
+        )
     }
 
     @Test
-    fun 提示先が現れないまま期限が来た表示は表示されずに破棄される() = runBlocking<Unit> {
+    fun TS_HW_02_提示先が現れないまま満了した_Toast_は_中身が作られずに破棄される() = runBlocking<Unit> {
         val surface = ToastTestPresentationSurface(null)
         val harness = newHarness(surface)
+        val viewModelFactoryCalls = AtomicInteger(0)
+        val configureCalls = AtomicInteger(0)
+        val viewFactoryCalls = AtomicInteger(0)
+        harness.registry.registerViewModel(ConfigurableToastTestViewModel::class) {
+            viewModelFactoryCalls.incrementAndGet()
+            ConfigurableToastTestViewModel()
+        }
+        harness.registry.register(ConfigurableToastTestViewModel::class) { viewModel ->
+            viewFactoryCalls.incrementAndGet()
+            newTextContent(viewModel.title)
+        }
 
-        harness.toast.show("届かない", durationMs = SHORT_DURATION_MILLIS)
+        harness.toast.show(ConfigurableToastTestViewModel::class, durationMs = SHORT_DURATION_MILLIS) { viewModel ->
+            configureCalls.incrementAndGet()
+            viewModel.title = "届かない"
+        }
 
         assertTrue(
             InstrumentedDialogWaiting.waitUntil { harness.displayCount == 1 },
         )
-        assertTrue("期限の満了で破棄される", harness.waitUntilEmpty())
+        assertTrue("期限の満了で表示リストから外れる", harness.waitUntilEmpty())
         assertFalse("一度も表示されない", harness.isPresenting)
+        assertEquals("VM factory は呼ばれない", 0, viewModelFactoryCalls.get())
+        assertEquals("configure は呼ばれない", 0, configureCalls.get())
+        assertEquals("View factory は呼ばれない", 0, viewFactoryCalls.get())
     }
 
     @Test
-    fun 期限を過ぎた保留表示は提示先の復帰がタイマーより先でも表示されない() = runBlocking<Unit> {
+    fun TS_HW_03_期限を過ぎた保留表示は_提示先の出現が期限の処理より先でも表示されない() = runBlocking<Unit> {
         val surface = ToastTestPresentationSurface(null)
         val harness = newHarness(surface)
         val activity = currentActivity()
+        val viewFactoryCalls = AtomicInteger(0)
+        harness.registry.register(ToastTestViewModel::class) { viewModel ->
+            viewFactoryCalls.incrementAndGet()
+            newTextContent(viewModel.message)
+        }
 
-        harness.toast.show("期限切れ", durationMs = SHORT_DURATION_MILLIS)
+        harness.toast.show(ToastTestViewModel("期限切れ"), durationMs = SHORT_DURATION_MILLIS)
         assertTrue(
             InstrumentedDialogWaiting.waitUntil { harness.displayCount == 1 },
         )
@@ -283,10 +321,42 @@ class ToastContractTests {
         }
 
         assertTrue("その場で破棄される", harness.waitUntilEmpty())
+        assertEquals("中身は作られない", 0, viewFactoryCalls.get())
         assertTrue(
             "表示されない Toast の文言が読み上げへ流れている",
             harness.announcer.announcedMessages.isEmpty(),
         )
+    }
+
+    @Test
+    fun 提示先を待っている間に_View_factory_を登録し直しても_受理の時点の登録で表示される() = runBlocking<Unit> {
+        val surface = ToastTestPresentationSurface(null)
+        val harness = newHarness(surface)
+        val acceptedFactoryCalls = AtomicInteger(0)
+        val reregisteredFactoryCalls = AtomicInteger(0)
+        harness.registry.register(ToastTestViewModel::class) { viewModel ->
+            acceptedFactoryCalls.incrementAndGet()
+            newTextContent(viewModel.message)
+        }
+
+        harness.toast.show(ToastTestViewModel("受理の時点の登録"), durationMs = HOST_WAIT_DURATION_MILLIS)
+        assertTrue(
+            "提示先が無いので表示は保留される",
+            InstrumentedDialogWaiting.waitUntil { harness.displayCount == 1 },
+        )
+
+        // 受理の後、提示先が現れる前に同じ ViewModel 型の登録を置き換える
+        harness.registry.register(ToastTestViewModel::class) { viewModel ->
+            reregisteredFactoryCalls.incrementAndGet()
+            newTextContent(viewModel.message)
+        }
+        val activity = currentActivity()
+        withContext(Dispatchers.Main) { surface.changeHost(activity) }
+
+        assertTrue("提示先の出現で表示される", harness.waitUntilPresenting())
+        assertEquals("受理の時点で登録されていた factory で中身が作られる", 1, acceptedFactoryCalls.get())
+        assertEquals("受理の後に登録し直した factory は使われない", 0, reregisteredFactoryCalls.get())
+        assertTrue(harness.waitUntilEmpty())
     }
 
     /** 表示テキストを持つカスタム Toast の中身。 */
@@ -313,6 +383,12 @@ class ToastContractTests {
 
         /** 内蔵既定 (1500) を明らかに超えたと言える待ち時間 (ミリ秒)。 */
         const val BUILTIN_DEFAULT_OVERSHOOT_MILLIS = 2_200L
+
+        /** 提示先の出現を待たせたうえで表示を確かめる表示時間 (ミリ秒)。 */
+        const val HOST_WAIT_DURATION_MILLIS = 3_000
+
+        /** 受理から提示先を出現させるまでの待ち時間 (ミリ秒)。 */
+        const val HOST_APPEARANCE_DELAY_MILLIS = 1_000L
 
         /** 期限を確実に越えたと言える超過分 (ミリ秒)。 */
         const val DEADLINE_OVERSHOOT_MILLIS = 200L

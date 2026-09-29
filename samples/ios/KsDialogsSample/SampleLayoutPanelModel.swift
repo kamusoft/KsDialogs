@@ -49,7 +49,7 @@ final class SampleLayoutPanelModel {
             }
             return lastResult
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
             return nil
         }

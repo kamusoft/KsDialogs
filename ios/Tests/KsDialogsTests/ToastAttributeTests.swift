@@ -9,7 +9,7 @@ import UIKit
 /// 配置の優先順は「show 引数 > 中身への添付 > style のアプリ既定配置 > 契約既定値」で、
 /// placement はオブジェクトまるごと置換で採用される。
 /// style は各表示の受理時に読まれるため、設定の変更は次の表示から効く。
-@Suite("Toast の配置属性と ToastStyle", .serialized)
+@Suite("Toast の配置属性と ToastStyle", .serialized, .awaitsMainActorResponsive)
 @MainActor
 struct ToastAttributeTests {
     /// 観察の途中で期限が来ないだけの長さ。

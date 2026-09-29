@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls;
 
@@ -22,8 +23,10 @@ public interface IKsDialog
     /// <remarks>
     /// 結果型は ViewModel の宣言から導出され、completed(結果値) か cancelled のどちらかをちょうど 1 回返す。
     /// 提示先の指定は不要で、任意のスレッドから呼び出せる。
-    /// 構成エラー (未登録の ViewModel 型・値型の ViewModel・提示先不在) では結果を返さず、
-    /// <see cref="DialogException"/> で失敗した <see cref="Task"/> を返す。
+    /// 表示できる画面がまだ無いときは失敗せず、画面が現れるのを待ってから表示する。待ちに上限は無いため、
+    /// 画面が現れない場所から呼ぶときは <paramref name="cancellationToken"/> で打ち切れるようにする。
+    /// 構成エラー (未登録の ViewModel 型・値型の ViewModel) と、画面を持たない実行環境での呼び出しでは
+    /// 結果を返さず、<see cref="DialogException"/> で失敗した <see cref="Task"/> を返す。
     /// <para>
     /// 静的メタ属性 (背後の覆いや外側タップの扱いなど) は中身の性質なので、この面では渡せない。
     /// 中身への添付だけで供給する (core/ADR-0015)。
@@ -35,10 +38,15 @@ public interface IKsDialog
     /// この呼び出しでの置き場所。渡すと中身に添付された置き場所をまるごと置換する (core/ADR-0015)。
     /// <see langword="null"/> なら添付、添付もなければ契約の既定値が使われる。
     /// </param>
+    /// <param name="cancellationToken">
+    /// この show を打ち切るためのトークン。提示先の出現を待っている間に打ち切ると一度も表示されず、
+    /// 表示中に打ち切るとダイアログが閉じる。どちらも <see cref="OperationCanceledException"/> を投げる。
+    /// </param>
     /// <returns>completed(結果値) または cancelled。</returns>
     Task<DialogResult<TResult>> ShowAsync<TResult>(
         IDialogViewModel<TResult> viewModel,
-        DialogPlacement? placement = null);
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 登録せずに、その場で渡した factory の中身を表示して結果を待つ (core/ADR-0013)。
@@ -52,7 +60,7 @@ public interface IKsDialog
     /// <para>
     /// インライン表示したからといってその ViewModel 型が登録済みになるわけではないため、
     /// あとからレジストリ経由の
-    /// <see cref="ShowAsync{TResult}(IDialogViewModel{TResult}, DialogPlacement)"/> を呼べば未登録の
+    /// <see cref="ShowAsync{TResult}(IDialogViewModel{TResult}, DialogPlacement?, CancellationToken)"/> を呼べば未登録の
     /// <see cref="DialogException"/> になる。
     /// </para>
     /// </remarks>
@@ -63,11 +71,16 @@ public interface IKsDialog
     /// <param name="placement">
     /// この呼び出しでの置き場所。渡すと中身に添付された置き場所をまるごと置換する (core/ADR-0015)。
     /// </param>
+    /// <param name="cancellationToken">
+    /// この show を打ち切るためのトークン。提示先の出現を待っている間に打ち切ると一度も表示されず、
+    /// 表示中に打ち切るとダイアログが閉じる。どちらも <see cref="OperationCanceledException"/> を投げる。
+    /// </param>
     /// <returns>completed(結果値) または cancelled。</returns>
     Task<DialogResult<TResult>> ShowAsync<TViewModel, TResult>(
         TViewModel viewModel,
         Func<TViewModel, DialogNotifier<TResult>, View> factory,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel<TResult>;
 
     /// <summary>
@@ -76,7 +89,7 @@ public interface IKsDialog
     /// </summary>
     /// <remarks>
     /// 結果型を型引数に書かない省略形で、レジストリに干渉しない点も含めて挙動は
-    /// <see cref="ShowAsync{TViewModel, TResult}(TViewModel, Func{TViewModel, DialogNotifier{TResult}, View}, DialogPlacement?)"/>
+    /// <see cref="ShowAsync{TViewModel, TResult}(TViewModel, Func{TViewModel, DialogNotifier{TResult}, View}, DialogPlacement?, CancellationToken)"/>
     /// に真偽値を渡した場合とまったく同じ。
     /// </remarks>
     /// <typeparam name="TViewModel">表示する ViewModel の型。</typeparam>
@@ -85,11 +98,16 @@ public interface IKsDialog
     /// <param name="placement">
     /// この呼び出しでの置き場所。渡すと中身に添付された置き場所をまるごと置換する (core/ADR-0015)。
     /// </param>
+    /// <param name="cancellationToken">
+    /// この show を打ち切るためのトークン。提示先の出現を待っている間に打ち切ると一度も表示されず、
+    /// 表示中に打ち切るとダイアログが閉じる。どちらも <see cref="OperationCanceledException"/> を投げる。
+    /// </param>
     /// <returns>completed(真偽値) または cancelled。</returns>
     Task<DialogResult<bool>> ShowAsync<TViewModel>(
         TViewModel viewModel,
         Func<TViewModel, DialogNotifier<bool>, View> factory,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel;
 
     /// <summary>
@@ -112,10 +130,15 @@ public interface IKsDialog
     /// <typeparam name="TResult">ViewModel が宣言する結果値の型。</typeparam>
     /// <param name="configure">生成した ViewModel の状態を整える処理。省略できる。</param>
     /// <param name="placement">この呼び出しでの置き場所。意味はインスタンス渡しの show と同じ。</param>
+    /// <param name="cancellationToken">
+    /// この show を打ち切るためのトークン。提示先の出現を待っている間に打ち切ると一度も表示されず、
+    /// 表示中に打ち切るとダイアログが閉じる。どちらも <see cref="OperationCanceledException"/> を投げる。
+    /// </param>
     /// <returns>completed(結果値) または cancelled。</returns>
     Task<DialogResult<TResult>> ShowAsync<TViewModel, TResult>(
         Action<TViewModel>? configure = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel<TResult>;
 
     /// <summary>
@@ -129,10 +152,15 @@ public interface IKsDialog
     /// <typeparam name="TResult">ViewModel が宣言する結果値の型。</typeparam>
     /// <param name="configure">生成した ViewModel の状態を整える非同期処理。</param>
     /// <param name="placement">この呼び出しでの置き場所。意味はインスタンス渡しの show と同じ。</param>
+    /// <param name="cancellationToken">
+    /// この show を打ち切るためのトークン。提示先の出現を待っている間に打ち切ると一度も表示されず、
+    /// 表示中に打ち切るとダイアログが閉じる。どちらも <see cref="OperationCanceledException"/> を投げる。
+    /// </param>
     /// <returns>completed(結果値) または cancelled。</returns>
     Task<DialogResult<TResult>> ShowAsync<TViewModel, TResult>(
         Func<TViewModel, Task> configure,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel<TResult>;
 
     /// <summary>
@@ -144,10 +172,15 @@ public interface IKsDialog
     /// <typeparam name="TViewModel">表示する ViewModel の型。</typeparam>
     /// <param name="configure">生成した ViewModel の状態を整える処理。省略できる。</param>
     /// <param name="placement">この呼び出しでの置き場所。意味はインスタンス渡しの show と同じ。</param>
+    /// <param name="cancellationToken">
+    /// この show を打ち切るためのトークン。提示先の出現を待っている間に打ち切ると一度も表示されず、
+    /// 表示中に打ち切るとダイアログが閉じる。どちらも <see cref="OperationCanceledException"/> を投げる。
+    /// </param>
     /// <returns>completed(真偽値) または cancelled。</returns>
     Task<DialogResult<bool>> ShowAsync<TViewModel>(
         Action<TViewModel>? configure = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel;
 
     /// <summary>
@@ -157,9 +190,14 @@ public interface IKsDialog
     /// <typeparam name="TViewModel">表示する ViewModel の型。</typeparam>
     /// <param name="configure">生成した ViewModel の状態を整える非同期処理。</param>
     /// <param name="placement">この呼び出しでの置き場所。意味はインスタンス渡しの show と同じ。</param>
+    /// <param name="cancellationToken">
+    /// この show を打ち切るためのトークン。提示先の出現を待っている間に打ち切ると一度も表示されず、
+    /// 表示中に打ち切るとダイアログが閉じる。どちらも <see cref="OperationCanceledException"/> を投げる。
+    /// </param>
     /// <returns>completed(真偽値) または cancelled。</returns>
     Task<DialogResult<bool>> ShowAsync<TViewModel>(
         Func<TViewModel, Task> configure,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel;
 }

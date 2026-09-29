@@ -60,9 +60,9 @@ class InteropPlacementTransportTests {
             }
         }.exceptionOrNull()
 
-        // 提示先の画面を持たないテストランナーでは表示まで到達しないため、
-        // 互換面へ届いたことは「その先で起きる構成エラーが共有コードへ返る」ことで判定する
-        val exception = assertNotNull(failure, "提示先が無いのに結果が返りました。")
+        // View factory を登録していない ViewModel を渡し、互換面へ届いたことは
+        // 「互換面で起きる未登録の構成エラーが、提示先を待たずに共有コードへ返る」ことで判定する
+        val exception = assertNotNull(failure, "未登録の ViewModel で結果が返りました。")
         assertTrue(exception is DialogException, "構成エラーが $exception として届きました。")
     }
 

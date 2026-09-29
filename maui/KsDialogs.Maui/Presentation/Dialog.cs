@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls;
 
@@ -45,12 +46,13 @@ public sealed partial class Dialog : IKsDialog
     /// <inheritdoc/>
     public async Task<DialogResult<TResult>> ShowAsync<TResult>(
         IDialogViewModel<TResult> viewModel,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
 
         DialogOutcome outcome = await DialogPresenter
-            .PresentAsync(viewModel, Registry, _gateway, placement)
+            .PresentAsync(viewModel, Registry, _gateway, placement, cancellationToken)
             .ConfigureAwait(false);
 
         return ToResult<TResult>(outcome);
@@ -60,14 +62,15 @@ public sealed partial class Dialog : IKsDialog
     public async Task<DialogResult<TResult>> ShowAsync<TViewModel, TResult>(
         TViewModel viewModel,
         Func<TViewModel, DialogNotifier<TResult>, View> factory,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel<TResult>
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         ArgumentNullException.ThrowIfNull(factory);
 
         DialogOutcome outcome = await DialogPresenter
-            .PresentAsync(viewModel, DialogViewFactories.Erase(factory), _gateway, placement)
+            .PresentAsync(viewModel, DialogViewFactories.Erase(factory), _gateway, placement, cancellationToken)
             .ConfigureAwait(false);
 
         return ToResult<TResult>(outcome);
@@ -77,44 +80,49 @@ public sealed partial class Dialog : IKsDialog
     public Task<DialogResult<bool>> ShowAsync<TViewModel>(
         TViewModel viewModel,
         Func<TViewModel, DialogNotifier<bool>, View> factory,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel =>
-        ShowAsync<TViewModel, bool>(viewModel, factory, placement);
+        ShowAsync<TViewModel, bool>(viewModel, factory, placement, cancellationToken);
 
     /// <inheritdoc/>
     public Task<DialogResult<TResult>> ShowAsync<TViewModel, TResult>(
         Action<TViewModel>? configure = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel<TResult> =>
-        ShowTypedAsync<TViewModel, TResult>(ToAsynchronous(configure), placement);
+        ShowTypedAsync<TViewModel, TResult>(ToAsynchronous(configure), placement, cancellationToken);
 
     /// <inheritdoc/>
     public Task<DialogResult<TResult>> ShowAsync<TViewModel, TResult>(
         Func<TViewModel, Task> configure,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel<TResult>
     {
         ArgumentNullException.ThrowIfNull(configure);
 
-        return ShowTypedAsync<TViewModel, TResult>(configure, placement);
+        return ShowTypedAsync<TViewModel, TResult>(configure, placement, cancellationToken);
     }
 
     /// <inheritdoc/>
     public Task<DialogResult<bool>> ShowAsync<TViewModel>(
         Action<TViewModel>? configure = null,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel =>
-        ShowTypedAsync<TViewModel, bool>(ToAsynchronous(configure), placement);
+        ShowTypedAsync<TViewModel, bool>(ToAsynchronous(configure), placement, cancellationToken);
 
     /// <inheritdoc/>
     public Task<DialogResult<bool>> ShowAsync<TViewModel>(
         Func<TViewModel, Task> configure,
-        DialogPlacement? placement = null)
+        DialogPlacement? placement = null,
+        CancellationToken cancellationToken = default)
         where TViewModel : class, IDialogViewModel
     {
         ArgumentNullException.ThrowIfNull(configure);
 
-        return ShowTypedAsync<TViewModel, bool>(configure, placement);
+        return ShowTypedAsync<TViewModel, bool>(configure, placement, cancellationToken);
     }
 
     /// <summary>
@@ -124,17 +132,22 @@ public sealed partial class Dialog : IKsDialog
     /// 解決は呼び出し時点のエントリのスナップショットで行い、以後の再登録には影響されない。
     /// 生成と configure は中身の生成と同じ UI スレッドで行い、configure の完了までは提示へ進まない
     /// (core/ADR-0019)。この時点では報告口の紐付けがまだ無いため、失敗しても後始末は要らない。
+    /// 呼び出しの時点で打ち切り済みなら、解決・生成・configure のどれもせずに打ち切りとして返す
+    /// (maui/ADR-0006)。
     /// </remarks>
     /// <typeparam name="TViewModel">表示する ViewModel の型。</typeparam>
     /// <typeparam name="TResult">ViewModel が宣言する結果値の型。</typeparam>
     /// <param name="configure">生成した ViewModel の状態を整える処理。省略時は <see langword="null"/>。</param>
     /// <param name="placement">show の引数で渡された置き場所。</param>
+    /// <param name="cancellationToken">show に渡された、呼び出し元の打ち切り。</param>
     /// <returns>completed(結果値) または cancelled。</returns>
     private async Task<DialogResult<TResult>> ShowTypedAsync<TViewModel, TResult>(
         Func<TViewModel, Task>? configure,
-        DialogPlacement? placement)
+        DialogPlacement? placement,
+        CancellationToken cancellationToken)
         where TViewModel : class, IDialogViewModel<TResult>
     {
+        cancellationToken.ThrowIfCancellationRequested();
         DialogRegistryEntry? entry = Registry.Entry(typeof(TViewModel));
         DialogViewModelFactory viewModelFactory =
             DialogResolution.ResolveViewModelFactory(Registry, entry, typeof(TViewModel));
@@ -154,7 +167,7 @@ public sealed partial class Dialog : IKsDialog
         }).ConfigureAwait(false);
 
         DialogOutcome outcome = await DialogPresenter
-            .PresentAsync(viewModel, viewFactory, _gateway, placement)
+            .PresentAsync(viewModel, viewFactory, _gateway, placement, cancellationToken)
             .ConfigureAwait(false);
 
         return ToResult<TResult>(outcome);

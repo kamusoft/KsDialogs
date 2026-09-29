@@ -1,9 +1,9 @@
 ---
 type: concept
 title: iOS の Dialog 公開面
-description: iOS Native (Swift) からダイアログを使うときの公開名と署名 — 既定エントリと登録の入口・結果型の省略形・UIKit / SwiftUI の中身の書き分け・SwiftUI の添付 modifier・インライン show・結果報告口の取得・構成ミスのエラー種別・型指定 show
+description: iOS Native (Swift) からダイアログを使うときの公開名と署名 — 既定エントリと登録の入口・結果型の省略形・UIKit / SwiftUI の中身の書き分け・SwiftUI の添付 modifier・インライン show・結果報告口の取得・構成ミスのエラー種別・出す先の画面が無いときの待ちと Task のキャンセルでの打ち切り・型指定 show
 tags: [ios, dialog, api, surface]
-timestamp: 2026-09-06
+timestamp: 2026-09-29
 ---
 
 # iOS の Dialog 公開面
@@ -126,7 +126,6 @@ show は `async throws` で、結果は `DialogResult` の enum (`case completed
 | 事象 | `DialogError` の case |
 |---|---|
 | View factory 未登録 | `viewFactoryNotRegistered` |
-| 提示先の画面が無い | `presentationHostUnavailable` |
 | VM factory 未登録 (型指定 show) | `viewModelFactoryNotRegistered` |
 | 同一 ViewModel インスタンスの並行 show | `viewModelAlreadyShowing` |
 | 登録済み factory が ViewModel の実際の型を受け取れない | `viewFactoryTypeMismatch` |
@@ -135,7 +134,11 @@ show は `async throws` で、結果は `DialogResult` の enum (`case completed
 
 下 3 つは型消去輸送 (KMP 入口・型指定 show) での不整合で、純 Swift の登録・表示だけを使う限り通常は起きない。
 
-呼び出し元の Task をキャンセルしたときは、show は throw せず結果として `cancelled` を返す。
+出す先の画面 (前面でアクティブなシーンの key window) が無いときは throw せず、現れるのを待ってから表示する。アプリの起動直後に最初の画面の `.task` から呼んだ show も、シーンがアクティブになった時点で表示される。待ちに上限は無いので、画面が現れない場所から呼ぶ show は、呼び出し元の Task をキャンセルして止められるようにする。
+
+呼び出し元の Task をキャンセルしたときは、提示先を待っている間でも表示中でも、show は throw せず結果として `cancelled` を返す。
+
+`Dialog` の show 群と `KsDialog` の要件は `nonisolated(nonsending)` で、呼び出し元の実行文脈のまま始まる。そのため UI スレッドから続けて呼んだ show は、呼んだ順に提示先の待ちに並ぶ ([多段表示のルール](../../core/api/multi-display-semantics.md) の「提示先を待っている Dialog の出る順番」)。`KsDialog` を自前で実装する型 (テストダブル・adapter) は、既定の非隔離 async・`@concurrent`・`@MainActor`・actor のどの書き方でも宣言を変えずに準拠できる。
 
 ## 関連
 

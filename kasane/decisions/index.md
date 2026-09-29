@@ -4,10 +4,10 @@ decisions はドメイン別に分割して管理する。ドメイン定義の�
 
 | ドメイン | 内容 |
 |---|---|
-| [core](core/index.md) | 全 platform が共有するダイアログ契約・共通 architecture (ADR 39件) |
-| ios | iOS 系統 (まだ ADR なし) |
+| [core](core/index.md) | 全 platform が共有するダイアログ契約・共通 architecture (ADR 42件) |
+| [ios](ios/index.md) | iOS 系統 (ADR 1件) |
 | [android](android/index.md) | Android 系統 (ADR 1件) |
-| [maui](maui/index.md) | .NET MAUI 系統 (ADR 5件) |
+| [maui](maui/index.md) | .NET MAUI 系統 (ADR 6件) |
 | [kmp](kmp/index.md) | Kotlin Multiplatform 系統 (ADR 6件) |
 | [cross](cross/index.md) | リポジトリ横断のメタ事項 (ADR 30件) |
 

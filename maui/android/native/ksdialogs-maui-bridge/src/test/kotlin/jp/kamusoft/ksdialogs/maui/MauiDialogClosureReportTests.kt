@@ -1,22 +1,16 @@
 package jp.kamusoft.ksdialogs.maui
 
-import jp.kamusoft.ksdialogs.Dialog
 import jp.kamusoft.ksdialogs.DialogResult
-import jp.kamusoft.ksdialogs.DialogViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 
 /**
  * 閉鎖の通知が、どの結末でもちょうど1回だけ届くことの検証。
@@ -40,17 +34,10 @@ class MauiDialogClosureReportTests {
             closures += "dismissed"
         }
 
-        override fun onPresentationHostUnavailable(message: String?) {
-            closures += "hostUnavailable:$message"
-        }
-
         override fun onFailed(message: String?) {
             closures += "failed:$message"
         }
     }
-
-    /** 提示先不在の検証にだけ使う ViewModel。他の検証と登録を取り合わないよう型を分ける。 */
-    private class HostUnavailableTestViewModel : DialogViewModel<Boolean>
 
     @Test
     fun `完了は閉鎖要求による閉鎖として通知される`() = runTest {
@@ -102,36 +89,32 @@ class MauiDialogClosureReportTests {
     }
 
     @Test
-    fun `コルーチンのキャンセルは通知に変換されずに伝播する`() = runTest {
+    fun `コルーチンのキャンセルは cancelled として通知してから伝播する`() = runTest {
         val listener = RecordingListener()
 
-        assertThrows<CancellationException> {
-            reportClosure(listener) { throw CancellationException("呼び出し元がキャンセルされました") }
+        val reporting = launch {
+            reportClosure(listener) { awaitCancellation() }
         }
+        testScheduler.runCurrent()
+        reporting.cancel(CancellationException("呼び出し元が打ち切りました"))
+        reporting.join()
 
-        assertEquals(emptyList<String>(), listener.closures)
+        assertEquals(listOf("cancelled"), listener.closures, "cancelled がちょうど1回届くこと")
+        assertTrue(reporting.isCancelled, "通知のあとキャンセルが伝播すること")
     }
 
     @Test
-    fun `提示先不在はそれと分かる形で通知される`() = runTest {
-        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        try {
-            val listener = RecordingListener()
-            val dialogs = Dialog()
-            // 提示先が無い状態では View factory は呼ばれずに失敗するため、中身は組み立てられない
-            dialogs.registry.register(HostUnavailableTestViewModel::class) { _, _ ->
-                error("提示先が無いので View factory は呼ばれない")
-            }
+    fun `中身を作る前の閉鎖要求で止めた show は閉鎖要求として通知される`() = runTest {
+        val listener = RecordingListener()
 
-            reportClosure(listener) { dialogs.show(HostUnavailableTestViewModel()) }
-
-            assertEquals(1, listener.closures.size)
-            assertTrue(
-                listener.closures.single().startsWith("hostUnavailable:"),
-                "提示先不在が失敗の通知に紛れました: ${listener.closures.single()}",
-            )
-        } finally {
-            Dispatchers.resetMain()
+        val reporting = launch {
+            reportClosure(listener, stoppedByDismissal = { true }) { awaitCancellation() }
         }
+        testScheduler.runCurrent()
+        reporting.cancel()
+        reporting.join()
+
+        assertEquals(listOf("dismissed"), listener.closures)
+        assertTrue(reporting.isCancelled)
     }
 }

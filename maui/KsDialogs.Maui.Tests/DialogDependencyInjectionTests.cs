@@ -163,14 +163,15 @@ public class DialogDependencyInjectionTests
         });
     }
 
-    /// <summary>提示先の不在と利用者操作によるキャンセルは、従来どおりの形で届く。</summary>
+    /// <summary>提示の仕組みを持たない環境の失敗と、利用者操作によるキャンセルは、従来どおりの形で届く。</summary>
     [Test]
     [Description("[MB-MA-16] 既存の失敗経路は変わらない")]
     public async Task MB_MA_16_TheExistingFailureRoutesAreUnchanged()
     {
         using TestMauiApp app = new(services =>
             services.RegisterForDialog<SimpleRegisteredTestView, UnchangedRouteTestViewModel>());
-        FailingTestDialogGateway hostless = new(new DialogException.PresentationHostUnavailable());
+        // 提示の仕組みを持たない環境 (素の .NET) の委譲面
+        HostlessDialogGateway hostless = new();
         TestDialogGateway gateway = new(request =>
             request.ResultChannel.Settle(DialogOutcome.Cancelled.Instance));
 

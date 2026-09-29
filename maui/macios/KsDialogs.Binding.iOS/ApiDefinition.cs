@@ -166,13 +166,17 @@ interface MauiDialogClosure
     NSError Error { get; }
 }
 
-/// <summary>提示したダイアログ 1 枚を閉じるための handle。</summary>
+/// <summary>提示したダイアログ 1 枚を閉じる・打ち切るための handle。</summary>
 [BaseType(typeof(NSObject), Name = "KSDMauiDialogPresentation")]
 interface MauiDialogPresentation
 {
-    /// <summary>提示した 1 枚を閉じる。</summary>
+    /// <summary>提示した 1 枚を閉じる。中身を作る前なら、中身を作らずに提示を止める。</summary>
     [Export("dismiss")]
     void Dismiss();
+
+    /// <summary>この提示を打ち切る。待っている間なら表示せず、表示中なら閉じる。閉鎖の通知は cancelled で届く。</summary>
+    [Export("cancel")]
+    void Cancel();
 }
 
 /// <summary>表示中のページの View を返す口。見つからなければ null を返す。</summary>

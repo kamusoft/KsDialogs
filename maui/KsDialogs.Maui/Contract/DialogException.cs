@@ -126,7 +126,13 @@ public abstract class DialogException : Exception
         }
     }
 
-    /// <summary>アクティブな提示先の画面が存在しない。キューイングはせず即座に失敗する。</summary>
+    /// <summary>
+    /// この実行環境にはダイアログを表示する仕組みが無い。
+    /// </summary>
+    /// <remarks>
+    /// iOS / Android ではない実行環境 (素の .NET) で show を呼んだときに、待たずに即座に失敗する。
+    /// iOS / Android では、表示できる画面がまだ無いときも失敗せず、画面が現れるのを待ってから表示する。
+    /// </remarks>
     public sealed class PresentationHostUnavailable : DialogException
     {
         internal PresentationHostUnavailable() : base("No screen is available to present the Dialog.")
