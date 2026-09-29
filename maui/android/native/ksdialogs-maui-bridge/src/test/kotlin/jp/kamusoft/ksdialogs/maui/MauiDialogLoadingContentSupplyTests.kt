@@ -32,10 +32,6 @@ class MauiDialogLoadingContentSupplyTests {
             closures += "dismissed"
         }
 
-        override fun onPresentationHostUnavailable(message: String?) {
-            closures += "hostUnavailable:$message"
-        }
-
         override fun onFailed(message: String?) {
             closures += "failed:$message"
         }

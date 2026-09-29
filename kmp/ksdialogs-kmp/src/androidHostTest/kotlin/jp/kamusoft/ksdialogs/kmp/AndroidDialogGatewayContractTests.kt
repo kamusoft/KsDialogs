@@ -4,6 +4,7 @@ import android.view.View
 import jp.kamusoft.ksdialogs.kmp.support.BooleanTestDialogViewModel
 import jp.kamusoft.ksdialogs.kmp.support.ConfigurableTestDialogViewModel
 import jp.kamusoft.ksdialogs.kmp.support.StringTestDialogViewModel
+import jp.kamusoft.ksdialogs.kmp.support.cancelWhileWaitingForHost
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -14,6 +15,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertIsNot
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 
@@ -68,6 +71,16 @@ private class RecordingNativeDialogs(
     ): jp.kamusoft.ksdialogs.DialogResult<R> =
         throw UnsupportedOperationException("委譲面はインスタンスを渡す show だけを使う。")
 }
+
+/**
+ * 型を渡す show が Native のレジストリで解決されることを見るための ViewModel。
+ *
+ * Native 側のレジストリはプロセス全体で 1 個で登録解除の口が無いため、このファイル専用の型にする。
+ */
+private class TypedWaitingProbeDialogViewModel : DialogViewModel<Boolean>
+
+/** 待っている間の打ち切りを見るための ViewModel。このファイル専用の型にする理由は上と同じ。 */
+private class CancelWhileWaitingProbeDialogViewModel : DialogViewModel<Boolean>
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AndroidDialogGatewayContractTests {
@@ -161,17 +174,20 @@ class AndroidDialogGatewayContractTests {
             jp.kamusoft.ksdialogs.DialogViewRegistry.shared
                 .register(BooleanTestDialogViewModel::class) { _, _ -> View(this) }
 
-            // 提示先の画面を持たないテストでは表示まで到達しないため、
-            // View factory の解決に成功したかは、解決の後に起きる提示先不在の失敗で判定する
-            val registered = assertFailsWith<DialogException> {
+            // 提示先の画面を持たないテストでは表示まで到達しない。登録済みの show は失敗せずに提示先を待ち、
+            // 未登録の show は待たずに失敗するので、View factory の解決に成功したかはこの違いで判定する
+            val cancellation = cancelWhileWaitingForHost {
                 Dialog.instance.show(BooleanTestDialogViewModel())
             }
             val unregistered = assertFailsWith<DialogException> {
                 Dialog.instance.show(StringTestDialogViewModel())
             }
 
-            assertEquals("No screen is available to present the Dialog.", registered.message)
-            assertIs<jp.kamusoft.ksdialogs.DialogException.PresentationHostUnavailable>(registered.cause)
+            assertIsNot<DialogException>(cancellation, "打ち切りが構成エラーに化けました。")
+            assertEquals(
+                "No View factory is registered for ViewModel type jp.kamusoft.ksdialogs.kmp.support.StringTestDialogViewModel.",
+                unregistered.message,
+            )
             assertIs<jp.kamusoft.ksdialogs.DialogException.ViewFactoryNotRegistered>(unregistered.cause)
         } finally {
             Dispatchers.resetMain()
@@ -194,6 +210,50 @@ class AndroidDialogGatewayContractTests {
         val shown = assertIs<ConfigurableTestDialogViewModel>(native.shownViewModels.single())
         assertEquals("configure で入れた文言", shown.message, "configure 済みの VM が Native へ渡りませんでした。")
         assertEquals(DialogResult.Completed(true), result)
+    }
+
+    @Test
+    fun `PB-KT-09 型を渡す show の VM が Native レジストリで解決され提示先の出現を待つ`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            jp.kamusoft.ksdialogs.DialogViewRegistry.shared
+                .register(TypedWaitingProbeDialogViewModel::class) { _, _ -> View(this) }
+            var created: TypedWaitingProbeDialogViewModel? = null
+            Dialog.instance.registry.registerViewModel(TypedWaitingProbeDialogViewModel::class) {
+                TypedWaitingProbeDialogViewModel().also { created = it }
+            }
+
+            // 未登録の失敗にならず待つことが、生成物が Native のレジストリで解決された印になる
+            cancelWhileWaitingForHost {
+                Dialog.instance.show(TypedWaitingProbeDialogViewModel::class)
+            }
+
+            assertNotNull(created, "登録した ViewModel factory が呼ばれませんでした。")
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `PB-KC-04 待っている Dialog を共有コードで打ち切ると表示されずにキャンセルが伝播する`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        try {
+            var createdViews = 0
+            jp.kamusoft.ksdialogs.DialogViewRegistry.shared
+                .register(CancelWhileWaitingProbeDialogViewModel::class) { _, _ ->
+                    createdViews++
+                    View(this)
+                }
+
+            val cancellation = cancelWhileWaitingForHost {
+                Dialog.instance.show(CancelWhileWaitingProbeDialogViewModel())
+            }
+
+            assertIsNot<DialogException>(cancellation, "打ち切りが構成エラーに化けました。")
+            assertEquals(0, createdViews, "打ち切った Dialog の中身が作られました。")
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
     @Test

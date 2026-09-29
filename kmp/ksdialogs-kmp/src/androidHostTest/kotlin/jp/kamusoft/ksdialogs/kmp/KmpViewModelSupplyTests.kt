@@ -3,6 +3,7 @@ package jp.kamusoft.ksdialogs.kmp
 import android.view.View
 import jp.kamusoft.ksdialogs.kmp.support.BooleanTestDialogViewModel
 import jp.kamusoft.ksdialogs.kmp.support.StringTestDialogViewModel
+import jp.kamusoft.ksdialogs.kmp.support.cancelWhileWaitingForHost
 import jp.kamusoft.ksdialogs.notifier
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,6 +14,7 @@ import kotlinx.coroutines.test.setMain
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 /**
@@ -25,7 +27,7 @@ import kotlin.test.assertNull
  *
  * 報告口で報告した結果が show の呼び出し元へ届くところまでは、提示先の画面を持てるテスト
  * (Android Native の `DialogNotifierSupplyTests`) が同じ契約の型で担保する。
- * このテスト置き場では実際の提示が起きないため、そこまでは到達できない。
+ * このテスト置き場では提示先が現れず show は待ち続けるため、そこまでは到達できない。
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class KmpViewModelSupplyTests {
@@ -44,19 +46,19 @@ class KmpViewModelSupplyTests {
             val viewModel = BooleanTestDialogViewModel()
             assertNull(viewModel.notifier, "show の前から報告口が引けました。")
 
-            // 提示先の画面を持たないテストでは表示まで到達しないため、
-            // 1引数 factory が共有 VM の型で解決されたことは、解決の後に起きる提示先不在の失敗で判定する
-            val registered = assertFailsWith<DialogException> {
+            // 提示先の画面を持たないテストでは表示まで到達しない。登録済みの show は失敗せずに提示先を待ち、
+            // 未登録の show は待たずに失敗するので、1引数 factory が共有 VM の型で解決されたかはこの違いで判定する
+            cancelWhileWaitingForHost(
+                whileWaiting = {
+                    assertNotNull(viewModel.notifier, "提示先を待っている間に報告口が引けませんでした。")
+                },
+            ) {
                 Dialog.instance.show(viewModel)
             }
             val unregistered = assertFailsWith<DialogException> {
                 Dialog.instance.show(StringTestDialogViewModel())
             }
 
-            assertIs<jp.kamusoft.ksdialogs.DialogException.PresentationHostUnavailable>(
-                registered.cause,
-                "1引数 factory の登録が共有 VM の型で解決されませんでした。",
-            )
             assertIs<jp.kamusoft.ksdialogs.DialogException.ViewFactoryNotRegistered>(unregistered.cause)
             assertNull(viewModel.notifier, "show が終わったあとも紐付けが残りました。")
         } finally {

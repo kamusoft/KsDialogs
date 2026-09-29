@@ -69,10 +69,6 @@ internal sealed class PlatformToastGateway : IToastGateway
     {
         public MauiDialogContent? CreateContent() =>
             BridgeContentSupply.CreateOrDiscard(
-                () => PlatformDialogContent.Create(
-                    request.CreateContent(),
-                    // 供給元が呼ばれるのは器が提示先を確保した後なので、この時点では文脈が取れる
-                    PlatformDialogContent.ResolvePresentationTarget()?.MauiContext
-                        ?? throw new DialogException.PresentationHostUnavailable()));
+                () => PlatformDialogContent.CreateInPresentationContext(request.CreateContent));
     }
 }

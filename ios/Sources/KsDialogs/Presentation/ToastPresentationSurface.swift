@@ -8,6 +8,14 @@ import UIKit
 protocol ToastPresentationSurface: Sendable {
     /// Toast の器を重ねる先。取り付け先が無ければ nil (表示は保留され、提示先の出現を待つ)。
     @MainActor var hostView: UIView? { get }
+
+    /// 提示先が現れたかもしれないことの合図を購読する。
+    ///
+    /// 機能はこの口のほかに提示先の出現を知る手段を持たない。合図を受けたら提示先を読み直し、
+    /// 現れていなければ待ち続ける。待っている表示が無くなったら購読を解除する。
+    @MainActor func observeHostAppearance(
+        _ handler: @escaping DialogHostAppearanceHandler
+    ) -> DialogHostAppearanceRegistration
 }
 
 /// key window そのものを取り付け先にする既定の面。
@@ -23,6 +31,13 @@ final class KeyWindowToastPresentationSurface: ToastPresentationSurface {
     @MainActor
     var hostView: UIView? {
         keyWindowProvider.keyWindow
+    }
+
+    @MainActor
+    func observeHostAppearance(
+        _ handler: @escaping DialogHostAppearanceHandler
+    ) -> DialogHostAppearanceRegistration {
+        keyWindowProvider.observeHostAppearance(handler)
     }
 }
 #endif

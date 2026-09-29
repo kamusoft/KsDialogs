@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.CopyOnWriteArrayList
 
 @DisplayName("呼び出しコンテキストの契約")
@@ -42,16 +41,25 @@ class DialogCallContextTests : DialogUiThreadTest() {
     }
 
     @Test
-    fun `提示 host 不在の show は即失敗する`() {
+    fun `PB-HW-01 提示先が無い間は待ち、現れたら表示する`() = runBlocking {
         val harness = DialogTestHarness(hasPresentationHost = false)
         val recorder = DialogTestRecorder<Boolean>()
         harness.registerRecordingFactory(BasicTestDialogViewModel::class, recorder)
 
-        assertThrows<DialogException.PresentationHostUnavailable> {
-            runBlocking { harness.dialogs.show(BasicTestDialogViewModel("こんにちは")) }
-        }
-
-        assertTrue(recorder.createdViews.isEmpty())
+        val showTask = async { harness.dialogs.show(BasicTestDialogViewModel("こんにちは")) }
+        assertTrue(harness.waitForWaitingCount(1), "show は失敗も完了もせず、提示先を待つ列に並ぶ")
+        assertFalse(showTask.isCompleted)
+        assertTrue(recorder.createdViews.isEmpty(), "提示先が無い間は View factory が呼ばれない")
         assertTrue(harness.presentedContainers.isEmpty())
+
+        harness.makeHostAppear()
+
+        val notifier = recorder.awaitNotifier(0)
+        assertTrue(harness.waitForPresentedContainers(1), "提示先が現れた時点で表示される")
+        assertEquals(1, recorder.createdViews.size)
+        notifier.complete(true)
+
+        assertEquals(DialogResult.Completed(true), showTask.await())
+        assertEquals(0, harness.presentationSurface.activeHostChangeRegistrationCount, "表示したら購読を解除する")
     }
 }

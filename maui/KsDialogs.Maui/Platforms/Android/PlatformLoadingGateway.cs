@@ -134,11 +134,7 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     {
         public MauiDialogContent? CreateContent() =>
             BridgeContentSupply.CreateOrFail(
-                () => PlatformDialogContent.Create(
-                    request.CreateContent(),
-                    // 供給元が呼ばれるのは器が提示先を確保した後なので、この時点では文脈が取れる
-                    PlatformDialogContent.ResolvePresentationTarget()?.MauiContext
-                        ?? throw new DialogException.PresentationHostUnavailable()),
+                () => PlatformDialogContent.CreateInPresentationContext(request.CreateContent),
                 contentFailure);
     }
 

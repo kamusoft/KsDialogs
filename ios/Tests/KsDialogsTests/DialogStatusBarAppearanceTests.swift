@@ -28,7 +28,7 @@ struct DialogStatusBarAppearanceTests {
             contentView: DialogTestContentView(),
             resultChannel: DialogResultChannel()
         )
-        surface.present(container)
+        surface.present(container) { _ in }
 
         try #require(container.presentingViewController === presenter, "器が提示元の上に重なっている")
         // 器は提示元を置き換えないので、ステータスバーの見えを決める画面は変わらない。

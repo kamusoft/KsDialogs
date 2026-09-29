@@ -63,7 +63,9 @@ public protocol KsToast: AnyObject, Sendable {
     /// ViewModel はレジストリに登録された ViewModel factory が作る。
     /// 実行順序は「ViewModel 生成 → configure の完了 → 中身の生成 → 表示」で固定されており、
     /// configure が設定した状態は中身の初期化から必ず読める。
-    /// 生成と configure は UI スレッドで受理順に実行される。
+    /// 生成と configure は UI スレッドで、中身を提示先へ取り付ける時点に実行される
+    /// (提示先があれば受理と同じ手番、無ければ提示先が現れた時点)。
+    /// 提示先が現れないまま表示時間が尽きた表示では、生成も configure も行われない。
     ///
     /// ViewModel factory が未登録の場合は構成ミスとして呼び出し時点で失敗し、表示は行われない。
     /// 生成と configure の失敗は呼び出しが戻った後に起きるため呼び出し元へは返らず、

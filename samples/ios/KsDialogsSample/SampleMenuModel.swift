@@ -89,7 +89,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -107,7 +107,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -128,7 +128,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -144,7 +144,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -169,7 +169,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 同じ ViewModel の重ね表示などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -213,7 +213,7 @@ final class SampleMenuModel {
             }
             lastResult = SampleText.loadingCompletedResult
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ローディングを表示できませんでした: \(error)")
         }
     }
@@ -250,7 +250,7 @@ final class SampleMenuModel {
                 InlineToastCard(viewModel: viewModel)
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("Toast を表示できませんでした: \(error)")
         }
     }

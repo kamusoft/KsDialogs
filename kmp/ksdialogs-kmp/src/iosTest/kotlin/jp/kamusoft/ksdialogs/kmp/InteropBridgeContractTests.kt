@@ -1,5 +1,7 @@
 package jp.kamusoft.ksdialogs.kmp
 
+import jp.kamusoft.ksdialogs.kmp.support.cancelWhileWaitingForHost
+import jp.kamusoft.ksdialogs.kmp.support.pumpMainLoopUntil
 import jp.kamusoft.ksdialogs.kmp.support.runPumpingMainLoop
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -12,15 +14,21 @@ import platform.objc.class_getName
 import platform.objc.object_getClass
 import swiftPMImport.jp.kamusoft.ksdialogs.kmp.KSDInteropDialogBridge
 import swiftPMImport.jp.kamusoft.ksdialogs.kmp.KSDInteropDialogResult
+import swiftPMImport.jp.kamusoft.ksdialogs.kmp.KSDInteropDialogResultKindCancelled
 import swiftPMImport.jp.kamusoft.ksdialogs.kmp.KSDInteropDialogResultKindError
 import swiftPMImport.jp.kamusoft.ksdialogs.kmp.KSDInteropDialogResultType
+import kotlin.concurrent.AtomicInt
+import kotlin.concurrent.AtomicReference
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIsNot
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 /** 互換面への委譲を確かめるための ViewModel。View factory を登録して使う。 */
 private class RegisteredProbeViewModel : DialogViewModel<Boolean>
@@ -31,9 +39,9 @@ private class UnregisteredProbeViewModel : DialogViewModel<Boolean>
 /**
  * 共有コードの ViewModel が iOS Native ライブラリのレジストリのキーとして通用するかを実測する。
  *
- * 提示先の画面を持たないテストランナーではダイアログの表示まで到達しないため、
- * 「View factory の解決に成功したか」を、解決の後に起きる提示先不在の失敗と、
- * 解決に失敗したときの未登録の失敗の区別で判定する (互換面の失敗は判別と説明文で返る)。
+ * 提示先の画面を持たないテストランナーではダイアログの表示まで到達しない。
+ * 「View factory の解決に成功したか」は、解決に成功したときの提示先の出現の待ち (打ち切ると cancelled で終わる) と、
+ * 解決に失敗したときのその場の未登録の失敗の区別で判定する (互換面の失敗は判別と説明文で返る)。
  */
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 class InteropBridgeContractTests {
@@ -78,40 +86,46 @@ class InteropBridgeContractTests {
     fun `DM-KM-01 Swift 側登録の View factory が共有コードの ViewModel で解決される`() {
         registerProbeViewFactory()
 
-        val registered = showThroughBridge(RegisteredProbeViewModel())
         val unregistered = showThroughBridge(UnregisteredProbeViewModel())
-
-        assertEquals(KSDInteropDialogResultKindError, registered.kind)
         assertEquals(KSDInteropDialogResultKindError, unregistered.kind)
-
-        val registeredFailure = assertNotNull(registered.error).localizedDescription
         val unregisteredFailure = assertNotNull(unregistered.error).localizedDescription
-        println("[実測] 登録済み ViewModel の失敗: $registeredFailure")
         println("[実測] 未登録 ViewModel の失敗: $unregisteredFailure")
-
         assertTrue(
             unregisteredFailure.contains("No View factory is registered for ViewModel type"),
             "未登録の ViewModel が未登録として扱われませんでした: $unregisteredFailure",
         )
-        assertTrue(
-            registeredFailure.contains("No screen is available to present the Dialog."),
-            "登録済みの ViewModel の解決が未登録扱いになりました: $registeredFailure",
+
+        // 登録済みの側は解決に成功すると失敗せずに提示先を待つ。結果が届かないことを確かめてから、
+        // 互換面のハンドルで打ち切り、cancelled で終わることを確かめる
+        val delivered = AtomicReference<KSDInteropDialogResult?>(null)
+        val handle = bridge.showViewModel(RegisteredProbeViewModel(), placement = null) { delivered.value = it }
+        pumpMainLoopUntil(timeout = WAITING_PERIOD) { delivered.value != null }
+        assertNull(
+            delivered.value?.let { it.error?.localizedDescription ?: "kind=${it.kind}" },
+            "登録済みの ViewModel の show が提示先を待たずに結果を返しました。",
         )
+
+        handle.cancel()
+
+        assertTrue(pumpMainLoopUntil { delivered.value != null }, "打ち切ったあとも互換面から結果が返りませんでした。")
+        assertEquals(
+            KSDInteropDialogResultKindCancelled,
+            assertNotNull(delivered.value).kind,
+            "待っている間の打ち切りが cancelled で終わりませんでした。",
+        )
+        assertTrue(createdProbeViews.isEmpty(), "待っている間に打ち切った Dialog の中身が作られました。")
     }
 
     @Test
     fun `DM-KM-03 既定エントリの show は互換面と同じレジストリを引く`() {
         registerProbeViewFactory()
 
-        val failure = runPumpingMainLoop {
-            runCatching { Dialog.instance.show(RegisteredProbeViewModel()) }
-        }.exceptionOrNull()
+        // 未登録の失敗にならず提示先を待つことが、互換面で登録した factory を引けた印になる
+        val cancellation = cancelWhileWaitingForHost {
+            Dialog.instance.show(RegisteredProbeViewModel())
+        }
 
-        val exception = assertNotNull(failure, "提示先が無いのに結果が返りました。")
-        assertTrue(
-            exception.message?.contains("No screen is available to present the Dialog.") == true,
-            "互換面で登録した factory が既定エントリの show から引けませんでした: ${exception.message}",
-        )
+        assertIsNot<DialogException>(cancellation, "打ち切りが構成エラーに化けました。")
     }
 
     @Test
@@ -137,16 +151,36 @@ class InteropBridgeContractTests {
             RegisteredProbeViewModel().also { created = it }
         }
 
-        val failure = runPumpingMainLoop {
-            runCatching { Dialog.instance.show(RegisteredProbeViewModel::class) }
-        }.exceptionOrNull()
+        // 未登録の失敗にならず提示先を待つことが、生成した VM が Swift 側レジストリで解決された印になる
+        cancelWhileWaitingForHost {
+            Dialog.instance.show(RegisteredProbeViewModel::class)
+        }
 
         assertNotNull(created, "登録した ViewModel factory が呼ばれませんでした。")
-        val exception = assertNotNull(failure, "提示先が無いのに結果が返りました。")
+    }
+
+    @Test
+    fun `PB-KC-04 待っている Dialog を共有コードで打ち切ると表示されずにキャンセルが伝播する`() {
+        registerProbeViewFactory()
+        val surface = CancellationRecordingShowSurface(InteropDialogShowSurface(bridge))
+        val dialogs = GatewayKsDialog(IosDialogGateway(surface))
+
+        val cancellation = cancelWhileWaitingForHost {
+            dialogs.show(RegisteredProbeViewModel())
+        }
+
+        assertIsNot<DialogException>(cancellation, "打ち切りが構成エラーに化けました。")
+        assertEquals(1, surface.cancelCount.value, "互換面のハンドルの打ち切りがちょうど1回呼ばれていません。")
         assertTrue(
-            exception.message?.contains("No screen is available to present the Dialog.") == true,
-            "生成した VM が Swift 側レジストリで解決されませんでした: ${exception.message}",
+            pumpMainLoopUntil { surface.delivered.value != null },
+            "打ち切ったあとも互換面から結果が返りませんでした。",
         )
+        assertEquals(
+            DialogOutcome.Cancelled,
+            surface.delivered.value?.getOrNull(),
+            "互換面の結果が cancelled で確定しませんでした: ${surface.delivered.value}",
+        )
+        assertTrue(createdProbeViews.isEmpty(), "待っている間に打ち切った Dialog の中身が作られました。")
     }
 
     /**
@@ -185,4 +219,39 @@ class InteropBridgeContractTests {
             },
             "互換面から結果が返りませんでした。",
         )
+
+    private companion object {
+        /** 未登録の失敗が十分に届く時間。この間に結果が返らなければ、提示先を待っているとみなす。 */
+        val WAITING_PERIOD = 500.milliseconds
+    }
+}
+
+/**
+ * 互換面への委譲をそのまま通しつつ、取り消しの呼び出しと互換面から届いた結果を記録する表示面。
+ *
+ * 呼び出し元のコルーチンの打ち切りが互換面のハンドルまで届いたかを、実際の互換面を使ったまま観察するために使う。
+ */
+private class CancellationRecordingShowSurface(
+    private val delegate: IosDialogShowSurface,
+) : IosDialogShowSurface {
+    /** 取り消しが呼ばれた回数。 */
+    val cancelCount = AtomicInt(0)
+
+    /** 互換面から届いた結果。届くまでは null。 */
+    val delivered = AtomicReference<Result<DialogOutcome>?>(null)
+
+    override fun show(
+        viewModel: DialogViewModel<*>,
+        placement: DialogPlacement?,
+        completion: (Result<DialogOutcome>) -> Unit,
+    ): IosDialogShowCancellation {
+        val cancellation = delegate.show(viewModel, placement) { result ->
+            delivered.value = result
+            completion(result)
+        }
+        return IosDialogShowCancellation {
+            cancelCount.incrementAndGet()
+            cancellation.cancel()
+        }
+    }
 }

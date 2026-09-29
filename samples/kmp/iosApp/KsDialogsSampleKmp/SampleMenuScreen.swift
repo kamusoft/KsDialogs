@@ -6,7 +6,6 @@ struct SampleMenuScreen: View {
     @State private var model = SampleMenuModel()
     @State private var showsLayoutPanel = false
     @State private var showsTransitionPanel = false
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         VStack(spacing: 0) {
@@ -91,13 +90,10 @@ struct SampleMenuScreen: View {
                 onClose: { showsTransitionPanel = false }
             )
         }
-        .onChange(of: scenePhase, initial: true) { _, newPhase in
-            // 自動再生は、シーンが前面でアクティブになってから始める。
-            // ライブラリは前面でアクティブなシーンの key window を提示先にするため、
-            // それより前に再生すると Dialog は提示先が無いとして失敗し、Loading と Toast は画面に出ない。
-            // 取り出しは 1 回限りなので、背面から戻って再びアクティブになっても繰り返さない。
-            // シーンの状態が変わっても再生中のデモを打ち切らないよう、この画面の task ではなく独立した Task で走らせる
-            guard newPhase == .active else { return }
+        .onAppear {
+            // 自動再生は最初の画面の表示時に始める。提示先が現れるまで待つのはライブラリの役目。
+            // 取り出しは 1 回限りなので、画面が再び表示されても繰り返さない。
+            // 画面の状態が変わっても再生中のデモを打ち切らないよう、この画面の task ではなく独立した Task で走らせる
             Task { await autoPlay() }
         }
     }

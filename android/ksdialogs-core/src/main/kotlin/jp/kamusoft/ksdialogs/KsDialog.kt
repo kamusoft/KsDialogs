@@ -18,7 +18,11 @@ public interface KsDialog {
      *
      * 結果型は ViewModel の宣言から導出され、completed(結果値) か cancelled のどちらかをちょうど1回返す。
      * 提示先の指定は不要で、任意のスレッドから呼び出せる。
-     * 構成エラー (未登録の ViewModel 型・提示先不在) では結果を返さずに [DialogException] を投げる。
+     * 構成エラー (未登録の ViewModel 型など) では結果を返さずに [DialogException] を投げる。
+     *
+     * 提示先 (resumed な Activity) が無ければ失敗せず、提示先の出現を待ってから表示する。
+     * 待ちに上限は無く、待っている間は View を作らない。コルーチンを打ち切れば一度も表示されずに
+     * キャンセルが伝播し、待っている間に ViewModel が結果を報告すれば表示されずにその結果が返る。
      *
      * @param placement この呼び出しでの置き場所。渡すと中身の View に添付された [DialogPlacement] を
      *   オブジェクトまるごと置換する (core/ADR-0015)。省略すれば添付、添付もなければ契約の既定値が使われる。

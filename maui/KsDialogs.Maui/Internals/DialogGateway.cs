@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls;
 
@@ -19,10 +20,16 @@ internal interface IDialogGateway
     /// </summary>
     /// <remarks>
     /// 提示処理は実装側で UI スレッドへマーシャリングされるため、任意のスレッドから呼び出せる。
-    /// アクティブな提示先が存在しない場合は結果を返さずに
+    /// アクティブな提示先が存在しない場合は失敗せず、提示先の出現を待ってから中身を作る (core/ADR-0039)。
+    /// 提示の仕組みそのものを持たない実行環境 (素の .NET) だけは、待たずに
     /// <see cref="DialogException.PresentationHostUnavailable"/> で失敗し、View の生成・表示も行わない。
     /// 結果は最初の報告で確定する (ラッチ) が、この呼び出しが返るのは退出の演出と覆いの消滅が終わり
     /// 器が撤去された後になる (core/ADR-0017)。返った時点でダイアログはもう画面にない。
+    /// <para>
+    /// <see cref="DialogPresentationRequest.CancellationToken"/> が打ち切られたら、待っている間なら
+    /// 一度も表示せず、表示中なら閉じて、結果を cancelled で確定させて返す (maui/ADR-0006)。
+    /// 例外への読み替えは呼び出し側が行う。
+    /// </para>
     /// </remarks>
     /// <param name="request">その show が提示する内容。</param>
     /// <returns>型を消した結果。</returns>
@@ -35,16 +42,21 @@ internal interface IDialogGateway
 /// <param name="createContentView">中身の MAUI View を新規生成する関数。提示先が確保できた後に UI スレッドで呼ばれる。</param>
 /// <param name="resultChannel">その show の結果チャネル。器はキャンセル操作をここへ報告する。</param>
 /// <param name="showPlacement">show の引数で渡された置き場所。指定なしは <see langword="null"/>。</param>
+/// <param name="cancellationToken">show に渡された、呼び出し元の打ち切り。</param>
 internal sealed class DialogPresentationRequest(
     Func<View> createContentView,
     DialogResultChannel resultChannel,
-    DialogPlacement? showPlacement)
+    DialogPlacement? showPlacement,
+    CancellationToken cancellationToken = default)
 {
     /// <summary>その show の結果チャネル。</summary>
     public DialogResultChannel ResultChannel { get; } = resultChannel;
 
     /// <summary>show の引数で渡された置き場所。中身への添付より優先される。</summary>
     public DialogPlacement? ShowPlacement { get; } = showPlacement;
+
+    /// <summary>show に渡された、呼び出し元の打ち切り。</summary>
+    public CancellationToken CancellationToken { get; } = cancellationToken;
 
     /// <summary>
     /// 中身の MAUI View を新規生成する。

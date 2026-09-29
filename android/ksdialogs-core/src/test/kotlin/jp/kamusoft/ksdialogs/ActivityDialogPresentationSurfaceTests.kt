@@ -76,4 +76,28 @@ class ActivityDialogPresentationSurfaceTests {
         assertEquals(1, fixture.outcomes.size)
         assertEquals(true, (fixture.outcomes.first() as DialogOutcome.Completed).value)
     }
+
+    @Test
+    fun `提示先が得られず器を載せられないと、中身を作らずに cancelled を届ける`() {
+        val tracker = ResumedActivityTracker()
+        val surface = ActivityDialogPresentationSurface(tracker, tracker, tracker, DialogHostWaitQueue())
+        val resultChannel = DialogResultChannel()
+        var contentCreations = 0
+        val delivered = mutableListOf<DialogOutcome>()
+
+        val presented = surface.present(
+            DialogPresentationRequest(
+                createContentView = { context ->
+                    contentCreations += 1
+                    View(context)
+                },
+                resultChannel = resultChannel,
+            ),
+        )
+        presented.onDelivery { delivered.add(it) }
+
+        assertEquals(0, contentCreations, "中身は作られない")
+        assertEquals(listOf<DialogOutcome>(DialogOutcome.Cancelled), delivered, "器の消失と同じく cancelled が 1 回届く")
+        assertEquals(DialogDismissalOrigin.HOST_LOST, resultChannel.resultOrigin)
+    }
 }

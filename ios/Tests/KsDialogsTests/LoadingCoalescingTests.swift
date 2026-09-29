@@ -391,12 +391,22 @@ struct LoadingCoalescingTests {
     func LD_CO_14_actionRunsWithoutPresentationHost() async throws {
         let harness = LoadingTestHarness(hasHost: false)
         defer { harness.tearDown() }
+        let gate = DialogTransitionGate()
+        let callStart = LoadingTestCallStartRecorder()
 
-        let value = try await harness.loading.start { _ in 7 }
-
-        #expect(value == 7, "表示の不成立を理由に保留・放棄されない")
-        #expect(harness.isPresenting == false)
+        let scope = Task {
+            try await harness.loading.start { _ in
+                callStart.markStarted()
+                try await gate.wait()
+                return 7
+            }
+        }
+        try #require(await DialogTestWaiting.waitUntil { callStart.hasStarted }, "action は提示先を待たずに始まる")
+        #expect(harness.isPresenting == false, "提示先が現れるまでは表示されない")
         #expect(harness.attachedContainerViews.isEmpty)
+
+        gate.open()
+        #expect(try await scope.value == 7, "表示の不成立を理由に保留・放棄されない")
     }
 
     @Test("[LD-CO-15] 異なる入口からの利用は1つの表示に合流する")

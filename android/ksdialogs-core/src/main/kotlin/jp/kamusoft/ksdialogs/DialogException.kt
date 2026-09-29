@@ -51,8 +51,4 @@ public sealed class DialogException(message: String) : RuntimeException(message)
     ) : DialogException(
         "ViewModel type $viewModelTypeName is a value class and cannot be used as a ViewModel.",
     )
-
-    /** アクティブな提示先の画面 (resumed な Activity) が存在しない。キューイングはせず即座に失敗する。 */
-    public class PresentationHostUnavailable internal constructor() :
-        DialogException("No screen is available to present the Dialog.")
 }
