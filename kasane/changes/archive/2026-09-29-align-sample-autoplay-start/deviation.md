@@ -1,0 +1,3 @@
+# Deviation: align-sample-autoplay-start
+
+- 決定事項「3 つの Sample の自動再生から、提示先が決まるまで待つ Sample 側の処理と説明を外す」: exploration では 3 ルートとも待ちを外す → オーナー判断により、Android 系 (Android・KMP の Android・MAUI の Android) は最初の描画の後に再生する Sample 側の待ちを残し、説明を本当の理由 (起動画面の間に Toast の表示時間が過ぎないように) に書き換える。説明の立場 (提示先の出現を待つのはライブラリの役目) は 4 ルートで揃える。Android 系の待ちを外して 4 ルートの処理を揃えるのは、ライブラリの振る舞いを見直す別の change (fix-android-startup-toast-under-splash) のスコープに含める。理由: 待ちを外すと、Android 系で起動直後の Toast が出ない回が多くなった (kmp (Android) の default-toast は直す前 5/5 → 変更後 1/5 など。evidence/autoplay-measurement.md)。Toast の表示時間は受理の時点から数え、Android の提示先 (resumed な Activity) は起動画面の退場より前にそろうため、起動画面の下で表示時間を使い切ると見ている (2026-09-29)

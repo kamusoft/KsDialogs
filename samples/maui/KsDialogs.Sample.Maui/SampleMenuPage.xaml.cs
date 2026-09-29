@@ -77,22 +77,30 @@ public partial class SampleMenuPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        // 自動再生は最初の画面の表示時に始める。提示先が現れるまで待つのはライブラリの役目
         AutoPlay();
     }
 
     /// <summary>起動引数で指定されたデモを、メニュー項目のタップと同じ入口で自動再生する。</summary>
     /// <remarks>再生はプロセスの起動につき 1 回だけで、画面が作り直されても繰り返さない。</remarks>
-    private void AutoPlay()
+    private async void AutoPlay()
     {
         if (SampleCaptureAutoPlay.ConsumeDemo() is not SampleDemoId demo)
         {
             return;
         }
 
-        // ダイアログの提示先はメニューが画面に載ってから決まるため、再生もその時点まで待つ。
         // 再生を待機して例外を観測し、失敗をメニュー項目のタップと同じ倒れ方で表面化させる
         // (握り潰すと、自動再生が失敗した画面と定義外の ID を渡した画面が見分けられなくなる)
-        Dispatcher.Dispatch(async () => await PlayAsync(demo));
+#if ANDROID
+        // 提示先が現れるまで待つのはライブラリの役目で、ここで待つのは別の理由による。Toast の表示時間は
+        // 受理の時点から数え、Android の提示先は起動画面が退く前にそろうため、画面の表示時にすぐ受理すると
+        // 起動画面の下で表示時間を使い切ってしまう。そこで再生を UI スレッドの次の周回へ回す。
+        // 提示先が起動画面の退場の後にそろうようになれば、この待ちは要らない (iOS では待たない)
+        await Dispatcher.DispatchAsync(() => PlayAsync(demo));
+#else
+        await PlayAsync(demo);
+#endif
     }
 
     /// <summary>メニュー項目のタップハンドラと同じ入口を呼ぶ。</summary>
