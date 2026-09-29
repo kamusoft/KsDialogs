@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * ページの取得元は [DialogCurrentPage.provider] に登録した関数 (従来の View 向けの登録口)。
  * 器は Activity とは別のウィンドウに載るため、観察はすべて画面座標で行い、期待値は
- * 「ページの矩形と器のウィンドウの可視領域の共通部分」から dialogMargin (既定 24dp) を控除して導く。
+ * 「ページの矩形と器のウィンドウの可視領域の共通部分」から dialogMargin (既定 0dp) を控除して導く。
  */
 @RunWith(AndroidJUnit4::class)
 class DialogCurrentPageTests {
@@ -372,8 +372,8 @@ class DialogCurrentPageTests {
     }
 
     private companion object {
-        /** 契約既定の dialogMargin (dp)。 */
-        const val DEFAULT_MARGIN_DP = 24.0
+        /** 契約既定の dialogMargin (dp)。全辺 0 (core/ADR-0039)。 */
+        const val DEFAULT_MARGIN_DP = 0.0
 
         /** 原点差のケースでページ領域を下げる上部バーの高さ (dp)。 */
         const val TOP_BAR_HEIGHT_DP = 160

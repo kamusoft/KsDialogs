@@ -184,8 +184,8 @@ struct ToastTypedShowTests {
         harness.window.layoutIfNeeded()
         let placedFrame = try #require(harness.contentViews.first).frame
         #expect(
-            abs(placedFrame.minY - (ToastTestHarness.portraitInsets.top + 24)) <= 1,
-            "引数の配置がインスタンス渡し show と同じ規則で効く (実測 \(placedFrame))"
+            abs(placedFrame.minY - ToastTestHarness.portraitInsets.top) <= 1,
+            "引数の配置がインスタンス渡し show と同じ規則で効く (余白の既定値 0 — 実測 \(placedFrame))"
         )
 
         #expect(await harness.waitUntilEmpty(), "指定した duration の経過で消える")

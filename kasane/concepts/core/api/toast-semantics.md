@@ -48,7 +48,7 @@ KMP の共有コードの型指定経路だけは、VM factory と configure を
 
 ### 中身を作る時点
 
-中身 (View) は、提示先 (iOS は前面でアクティブなシーンの key window、Android は resumed な Activity) に取り付ける時点で作る。提示先があれば受理と同じ UI スレッド上の手番、無ければ提示先が現れた時点になる。型指定経路の VM factory と configure も同じ時点で走る。これは iOS Native・Android Native・MAUI の 3 形態で同じである (core/ADR-0040)。
+中身 (View) は、提示先 (iOS は前面でアクティブなシーンの key window、Android は resumed な Activity) に取り付ける時点で作る。提示先があれば受理と同じ UI スレッド上の手番、無ければ提示先が現れた時点になる。型指定経路の VM factory と configure も同じ時点で走る。これは iOS Native・Android Native・MAUI の 3 形態で同じである (core/ADR-0042)。
 
 提示先の無い受理の時点では中身を作れない形態 (Android は提示先の Activity を文脈にして View を作る) と、作ると失敗しうる形態 (MAUI の中身は MAUI の画面の文脈を要する) があるため、中身は提示先を確保してから作る。期限を過ぎた表示は中身を作らずに捨てるので、提示先が現れないまま満了した表示では、View factory も型指定経路の VM factory と configure も一度も呼ばれない (`TS-HW-02`)。
 
@@ -116,6 +116,10 @@ Toast は器メタ属性のうち覆い・外側タップに関わるもの (覆
 
 - デフォルト View (メッセージ入口が使うライブラリ同梱の見た目) は半透明ダークグレー背景 + 白文字の角丸ピル。テキストは中央寄せで、空文字はそのまま (内容が空のまま) 表示され、長文は複数行に折り返す — メッセージの内容に制限は無い。寸法は Dialog と同じレイアウト規則 (可視領域へのクランプ) に従い、スクロール・省略表示は行わない
 - Toast は覆いを持たないため、デフォルト View が自分で背景を描く (core/ADR-0032)。実現は Loading の既定ローディングと同じ作り — カスタム View と同じ提示部品の上に載る、ライブラリ同梱のコンテンツ (core/ADR-0023 と同型)
+- デフォルト View は余白 (dialogMargin) 全辺 24 を自分の中身に添付して持ち、利用者が変える口は無い。余白を渡せないまま契約既定値の全辺 0 で出すと、長いメッセージが画面の左右の端まで広がるためである ([core/ADR-0039](../../../decisions/core/0039-dialog-margin-default-zero.md))
+- この余白は配置とは別に読まれるので、配置引数・アプリ既定配置・契約既定配置のどれで置いても効く。契約既定配置では、デフォルト View の下端は可視領域の下端から 104 (余白 24 + 上方向オフセット 80)、何も添付しないカスタム View の下端は 80 の位置に出る
+- 長いメッセージでの左右の端は、Android ではちょうど 24 内側、iOS では 24 より広く余りは 1 字幅の半分未満である。Android のピルは折り返すと使える幅いっぱいに広がり、iOS のピルは折り返した最長行の幅まで縮んで中央に寄るため (両 Native の既存の見た目を保っている)
+- カスタム View の余白は契約既定値 (全辺 0) で、Dialog と同じく中身への添付で変えられる
 - デフォルト View は表示時にメッセージを OS の支援技術 (VoiceOver / TalkBack) へ通知 (announce) し、accessibility フォーカスは移動させない。カスタム View の読み上げは View を供給するアプリの責務で、器は通知もフォーカス移動もしない
 - カスタム Toast View は Toast 専用レジストリに登録する。Toast は結果を返さないため、Dialog のレジストリが持つ結果報告口・Loading の進捗受け口に相当する仕掛けを落とした軽い形 (core/ADR-0029)
 - 演出はカスタム View のみ `DialogTransition` 添付で差し替えられる ([トランジションのルール](transition-semantics.md) の出入りフックがそのまま効く。同ルールの「結果のラッチと配送」は、結果を返すダイアログ向けの仕組みなので Toast では出番がない)
@@ -138,6 +142,7 @@ Toast は器メタ属性のうち覆い・外側タップに関わるもの (覆
 - show が受理された表示は、次のいずれかの結末に必ず到達し、表示リスト・タイマー・factory 参照が残留しない: (1) 表示され duration の経過で消える (2) 受理後の失敗として警告ログとともに破棄される (3) 提示先が現れないまま満了し、表示されずに破棄される
 - Toast の表示中も、真下を含むページ要素は通常どおり操作できる
 - Loading と同時に表示されたとき、Loading が常に前面にある
+- 表示中も、提示先の画面のシステムバーの指定 (アイコンの明暗・バーの表示/非表示・隠れたバーの再表示の作法) を変えない (core/ADR-0040)
 
 ## してはいけないこと
 
@@ -171,5 +176,5 @@ Toast は器メタ属性のうち覆い・外側タップに関わるもの (覆
 | [ADR-0032](../../../decisions/core/0032-toast-default-view-and-placement.md) | 既定 View と配置・ToastStyle |
 | [ADR-0033](../../../decisions/core/0033-user-factory-failure-boundary.md) | factory 失敗の境界 |
 | [ADR-0035](../../../decisions/core/0035-loading-toast-typed-show-vm-factory.md) | VM factory スロットと型指定経路 |
-| [ADR-0039](../../../decisions/core/0039-wait-for-host-appearance.md) | 提示先が無いまま受理された表示は出現を待つ (寿命は duration) |
-| [ADR-0040](../../../decisions/core/0040-content-created-after-host-secured.md) | 中身は提示先を確保してから作る |
+| [ADR-0041](../../../decisions/core/0041-wait-for-host-appearance.md) | 提示先が無いまま受理された表示は出現を待つ (寿命は duration) |
+| [ADR-0042](../../../decisions/core/0042-content-created-after-host-secured.md) | 中身は提示先を確保してから作る |

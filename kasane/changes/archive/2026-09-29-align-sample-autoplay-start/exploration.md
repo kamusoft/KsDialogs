@@ -2,7 +2,7 @@
 
 ## 課題 / 動機
 
-wait-for-host-appearance (`kasane/changes/archive/2026-09-29-wait-for-host-appearance/`) で、ライブラリは全形態で提示先の出現を待つようになった (core/ADR-0039)。あわせて iOS 系の 2 つの Sample (`samples/ios`・`samples/kmp/iosApp`) の自動再生から、「シーンがアクティブになってから再生する」Sample 側の待ちを外し、最初の画面の表示時の処理から呼ぶ形に戻した (同 change の specs/samples CA-SA-09)。
+wait-for-host-appearance (`kasane/changes/archive/2026-09-29-wait-for-host-appearance/`) で、ライブラリは全形態で提示先の出現を待つようになった (core/ADR-0041)。あわせて iOS 系の 2 つの Sample (`samples/ios`・`samples/kmp/iosApp`) の自動再生から、「シーンがアクティブになってから再生する」Sample 側の待ちを外し、最初の画面の表示時の処理から呼ぶ形に戻した (同 change の specs/samples CA-SA-09)。
 
 残りの 3 つの Sample は、今も Sample 側で「提示先が決まるまで再生を待つ」処理と説明を持つ:
 

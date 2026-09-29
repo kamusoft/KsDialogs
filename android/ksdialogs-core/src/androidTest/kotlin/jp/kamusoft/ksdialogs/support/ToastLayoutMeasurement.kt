@@ -1,6 +1,8 @@
 package jp.kamusoft.ksdialogs.support
 
+import android.content.Context
 import android.graphics.Rect
+import android.view.View
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import androidx.test.core.app.ActivityScenario
@@ -41,6 +43,8 @@ internal object ToastLayoutMeasurement {
      * @param attachedPlacement 中身の View に添付する動的メタ属性。null なら添付しない
      * @param showPlacement 表示 API の引数に相当する配置。null でなければ添付を置換する
      * @param fallbackPlacement show 引数も添付も無いときに採る配置
+     * @param createContentView 中身の View を作る方法。null ならケースの内容サイズを持つ固定サイズの View を作る。
+     *   与えた場合 [options] と [attachedPlacement] は添付せず、作った View が持つ添付をそのまま使う
      */
     fun measureToastRect(
         scenario: ActivityScenario<DialogLayoutTestActivity>,
@@ -49,6 +53,7 @@ internal object ToastLayoutMeasurement {
         attachedPlacement: DialogPlacement? = null,
         showPlacement: DialogPlacement? = null,
         fallbackPlacement: DialogPlacement = ToastPlacementDefault.placement,
+        createContentView: ((Context) -> View)? = null,
     ): DialogLayoutCase.Rect {
         val measured = AtomicReference<Rect>()
         val density = AtomicReference(1f)
@@ -60,11 +65,12 @@ internal object ToastLayoutMeasurement {
             density.set(displayDensity)
             fun toPixels(value: Double): Float = (value * displayDensity).toFloat()
 
-            val contentView = FixedContentSizeView(
-                context = activity,
-                contentWidth = toPixels(layoutCase.contentSize.w).roundToInt(),
-                contentHeight = toPixels(layoutCase.contentSize.h).roundToInt(),
-            ).attach(options, attachedPlacement)
+            val contentView = createContentView?.invoke(activity)
+                ?: FixedContentSizeView(
+                    context = activity,
+                    contentWidth = toPixels(layoutCase.contentSize.w).roundToInt(),
+                    contentHeight = toPixels(layoutCase.contentSize.h).roundToInt(),
+                ).attach(options, attachedPlacement)
 
             val container = ToastContainer(
                 context = activity,

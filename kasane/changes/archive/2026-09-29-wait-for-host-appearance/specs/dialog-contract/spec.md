@@ -1,6 +1,6 @@
 # dialog-contract デルタ (wait-for-host-appearance)
 
-Scenario ID は `PB-HW-<NN>` (提示先の出現待ち)。挙動は Native 2 実装 (iOS / Android) の同名テストで全量を検証する (core/ADR-0016)。KMP・MAUI は、Native の待ちに従うことと、各形態の打ち切りの経路を、それぞれの能力のデルタで検証する。決定の出典は core/ADR-0039 (proposed)、実現経路は design Decision 3・4。
+Scenario ID は `PB-HW-<NN>` (提示先の出現待ち)。挙動は Native 2 実装 (iOS / Android) の同名テストで全量を検証する (core/ADR-0016)。KMP・MAUI は、Native の待ちに従うことと、各形態の打ち切りの経路を、それぞれの能力のデルタで検証する。決定の出典は core/ADR-0041 (proposed)、実現経路は design Decision 3・4。
 
 「提示先」は、iOS では前面でアクティブなシーンの key window、Android では resumed な Activity を指す (定義は変えない)。
 

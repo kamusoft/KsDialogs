@@ -5,7 +5,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 /**
- * 提示先の出現を待っている Dialog の列 (core/ADR-0039)。
+ * 提示先の出現を待っている Dialog の列 (core/ADR-0041)。
  *
  * 待っている Dialog は呼んだ順に並び、提示先が現れたら先頭の 1 枚ずつ明ける。明けた 1 枚の提示が
  * 終わる (器のウィンドウを追加する) までは次を明けないので、後から呼んだものが手前に重なる。

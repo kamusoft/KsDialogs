@@ -26,8 +26,9 @@ public sealed record DialogOptions
     /// <summary>サイズと位置の計算の基準になる領域。既定は可視領域。</summary>
     public DialogLayoutArea LayoutArea { get; init; } = DialogLayoutArea.VisibleArea;
 
-    /// <summary>基準 rect の各辺から控除する余白。最大サイズと配置の両方に効く。既定は全辺 24。</summary>
-    public Thickness DialogMargin { get; init; } = new(24d);
+    // 余白の既定は全辺 0 (core/ADR-0039)。
+    /// <summary>基準 rect の各辺から控除する余白。最大サイズと配置の両方に効く。既定は全辺 0。</summary>
+    public Thickness DialogMargin { get; init; } = new(0d);
 
     /// <summary>
     /// 基準 rect の幅に対する比率 (有効域 0 &lt; 値 ≤ 1)。既定は未指定 (-1)。

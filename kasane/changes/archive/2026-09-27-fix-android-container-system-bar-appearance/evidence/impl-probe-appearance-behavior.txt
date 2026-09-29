@@ -1,0 +1,34 @@
+# 実装前の確認 (tasks 1.3 / 1.4) の実測抜粋 — 2026-09-27、専用 AVD ksn_sbfix_api35 (API 35) / ksn_sbfix_api31 (API 31)
+# 一時的な計測テスト (作業後に削除済み) で、提示先 (Activity、明暗も作法も未指定で起動) と素の Dialog のウィンドウの値を読んだもの。
+# appearance / behavior はアプリから読める値 (WindowInsetsController)、bhv= は `dumpsys window windows` のウィンドウ管理側の値。
+
+## 1.3 旧来のフラグだけで明暗を指定した提示先 (SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR)
+API 35: 指定前 host.appearance=512 / 指定後 host.appearance=512 (systemUiVisibility=8208)
+        512 はテーマ由来の非公開ビット。明るいステータスバー (8)・ナビゲーションバー (16) は含まれない
+API 31: 指定前 host.appearance=0   / 指定後 host.appearance=0   (systemUiVisibility=8208)
+=> API 35 でも旧来のフラグ由来の明暗は OS から返らない (1.1 の読み取りは API 35 以降も重複ではなく必要)
+
+## 1.4 作法を指定していないウィンドウの作法
+API 35: host.behavior=1 / 素の Dialog behavior=1 / ウィンドウ管理 bhv=DEFAULT (両方)
+API 31: host.behavior=0 / 素の Dialog behavior=0 / ウィンドウ管理 bhv=DEFAULT (両方)
+API 31 で Dialog に作法 0 を明示した後: アプリから behavior=0 / ウィンドウ管理は bhv 項目なし (値 0)、pfl に BEHAVIOR_CONTROLLED
+=> API 31 では「未指定」と「0 を明示」がアプリから読める値では区別できず、ウィンドウ管理の値でだけ区別できる
+   (PB-SB-10 のテストは dumpsys のウィンドウ管理の値で判定する)
+
+## OS の定義 (SDK の sources による)
+InsetsController.getSystemBarsBehavior: 作法を指定していないウィンドウに android-30 / 31 / 32 / 33 は 0 を返し、android-35 は BEHAVIOR_DEFAULT を返す
+(android-34 の sources はこの環境に無く未確認)
+WindowInsetsController.BEHAVIOR_DEFAULT (= 1) は android-31 で追加。android-30 では 0 (BEHAVIOR_SHOW_BARS_BY_TOUCH) が InsetsFlags の既定値
+=> ずれが起きるのは API 31〜33 (34 は未確認)。API 30 は 0 が既定そのものなのでずれない
+
+## 修正前の実装で新しいテストを回した結果 (失敗することの確認)
+API 35: 9 件中 7 件失敗 (PB-SB-08 と PB-SB-10 は修正前も通る)
+API 31: 9 件中 8 件失敗 (PB-SB-08 だけ修正前も通る。PB-SB-10 は expected DEFAULT / actual (0) で失敗)
+
+## 修正サイクル 1 (2026-09-27): API 36 (CI と同じ API) での LD_SB_02 の失敗の観測
+端末: この change 用の API 36 エミュレータ。提示先で両バーを隠し (作法 SHOW_TRANSIENT_BARS_BY_SWIPE) てから Loading を出す
+- dumpsys window (Loading を出して 2 秒後): mCurrentFocus / mFocusedWindow / 挿入の mControlTarget = ImmersiveModeConfirmation のウィンドウ。status / nav は WINDOW_STATE_HIDDEN
+  => OS の「全画面表示の確認」ウィンドウがフォーカスを取り、Loading の器にも提示先にもフォーカスが来ない (Loading の器が入力の宛先になる前提が崩れる)
+- 提示先のバーの見えの履歴 (16ms 間隔): 表示の 60〜600ms 後に statusBars=true navigationBars=true が一瞬現れて、また隠れる回がある
+- 同じ観測を Dialog の器 (この change で挙動を変えていない経路) で行っても、4 回中 1 回で同じ一瞬の再出現が出た。API 35 では Dialog / Loading とも 4 回中 0 回
+- LD_SB_02 の結果 (API 36): 単体で 5 回実行して 5 回失敗 (フォーカスの前提で 2 回、一瞬の再出現で 3 回)。システムバー関連 5 クラスの実行でも 3 回とも失敗

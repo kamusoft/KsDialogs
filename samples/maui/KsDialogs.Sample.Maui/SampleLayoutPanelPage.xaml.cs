@@ -3,7 +3,7 @@ using System.Globalization;
 namespace KsDialogs.Sample.Maui;
 
 /// <summary>レイアウト属性を調整してからダイアログを表示する画面。</summary>
-/// <remarks>初期値は契約の既定値 (中央配置・移動なし・可視領域基準) に揃える。</remarks>
+/// <remarks>初期値は契約の既定値 (中央配置・移動なし・可視領域基準・余白 0) に揃える。</remarks>
 public partial class SampleLayoutPanelPage : ContentPage
 {
     private readonly Action<string> _onResult;
@@ -148,7 +148,10 @@ public partial class SampleLayoutPanelPage : ContentPage
     /// <remarks>説明のタブの表示操作からも呼ばれ、パネルの設定をそのまま使う。</remarks>
     public async void ShowLayoutDialog()
     {
-        LayoutDialogViewModel viewModel = new(SampleText.LayoutDialogMessage, LayoutAreaSegments.Selection);
+        LayoutDialogViewModel viewModel = new(
+            SampleText.LayoutDialogMessage,
+            LayoutAreaSegments.Selection,
+            MarginSegments.Selection);
 
         // 置き場所は呼び出しごとに変わるので Show の引数で渡す
         DialogPlacement placement = new()

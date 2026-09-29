@@ -6,10 +6,14 @@ import android.graphics.Rect
 import android.view.ViewOutlineProvider
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import jp.kamusoft.ksdialogs.support.DialogLayoutCase
+import jp.kamusoft.ksdialogs.support.DialogLayoutCaseAttributes
 import jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity
 import jp.kamusoft.ksdialogs.support.FixedContentSizeView
 import jp.kamusoft.ksdialogs.support.InstrumentedDialogWaiting
+import jp.kamusoft.ksdialogs.support.ToastLayoutMeasurement
 import jp.kamusoft.ksdialogs.support.ToastLayoutObservation
+import jp.kamusoft.ksdialogs.support.ToastTestAnnouncer
 import jp.kamusoft.ksdialogs.support.ToastTestHarness
 import jp.kamusoft.ksdialogs.support.ToastTestViewModel
 import kotlinx.coroutines.runBlocking
@@ -119,6 +123,145 @@ class ToastAttributeTests {
     }
 
     @Test
+    fun TS_AT_04_デフォルト_View_は契約既定配置で余白_24_の内側に置かれる() = runBlocking<Unit> {
+        val harness = ToastTestHarness(currentActivity())
+
+        harness.toast.show("既定の位置", durationMs = LONG_DURATION_MILLIS)
+        assertTrue(harness.waitUntilPresenting())
+        val container = harness.containers.single()
+        ToastLayoutObservation.awaitSettled(container)
+        val rect = ToastLayoutObservation.contentRect(container)
+        val visible = ToastLayoutObservation.visibleArea(container)
+
+        val expectedBottom = visible.bottom -
+            toPixels(DEFAULT_VIEW_MARGIN_DP + ToastPlacementDefault.BOTTOM_BAR_CLEARANCE)
+        assertPixelsNear(
+            "下端が可視領域の下端から「余白 24 + 上方向オフセット」だけ上にない (可視領域 $visible / 実測 $rect)",
+            expectedBottom,
+            rect.bottom,
+        )
+        assertTrue(harness.waitUntilEmpty())
+    }
+
+    @Test
+    fun TS_AT_05_長いメッセージでもデフォルト_View_の左右に余白_24_が残る() {
+        // 左右のシステム領域で可視領域を幅 200 まで狭める。余白を引いた幅 (152) がデフォルト View 自身の
+        // 最大幅 (取り付け先の画面の幅の 80%) より狭くなり、余白の制約が先に効く。
+        // 余白の添付が無ければ、ピルは可視領域の左右の端 (100 / 300) まで広がる
+        val stage = DialogLayoutCase(
+            id = "TS-AT-05",
+            screen = DialogLayoutCase.Size(w = 400.0, h = 800.0),
+            insets = DialogLayoutCase.Insets(top = 50.0, left = 100.0, bottom = 30.0, right = 100.0),
+            contentSize = DialogLayoutCase.Size(w = 0.0, h = 0.0),
+            attributes = DialogLayoutCaseAttributes(),
+            expected = DialogLayoutCase.Rect(x = 0.0, y = 0.0, w = 0.0, h = 0.0),
+        )
+        val actual = ToastLayoutMeasurement.measureToastRect(
+            scenario = activityRule.scenario,
+            layoutCase = stage,
+            createContentView = { context ->
+                ToastDefaultContentView(context, LONG_MESSAGE, ToastStyle(), ToastTestAnnouncer())
+            },
+        )
+
+        val expectedLeft = stage.insets.left + DEFAULT_VIEW_MARGIN_DP
+        val expectedRight = stage.screen.w - stage.insets.right - DEFAULT_VIEW_MARGIN_DP
+        assertTrue(
+            "左端が可視領域の左端からちょうど 24 内側にない (期待 $expectedLeft / 実測 $actual)",
+            abs(actual.x - expectedLeft) <= DP_TOLERANCE,
+        )
+        assertTrue(
+            "右端が可視領域の右端からちょうど 24 内側にない (期待 $expectedRight / 実測 $actual)",
+            abs(actual.x + actual.w - expectedRight) <= DP_TOLERANCE,
+        )
+    }
+
+    @Test
+    fun TS_AT_06_配置を渡してもデフォルト_View_の余白は保たれる() = runBlocking<Unit> {
+        val topPlacement = DialogPlacement(verticalAlignment = DialogAlignment.START)
+
+        // show の placement 引数で渡す
+        val withArgument = ToastTestHarness(currentActivity())
+        withArgument.toast.show("引数の配置", durationMs = LONG_DURATION_MILLIS, placement = topPlacement)
+        assertTrue(withArgument.waitUntilPresenting())
+        val argumentContainer = withArgument.containers.single()
+        ToastLayoutObservation.awaitSettled(argumentContainer)
+        val argumentRect = ToastLayoutObservation.contentRect(argumentContainer)
+        val argumentVisible = ToastLayoutObservation.visibleArea(argumentContainer)
+        assertPixelsNear(
+            "show 引数の配置で上端が可視領域の上端から 24 内側にない (可視領域 $argumentVisible / 実測 $argumentRect)",
+            argumentVisible.top + toPixels(DEFAULT_VIEW_MARGIN_DP),
+            argumentRect.top,
+        )
+        assertTrue(withArgument.waitUntilEmpty())
+
+        // ToastStyle のアプリ既定配置に設定して、配置なしで出す
+        val withStyle = ToastTestHarness(currentActivity())
+        withStyle.toast.style = ToastStyle(defaultPlacement = topPlacement)
+        withStyle.toast.show("style の配置", durationMs = LONG_DURATION_MILLIS)
+        assertTrue(withStyle.waitUntilPresenting())
+        val styleContainer = withStyle.containers.single()
+        ToastLayoutObservation.awaitSettled(styleContainer)
+        val styleRect = ToastLayoutObservation.contentRect(styleContainer)
+        val styleVisible = ToastLayoutObservation.visibleArea(styleContainer)
+        assertPixelsNear(
+            "アプリ既定配置で上端が可視領域の上端から 24 内側にない (可視領域 $styleVisible / 実測 $styleRect)",
+            styleVisible.top + toPixels(DEFAULT_VIEW_MARGIN_DP),
+            styleRect.top,
+        )
+        assertTrue(withStyle.waitUntilEmpty())
+    }
+
+    @Test
+    fun TS_AT_07_何も添付しないカスタム_View_は余白_0_で契約既定配置に置かれる() = runBlocking<Unit> {
+        val harness = ToastTestHarness(currentActivity())
+        harness.registry.register(ToastTestViewModel::class) { _ ->
+            FixedContentSizeView(this, CONTENT_WIDTH_PIXELS, CONTENT_HEIGHT_PIXELS)
+        }
+
+        harness.toast.show(ToastTestViewModel(), durationMs = LONG_DURATION_MILLIS)
+        assertTrue(harness.waitUntilPresenting())
+        val container = harness.containers.single()
+        ToastLayoutObservation.awaitSettled(container)
+        val rect = ToastLayoutObservation.contentRect(container)
+        val visible = ToastLayoutObservation.visibleArea(container)
+
+        assertPixelsNear(
+            "下端が可視領域の下端から上方向オフセットだけ上にない (可視領域 $visible / 実測 $rect)",
+            visible.bottom - toPixels(ToastPlacementDefault.BOTTOM_BAR_CLEARANCE),
+            rect.bottom,
+        )
+        assertTrue(harness.waitUntilEmpty())
+    }
+
+    @Test
+    fun 余白を添付しないカスタム_Toast_は末尾寄せの配置引数で可視領域の下端に接する() = runBlocking<Unit> {
+        // 余白の契約既定値は全辺 0 (core/ADR-0039)
+        val harness = ToastTestHarness(currentActivity())
+        harness.registry.register(ToastTestViewModel::class) { _ ->
+            FixedContentSizeView(this, CONTENT_WIDTH_PIXELS, CONTENT_HEIGHT_PIXELS)
+        }
+
+        harness.toast.show(
+            ToastTestViewModel(),
+            durationMs = LONG_DURATION_MILLIS,
+            placement = DialogPlacement(verticalAlignment = DialogAlignment.END, offsetY = 0.0),
+        )
+        assertTrue(harness.waitUntilPresenting())
+        val container = harness.containers.single()
+        ToastLayoutObservation.awaitSettled(container)
+        val rect = ToastLayoutObservation.contentRect(container)
+        val visible = ToastLayoutObservation.visibleArea(container)
+
+        assertPixelsNear(
+            "下端が可視領域の下端に接していない (可視領域 $visible / 実測 $rect)",
+            visible.bottom,
+            rect.bottom,
+        )
+        assertTrue(harness.waitUntilEmpty())
+    }
+
+    @Test
     fun デフォルト_View_に_ToastStyle_の視覚項目が反映される() = runBlocking<Unit> {
         val harness = ToastTestHarness(currentActivity())
         harness.toast.style = ToastStyle(
@@ -223,6 +366,16 @@ class ToastAttributeTests {
         return rect
     }
 
+    /** 論理単位 (dp) をこの端末の px へ直す。 */
+    private fun toPixels(dp: Double): Int =
+        (dp * currentActivity().resources.displayMetrics.density).roundToInt()
+
+    /** px の位置が、論理単位 1 の丸めの範囲で一致することを確かめる。 */
+    private fun assertPixelsNear(message: String, expected: Int, actual: Int) {
+        val tolerance = currentActivity().resources.displayMetrics.density * DP_TOLERANCE
+        assertTrue("$message (期待 $expected px / 実測 $actual px)", abs(expected - actual) <= tolerance)
+    }
+
     private fun currentActivity(): Activity {
         val activity = AtomicReference<Activity>()
         activityRule.scenario.onActivity { activity.set(it) }
@@ -239,6 +392,12 @@ class ToastAttributeTests {
 
         /** 検証の間ずっと残っていてほしい表示時間 (ミリ秒)。 */
         const val LONG_DURATION_MILLIS = 6_000
+
+        /** デフォルト View が自分に添付している余白 (dp、全辺)。 */
+        const val DEFAULT_VIEW_MARGIN_DP = 24.0
+
+        /** 位置の比較で許す差 (dp)。ケース表の許容誤差と同じく、密度による丸めの分を見込む。 */
+        const val DP_TOLERANCE = 1.0
 
         /** 文字の大きさの許容差 (sp)。 */
         const val FONT_SIZE_TOLERANCE = 0.5

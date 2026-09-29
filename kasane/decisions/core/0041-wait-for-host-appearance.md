@@ -1,5 +1,5 @@
 ---
-id: 0039
+id: 0041
 title: 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる
 status: accepted
 date: 2026-09-27
@@ -64,5 +64,5 @@ Dialog の「その場で失敗する」を決めた ADR は無く、core の結
 - `kasane/changes/archive/2026-09-27-fix-ios-sample-demo-autoplay/exploration.md` (「Dialog / Loading も待つ」案の見送りとその理由) / `evidence/autoplay-measurement.md` (起動直後のシーンの状態の順と、修正前の自動再生の実測)
 
 関連: maui/ADR-0006 (MAUI の Dialog の show に呼び出し元の打ち切りを足す。本決定の待ちを MAUI でも止められるようにする)
-関連: core/ADR-0040 (Toast・Loading の中身は提示先を確保してから作る。本決定の待ちのもとでの中身の生成の時点と、Loading の生成失敗の扱いを定める)
+関連: core/ADR-0042 (Toast・Loading の中身は提示先を確保してから作る。本決定の待ちのもとでの中身の生成の時点と、Loading の生成失敗の扱いを定める)
 関連: core/ADR-0006 (多段表示は OS へ委譲し、ライブラリはスタックを管理しない。待っている Dialog の列は OS に渡す前の待ちで、渡したあとの重なりは OS に任せたままなので衝突しない)

@@ -308,7 +308,7 @@ internal class MainActivity : ComponentActivity() {
     private fun showLayoutDialog() {
         val panel = layoutPanelState
         scope.launch {
-            val result = presenter.showLayoutDialog(panel.placement(), panel.layoutArea.preset)
+            val result = presenter.showLayoutDialog(panel.placement(), panel.layoutArea.preset, panel.margin.value)
             panel.lastResult = result
             menuView.showResult(result)
         }

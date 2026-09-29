@@ -1,0 +1,61 @@
+# kmp-android: 属性調整パネルの accessibility ノード (uiautomator dump から、操作できるノードを抜粋)
+# 取得: 2026-09-27、Android エミュレータ (Pixel 6 相当 AVD, API 35, 1080x2400)、--es demo layout-dialog で起動
+# 状態: initial = 起動直後 / changed = Current page・Horizontal End・Vertical End・Margin 24 を選択 / back-to-panel = Horizontal Start・Vertical Start にして Info タブで Show → 戻る → Panel タブへ戻る
+# 列: class (ノード自身) / name (自身か子孫の content-desc、無ければ text) / role (自身か子孫の擬似ノードが示す部品種別) / 状態
+## initial
+  class=View name='Horizontal Start' text='Start' role=Button checkable=true checked=false selected=false
+  class=View name='Horizontal Center' text='Center' role=Button checkable=true checked=true selected=false
+  class=View name='Horizontal End' text='End' role=Button checkable=true checked=false selected=false
+  class=View name='Vertical Start' text='Start' role=Button checkable=true checked=false selected=false
+  class=View name='Vertical Center' text='Center' role=Button checkable=true checked=true selected=false
+  class=View name='Vertical End' text='End' role=Button checkable=true checked=false selected=false
+  class=EditText name='OffsetX' text='0' role=EditText checkable=false checked=false selected=false
+  class=EditText name='OffsetY' text='0' role=EditText checkable=false checked=false selected=false
+  class=View name='Window' text='Window' role=Button checkable=true checked=false selected=false
+  class=View name='Visible area' text='Visible area' role=Button checkable=true checked=true selected=false
+  class=View name='Current page' text='Current page' role=Button checkable=true checked=false selected=false
+  class=View name='Margin 0' text='0' role=Button checkable=true checked=true selected=false
+  class=View name='Margin 24' text='24' role=Button checkable=true checked=false selected=false
+  class=View name='Margin 48' text='48' role=Button checkable=true checked=false selected=false
+  class=View name='戻る' text='‹' role=Button checkable=false checked=false selected=false
+  class=View name='Show' text='Show' role=Button checkable=false checked=false selected=false
+  class=View name='Panel' text='Panel' role=- checkable=false checked=false selected=true
+  class=View name='Info' text='Info' role=- checkable=false checked=false selected=false
+## changed
+  class=View name='Horizontal Start' text='Start' role=Button checkable=true checked=false selected=false
+  class=View name='Horizontal Center' text='Center' role=Button checkable=true checked=false selected=false
+  class=View name='Horizontal End' text='End' role=Button checkable=true checked=true selected=false
+  class=View name='Vertical Start' text='Start' role=Button checkable=true checked=false selected=false
+  class=View name='Vertical Center' text='Center' role=Button checkable=true checked=false selected=false
+  class=View name='Vertical End' text='End' role=Button checkable=true checked=true selected=false
+  class=EditText name='OffsetX' text='0' role=EditText checkable=false checked=false selected=false
+  class=EditText name='OffsetY' text='0' role=EditText checkable=false checked=false selected=false
+  class=View name='Window' text='Window' role=Button checkable=true checked=false selected=false
+  class=View name='Visible area' text='Visible area' role=Button checkable=true checked=false selected=false
+  class=View name='Current page' text='Current page' role=Button checkable=true checked=true selected=false
+  class=View name='Margin 0' text='0' role=Button checkable=true checked=false selected=false
+  class=View name='Margin 24' text='24' role=Button checkable=true checked=true selected=false
+  class=View name='Margin 48' text='48' role=Button checkable=true checked=false selected=false
+  class=View name='戻る' text='‹' role=Button checkable=false checked=false selected=false
+  class=View name='Show' text='Show' role=Button checkable=false checked=false selected=false
+  class=View name='Panel' text='Panel' role=- checkable=false checked=false selected=true
+  class=View name='Info' text='Info' role=- checkable=false checked=false selected=false
+## back-to-panel
+  class=View name='Horizontal Start' text='Start' role=Button checkable=true checked=true selected=false
+  class=View name='Horizontal Center' text='Center' role=Button checkable=true checked=false selected=false
+  class=View name='Horizontal End' text='End' role=Button checkable=true checked=false selected=false
+  class=View name='Vertical Start' text='Start' role=Button checkable=true checked=true selected=false
+  class=View name='Vertical Center' text='Center' role=Button checkable=true checked=false selected=false
+  class=View name='Vertical End' text='End' role=Button checkable=true checked=false selected=false
+  class=EditText name='OffsetX' text='0' role=EditText checkable=false checked=false selected=false
+  class=EditText name='OffsetY' text='0' role=EditText checkable=false checked=false selected=false
+  class=View name='Window' text='Window' role=Button checkable=true checked=false selected=false
+  class=View name='Visible area' text='Visible area' role=Button checkable=true checked=false selected=false
+  class=View name='Current page' text='Current page' role=Button checkable=true checked=true selected=false
+  class=View name='Margin 0' text='0' role=Button checkable=true checked=false selected=false
+  class=View name='Margin 24' text='24' role=Button checkable=true checked=true selected=false
+  class=View name='Margin 48' text='48' role=Button checkable=true checked=false selected=false
+  class=View name='戻る' text='‹' role=Button checkable=false checked=false selected=false
+  class=View name='Show' text='Show' role=Button checkable=false checked=false selected=false
+  class=View name='Panel' text='Panel' role=- checkable=false checked=false selected=true
+  class=View name='Info' text='Info' role=- checkable=false checked=false selected=false

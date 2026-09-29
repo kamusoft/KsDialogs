@@ -63,7 +63,7 @@ internal fun pumpMainLoopUntil(
  * 共有コードの show を別スレッドで始め、失敗も完了もせずに提示先を待っていることを確かめてから打ち切る。
  *
  * テストの実行体には提示先の画面が無いため、登録済みの ViewModel の show は失敗せずに待ち続ける
- * (core/ADR-0039)。未登録の ViewModel は待たずにその場で失敗する。この違いを View factory の解決に
+ * (core/ADR-0041)。未登録の ViewModel は待たずにその場で失敗する。この違いを View factory の解決に
  * 成功した印として使う。待っていることは、未登録の失敗が十分に届く [waitingPeriod] の間、
  * UI スレッドを回しても結果も失敗も返らないことで判定する。
  *

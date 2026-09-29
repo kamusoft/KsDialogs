@@ -125,7 +125,7 @@ final class ToastCoordinator {
 
     /// 受理した1枚を表示リストに載せ、取り付けと期限の計時を始める。
     ///
-    /// 中身はここでは作らず、取り付けの時点で作る (`attachIfPossible`、core/ADR-0040)。
+    /// 中身はここでは作らず、取り付けの時点で作る (`attachIfPossible`、core/ADR-0042)。
     private func beginDisplay(
         _ request: ToastContentRequest,
         style: ToastStyle,
@@ -213,10 +213,23 @@ final class ToastCoordinator {
         stopWaitingForHostIfSatisfied()
     }
 
+    /// 表示中のすべての Toast を、演出も期限も待たずに捨てる。
+    ///
+    /// 公開の入口からは呼ばれない。検証の後始末で、器だけでなく表示と期限の計時も残さないために使う
+    /// (期限まで表示が残ると、中身と ViewModel を握り続けるため)。期限による撤去が進行中の表示と
+    /// 重なっても、撤去は 1 回分しか効かない。
+    func discardAll() {
+        for display in displays {
+            discard(display)
+        }
+    }
+
     /// 表示を成立しなかったものとして捨てる。演出は走らせない。
+    /// 器が取り付いていれば、その場で取り付け先から外す。
     private func discard(_ display: ToastDisplay) {
         display.isFinishing = true
         display.timerTask?.cancel()
+        display.container?.removeImmediately()
         display.releaseResources()
         displays.removeAll { $0 === display }
         stopWaitingForHostIfSatisfied()

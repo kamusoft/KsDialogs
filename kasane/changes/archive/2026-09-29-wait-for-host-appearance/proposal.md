@@ -16,9 +16,9 @@ iOS の Toast が待てない原因は、待ちが解ける合図 (window が ke
 
 決定は探索で確定済み。経緯は [exploration.md](exploration.md)。
 
-- [core/ADR-0039](../../decisions/core/0039-wait-for-host-appearance.md) (proposed): 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる
+- [core/ADR-0041](../../decisions/core/0041-wait-for-host-appearance.md) (proposed): 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる
 - [maui/ADR-0006](../../decisions/maui/0006-dialog-show-caller-cancellation.md) (proposed): MAUI の Dialog の show に呼び出し元の打ち切りを足す
-- [core/ADR-0040](../../decisions/core/0040-content-created-after-host-secured.md) (proposed、core/ADR-0033 の amends): Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める (提案レビューでの指摘を受けてオーナーが改訂を選択)
+- [core/ADR-0042](../../decisions/core/0042-content-created-after-host-secured.md) (proposed、core/ADR-0033 の amends): Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める (提案レビューでの指摘を受けてオーナーが改訂を選択)
 
 ## What Changes
 
@@ -44,7 +44,7 @@ iOS の Toast が待てない原因は、待ちが解ける合図 (window が ke
   - 「その場で失敗する」を前提にしたテストと、それを別の検査の判定材料にしているテストを作り直す (KMP の DM-KM-01〜03・PB-KT-09・MB-KM-02、MAUI の一部を含む)
   - 直す前に、iOS の起動直後 (シーンがアクティブになる前) の呼び出しで 3 機能が出ないことを実測で再現し、証跡に残す。シーンが一時的に非アクティブになる場面 (システムの許可ダイアログなど) も観測する
 - **Sample**: iOS Sample と KMP の iOS Sample の自動再生から、「シーンがアクティブになってから再生する」待ち (前回の change がライブラリの不具合を避けるために入れた回避) を外し、最初の画面の表示時の処理から呼ぶ形に戻す。デモ項目は変えない。自動再生が、直す前の再現と直した後の確認の観測点を兼ねる (design Decision 10、オーナー判断 2026-09-27)
-- **ADR**: core/ADR-0039・maui/ADR-0006 (proposed) を、design と実装の結果に合わせて見直す
+- **ADR**: core/ADR-0041・maui/ADR-0006 (proposed) を、design と実装の結果に合わせて見直す
 - **蒸留時に反映**:
   - concepts core/api/result-notification-semantics.md — 失敗のルール (出す先の画面が無い場合) と、呼び出し元の打ち切りの形態別の表 (MAUI の「経路なし」)
   - concepts core/api/loading-semantics.md・toast-semantics.md — 提示環境の不在の記述
@@ -52,13 +52,13 @@ iOS の Toast が待てない原因は、待ちが解ける合図 (window が ke
   - concepts ios / android / maui / kmp の dialog-surface.md ほかの公開面 — 失敗の表と打ち切りの署名
   - handbook cross/test-execution.md — KMP の iosTest で提示先が常に無いことの説明と、提示先不在の文言の引用
   - core/ADR-0035 の現行照合 — 「Toast の型指定経路の VM factory・configure は iOS では受理時点で走る」という観測を、全形態で取り付けの時点に揃ったことへ更新する (決定の本文は変えない)
-  - core/ADR-0039・maui/ADR-0006・core/ADR-0040 の昇格。ADR-0040 の昇格と同時に、core/ADR-0033 の frontmatter に `amended-by: 0040` を足し、index の ADR-0033 の行に「一部改訂: 0040」を書く
+  - core/ADR-0041・maui/ADR-0006・core/ADR-0042 の昇格。ADR-0042 の昇格と同時に、core/ADR-0033 の frontmatter に `amended-by: 0042` を足し、index の ADR-0033 の行に「一部改訂: 0042」を書く
 
 影響する能力: dialog-contract・loading-contract・toast-contract・ios-native・android-native・maui-binding・kmp-facade・samples
 
 ## Non-Goals
 
-- **何を提示先とみなすかの定義の変更** — 別の設計判断が要る。定義を緩める案 (非アクティブでも前面のシーンなら提示先にする) は探索で却下済みで、core/ADR-0039 の範囲外
+- **何を提示先とみなすかの定義の変更** — 別の設計判断が要る。定義を緩める案 (非アクティブでも前面のシーンなら提示先にする) は探索で却下済みで、core/ADR-0041 の範囲外
 - **MAUI の Loading・Toast の入口への打ち切りの追加** — maui/ADR-0006 の範囲外。打ち切りを足す動機は Dialog の待ちに上限が無いことで、Loading・Toast はそれぞれの寿命 (処理の終了・表示時間) で終わる
 - **Android の Toast・Loading の実装** — 変えない。待ちの合図 (resumed な Activity の入れ替わり) と提示先の条件がすでに一致している (探索のコード読解)。実機での確認は検証に含める
 - **Sample のデモ項目** — 変えない。打ち切りなどを見せるデモは 4 ルートで揃える必要があり、この変更の契約の検証には要らない (自動再生の回避を外すことは What Changes に含める)

@@ -13,6 +13,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import jp.kamusoft.ksdialogs.support.DialogLayoutTestActivity
+import jp.kamusoft.ksdialogs.support.ImmersiveModeConfirmation
 import jp.kamusoft.ksdialogs.support.DialogScreenshotEvidence
 import jp.kamusoft.ksdialogs.support.attach
 import org.junit.Before
@@ -51,86 +52,95 @@ class DialogSystemBarsTests {
     @Test
     fun PB_SB_01_全システムバー非表示の画面でダイアログを出してもバーが再出現しない() {
         assumeInsetsControllerPath()
-        val hiddenTypes = WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()
-        hideHostSystemBars(hiddenTypes)
-        val hostBehavior = readHostBehavior()
+        // バーを隠した提示先では OS の全画面表示の確認ウィンドウが割り込み得るので、この検証の間は止めておく
+        ImmersiveModeConfirmation.whileSuppressed {
+            val hiddenTypes = WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()
+            hideHostSystemBars(hiddenTypes)
+            val hostBehavior = readHostBehavior()
 
-        val container = presentContainer()
-        try {
-            assertTrue(
-                "提示先のステータスバーが再出現した",
-                awaitHostBarHidden(WindowInsets.Type.statusBars()),
-            )
-            assertTrue(
-                "提示先のナビゲーションバーが再出現した",
-                awaitHostBarHidden(WindowInsets.Type.navigationBars()),
-            )
-            assertTrue(
-                "ダイアログのウィンドウ側でステータスバーが表示されている",
-                awaitDialogBarVisibility(container, WindowInsets.Type.statusBars(), visible = false),
-            )
-            assertTrue(
-                "ダイアログのウィンドウ側でナビゲーションバーが表示されている",
-                awaitDialogBarVisibility(container, WindowInsets.Type.navigationBars(), visible = false),
-            )
-            assertEquals(
-                "隠れたバーの再表示の作法が引き継がれていない",
-                hostBehavior,
-                readDialogBehavior(container),
-            )
-            DialogScreenshotEvidence.capture("PB-SB-01-all-bars-hidden")
-        } finally {
-            dismiss(container)
+            val container = presentContainer()
+            try {
+                assertTrue(
+                    "提示先のステータスバーが再出現した",
+                    awaitHostBarHidden(WindowInsets.Type.statusBars()),
+                )
+                assertTrue(
+                    "提示先のナビゲーションバーが再出現した",
+                    awaitHostBarHidden(WindowInsets.Type.navigationBars()),
+                )
+                assertTrue(
+                    "ダイアログのウィンドウ側でステータスバーが表示されている",
+                    awaitDialogBarVisibility(container, WindowInsets.Type.statusBars(), visible = false),
+                )
+                assertTrue(
+                    "ダイアログのウィンドウ側でナビゲーションバーが表示されている",
+                    awaitDialogBarVisibility(container, WindowInsets.Type.navigationBars(), visible = false),
+                )
+                assertEquals(
+                    "隠れたバーの再表示の作法が引き継がれていない",
+                    hostBehavior,
+                    readDialogBehavior(container),
+                )
+                DialogScreenshotEvidence.capture("PB-SB-01-all-bars-hidden")
+            } finally {
+                dismiss(container)
+            }
         }
     }
 
     @Test
     fun PB_SB_02_ステータスバーのみ非表示の画面を引き継ぐ() {
         assumeInsetsControllerPath()
-        hideHostSystemBars(WindowInsets.Type.statusBars())
+        // バーを隠した提示先では OS の全画面表示の確認ウィンドウが割り込み得るので、この検証の間は止めておく
+        ImmersiveModeConfirmation.whileSuppressed {
+            hideHostSystemBars(WindowInsets.Type.statusBars())
 
-        val container = presentContainer()
-        try {
-            assertTrue(
-                "提示先のステータスバーが再出現した",
-                awaitHostBarHidden(WindowInsets.Type.statusBars()),
-            )
-            assertTrue(
-                "ダイアログのウィンドウ側でステータスバーが表示されている",
-                awaitDialogBarVisibility(container, WindowInsets.Type.statusBars(), visible = false),
-            )
-            assertTrue(
-                "隠していないナビゲーションバーまで隠れた",
-                awaitDialogBarVisibility(container, WindowInsets.Type.navigationBars(), visible = true),
-            )
-            DialogScreenshotEvidence.capture("PB-SB-02-status-bar-hidden")
-        } finally {
-            dismiss(container)
+            val container = presentContainer()
+            try {
+                assertTrue(
+                    "提示先のステータスバーが再出現した",
+                    awaitHostBarHidden(WindowInsets.Type.statusBars()),
+                )
+                assertTrue(
+                    "ダイアログのウィンドウ側でステータスバーが表示されている",
+                    awaitDialogBarVisibility(container, WindowInsets.Type.statusBars(), visible = false),
+                )
+                assertTrue(
+                    "隠していないナビゲーションバーまで隠れた",
+                    awaitDialogBarVisibility(container, WindowInsets.Type.navigationBars(), visible = true),
+                )
+                DialogScreenshotEvidence.capture("PB-SB-02-status-bar-hidden")
+            } finally {
+                dismiss(container)
+            }
         }
     }
 
     @Test
     fun PB_SB_03_ナビゲーションバーのみ非表示の画面を引き継ぐ() {
         assumeInsetsControllerPath()
-        hideHostSystemBars(WindowInsets.Type.navigationBars())
+        // バーを隠した提示先では OS の全画面表示の確認ウィンドウが割り込み得るので、この検証の間は止めておく
+        ImmersiveModeConfirmation.whileSuppressed {
+            hideHostSystemBars(WindowInsets.Type.navigationBars())
 
-        val container = presentContainer()
-        try {
-            assertTrue(
-                "提示先のナビゲーションバーが再出現した",
-                awaitHostBarHidden(WindowInsets.Type.navigationBars()),
-            )
-            assertTrue(
-                "ダイアログのウィンドウ側でナビゲーションバーが表示されている",
-                awaitDialogBarVisibility(container, WindowInsets.Type.navigationBars(), visible = false),
-            )
-            assertTrue(
-                "隠していないステータスバーまで隠れた",
-                awaitDialogBarVisibility(container, WindowInsets.Type.statusBars(), visible = true),
-            )
-            DialogScreenshotEvidence.capture("PB-SB-03-navigation-bar-hidden")
-        } finally {
-            dismiss(container)
+            val container = presentContainer()
+            try {
+                assertTrue(
+                    "提示先のナビゲーションバーが再出現した",
+                    awaitHostBarHidden(WindowInsets.Type.navigationBars()),
+                )
+                assertTrue(
+                    "ダイアログのウィンドウ側でナビゲーションバーが表示されている",
+                    awaitDialogBarVisibility(container, WindowInsets.Type.navigationBars(), visible = false),
+                )
+                assertTrue(
+                    "隠していないステータスバーまで隠れた",
+                    awaitDialogBarVisibility(container, WindowInsets.Type.statusBars(), visible = true),
+                )
+                DialogScreenshotEvidence.capture("PB-SB-03-navigation-bar-hidden")
+            } finally {
+                dismiss(container)
+            }
         }
     }
 
@@ -203,28 +213,30 @@ class DialogSystemBarsTests {
     @Test
     fun PB_SB_06_表示後の提示先の可視状態の変更には追随しない() {
         assumeInsetsControllerPath()
+        // バーを隠した提示先では OS の全画面表示の確認ウィンドウが割り込み得るので、この検証の間は止めておく
+        ImmersiveModeConfirmation.whileSuppressed {
+            val container = presentContainer()
+            try {
+                assertTrue(
+                    "表示時点でステータスバーが表示されていない",
+                    awaitDialogBarVisibility(container, WindowInsets.Type.statusBars(), visible = true),
+                )
 
-        val container = presentContainer()
-        try {
-            assertTrue(
-                "表示時点でステータスバーが表示されていない",
-                awaitDialogBarVisibility(container, WindowInsets.Type.statusBars(), visible = true),
-            )
+                // 表示中に提示先が全システムバーを隠す
+                hideHostSystemBars(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                waitForSettling()
 
-            // 表示中に提示先が全システムバーを隠す
-            hideHostSystemBars(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-            waitForSettling()
-
-            assertTrue(
-                "表示後の提示先の変更に追随してしまった",
-                readOnMainThread { isDialogBarVisible(container, WindowInsets.Type.statusBars()) },
-            )
-            assertTrue(
-                "表示後の提示先の変更に追随してしまった",
-                readOnMainThread { isDialogBarVisible(container, WindowInsets.Type.navigationBars()) },
-            )
-        } finally {
-            dismiss(container)
+                assertTrue(
+                    "表示後の提示先の変更に追随してしまった",
+                    readOnMainThread { isDialogBarVisible(container, WindowInsets.Type.statusBars()) },
+                )
+                assertTrue(
+                    "表示後の提示先の変更に追随してしまった",
+                    readOnMainThread { isDialogBarVisible(container, WindowInsets.Type.navigationBars()) },
+                )
+            } finally {
+                dismiss(container)
+            }
         }
     }
 
@@ -234,8 +246,10 @@ class DialogSystemBarsTests {
 
         val container = presentContainer()
         try {
+            // 表示時に器が採った作法を控える。作法を指定していない提示先から器が OS の既定を採ることは
+            // DialogSystemBarAppearanceTests がウィンドウ管理の値で確かめている (アプリから読める値では、版によって「指定なし」と
+            // 「触れたら出すを明示」がどちらも 0 になり、ここで提示先と比べても判定にならない)
             val adopted = readDialogBehavior(container)
-            assertEquals("提示先の既定の作法が引き継がれていない", readHostBehavior(), adopted)
 
             // 表示中に提示先が作法を変える
             setHostBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE)

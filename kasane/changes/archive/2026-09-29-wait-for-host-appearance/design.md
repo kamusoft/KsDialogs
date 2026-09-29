@@ -4,7 +4,7 @@
 
 方向は探索で決まっている ([exploration.md](exploration.md)・[proposal.md](proposal.md))。
 
-- core/ADR-0039 (proposed): 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待つ。待ちの上限は各機能の寿命に任せる
+- core/ADR-0041 (proposed): 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待つ。待ちの上限は各機能の寿命に任せる
 - maui/ADR-0006 (proposed): MAUI の Dialog の show に呼び出し元の打ち切りを足す
 
 この design は、それを各形態でどう実現するかを決める。実現経路の調査 (2026-09-27、ksn-scout 2 本) で分かった現状は次のとおり。
@@ -79,10 +79,10 @@
 - **Dialog**: Decision 3 のとおり、待ちの後に View を作る (両 Native とも、今も提示先の判定の後に作っている)
 
 **理由:**
-- MAUI の中身の供給は、MAUI の画面の文脈を必要とする。iOS が受理・開始の時点で作ると、MAUI の画面ができる前の呼び出しで供給が失敗する。そうなると Loading は開始が失敗し、Toast は捨てられる。どちらも core/ADR-0039 の「失敗せず待つ」に反する
+- MAUI の中身の供給は、MAUI の画面の文脈を必要とする。iOS が受理・開始の時点で作ると、MAUI の画面ができる前の呼び出しで供給が失敗する。そうなると Loading は開始が失敗し、Toast は捨てられる。どちらも core/ADR-0041 の「失敗せず待つ」に反する
 - 提示先の確保後に作れば、MAUI の画面の文脈は用意されている見込みが高い。Native の提示先は、MAUI が画面ごとに作る Native の window (iOS) や Activity (Android) で、MAUI はそれを作る時点で画面に文脈を持たせる。ただし、この見込みは MAUI の内部の順序に依存し、リポジトリの中では確かめられない。そこで tasks 9.3 で MAUI の Sample の起動直後を実測する。見込みが外れた場合は、Decision 7 の失敗 (`InvalidOperationException`) になる
 - Android はすでにこの形で、iOS を揃えると「中身の生成の時点」の承認済みの差 (`kasane/concepts/core/api/toast-semantics.md:63`) が消える
-- 提示先が無いまま始まった Loading の生成失敗を「表示だけを諦める」とすることは、core/ADR-0033 (Loading の失敗の合流先 = 開始の失敗) の一部を置き換える。core/ADR-0040 (proposed、ADR-0033 の amends) に記録した
+- 提示先が無いまま始まった Loading の生成失敗を「表示だけを諦める」とすることは、core/ADR-0033 (Loading の失敗の合流先 = 開始の失敗) の一部を置き換える。core/ADR-0042 (proposed、ADR-0033 の amends) に記録した
 - Loading で提示先があるときの開始時の失敗を保つので、構成ミスは今までどおり呼び出し元に返る。変わるのは、提示先が無いまま始まった表示だけ
 
 **代替案:**
@@ -251,7 +251,7 @@
 - **Loading の失敗の見え方の変化 (iOS)**: 提示先が無いまま始まった表示の中身の生成の失敗は、開始の失敗ではなく、警告と表示の諦めになる。Android と同じだが、iOS の利用者から見ると、その場合だけ失敗が返らなくなる
 - **Toast の VM factory が呼ばれない場合が増える (iOS)**: 提示先が現れないまま満了した表示では、型指定経路の VM factory と configure が一度も呼ばれない。Android と同じで、承認済みの差が消える
 - **テストの作り直しの量**: KMP の 11 本 (Dialog 7 本・Toast と Loading 4 本)、MAUI ブリッジの 2 本、各 Native の即失敗・保留のテスト
-- **返らない Dialog**: 画面が現れない場所から呼んだ Dialog は返らない (core/ADR-0039 の負の帰結)。呼び出し元の打ち切りで防ぐ
+- **返らない Dialog**: 画面が現れない場所から呼んだ Dialog は返らない (core/ADR-0041 の負の帰結)。呼び出し元の打ち切りで防ぐ
 
 ## Migration Plan
 
@@ -269,6 +269,6 @@
 
 ## ADR 候補
 
-- **core/ADR-0039** (proposed、起票済み): 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる — Decision 2〜5・7 の前提。蒸留時に、実装の結果に合わせて見直してから昇格する
+- **core/ADR-0041** (proposed、起票済み): 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる — Decision 2〜5・7 の前提。蒸留時に、実装の結果に合わせて見直してから昇格する
 - **maui/ADR-0006** (proposed、起票済み): MAUI の Dialog の show に呼び出し元の打ち切りを足し、待っている Dialog と表示中の Dialog をコードから止められるようにする — Decision 6。打ち切りの見え方 (`OperationCanceledException`) は、ADR が設計に委ねた範囲の決定で、ADR の本文には写さない
-- **core/ADR-0040** (proposed、起票済み。core/ADR-0033 の amends): Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める — Decision 2。提案レビュー (second-opinion-spec-001 Major 1) で ADR-0033 との衝突が指摘され、オーナーが改訂を選んだ (2026-09-27)。蒸留時に昇格し、ADR-0033 に `amended-by: 0040` と index の「一部改訂」を書く
+- **core/ADR-0042** (proposed、起票済み。core/ADR-0033 の amends): Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める — Decision 2。提案レビュー (second-opinion-spec-001 Major 1) で ADR-0033 との衝突が指摘され、オーナーが改訂を選んだ (2026-09-27)。蒸留時に昇格し、ADR-0033 に `amended-by: 0042` と index の「一部改訂」を書く

@@ -273,7 +273,7 @@ final class LoadingCoordinator {
     /// 現れていれば中身を作り、入りの演出から表示する。ここは既に走り出した処理の途中なので、
     /// 中身の生成の失敗は呼び出し元へ返さず、警告を残してこの表示を諦める
     /// (合流状態は残り、処理はそのまま完了できる)。生成できない中身を次の合図で作り直しても
-    /// 同じ失敗を繰り返すため、待ちもここでやめる (core/ADR-0040)。
+    /// 同じ失敗を繰り返すため、待ちもここでやめる (core/ADR-0042)。
     private func presentPendingDisplayIfHostAppeared() {
         guard let pending = pendingDisplay, activeCount > 0, container == nil, dismissalTask == nil else {
             return

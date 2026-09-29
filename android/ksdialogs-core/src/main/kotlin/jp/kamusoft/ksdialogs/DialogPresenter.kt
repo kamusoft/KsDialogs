@@ -18,7 +18,7 @@ internal object DialogPresenter {
      *
      * 呼び出しは任意のスレッドから行え、提示と閉鎖は UI スレッドで実行する。
      * 未登録は提示先の有無にかかわらず待たずに [DialogException] を投げ、View の生成・表示も行わない。
-     * 提示先が無ければ失敗せず、提示先の出現を待ってから View を作る (core/ADR-0039)。
+     * 提示先が無ければ失敗せず、提示先の出現を待ってから View を作る (core/ADR-0041)。
      * [placement] は show の引数で渡された配置で、null なら中身の View への添付が使われる。
      */
     suspend fun present(
@@ -38,7 +38,7 @@ internal object DialogPresenter {
      * 渡された factory をその場で使ってダイアログとして提示し、結果を待つ。
      *
      * レジストリは参照も更新もしないため、この提示は既存の登録に干渉しない (core/ADR-0013)。
-     * 提示先が無ければ失敗せず、提示先の出現を待ってから View を作る (core/ADR-0039)。
+     * 提示先が無ければ失敗せず、提示先の出現を待ってから View を作る (core/ADR-0041)。
      */
     suspend fun present(
         viewModel: DialogViewModel<*>,

@@ -7,13 +7,13 @@ import UIKit
 /// 基準領域「表示中のページ」のテストで使う、ウィンドウ・器の組み立てと矩形の照合。
 ///
 /// 寸法は共通ケース表と同じ縦長の画面 (400 x 800、上 50 / 下 30 のシステム領域) にそろえる。
-/// 中身は内容サイズ 280 x 180 固定で、余白は契約既定の 24 を使う。
+/// 中身は内容サイズ 280 x 180 固定で、余白は契約既定の 0 を使う (core/ADR-0039)。
 @MainActor
 enum DialogCurrentPageStage {
     static let screen = DialogLayoutCase.Size(w: 400, h: 800)
     static let insets = DialogLayoutCase.Insets(top: 50, bottom: 30, left: 0, right: 0)
     static let contentSize = CGSize(width: 280, height: 180)
-    static let margin: CGFloat = 24
+    static let margin: CGFloat = 0
 
     /// 右下 (水平・垂直とも End)。
     static let endEnd = DialogPlacement(horizontalAlignment: .end, verticalAlignment: .end)

@@ -12,7 +12,7 @@ timestamp: 2026-09-29
 
 本文中の**移植元**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す。参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)。ローカルでは `../AiForms.Maui.Dialogs` で参照する。
 
-この文書は、4 形態の実装とテストが満たしている挙動を記述する (一次情報はコードとテスト)。根拠決定は [core/ADR-0003](../../../decisions/core/0003-result-notification-async-typed.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」)。出す先の画面が無いときの待ちは [core/ADR-0039](../../../decisions/core/0039-wait-for-host-appearance.md)、MAUI の打ち切りは [maui/ADR-0006](../../../decisions/maui/0006-dialog-show-caller-cancellation.md) が根拠である。
+この文書は、4 形態の実装とテストが満たしている挙動を記述する (一次情報はコードとテスト)。根拠決定は [core/ADR-0003](../../../decisions/core/0003-result-notification-async-typed.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」)。出す先の画面が無いときの待ちは [core/ADR-0041](../../../decisions/core/0041-wait-for-host-appearance.md)、MAUI の打ち切りは [maui/ADR-0006](../../../decisions/maui/0006-dialog-show-caller-cancellation.md) が根拠である。
 
 core は「全形態が共有する契約」の層 (層の区分は [concepts 配置ルール](../../rules.md))。公開名・署名・コード例は各形態の公開面が持つ (末尾の「形態別の公開面」)。
 
@@ -158,7 +158,7 @@ show の戻りの形・結果の枝の綴り・構成ミスの失敗の型・呼
 - [core/ADR-0005](../../../decisions/core/0005-no-view-reuse-mechanism.md) — 決定 (使い捨てモデル)。ルール6 はこのモデルの帰結
 - [core/ADR-0018](../../../decisions/core/0018-notifier-vm-injection-side-table.md) — 決定 (結果報告口のインスタンス同一性紐付け)。ルール6 の「同一インスタンスの並行 show は構成ミス失敗」の根拠
 - [core/ADR-0017](../../../decisions/core/0017-animation-hooks-transition-attachment.md) — 決定 (退出演出の完了を待ってから結果を配送する)。ラッチと配送を分ける規則の根拠
-- [core/ADR-0039](../../../decisions/core/0039-wait-for-host-appearance.md) — 決定 (出す先の画面が無いときは失敗せず、上限なしで待つ)
+- [core/ADR-0041](../../../decisions/core/0041-wait-for-host-appearance.md) — 決定 (出す先の画面が無いときは失敗せず、上限なしで待つ)
 - [maui/ADR-0006](../../../decisions/maui/0006-dialog-show-caller-cancellation.md) — 決定 (MAUI の show に呼び出し元の打ち切りを足す)
 - 提示先の出現待ちの実現と実測 (2026-09-27〜29): [wait-for-host-appearance](../../../changes/archive/2026-09-29-wait-for-host-appearance/design.md) (過去の変更の作業記録)
 - 縦串スライス (Dialog 1本の4形態貫通) での実測 (2026-08-15): ルール4・6 と、キーボード表示中の戻るボタンの観察結果。iPhone 17 Simulator (iOS 26.5) と Android Emulator API 35 での実機観測を含む

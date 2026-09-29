@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
  * show を始め、失敗も完了もせずに提示先を待っていることを確かめてから、そのコルーチンを打ち切る。
  *
  * このテスト置き場には提示先の画面が無いため、登録済みの ViewModel の show は失敗せずに待ち続ける
- * (core/ADR-0039)。一方、未登録の ViewModel は待たずにその場で失敗する。
+ * (core/ADR-0041)。一方、未登録の ViewModel は待たずにその場で失敗する。
  * この違いを、View factory の解決に成功した印として使う。
  *
  * 呼び出し前に `Dispatchers.setMain` でテストのスケジューラに乗る Main を差し込んでおくこと。

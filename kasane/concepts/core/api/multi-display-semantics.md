@@ -107,7 +107,7 @@ Loading と Toast の器は、ここで述べた OS の提示の連なりに**�
 
 - [core/ADR-0006](../../../decisions/core/0006-multi-display-os-delegation.md) — 決定 (OS の提示機構への委譲)。下の段を先に閉じたときの OS 差は同 ADR の Consequences と現行照合 footer にある
 - [core/ADR-0016](../../../decisions/core/0016-behavior-spec-scenario-tests.md) — 決定 (挙動系の共通仕様は同名 Scenario テストで検証し、OS 間差はこの文書の差分表を正とする)
-- [core/ADR-0039](../../../decisions/core/0039-wait-for-host-appearance.md) — 決定 (出す先の画面が無いときは失敗せずに待つ)
+- [core/ADR-0041](../../../decisions/core/0041-wait-for-host-appearance.md) — 決定 (出す先の画面が無いときは失敗せずに待つ)
 - 待っている Dialog の列と「呼んだ順」の範囲の経緯 (2026-09-27〜28): [wait-for-host-appearance の実装乖離メモ](../../../changes/archive/2026-09-29-wait-for-host-appearance/deviation.md) (過去の変更の作業記録)
 - 縦串スライス (Dialog 1本の4形態貫通) での実測 (2026-08-15): iPhone 17 Simulator (iOS 26.5) と Android Emulator API 35 (1080x2340) での実機観測。上から順に閉じる / 重ね出し中の外側タップ / 下を先に閉じる / キーボード表示中の戻るボタン の4ケース
 - 移植元の挙動調査 (2026-08-14): 下記の調査記録を参照

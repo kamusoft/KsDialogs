@@ -45,9 +45,9 @@ Critical / Major は無い。指摘は、アプリ全体で共有する列が UI
 
 **該当箇所**: `android/ksdialogs-core/src/main/kotlin/jp/kamusoft/ksdialogs/KsDialog.kt:23`
 
-**問題点**: 公開 interface `KsDialog.show` の KDoc に、今回の追加文として `(core/ADR-0039)` が入っている。comment-policy.md の「公開メンバーの doc コメント」は、ADR ID を含む内部用語を公開 doc コメントに書かないと定めている。同じ節の iOS (`ios/Sources/KsDialogs/Presentation/KsDialog.swift`)・KMP・MAUI の公開 doc コメントの追加文は ADR ID を含んでおらず、Android だけが食い違っている。同じ KDoc に前からある `(core/ADR-0015)` はこの change の範囲外の既存債務なので、ここでは問わない。
+**問題点**: 公開 interface `KsDialog.show` の KDoc に、今回の追加文として `(core/ADR-0041)` が入っている。comment-policy.md の「公開メンバーの doc コメント」は、ADR ID を含む内部用語を公開 doc コメントに書かないと定めている。同じ節の iOS (`ios/Sources/KsDialogs/Presentation/KsDialog.swift`)・KMP・MAUI の公開 doc コメントの追加文は ADR ID を含んでおらず、Android だけが食い違っている。同じ KDoc に前からある `(core/ADR-0015)` はこの change の範囲外の既存債務なので、ここでは問わない。
 
-**推奨修正**: 追加した 1 行から `(core/ADR-0039)` を外す。設計根拠を残したい場合は、内部の `DialogPresenter.kt` のコメントに既に書かれているので、それで足りる。
+**推奨修正**: 追加した 1 行から `(core/ADR-0041)` を外す。設計根拠を残したい場合は、内部の `DialogPresenter.kt` のコメントに既に書かれているので、それで足りる。
 
 ### 🔵 Suggestion MAUI ブリッジの「閉じる」が中身の生成中に届くと、show を打ち切ってしまう
 
@@ -67,7 +67,7 @@ Critical / Major は無い。指摘は、アプリ全体で共有する列が UI
 
 ## アクションプラン
 
-1. (Minor) `KsDialog.kt:23` の公開 KDoc から `(core/ADR-0039)` を外す — 1 行の修正
+1. (Minor) `KsDialog.kt:23` の公開 KDoc から `(core/ADR-0041)` を外す — 1 行の修正
 2. (Minor) iOS の提示面で UIKit の提示拒否を検出して `completion` を呼び、列の番が返るようにする。拒否された 1 枚の終え方を決めるところまでは、別 change に切り出してもよい
 3. (Suggestion) 両 OS の MAUI ブリッジで、中身の供給を始めた後の `dismiss()` が Job / Task を打ち切らないようにする
 4. (Suggestion) MAUI の中身の供給で、画面の文脈を利用者の factory より先に解決する

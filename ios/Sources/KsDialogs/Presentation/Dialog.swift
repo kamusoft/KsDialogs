@@ -30,7 +30,7 @@ public final class Dialog: KsDialog {
 
     // show 群は呼び出し元の実行文脈のまま走らせる (nonisolated(nonsending))。既定の非隔離 async に
     // すると、呼び出しはいったん大域の実行器へ移ってから MainActor の提示処理へ戻るため、UI スレッドから
-    // 続けて呼んだ show でも戻る順が入れ替わり、待ちの列に呼んだ順で並ばなくなる (core/ADR-0039)。
+    // 続けて呼んだ show でも戻る順が入れ替わり、待ちの列に呼んだ順で並ばなくなる (core/ADR-0041)。
     // プロトコル経由の呼び出しでも同じ順を保つため、`KsDialog` の要件と拡張も同じ指定にそろえる (ios/ADR-0001)。
     nonisolated(nonsending) public func show<ViewModel: DialogViewModel>(
         _ viewModel: ViewModel,

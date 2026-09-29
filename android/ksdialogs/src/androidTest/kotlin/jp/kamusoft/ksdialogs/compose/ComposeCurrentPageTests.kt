@@ -45,7 +45,7 @@ import kotlin.math.roundToInt
  *
  * 画面は `Scaffold` の content 枠と下部バーを模した縦並び ([CurrentPageComposeTestActivity])。
  * ダイアログは従来 View の中身で出し、基準領域だけを表示中のページにする。観察はすべて画面座標で行い、
- * 期待値は「名乗った枠の矩形と器のウィンドウの可視領域の共通部分」から dialogMargin (既定 24dp) を控除して導く。
+ * 期待値は「名乗った枠の矩形と器のウィンドウの可視領域の共通部分」から dialogMargin (既定 0dp) を控除して導く。
  */
 @RunWith(AndroidJUnit4::class)
 class ComposeCurrentPageTests {
@@ -342,7 +342,8 @@ class ComposeCurrentPageTests {
     private companion object {
         const val CONTENT_WIDTH_DP = 200
         const val CONTENT_HEIGHT_DP = 120
-        const val DEFAULT_MARGIN_DP = 24
+        /** 契約既定の dialogMargin (dp)。全辺 0 (core/ADR-0039)。 */
+        const val DEFAULT_MARGIN_DP = 0
         const val TOLERANCE_PIXELS = 2
 
         val BOTH_END = DialogPlacement(horizontalAlignment = DialogAlignment.END, verticalAlignment = DialogAlignment.END)

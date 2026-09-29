@@ -1,6 +1,6 @@
 # loading-contract デルタ (wait-for-host-appearance)
 
-Scenario ID は `LD-HW-<NN>` (提示先の出現待ち)。挙動は Native 2 実装 (iOS / Android) の同名テストで全量を検証する (core/ADR-0016)。Android はすでにこの挙動を持つので、Android では既存の振る舞いを ID つきのテストで固定する。決定の出典は core/ADR-0039 (proposed)、実現経路は design Decision 1・2。
+Scenario ID は `LD-HW-<NN>` (提示先の出現待ち)。挙動は Native 2 実装 (iOS / Android) の同名テストで全量を検証する (core/ADR-0016)。Android はすでにこの挙動を持つので、Android では既存の振る舞いを ID つきのテストで固定する。決定の出典は core/ADR-0041 (proposed)、実現経路は design Decision 1・2。
 
 既存の「提示環境が無くても action は実行される」(LD-CO-14) は変えない。本書は、開始時点で提示先が無かった表示の「その後」の定めの追加分。
 

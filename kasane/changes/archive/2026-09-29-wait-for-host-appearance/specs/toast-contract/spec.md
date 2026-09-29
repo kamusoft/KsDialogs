@@ -1,6 +1,6 @@
 # toast-contract デルタ (wait-for-host-appearance)
 
-Scenario ID は `TS-HW-<NN>` (提示先の出現待ち)。挙動は Native 2 実装 (iOS / Android) の同名テストで全量を検証する (core/ADR-0016)。決定の出典は core/ADR-0039 (proposed)、実現経路は design Decision 1・2。
+Scenario ID は `TS-HW-<NN>` (提示先の出現待ち)。挙動は Native 2 実装 (iOS / Android) の同名テストで全量を検証する (core/ADR-0016)。決定の出典は core/ADR-0041 (proposed)、実現経路は design Decision 1・2。
 
 Toast の「提示環境の不在」の契約 (呼び出しは失敗せず、提示先の出現を待って表示する。計時は受理時点から消費し、提示先が現れないまま満了した表示は表示されずに破棄される) は変えない。本書は、中身を作る時点の定めと、待ちの挙動を ID つきで固定する分の追加。
 

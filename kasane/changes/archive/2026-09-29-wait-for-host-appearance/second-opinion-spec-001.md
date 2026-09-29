@@ -58,6 +58,6 @@
 | Major 5 | iOS の完了テスト手順では UIKit のテストが走らない | **採用** | `kasane/handbook/cross/test-execution.md:44-47` で確認。tasks 9.2 を Simulator の `xcodebuild test` に替え、件数と新しい Scenario ID の出現の確認を足した |
 | Minor | MAUI でハンドル生成前に打ち切る競合が検証されない | **採用** (根拠強のため降格しない) | design Decision 6・maui-binding デルタに取りこぼさない手順を足し、PB-MC-08 と tasks 8.2・8.6 を足した |
 
-Major 1 の決着: オーナーが改訂を選んだ (2026-09-27)。core/ADR-0040 (proposed、core/ADR-0033 の amends) を起票し、design Decision 2 と ADR 候補、proposal に反映した。design とスペックの挙動 (LD-HW-04) は変えていない。
+Major 1 の決着: オーナーが改訂を選んだ (2026-09-27)。core/ADR-0042 (proposed、core/ADR-0033 の amends) を起票し、design Decision 2 と ADR 候補、proposal に反映した。design とスペックの挙動 (LD-HW-04) は変えていない。
 
 突き合わせの途中でホスト側が見つけて直したもの: Loading の中身の生成を遅らせても、View factory の登録の解決 (未登録の失敗) は開始時点で行うことをスペックに明記した (loading-contract の要件本文と LD-HW-07)。

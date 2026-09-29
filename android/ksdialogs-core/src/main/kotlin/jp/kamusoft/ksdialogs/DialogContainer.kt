@@ -97,6 +97,7 @@ internal class DialogContainer(
      */
     private val windowDetachObserver = object : View.OnAttachStateChangeListener {
         override fun onViewAttachedToWindow(view: View) {
+            // 提示先の画面のシステムバーの指定を変えないよう引き継ぐ (core/ADR-0040)。
             // 引き継ぎ元のシステムバー設定を読めるのは、ウィンドウが画面に載った後
             window?.let { DialogWindowSystemBars.inheritSystemBarState(it, hostWindow()) }
         }
