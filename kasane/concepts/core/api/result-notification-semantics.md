@@ -91,9 +91,9 @@ iOS には戻るボタンに相当するキャンセル経路を設けない (�
 |---|---|---|
 | iOS Native | show を待っている Task のキャンセル | show が結果として cancelled を返す (失敗としては伝わらない) |
 | Android Native / KMP | show を呼んだコルーチンのキャンセル | 言語のキャンセル規約どおりキャンセルの通知が伝播する (内部の結果は cancelled で確定済み) |
-| MAUI | show の末尾の `CancellationToken` | show が `OperationCanceledException` を投げる (内部の結果は cancelled で確定済み)。呼び出しの時点で打ち切り済みなら、登録の解決も ViewModel の生成もせずに投げる |
+| MAUI | show の末尾に渡すキャンセルトークン | show がキャンセルを表す .NET の例外を投げる (内部の結果は cancelled で確定済み)。呼び出しの時点で打ち切り済みなら、登録の解決も ViewModel の生成もせずに投げる |
 
-Android / KMP でキャンセルの通知を握りつぶして cancelled を返す形にはしない。構造化並行性 (親のキャンセルが子へ伝わる仕組み) を壊すためである。MAUI も同じ理由で、打ち切りを結果の cancelled に変えず、`CancellationToken` を受ける .NET の非同期メソッドの慣習どおり例外で伝える。MAUI の打ち切りはブリッジを通って各 OS の Native の打ち切りへ中継される。キャンセルの通知がどの型で届くか、iOS で返る結果の綴りがどうなるかは、各形態の公開面の「失敗とキャンセルの形」(KMP は「失敗とキャンセルの届き方」) が定める ([iOS](../../ios/api/dialog-surface.md) / [Android](../../android/api/dialog-surface.md) / [MAUI](../../maui/api/dialog-surface.md) / [KMP](../../kmp/api/dialog-surface.md))。なお、ダイアログが表示中のときに待機を打ち切った場合、退出アニメーションは最後まで完遂される。出現アニメーションの途中や退出の途中で打ち切ったときの扱いは [トランジションのルール](transition-semantics.md) が定める。
+Android / KMP でキャンセルの通知を握りつぶして cancelled を返す形にはしない。構造化並行性 (親のキャンセルが子へ伝わる仕組み) を壊すためである。MAUI も同じ理由で、打ち切りを結果の cancelled に変えず、キャンセルトークンを受ける .NET の非同期メソッドの慣習どおり例外で伝える。MAUI の打ち切りはブリッジを通って各 OS の Native の打ち切りへ中継される。キャンセルの通知がどの型で届くか、iOS で返る結果の綴りがどうなるかは、各形態の公開面の「失敗とキャンセルの形」(KMP は「失敗とキャンセルの届き方」) が定める ([iOS](../../ios/api/dialog-surface.md) / [Android](../../android/api/dialog-surface.md) / [MAUI](../../maui/api/dialog-surface.md) / [KMP](../../kmp/api/dialog-surface.md))。なお、ダイアログが表示中のときに待機を打ち切った場合、退出アニメーションは最後まで完遂される。出現アニメーションの途中や退出の途中で打ち切ったときの扱いは [トランジションのルール](transition-semantics.md) が定める。
 
 ## 出す先の画面が無いとき
 
@@ -107,7 +107,7 @@ Android / KMP でキャンセルの通知を握りつぶして cancelled を返�
 | 呼び出し元が打ち切った | 一度も表示せずに終わる。見え方はルール4 (b) と同じ (前節「呼び出し元をキャンセルしたときの見え方」の表) |
 | 待っている間に結果が確定した | ViewModel が結果報告口で報告した場合。表示せずに、その結果を返す |
 
-提示先が現れる見込みの無い文脈 (画面を持たない拡張やバックグラウンドの処理など、前面に戻る見込みの無い場所) から呼んだ show は返らない。そのような呼び出しには打ち切り (iOS は Task のキャンセル、Android / KMP はコルーチンのキャンセル、MAUI は `CancellationToken`) を付ける。長く背面にいたあとに、古い文脈のダイアログが表示されることもある。
+提示先が現れる見込みの無い文脈 (画面を持たない拡張やバックグラウンドの処理など、前面に戻る見込みの無い場所) から呼んだ show は返らない。そのような呼び出しには打ち切り (iOS は Task のキャンセル、Android / KMP はコルーチンのキャンセル、MAUI は show に渡すキャンセルトークン) を付ける。長く背面にいたあとに、古い文脈のダイアログが表示されることもある。
 
 待ちの前後の順序は次のとおり。構成ミスは提示先の有無にかかわらず待たずに失敗し、中身は提示先を確保してから作られる。型指定 show と VM factory・configure の決まりは [ViewModel 主導の呼び出しのルール](model-binding-semantics.md) が持つ。
 

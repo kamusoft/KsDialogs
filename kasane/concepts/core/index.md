@@ -6,7 +6,7 @@ api/ は**挙動の契約**だけを持ち、公開名・署名・コード例�
 
 ## api/
 
-- [result-notification-semantics.md](api/result-notification-semantics.md) — 結果通知のルール: show は completed(結果) / cancelled をちょうど1回返す。どの操作がキャンセルになるか・出す先の画面が無いときは失敗せず上限なしで待つこと・呼び出し元の打ち切りの形態別の見え方 (MAUI は `CancellationToken`)・結果が確定する時点と呼び出し元へ渡る時点 (ラッチと配送)・移植元の型安全性の弱点の解消 (core/ADR-0003・0041・maui/ADR-0006 由来)
+- [result-notification-semantics.md](api/result-notification-semantics.md) — 結果通知のルール: show は completed(結果) / cancelled をちょうど1回返す。どの操作がキャンセルになるか・出す先の画面が無いときは失敗せず上限なしで待つこと・呼び出し元の打ち切りの形態別の見え方 (MAUI はキャンセルトークンによる打ち切り)・結果が確定する時点と呼び出し元へ渡る時点 (ラッチと配送)・移植元の型安全性の弱点の解消 (core/ADR-0003・0041・maui/ADR-0006 由来)
 - [multi-display-semantics.md](api/multi-display-semantics.md) — 多段表示のルール: 重なり管理は OS の提示機構に任せ、保証する挙動4点だけを定める。出す先の画面を待っている Dialog の出る順番 (呼んだ順・後から呼んだものが手前・待っている間の show は後ろに並ぶ)。下から閉じる等の保証しない挙動も明記 (core/ADR-0006・0041 由来)
 - [registration-show-semantics.md](api/registration-show-semantics.md) — 登録と表示の呼び出し面のルール: 真偽値結果は結果型の記述を省ける (形態別の省略形と KMP 共有コードの例外)・中身は従来 View 系と宣言的 UI 系 (SwiftUI / Compose) のどちらでも書けて観察できる挙動は同一・宣言的 UI での属性の添付・登録せずにその場で表示するインライン show はレジストリを変えない (core/ADR-0010〜0013・kmp/ADR-0003・0004 由来)
 - [model-binding-semantics.md](api/model-binding-semantics.md) — ViewModel 主導の呼び出しのルール: show 中の ViewModel から結果報告口を取得できる仕組みと全終端経路での除去・ViewModel の型だけを渡す型指定 show (VM factory 解決・configure の順序保証・スナップショット解決。Dialog / Loading / Toast の 3 機能で同型)・ViewModel 契約の参照型 (class) 限定と形態別の強制手段・「非破壊の追加」が指す範囲・KMP の共有コードでの見え方 (VM factory は共有コード側、生成・configure は呼び出し元の文脈、Toast も同期伝播) (core/ADR-0018〜0021・0035・kmp/ADR-0006 由来)

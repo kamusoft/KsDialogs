@@ -3,7 +3,7 @@ type: concept
 title: MAUI の Toast 公開面
 description: .NET MAUI (C#) で Toast を使うときの公開名と署名 — 契約と既定エントリ・4 経路の Show と durationMs 引数・カスタム View の登録と DI 糖衣・型指定 Show と VM factory 登録・ToastStyle のプロパティ・戻り値を持たないことと器メタ属性の受け口が無いこと
 tags: [maui, toast, api, surface]
-timestamp: 2026-09-08
+timestamp: 2026-09-30
 ---
 
 # MAUI の Toast 公開面
@@ -65,7 +65,7 @@ Toast.Instance.Show<NoticeViewModel>(
     durationMs: 2000);
 ```
 
-VM factory 未登録は `DialogException.ViewModelFactoryNotRegistered` として呼び出し時点で同期に失敗する。VM factory / configure が投げた例外は呼び出し元へは返らず「受理後の失敗」(警告を残してその 1 枚だけ破棄) になる。`RegisterForToast` で 1 行登録した View をライブラリが組み立てられなかった場合も同じ受理後の失敗で、警告には `DialogException.ViewCreationFailed` (元の失敗は `InnerException`) が原因として残る ([MAUI の DI 連携と登録糖衣](di-registration.md))。`AddKsDialogs` の fallback resolver は Dialog レジストリの機構で、Toast には効かない (明示登録か 1 行登録のみ)。
+VM factory 未登録は `DialogException.ViewModelFactoryNotRegistered` として呼び出し時点で同期に失敗する。VM factory / configure が投げた例外は呼び出し元へは返らず「受理後の失敗」(警告を残してその 1 枚だけ破棄) になる — 呼び出し時点で行うのは登録の解決だけで、VM factory と configure は Show が戻ったあと、提示先に取り付けて中身を作る時点で UI スレッドで実行されるためである。提示先が現れないまま満了した表示では、VM factory も configure も呼ばれない ([Toast のルール](../../core/api/toast-semantics.md) の「中身を作る時点」)。`RegisterForToast` で 1 行登録した View をライブラリが組み立てられなかった場合も同じ受理後の失敗で、警告には `DialogException.ViewCreationFailed` (元の失敗は `InnerException`) が原因として残る ([MAUI の DI 連携と登録糖衣](di-registration.md))。`AddKsDialogs` の fallback resolver は Dialog レジストリの機構で、Toast には効かない (明示登録か 1 行登録のみ)。
 
 ## `ToastStyle` のプロパティ
 
@@ -73,7 +73,7 @@ VM factory 未登録は `DialogException.ViewModelFactoryNotRegistered` とし�
 
 | プロパティ | 型 | 既定値 |
 |---|---|---|
-| `BackgroundColor` | `Color` | `ToastStyle.BuiltinBackgroundColor` (わずかに透過するダークグレー) |
+| `BackgroundColor` | `Color` | `ToastStyle.BuiltinBackgroundColor` (半透明のダークグレー) |
 | `TextColor` | `Color` | `Colors.White` |
 | `FontSize` | `double` | `14d` |
 | `CornerRadius` | `double` | `22d` |

@@ -34,7 +34,7 @@ C# には型引数の既定値がないため、型引数のない `IDialogViewM
 
 ## 中身は MAUI の View だけ
 
-MAUI には Android の Compose に相当する第二の UI 技術がなく、**MAUI の `View` が唯一の中身の形**である。したがって技術別の呼び分け (別名・オーバーロード) もない。factory は `Func<TViewModel, DialogNotifier<TResult>, View>` の形で、報告口を取らない1引数形 `Func<TViewModel, View>` のオーバーロードもある。
+MAUI には Android の Compose に相当する第二の UI 技術がなく、**MAUI の `View` が唯一の中身の形**である。したがって技術別の呼び分け (別名・オーバーロード) もない。factory は `Func<TViewModel, DialogNotifier<TResult>, View>` の形である。報告口を取らない 1 引数形 `Func<TViewModel, View>` のオーバーロードは登録 (`DialogViewRegistry.Register`) にだけあり、インラインの `ShowAsync` は 2 引数形だけを取る。
 
 ## インライン show
 
