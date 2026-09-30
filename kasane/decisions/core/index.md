@@ -44,7 +44,7 @@
 | [0038](0038-current-page-layout-area-via-registered-provider.md) | 基準領域に「表示中のページ」を足し、器はページを自分で探さずアプリが登録した現在ページ provider から矩形を得る | accepted | 2026-09-25 |
 | [0039](0039-dialog-margin-default-zero.md) | 余白の契約既定値を原典と同じ 0 に戻し、既定 Toast のピルだけは従来の余白を自分で持つ (0008 を一部改訂) | accepted | 2026-09-27 |
 | [0040](0040-containers-keep-host-system-bar-settings.md) | Dialog / Loading / Toast の器は、提示先の画面のシステムバーの指定を変えない | accepted | 2026-09-27 |
-| [0041](0041-wait-for-host-appearance.md) | 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる | accepted | 2026-09-27 |
+| [0041](0041-wait-for-host-appearance.md) | 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる (一部改訂: 0043 — Toast の寿命を、前面で提示先を待つ間に受け付けた表示に限って置き換え) | accepted | 2026-09-27 |
 | [0042](0042-content-created-after-host-secured.md) | Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める (0033 の amends — Loading の失敗の合流先を、提示先が無いまま始まった表示に限って置き換え) | accepted | 2026-09-27 |
-| [0043](0043-toast-duration-from-visible-when-accepted-in-foreground-without-host.md) | アプリが前面にいるのに提示先が無い間に受け付けた Toast は、画面が利用者に見えた時点から表示時間を数える (0041 の amends — Toast の寿命を、前面で提示先を待つ間に受け付けた表示に限って置き換え) | proposed | 2026-09-29 |
-| [0044](0044-android-host-is-drawn-resumed-activity.md) | Android の提示先は resumed で、かつ描画された Activity とし、Dialog・Loading・Toast の 3 機能で揃える | proposed | 2026-09-29 |
+| [0043](0043-toast-duration-from-visible-when-accepted-in-foreground-without-host.md) | アプリが前面にいるのに提示先が無い間に受け付けた Toast は、画面が利用者に見えた時点から表示時間を数える (0041 の amends — Toast の寿命を、前面で提示先を待つ間に受け付けた表示に限って置き換え) | accepted | 2026-09-29 |
+| [0044](0044-android-host-is-drawn-resumed-activity.md) | Android の提示先は resumed で、かつ描画された Activity とし、Dialog・Loading・Toast の 3 機能で揃える (載っている Loading・Toast の器は、Activity の破棄か別の提示先の出現まで外さない) | accepted | 2026-09-29 |
