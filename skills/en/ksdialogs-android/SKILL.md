@@ -18,12 +18,15 @@ Calling through a default entry and calling through an injected contract reach t
 | Goal | API | Recipe |
 |---|---|---|
 | Register and show a Dialog | `DialogViewModel`, `register`, `registerCompose`, `Dialog.instance.show` | [Dialog](references/dialogs.md) |
-| Recover from a missing registration or absent host | `DialogException` | [Dialog](references/dialogs.md) |
+| Let a show called before a screen exists wait, or abandon it | Coroutine cancellation | [Dialog](references/dialogs.md) |
+| Recover from a configuration mistake such as a missing registration | `DialogException` | [Dialog](references/dialogs.md) |
 | Let a view model report a result | `notifier` | [View models](references/view-models.md) |
 | Have a view model created from its type alone | `registerViewModel`, type-based `show` / `start` | [View models](references/view-models.md) |
 | Control size, placement, overlay, and outside taps | `DialogOptions`, `DialogPlacement`, View properties, `KsDialogAttributes` | [Layout](references/layout.md) |
+| Place against the area inside the bars (the current page) | `DialogLayoutArea.CURRENT_PAGE`, `Modifier.markAsDialogCurrentPage()`, `DialogCurrentPage.provider` | [Layout](references/layout.md) |
 | Animate presentation and dismissal | `DialogTransition`, `ksDialogTransition`, `KsDialogAttributes` | [Transitions](references/transitions.md) |
 | Block interaction while work runs | `Loading.instance`, `LoadingStyle`, `LoadingProgressReceiver` | [Loading](references/loading.md) |
+| Start Loading work off the UI thread | `actionThread`, `LoadingActionThread.MAIN` / `LoadingActionThread.BACKGROUND` | [Loading](references/loading.md) |
 | Show fire-and-forget notifications | `Toast.instance`, `ToastStyle`, `ToastViewRegistry` | [Toast](references/toast.md) |
 
 ## Setup
@@ -68,7 +71,7 @@ android {
 }
 ```
 
-The library tracks the resumed `Activity` automatically, so application initialization is not required. Import APIs from `jp.kamusoft.ksdialogs`; Compose extensions are in `jp.kamusoft.ksdialogs.compose`.
+The library tracks the host `Activity` (one that is resumed and has been drawn) automatically, so application initialization is not required. A Dialog, Loading, or Toast called while there is no host yet (before the first screen is drawn at startup, or while the app is in the background) does not fail; it waits for a host to appear (for how long a Toast can wait, see "When the duration starts counting" in [Toast](references/toast.md)). Import APIs from `jp.kamusoft.ksdialogs`; Compose extensions are in `jp.kamusoft.ksdialogs.compose`.
 
 ## Minimal example
 
@@ -84,9 +87,9 @@ fun notifySaved() {
 
 | Goal | Recipe to read |
 |---|---|
-| Registration, typed results, inline content, stacked dialogs, `DialogException` | [Dialog](references/dialogs.md) |
+| Registration, typed results, inline content, stacked dialogs, waiting for a host and abandoning the wait, `DialogException` | [Dialog](references/dialogs.md) |
 | `notifier`, view-model factories, pre-presentation configuration, the type-based `show` shared by all three kinds | [View models](references/view-models.md) |
-| Placement, margins, proportional sizing, overlays, outside-tap cancellation | [Layout](references/layout.md) |
+| Placement, margins, proportional sizing, overlays, outside-tap cancellation, placement against the current page | [Layout](references/layout.md) |
 | Presets, custom asynchronous hooks, post-dismissal result delivery | [Transitions](references/transitions.md) |
-| Imperative and scoped Loading, progress, styling, custom content, type-based `show` / `start` | [Loading](references/loading.md) |
-| Message, registered, inline, and type-based Toast routes | [Toast](references/toast.md) |
+| Imperative and scoped Loading, the thread work starts on, progress, styling, custom content, type-based `show` / `start` | [Loading](references/loading.md) |
+| Message, registered, inline, and type-based Toast routes, when the duration starts counting | [Toast](references/toast.md) |

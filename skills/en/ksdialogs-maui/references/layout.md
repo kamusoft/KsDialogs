@@ -6,8 +6,8 @@ Size, position, overlay, and outside-tap behavior are specified by attaching the
 
 | Attached property | Type | Supplies | Default |
 |---|---|---|---|
-| `Dialog.LayoutArea` | `DialogLayoutArea` (`Window` / `VisibleArea`) | Reference area for sizing and positioning | `VisibleArea` |
-| `Dialog.DialogMargin` | `Thickness` | Inset deducted from each edge of the reference area | 24 on every edge |
+| `Dialog.LayoutArea` | `DialogLayoutArea` (`Window` / `VisibleArea` / `CurrentPage`) | Reference area for sizing and positioning | `VisibleArea` |
+| `Dialog.DialogMargin` | `Thickness` | Inset deducted from each edge of the reference area | 0 on every edge |
 | `Dialog.ProportionalWidth` / `Dialog.ProportionalHeight` | `double` | Fraction of the reference area on that axis | `-1` (unspecified) |
 | `Dialog.OverlayColor` | `Color?` | Color painted behind the Dialog | 40% black |
 | `Dialog.IsCanceledOnTouchOutside` | `bool` | Whether a tap outside cancels | `true` |
@@ -18,7 +18,15 @@ Size, position, overlay, and outside-tap behavior are specified by attaching the
 
 Each name `X` in that table has a `Dialog.GetX` / `Dialog.SetX` pair plus a `BindableProperty` named `Dialog.XProperty`, for example `Dialog.GetLayoutArea`, `Dialog.SetLayoutArea`, and `Dialog.LayoutAreaProperty`.
 
-The reference area is where AiForms.Maui.Dialogs had the boolean `UseCurrentPageLocation` property on the view. Here it is an enumeration covering both axes, written as `ksd:Dialog.LayoutArea` in XAML or `Dialog.SetLayoutArea` from code.
+The three `DialogLayoutArea` values measure against the following rectangles. Whichever is chosen applies to both the horizontal and the vertical axis.
+
+| Value | Reference rectangle |
+|---|---|
+| `Window` | The whole window the Dialog is placed on |
+| `VisibleArea` | The window minus the space taken by system bars and similar (the insets). The safe area on iOS |
+| `CurrentPage` | The intersection of the visible area with the page currently shown, inside its tab bar and navigation bar (see "Measure against the current page" below) |
+
+The reference area is where AiForms.Maui.Dialogs had the boolean `UseCurrentPageLocation` property on the view. Here it is an enumeration covering both axes, written as `ksd:Dialog.LayoutArea` in XAML or `Dialog.SetLayoutArea` from code. When migrating, replace `true` with `DialogLayoutArea.CurrentPage` and `false` with `DialogLayoutArea.Window`. With nothing specified the area is `VisibleArea`, so a screen that relied on `false` moves from the whole window to the visible area unless it is migrated.
 
 ## Sizing and positioning rules
 
@@ -29,6 +37,8 @@ The reference area is where AiForms.Maui.Dialogs had the boolean `UseCurrentPage
 | Clamping | The resulting size is clamped to fit the area left after `DialogMargin` |
 | Offset | Not clamped, so content can be pushed off screen deliberately |
 | Where it is computed | MAUI passes the attached values through unchanged and the rect is computed natively |
+| Content size | Decided by MAUI measurement, including `WidthRequest` / `HeightRequest` (and `MinimumWidthRequest` / `MinimumHeightRequest`) on the content's root. A `ContentView` root and a `Grid` root come out the same size on iOS and Android. This holds for Dialog, Loading, and Toast custom views alike |
+| Explicit size with proportional or `Fill` | On an axis where the container decides the size through a proportion or `Fill`, a root with an explicit size does not stretch to the frame; it keeps its declared size and is centered in the frame. To fill the frame, drop the explicit size on that axis |
 
 ## When the effective values are decided
 
@@ -129,6 +139,82 @@ private async void OnDeleteClicked(object? sender, EventArgs e)
     StatusLabel.Text = result is DialogResult<bool>.Completed ? "Deleted" : "Kept";
 }
 ```
+
+## Measure against the current page
+
+Attaching `CurrentPage` to `Dialog.LayoutArea` (`ksd:Dialog.LayoutArea="CurrentPage"` in XAML) measures against the page currently shown in the window the Dialog appears on. On a screen with a tab bar, setting `VerticalAlignment` to `End` puts the Dialog's bottom edge `DialogMargin` above the top of the tab bar, and a proportional size becomes a fraction of the height without the tab bar.
+
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ksd="clr-namespace:KsDialogs;assembly=KsDialogs.Maui"
+             x:Class="MyApp.PageSheetView"
+             ksd:Dialog.LayoutArea="CurrentPage"
+             ksd:Dialog.ProportionalWidth="1"
+             ksd:Dialog.VerticalAlignment="End">
+    <Label Text="Filter" />
+</ContentView>
+```
+
+The library finds the page from the MAUI page structure, so a standard structure needs no registration. The lookup is as follows and is the same on iOS and Android.
+
+1. Start from the last page pushed on the window's modal stack, or from `Window.Page` when the modal stack is empty
+2. Descend through `Shell`, `FlyoutPage`, `TabbedPage`, and `NavigationPage` into the child being shown (`Detail` for `FlyoutPage`) until the page is no longer a container
+3. Measure against the page reached. A page that has not been drawn yet counts as not found
+
+When no page is found, the Dialog appears exactly as it would with `VisibleArea`, and the show does not fail.
+
+### Tell the library which page or element to use
+
+When screens are switched by your own mechanism that the lookup above cannot reach, or when part of a page should be the reference, register a function returning that page or element in `DialogCurrentPage.Provider` (`Func<VisualElement?>?`). A registration takes precedence over the built-in lookup, and assigning `null` returns to the built-in lookup.
+
+- The function is called on the UI thread when each presentation starts, and again when the window size or the system bar widths change while the Dialog is shown
+- Replacing the registration takes effect from the next presentation; a Dialog already shown keeps the function captured when it started
+- When the function returns `null`, throws, returns an element that has not been drawn, one not placed on the window the Dialog appears on, or one that does not overlap that window, the page found by the built-in lookup is used instead
+
+The following screen measures against its body, excluding the header.
+
+```csharp
+using KsDialogs;
+using Microsoft.Maui.Controls;
+
+namespace MyApp;
+
+public sealed class DashboardPage : ContentPage
+{
+    private readonly Grid _contentArea = new();
+
+    public DashboardPage()
+    {
+        var header = new Label { Text = "Dashboard" };
+        Grid.SetRow(_contentArea, 1);
+        Content = new Grid
+        {
+            RowDefinitions =
+            {
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Star),
+            },
+            Children = { header, _contentArea },
+        };
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        DialogCurrentPage.Provider = () => _contentArea;
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        DialogCurrentPage.Provider = null;
+    }
+}
+```
+
+Navigation that changes the current page while a Dialog is shown does not by itself re-place the Dialog (re-placement is triggered only by changes to the window size and the insets). Loading and Toast custom views can also carry `CurrentPage` and resolve the page by the same rules as a Dialog, but nothing further is settled, such as how it combines with the Toast default placement.
 
 ## Bundle the values into value objects
 

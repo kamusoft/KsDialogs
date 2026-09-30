@@ -11,7 +11,7 @@
 
 表示する View は、現在の ViewModel を明示引数として渡す constructor 経由で生成され、その同じ instance が `BindingContext` になる。したがって `TView` の service 登録が意味を持つのは、その constructor の他の依存を解決するところまでである。
 
-その View をライブラリが組み立てられなかった場合 (constructor の依存が service にない、など) は `DialogException.ViewCreationFailed` で show が失敗する。元の失敗は `InnerException` に残り、組み立てようとした View と ViewModel の型名は `ViewTypeName` / `ViewModelTypeName` から読める。包まれるのは 1 行登録でライブラリ自身が組み立てる View だけで、自分で書いた factory や fallback resolver が投げた失敗はそのまま届く。Toast だけは `Show` が既に戻っているため報告の形が違い、警告に `ViewCreationFailed` が原因として残ってその 1 枚が破棄される ([Toast](toast.md))。
+その View をライブラリが組み立てられなかった場合 (constructor の依存が service にない、など) は `DialogException.ViewCreationFailed` で show が失敗する。元の失敗は `InnerException` に残り、組み立てようとした View と ViewModel の型名は `ViewTypeName` / `ViewModelTypeName` から読める。包まれるのは 1 行登録でライブラリ自身が組み立てる View だけで、自分で書いた factory や fallback resolver が投げた失敗はそのまま届く。Toast は `Show` が既に戻っているため報告の形が違い、警告に `ViewCreationFailed` が原因として残ってその 1 枚が破棄される ([Toast](toast.md))。Loading も、表示できる画面が無いまま始めた表示では同じく警告を残して表示だけを諦め、処理は続く ([Loading](loading.md))。
 
 ViewModel が `bool` 以外の custom 結果型を宣言するときは `RegisterForDialog<TView, TViewModel, TResult>` を使う。
 

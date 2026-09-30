@@ -2,7 +2,7 @@
 
 A Loading blocks interaction while work runs, and is called from `KsLoading` (`Loading.instance` and an injected instance are the same thing). There are two routes: presenting the built-in default Loading as it is, or presenting your own content bound to a view-model type.
 
-Concurrent uses coalesce into one process-wide display, and the content of the first start is kept. Outside-tap cancellation stays disabled for Loading.
+Concurrent uses coalesce into one process-wide display, and the content of the first start is kept. Outside-tap cancellation stays disabled for Loading. The container does not change the host screen's system bar settings (icon contrast, bar visibility).
 
 ## Choose `show` or `start`
 
@@ -15,11 +15,11 @@ Concurrent uses coalesce into one process-wide display, and the content of the f
 | `show(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null)` | Takes only the view-model type, then runs `configure` on the instance built by the registered view-model factory before presenting | When the library builds the view model and its state is prepared just before presentation | View factory + view-model factory (`registerViewModel`) |
 | `show(viewModel: VM, placement: DialogPlacement? = null, factory: Context.(VM) -> View)` | Passes both the view-model instance and the View factory at the call site. It neither reads nor changes the registry | One-off View content | None |
 | `showCompose(viewModel: VM, placement: DialogPlacement? = null, content: @Composable (VM) -> Unit)` | Passes both the view-model instance and the Compose content at the call site. It neither reads nor changes the registry | One-off Compose content | None (import from `jp.kamusoft.ksdialogs.compose`) |
-| `start(message: String? = null, placement: DialogPlacement? = null, action: suspend ((Double) -> Unit) -> T)` | Runs `action` while the default Loading is shown and returns its value | When the display starts and ends with the operation | None |
-| `start(viewModel: LoadingViewModel, placement: DialogPlacement? = null, action: suspend ((Double) -> Unit) -> T)` | Runs `action` while registered content is shown | The same, when you write the appearance yourself | View factory |
-| `start(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null, action: suspend ((Double) -> Unit) -> T)` | Runs `action` while the content of a view model built from the type is shown | The same, when the library builds the view model too | View factory + view-model factory |
-| `start(viewModel: VM, placement: DialogPlacement? = null, factory: Context.(VM) -> View, action: suspend ((Double) -> Unit) -> T)` | Passes the view model, the View factory, and the operation at the call site | When one-off View content wraps an operation | None |
-| `startCompose(viewModel: VM, placement: DialogPlacement? = null, content: @Composable (VM) -> Unit, action: suspend ((Double) -> Unit) -> T)` | Passes the view model, the Compose content, and the operation at the call site | When one-off Compose content wraps an operation | None (compose artifact) |
+| `start(message: String? = null, placement: DialogPlacement? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | Runs `action` while the default Loading is shown and returns its value | When the display starts and ends with the operation | None |
+| `start(viewModel: LoadingViewModel, placement: DialogPlacement? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | Runs `action` while registered content is shown | The same, when you write the appearance yourself | View factory |
+| `start(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | Runs `action` while the content of a view model built from the type is shown | The same, when the library builds the view model too | View factory + view-model factory |
+| `start(viewModel: VM, placement: DialogPlacement? = null, factory: Context.(VM) -> View, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | Passes the view model, the View factory, and the operation at the call site | When one-off View content wraps an operation | None |
+| `startCompose(viewModel: VM, placement: DialogPlacement? = null, content: @Composable (VM) -> Unit, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | Passes the view model, the Compose content, and the operation at the call site | When one-off Compose content wraps an operation | None (compose artifact) |
 | `hide()` | Closes the display. It closes immediately regardless of the coalescing count and does not interfere with running work | When closing a display opened with `show` | — |
 | `setMessage(message: String?)` | Replaces the message on the current display | When reporting how far the default Loading has got | — |
 
@@ -49,7 +49,7 @@ suspend fun performSynchronization() {}
 
 ## Run work in a Loading scope
 
-Use `start` to pair the display's lifetime with a suspending operation. Reported progress is clamped to `0.0..1.0`. The operation still runs when its display coalesces with another use, and its value or failure is returned to the caller.
+Use `start` to pair the display's lifetime with a suspending operation. By default the operation starts on the UI thread regardless of the calling thread, so it can touch Views directly. Reported progress is clamped to `0.0..1.0`. The operation still runs when its display coalesces with another use, and its value or failure is returned to the caller.
 
 ```kotlin
 import jp.kamusoft.ksdialogs.Loading
@@ -64,6 +64,50 @@ suspend fun download(): ByteArray =
 
 suspend fun fetchData(): ByteArray = byteArrayOf()
 ```
+
+## Start the work off the UI thread
+
+For heavy work that does not touch the UI, pass `LoadingActionThread.BACKGROUND` to the `actionThread` of `start` so the work starts off the UI thread. Writing heavy synchronous work under the default `LoadingActionThread.MAIN` blocks the UI thread, and progress and message updates do not reach the screen meanwhile. Every `start` and `startCompose` overload has `actionThread`, placed just before the operation (the trailing lambda).
+
+| Value | Thread the operation starts on |
+|---|---|
+| `LoadingActionThread.MAIN` (default) | The UI thread (Main dispatcher). The operation can touch Views directly |
+| `LoadingActionThread.BACKGROUND` | Off the UI thread (Default dispatcher). For heavy work that does not touch the UI |
+
+```kotlin
+import android.graphics.Bitmap
+import jp.kamusoft.ksdialogs.Loading
+import jp.kamusoft.ksdialogs.LoadingActionThread
+import java.io.ByteArrayOutputStream
+
+suspend fun compress(bitmap: Bitmap): ByteArray =
+    Loading.instance.start(
+        message = "Compressing",
+        actionThread = LoadingActionThread.BACKGROUND,
+    ) { report ->
+        val output = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)
+        report(1.0)
+        output.toByteArray()
+    }
+```
+
+- The setting decides the thread on which the operation's first statement runs; where it resumes after suspending follows the usual coroutine rules (the dispatcher the operation is running on)
+- The progress reporter (`report`) and `setMessage` can be called from either thread, and the last progress the operation reported is never overtaken by its completion
+- The view-model factory and `configure` of the type-based `start` run on the UI thread regardless of this setting
+
+## Start without a host
+
+A Loading started with `show` / `start` while there is no host (an `Activity` that is resumed and has been drawn) does not fail; it waits for a host to appear. The operation of `start` runs right away without waiting, and its result is returned as usual.
+
+- If the display is still active when a host appears (coalescing has not ended and `hide` has not been called), the content is created and presented
+- If the display ends before a host appears, nothing is presented and the wait stops
+- If a host appears just as the operation finishes, the Loading appears briefly and closes
+- The View factory registration is looked up at the start, so an unregistered view-model type fails the start whether or not a host exists, and the operation of `start` is not run
+- If creating the content fails when the host appears, a warning is logged and only the presentation is given up. Unlike a start that had a host, the failure does not reach the caller, and the operation keeps running
+- Progress reported before presentation still reaches a view model that implements `LoadingProgressReceiver`
+
+A container on screen moves to another screen only when the screen it sits on is destroyed or another drawn host appears. While the app goes to the background and comes back, the container stays attached, and the overlay is visible from the first frame of the returning screen.
 
 ## Configure the default Loading
 
@@ -271,7 +315,7 @@ A configuration mistake throws `DialogException` without presenting anything. Wi
 
 The messages in the table are the values the current implementation returns, not a stable API (what does not change is the exception type and the condition it is thrown under; the wording can change without notice).
 
-Both exceptions expose the view-model type name through `viewModelTypeName`. For example, calling `start` with `ProgressLoadingViewModel` while the startup registration is missing raises `DialogException.ViewFactoryNotRegistered`.
+Each of these exceptions exposes the view-model type name through `viewModelTypeName`. For example, calling `start` with `ProgressLoadingViewModel` while the startup registration is missing raises `DialogException.ViewFactoryNotRegistered`.
 
 ```kotlin
 import android.app.Application

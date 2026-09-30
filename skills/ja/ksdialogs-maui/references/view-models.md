@@ -64,7 +64,8 @@ public sealed class ConfirmViewModel : IDialogViewModel
 1. ViewModel の生成
 2. `configure` の完了
 3. notifier の紐付け
-4. content View の生成
+4. 表示できる画面が無ければ、現れるのを待つ ([Dialog](dialogs.md))
+5. content View の生成
 
 したがって configure は content factory が状態を読むより前に完了する。ViewModel factory や `configure` が投げた失敗は cancelled になるのではなく、呼び出し元へ伝播する。
 
@@ -151,7 +152,7 @@ public static class AccountDialogs
 |---|---|---|---|
 | Dialog | 同期と非同期 | notifier | 表示に進まず呼び出し元へ伝播する |
 | Loading | 同期と非同期 | 進捗受け口。合流の判定は `configure` の完了後で、合流側になった呼び出しの ViewModel は表示に使われない | 表示にも合流にも進まず伝播し、`StartAsync` の action も実行されない |
-| Toast | 同期のみ | なし | `Show` は既に戻っているため伝播せず、警告を残してその 1 枚だけが破棄される |
+| Toast | 同期のみ。Toast を画面に載せる時点で呼ばれ、画面が現れないまま期限を過ぎた表示では呼ばれない | なし | `Show` は既に戻っているため伝播せず、警告を残してその 1 枚だけが破棄される |
 
 fallback 解決が効くのは Dialog レジストリだけで、Loading と Toast は明示登録か 1 行登録だけを見る ([DI 登録](di-registration.md))。書き方は [Loading](loading.md) と [Toast](toast.md) にある。
 

@@ -44,9 +44,19 @@ class ItemEditor(
 
 ## How the duration works
 
-`durationMs` is an `Int?` in milliseconds. It uses no platform-specific time type, so shared code can pass it. It is counted from the moment the call is accepted, on a monotonic clock that keeps running while the app is in the background, and it has no upper clamp. A value of zero or less is not an exception: it falls back to the host default with a warning log.
+`durationMs` is an `Int?` in milliseconds. It uses no platform-specific time type, so shared code can pass it. It is counted on a monotonic clock that keeps running while the app is in the background, and it has no upper clamp. A value of zero or less is not an exception: it falls back to the host default with a warning log.
 
-The message content is not restricted. An empty string shows with empty content, and a long text wraps onto several lines.
+When counting starts depends on the state at the moment the display is started. This keeps a Toast shown right after launch, or while a permission dialog is up, from using up its duration before the user can see it.
+
+| State when the display is started | Counting starts |
+|---|---|
+| A presentation target exists | When the call is accepted |
+| The app is in the background | When the call is accepted. If no target appears before it expires, it is discarded unshown |
+| The app is in the foreground but has no target (a screen still opening, a permission dialog up, and so on) | When it is placed on a target, or when the app goes to the background first, whichever comes first |
+
+Once the deadline is set, it does not rewind across screen recreation, moving to another screen, or returning from the background. While the app stays in the foreground without a target (for example, a splash screen held on screen), no deadline is set and the Toast keeps waiting. Right after launch on Android, the time the splash screen takes to animate away is counted under it, so the visible time is that much shorter than the duration.
+
+The message content is not restricted. An empty string shows with empty content, and a long text wraps onto several lines. The built-in Toast carries a 24 margin on every edge of its own content, with no way to change it. The margin applies however the placement is supplied, so a long text does not stretch to the left and right edges of the screen. Custom content has the same 0 default margin as a Dialog, which the host changes by attaching options to the content ([Layout](layout.md)).
 
 ## Show registered custom content
 
@@ -106,7 +116,8 @@ toast.show(StatusToastViewModel::class) { viewModel -> viewModel.message = "Expo
 - No `hide`, no result, no progress, no scoped form. The only thing that makes it disappear is its duration elapsing.
 - No interaction. A touch on the Toast passes through to the page behind it, and controls placed inside custom content do not respond either. Build a notification that needs a button as a Dialog ([Dialog](dialogs.md)).
 - No queueing and no replacement. Concurrent Toasts all appear, stacked by acceptance order with the later one in front, and each expires on its own timer. Toasts at the same effective placement overlap without being spread out.
-- No page binding. A Toast keeps showing across page transitions, and a rotation or resize re-lays it out without rewinding its remaining duration.
+- No page binding. A Toast keeps showing across page transitions, and a rotation or resize re-lays it out without rewinding its remaining duration. It moves to another screen only when the screen it is on is destroyed or another drawn presentation target appears.
+- No change to the presenting screen's system bar settings (icon contrast, shown or hidden).
 
 Loading always draws in front of a Toast. The order between a Dialog and a Toast is not guaranteed.
 
@@ -122,11 +133,11 @@ The message route has no configuration-mistake exception. Only the view-model ro
 
 The messages in the table are the values the current implementation returns, not a stable API (what does not change is the exception type and the condition it is thrown under; the wording can change without notice).
 
-In the class-based form, the view-model factory and `configure` run on the calling thread. An exception they throw is therefore not a failure after acceptance: it reaches the caller synchronously out of `show`.
+In the class-based form, the view-model factory and `configure` run on the calling thread before the call is accepted. An exception they throw is therefore not a failure after acceptance: it reaches the caller synchronously out of `show`. Both have run even for a Toast that later expires and is discarded unshown.
 
 An unregistered class throws `DialogException` synchronously before the call is accepted, and nothing is shown. On iOS the messages also include `The registered View factory cannot accept ViewModel type {TypeName}.` when a registered factory cannot accept that view model.
 
-A failure after acceptance — the host factory throwing, or the container failing to attach — cannot be returned to the caller, because `show` has already returned. That one Toast is dropped with a warning log and its resources are released; other displays and later calls are unaffected. When the window to attach to does not exist yet, it waits for one to appear, and it is discarded unshown if its duration expires first.
+A failure after acceptance — the host factory throwing, or the container failing to attach — cannot be returned to the caller, because `show` has already returned. That one Toast is dropped with a warning log and its resources are released; other displays and later calls are unaffected. When no presentation target exists yet, it waits for one, and the host content is built when the Toast is placed on it. A Toast whose duration expires before it is placed is discarded without its content ever being built (see "How the duration works" for when it expires).
 
 For example, if the Android startup path registers only the Dialog content and registers nothing with `Toast.instance.registry`, `show` with a `StatusToastViewModel` fails because its content cannot be resolved.
 

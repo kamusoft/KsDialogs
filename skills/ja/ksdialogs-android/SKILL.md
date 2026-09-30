@@ -18,12 +18,15 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 | やりたいこと | API | レシピ |
 |---|---|---|
 | Dialog を登録して表示する | `DialogViewModel`、`register`、`registerCompose`、`Dialog.instance.show` | [Dialog](references/dialogs.md) |
-| 登録漏れ・提示先不在から復帰する | `DialogException` | [Dialog](references/dialogs.md) |
+| 画面が出る前に呼んだ show を待たせる・打ち切る | コルーチンのキャンセル | [Dialog](references/dialogs.md) |
+| 登録漏れなどの構成ミスから復帰する | `DialogException` | [Dialog](references/dialogs.md) |
 | ViewModel から結果を報告する | `notifier` | [ViewModel](references/view-models.md) |
 | 型だけを渡して ViewModel を生成させる | `registerViewModel`、型指定 `show` / `start` | [ViewModel](references/view-models.md) |
 | サイズ・配置・覆い・外側タップを制御する | `DialogOptions`、`DialogPlacement`、View プロパティ、`KsDialogAttributes` | [レイアウト](references/layout.md) |
+| バーの内側 (表示中のページ) を基準に配置する | `DialogLayoutArea.CURRENT_PAGE`、`Modifier.markAsDialogCurrentPage()`、`DialogCurrentPage.provider` | [レイアウト](references/layout.md) |
 | 出現と退出を演出する | `DialogTransition`、`ksDialogTransition`、`KsDialogAttributes` | [トランジション](references/transitions.md) |
 | 処理中の操作をブロックする | `Loading.instance`、`LoadingStyle`、`LoadingProgressReceiver` | [Loading](references/loading.md) |
+| Loading の処理を UI スレッド外で始める | `actionThread`、`LoadingActionThread.MAIN` / `LoadingActionThread.BACKGROUND` | [Loading](references/loading.md) |
 | fire-and-forget の通知を表示する | `Toast.instance`、`ToastStyle`、`ToastViewRegistry` | [Toast](references/toast.md) |
 
 ## セットアップ
@@ -68,7 +71,7 @@ android {
 }
 ```
 
-ライブラリが resumed `Activity` を自動追跡するため、アプリ側の初期化は不要である。API は `jp.kamusoft.ksdialogs` から、Compose 拡張は `jp.kamusoft.ksdialogs.compose` から import する。
+ライブラリが表示先の `Activity` (resumed で、かつ描画済みのもの) を自動追跡するため、アプリ側の初期化は不要である。表示先がまだ無いとき (起動直後の最初の画面の描画前や、アプリが背面にいる間) に呼んだ Dialog・Loading・Toast は、失敗せずに表示先の出現を待つ (Toast が待てる長さは [Toast](references/toast.md) の「duration を数え始める時点」を参照)。API は `jp.kamusoft.ksdialogs` から、Compose 拡張は `jp.kamusoft.ksdialogs.compose` から import する。
 
 ## 最小例
 
@@ -84,9 +87,9 @@ fun notifySaved() {
 
 | やりたいこと | 読むレシピ |
 |---|---|
-| 登録、型付き結果、インラインコンテンツ、多段表示、`DialogException` | [Dialog](references/dialogs.md) |
+| 登録、型付き結果、インラインコンテンツ、多段表示、表示先の出現待ちと打ち切り、`DialogException` | [Dialog](references/dialogs.md) |
 | `notifier`、ViewModel factory、表示前の設定、3 機能で同型の型指定 `show` | [ViewModel](references/view-models.md) |
-| 配置、余白、比率サイズ、覆い、外側タップキャンセル | [レイアウト](references/layout.md) |
+| 配置、余白、比率サイズ、覆い、外側タップキャンセル、表示中のページを基準にした配置 | [レイアウト](references/layout.md) |
 | プリセット、独自の非同期フック、退出後の結果配送 | [トランジション](references/transitions.md) |
-| 命令形・スコープ形 Loading、進捗、style、カスタムコンテンツ、型指定 `show` / `start` | [Loading](references/loading.md) |
-| message、登録、インライン、型指定の Toast 経路 | [Toast](references/toast.md) |
+| 命令形・スコープ形 Loading、処理を始めるスレッド、進捗、style、カスタムコンテンツ、型指定 `show` / `start` | [Loading](references/loading.md) |
+| message、登録、インライン、型指定の Toast 経路、duration の数え始め | [Toast](references/toast.md) |

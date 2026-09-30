@@ -12,6 +12,8 @@ content は SwiftUI の View でも UIKit の `UIView` でも書ける。登録�
 
 どの overload も `async throws` で `DialogResult<ViewModel.Result>` を返す。`placement` を渡すと、content に添付された `DialogPlacement` をまるごと置換する ([レイアウト](layout.md))。
 
+`show` は呼び出し元の実行文脈のまま始まる (`nonisolated(nonsending)`)。`KsDialog` に準拠する自前の型 (テストダブルなど) は、素の `async` メソッド・`@concurrent`・`@MainActor`・actor のどの書き方でも、宣言を変えずに実装できる。
+
 | シグネチャ | 何をする | いつ選ぶ | 必要な登録 |
 |---|---|---|---|
 | `show(_ viewModel: ViewModel)` | 作った ViewModel インスタンスを渡し、登録済みの View factory が content を作る | 呼び出し元で ViewModel を組み立てる (init に値を渡す) とき | View factory |
@@ -23,7 +25,7 @@ content は SwiftUI の View でも UIKit の `UIView` でも書ける。登録�
 | `show(_ viewModelType: ViewModel.Type, configure: (ViewModel) async throws -> Void)` | 型を渡したうえで、生成したインスタンスを `configure` で整えてから表示する | 表示前に値を入れるとき。`configure` の完了を待ってから content を作る | 同上 |
 | `show(_ viewModelType:placement:)` / `show(_ viewModelType:placement:configure:)` | 型渡しに配置の上書きを足した形 | 同上で配置も変えるとき | 同上 |
 
-表では省いているが、登録した factory もインライン factory も `throws` にできる。factory が投げた失敗はそのまま `show` の失敗になり、Dialog は提示されない (Loading も同じで、Toast だけは呼び出し元へ返らない)。
+表では省いているが、登録した factory もインライン factory も `throws` にできる。factory が投げた失敗はそのまま `show` の失敗になり、Dialog は提示されない (Loading も開始時点に画面があれば同じで、Toast は呼び出し元へ返らない)。
 
 以下の例では、「登録して呼び出す」の `show(ConfirmViewModel(message:))` が 1 行目、「`Bool` 以外の結果型を返す」の `show(ItemEditViewModel.self) { ... }` が 7 行目、「登録せずに content を表示する」の factory 直渡しが 3 行目に当たる。残る行は次の「各 overload の最小例」に挙げる。型を渡す show で必要な ViewModel factory の登録は [ViewModel](view-models.md) にもある。
 
@@ -215,7 +217,7 @@ struct ItemScreen: View {
 }
 ```
 
-`show` はキャンセル用の引数を取らない。`.cancelled` になるのは、notifier のキャンセル報告、外側タップ (既定で有効)、Dialog を載せていた画面の破棄、そして `show` を await している Task のキャンセルである。
+`show` はキャンセル用の引数を取らない。`.cancelled` になるのは、notifier のキャンセル報告、外側タップ (既定で有効)、Dialog を載せていた画面の破棄、そして `show` を await している Task のキャンセル (画面を待っている間を含む) である。
 
 ## `Bool` 以外の結果型を返す
 
@@ -320,16 +322,50 @@ extension ItemScreenModel {
 }
 ```
 
+## 画面が出る前に呼ぶ
+
+出す先の画面 (前面でアクティブなシーンの key window) が無いときの `show` は throw せず、画面が現れるのを待ってから表示する。起動直後に最初の画面の `.task` から呼んだ `show` は、シーンがアクティブになった時点で表示される。アプリが背面にいる間や、システムの許可ダイアログが出ている間に呼んだ場合も同じである。
+
+待ちに上限は無い。待ちは次の 3 つのどれかで終わる。画面が現れて表示される。`show` を await している Task がキャンセルされ、表示せずに `.cancelled` を返す。ViewModel が `notifier` で報告し、表示せずにその結果を返す。画面が現れない場所から呼んだ `show` は返らないので、そうした Task はキャンセルできるようにしておく。長く背面にいたあとに、前に頼んだ Dialog が表示されることもある。
+
+登録漏れは待たずにその場で throw する。ViewModel の `notifier` は待つ前に紐付き、content は画面を確保してから作られる。そのため待っている間に同じインスタンスをもう一度 `show` すると `viewModelAlreadyShowing` になる。
+
+`.task` は View が消えると Task をキャンセルするので、待ちもそこで終わる。
+
+```swift
+import SwiftUI
+import KsDialogs
+
+struct WelcomeScreen: View {
+    @State private var status = ""
+
+    var body: some View {
+        Text(status)
+            .task {
+                do {
+                    let result = try await Dialog.shared.show(
+                        ConfirmViewModel(message: "Enable notifications?")
+                    )
+                    status = result == .completed(true) ? "Enabled" : "Skipped"
+                } catch {
+                    status = "Failed"
+                }
+            }
+    }
+}
+```
+
+待っている Dialog は、画面が現れると 1 枚ずつ表示される。メインスレッドから続けて呼んだ `show` は呼んだ順に表示され、後から呼んだものが手前に重なる。Dialog が待っている間に呼んだ `show` は、画面があってもその後ろに並ぶ。メインスレッド以外から呼んだ `show` と、`configure` が中断する型渡しの `show` は順番を保証しない (準備ができた順に並ぶ)。
+
 ## 構成ミスの失敗を扱う
 
 構成ミスは `.cancelled` を返さず `DialogError` を throw する。登録漏れをエンドユーザーのキャンセルと取り違えないためであり、この場合 content は生成も表示もされない。
 
-`show` を await している Task のキャンセルはこれとは別で、Dialog は閉じ、`show` は throw せず `.cancelled` を返す。
+`show` を await している Task のキャンセルはこれとは別で、Dialog は閉じ (画面を待っている間なら待ちをやめ)、`show` は throw せず `.cancelled` を返す。出す先の画面が無いことも失敗にはならない (「画面が出る前に呼ぶ」)。
 
 | `DialogError` の case | メッセージ (`localizedDescription`) | 原因と対処 |
 |---|---|---|
 | `viewFactoryNotRegistered(viewModelType:)` | `No View factory is registered for ViewModel type {TypeName}.` | その ViewModel 型の content を解決できない。起動時に `register(_:factory:)` を呼ぶ |
-| `presentationHostUnavailable` | `No screen is available to present the Dialog.` | 提示できる画面がない。最初の画面が出たあとに show する。キューイングはせず即座に失敗する |
 | `viewModelFactoryNotRegistered(viewModelType:)` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | 型を渡す show に ViewModel factory がない。`register(_:viewModel:)` を呼ぶ ([ViewModel](view-models.md)) |
 | `viewModelAlreadyShowing(viewModelType:)` | `This ViewModel instance of type {TypeName} is already being shown.` | 同じインスタンスを重ねて show した。重ねる表示ごとに新しいインスタンスを作る |
 

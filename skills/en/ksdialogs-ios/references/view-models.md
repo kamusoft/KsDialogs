@@ -10,7 +10,7 @@ A Dialog's result is reported by the view model being shown, through its `notifi
 |---|---|
 | Type | `DialogNotifier<Result>` for the `Result` the view model declared |
 | Before and after `show` | `nil` (it returns a value only while shown) |
-| When it is attached | Immediately before `show` creates the content |
+| When it is attached | Before `show` waits for a screen to present on, and so before the content is created. A report made while waiting returns that result without presenting |
 | When it is removed | Before the result reaches the caller. It is removed on completion, cancellation, or failure alike |
 | Relation to the factory's notifier argument | They point at the same delivery target |
 | Number of reports | Only the first one settles the result; later reports do nothing |
@@ -81,8 +81,9 @@ The order is fixed as follows.
 1. The view-model factory creates the instance
 2. `configure` completes
 3. The notifier is bound
-4. The view factory creates the content
-5. The Dialog is presented
+4. `show` waits until there is a screen to present on (it continues at once when one exists)
+5. The view factory creates the content
+6. The Dialog is presented
 
 Values set in `configure` are therefore always in place before the content reads the state. Creation and `configure` run on `MainActor`. A failure thrown by the view-model factory or by `configure` does not become a cancellation; it propagates to the caller as it is, without proceeding to presentation.
 

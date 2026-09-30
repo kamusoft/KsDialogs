@@ -6,11 +6,21 @@ Toast は覆いの色も外側タップの指定も持たず、受理順にか�
 
 ## duration の決まり方
 
-`durationMs` はミリ秒の `int?` で、呼び出しの受理時点から開始してアプリが背面にいる間も消費される。省略または 0 以下なら正の `ToastStyle.DefaultDuration` を使い、その既定値も 0 以下なら `ToastStyle.BuiltinDefaultDuration` の組み込み fallback 1500 ミリ秒を使う。上限 clamp は行わない。
+`durationMs` はミリ秒の `int?` である。省略または 0 以下なら正の `ToastStyle.DefaultDuration` を使い、その既定値も 0 以下なら `ToastStyle.BuiltinDefaultDuration` の組み込み fallback 1500 ミリ秒を使う (0 以下の値は例外にせず警告ログを出す)。上限 clamp は行わない。
+
+時間は実時間で消費され、アプリが背面にいる間も進む。いつから数え始めるかは、ライブラリが表示を始める時点の状態で決まる。
+
+| 表示を始める時点の状態 | 数え始め |
+|---|---|
+| 表示できる画面がある | 呼び出しを受け付けた時点 |
+| アプリが背面にいる | 呼び出しを受け付けた時点 |
+| アプリは前面にいるが表示できる画面がまだ無い (起動直後、背面からの復帰中、画面の切り替え中、システムの許可ダイアログの表示中など) | 画面に載った時点。載る前にアプリが背面へ下がったら、下がった時点 |
+
+起動直後や割り込みの最中に呼んだ Toast が、見えないまま duration を使い切らないためである。一度決まった期限は、画面の作り直しや背面からの復帰をまたいでも巻き戻らない。Android の起動直後は、起動画面が退場し終えるまでの分も数えるので、見えている時間はその分だけ短くなる。
 
 ## 重なりのふるまい
 
-各 Toast は独立 timer で並存し、同じ配置では重なり得る。ライブラリは queue、置換、自動 offset を行わない。満了まで器が現れない Toast は一度も表示せず破棄される。
+各 Toast は独立 timer で並存し、同じ配置では重なり得る。ライブラリは queue、置換、自動 offset を行わない。期限までに表示できる画面が現れなかった Toast は、一度も表示されずに破棄される (エラーにはならない)。そのとき content View も、型を渡す `Show` の ViewModel factory と `configure` も一度も呼ばれない。
 
 ## `Show` を選ぶ
 
@@ -66,6 +76,8 @@ public partial class ItemPage : ContentPage
 
 視覚項目が効くのは組み込みのメッセージ Toast だけで、`DefaultDuration` と `DefaultPlacement` は custom content にも効く。`Show` に渡した placement は style の既定値より優先される。どちらも無いときのライブラリ既定の配置は、可視領域の下部中央から上方向へ論理単位 80 である。
 
+組み込みのメッセージ Toast は、自分の content に全辺 24 の `DialogMargin` を持っていて、利用者が変える口は無い。この余白は配置とは別に効くので、ライブラリ既定の配置では組み込みの Toast の下端は可視領域の下端から 104 (余白 24 + offset 80) の位置に出る。長いメッセージも画面の左右の端から 24 以上内側で折り返す。
+
 ```csharp
 using KsDialogs;
 using Microsoft.Extensions.DependencyInjection;
@@ -107,7 +119,7 @@ public static class MauiProgram
 
 `Toast.Instance.Registry` の型は `ToastViewRegistry` で、実体は `ToastViewRegistry.Shared` である。Dialog / Loading のレジストリとは独立しているため、同じ ViewModel 型を複数のレジストリに登録できる。class の `IToastViewModel` をここへ `Register` で登録するか、DI から `RegisterForToast<TView, TViewModel>` で配線する ([DI 登録](di-registration.md))。1 つのエントリは View factory と ViewModel factory の 2 slot からなり、`Register` が埋めるのは View factory の slot である。instance を渡す表示にはこの slot だけあればよく、ViewModel の型を渡す表示には両方が要る。`RegisterForToast` は 1 行で両方を埋める。
 
-Toast には覆いも組み込みの地もないため、custom content は自分で背景を描く。配置は Dialog と同じ `Dialog` の attached property で添付でき、closure を持つ transition だけは code-behind から添付する ([レイアウト](layout.md))。
+Toast には覆いも組み込みの地もないため、custom content は自分で背景を描く。custom content の `DialogMargin` は Dialog と同じ全辺 0 なので、何も添付しなければライブラリ既定の配置で下端が可視領域の下端から 80 の位置に出る。余白が要るときは `Dialog.DialogMargin` を添付する。配置は Dialog と同じ `Dialog` の attached property で添付でき、closure を持つ transition だけは code-behind から添付する ([レイアウト](layout.md))。
 
 ### ViewModel を宣言する
 
@@ -228,7 +240,7 @@ private void OnConnectedClicked(object? sender, EventArgs e) =>
 
 ViewModel の instance ではなく型だけを渡すと、登録済みの ViewModel factory が作った instance を `configure` してから表示する。`RegisterForToast` はこの ViewModel factory も配線するので、1 行登録しておけば追加の手数はない。低水準で書くときは `Toast.Instance.Registry.RegisterViewModel` で ViewModel factory の slot だけを埋める。
 
-`configure` は同期の `Action<TViewModel>` だけで、非同期の形はない。`Show` が同期に戻る fire-and-forget だからである。順序は「ViewModel の生成 → `configure` の完了 → content View の生成 → 表示」に固定されているため、`configure` が入れた状態を content factory から読める。
+`configure` は同期の `Action<TViewModel>` だけで、非同期の形はない。`Show` が同期に戻る fire-and-forget だからである。順序は「ViewModel の生成 → `configure` の完了 → content View の生成 → 表示」に固定されているため、`configure` が入れた状態を content factory から読める。ViewModel factory と `configure` は、content View と同じく Toast を画面に載せる時点に UI スレッドで呼ばれる。表示できる画面がまだ無ければ、画面が現れるまで呼ばれない。
 
 ```csharp
 private void OnSyncedClicked(object? sender, EventArgs e) =>

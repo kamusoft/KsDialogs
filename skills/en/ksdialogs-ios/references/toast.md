@@ -138,6 +138,8 @@ If `duration` is omitted or a nonpositive value is passed, the current `Toast.sh
 
 If `placement` is omitted, `Toast.shared.style.defaultPlacement` is used, and if that is absent, the library default (bottom centre of the visible area, offset 80 pt upward).
 
+The built-in view carries its own margin of 24 pt on every edge, which cannot be changed. With the library default placement its bottom edge therefore sits 104 pt above the bottom of the visible area (margin 24 + offset 80), and a long message stays at least 24 pt inside the left and right edges.
+
 This route does not throw, so it can be called directly from a view.
 
 ```swift
@@ -193,7 +195,7 @@ struct MyApp: App {
 
 The registry for custom Toasts is `Toast.shared.registry` (`ToastViewRegistry`), independent of the Dialog and Loading ones. Make the content's view model a class-based `ToastViewModel`.
 
-Custom content can carry a `DialogTransition`. The built-in view has no such entry point ([Transitions](transitions.md)).
+Custom content can carry a `DialogTransition`. The built-in view has no such entry point ([Transitions](transitions.md)). The margin of custom content defaults to 0 on every edge (its bottom edge sits 80 pt above the bottom of the visible area with the library default placement); attach `DialogOptions(dialogMargin:)` to change it, as with a Dialog ([Layout](layout.md)).
 
 ```swift
 import SwiftUI
@@ -285,7 +287,7 @@ Toast.shared.registry.register(StatusToastViewModel.self, viewModel: {
 
 `configure` is synchronous. It can be `throws` but not `async`, because `show` is a synchronous call with no return value and there is nothing to await its completion on.
 
-The view-model factory and `configure` run on the MainActor, in acceptance order.
+The view-model factory and `configure` run on the MainActor when the display is attached to a screen.
 
 ```swift
 extension NoticeScreenModel {
@@ -297,9 +299,23 @@ extension NoticeScreenModel {
 }
 ```
 
-A failure thrown by `configure` or by the view-model factory does not reach the caller of `show`. Because it runs after `show` has returned synchronously, it leaves a warning log and discards only that one display. The only thing this route throws at the call site is a missing slot.
+A failure thrown by `configure` or by the view-model factory does not reach the caller of `show`. Because it runs after `show` has returned synchronously, when the display is attached to a screen, it leaves a warning log and discards only that one display. A display that expires before a screen appears never calls them. The only thing this route throws at the call site is a missing slot.
 
 What is resolved is the registration as of the moment `show` was called, so re-registering while a Toast is shown does not change the one on screen.
+
+## Show before a screen exists
+
+When there is no screen to present on (no key window of a foreground-active scene), `show` does not fail. The Toast waits for a screen and is shown when one appears. Its content (and, on the type-based route, the view-model factory and `configure`) is created only when it is attached to a screen, so a Toast that expires before a screen appears is discarded without calling any of them. An expired Toast is not shown even if a screen appears afterwards. This is a normal expiry, not an error.
+
+When the display time starts counting depends on the state when the display starts.
+
+| State when the display starts | The display time counts from |
+|---|---|
+| A screen exists | The moment the Toast is accepted |
+| The app is in the background | The moment the Toast is accepted |
+| The app is in the foreground but has no screen yet (launch, returning from the background, a system alert) | The moment the Toast is attached to a screen. If the app goes to the background before that, the moment it goes to the background |
+
+The app counts as in the foreground while at least one scene is foreground-active or foreground-inactive. Time is measured on a monotonic clock and keeps running in the background, and once a deadline is set it is not moved back. A Toast accepted in the foreground while no screen appears (for example, while the launch screen is kept up) has no deadline yet, so it stays pending until a screen appears or the app goes to the background.
 
 ## Handle misconfiguration failures
 

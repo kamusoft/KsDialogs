@@ -154,7 +154,81 @@ suspend fun importLibrary(source: ImportSource): Int =
     }
 ```
 
-`configure` may suspend for Dialog and Loading, and is synchronous for Toast because its `show` is fire-and-forget. A view model that a dependency-injection container builds is expressed inside the view-model factory; the library never looks at a container. Shared code has the same `show(VM::class)` form, but it reads a different table of view-model factories, so register in shared code when you show from shared code ([View models](view-models.md)). The Swift entry of the iOS host does not have this form.
+The Android native `start` has the same `actionThread` parameter (`LoadingActionThread`) as shared code. In the Android native typed `start`, the view-model factory and `configure` run on the UI thread regardless of that setting. `configure` may suspend for Dialog and Loading, and is synchronous for Toast because its `show` is fire-and-forget. A view model that a dependency-injection container builds is expressed inside the view-model factory; the library never looks at a container. Shared code has the same `show(VM::class)` form, but it reads a different table of view-model factories, so register in shared code when you show from shared code ([View models](view-models.md)). The Swift entry of the iOS host does not have this form.
+
+## Tell the library which view is the current page
+
+A Dialog whose content has `DialogLayoutArea.CURRENT_PAGE` attached is placed against the current page ([Layout](layout.md)). Android has no OS-level notion of a page and the library does not look for one itself, so the app tells it. There are two ways; when both are present, the upper one wins. When neither yields a page, the result is the same as `VISIBLE_AREA`, and the reason goes to a warning log (tag `KsDialogs`).
+
+| Order | How the screen is built | Name to write | Artifact |
+|---|---|---|---|
+| 1 | Compose | `Modifier.markAsDialogCurrentPage()` | `jp.kamusoft:ksdialogs` |
+| 2 | Classic views | `DialogCurrentPage.provider` (`(() -> View?)?`) | `jp.kamusoft:ksdialogs-core` |
+
+The reference is the intersection of that composable's or view's rect with the visible area. Name the frame inside the bars (the content area), not the whole screen including them.
+
+### Mark a Compose screen
+
+Apply it once to the content frame. The marked composable is a candidate only while it is on screen, and stops being one when it leaves the composition. With several candidates, the inner one wins when they are nested; otherwise the one placed on screen last wins.
+
+```kotlin
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import jp.kamusoft.ksdialogs.compose.markAsDialogCurrentPage
+
+@Composable
+fun PageWithBottomBar(
+    bottomBar: @Composable () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Column(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .markAsDialogCurrentPage(),
+        ) {
+            content()
+        }
+        bottomBar()
+    }
+}
+```
+
+During a `Crossfade`, an `AnimatedContent`, or a Navigation Compose fade transition, the leaving screen's mark also stays a candidate while the switch runs, so a Dialog shown during that time can use the leaving screen as its reference.
+
+### Register a function for classic views
+
+Register once a function that returns the current page's view. Assigning `null` removes the registration. The function is called on the UI thread when each display starts and, while it shows, whenever the window size or the system bar sizes change. Replacing the registration takes effect from the next display.
+
+```kotlin
+import android.app.Activity
+import android.os.Bundle
+import android.widget.FrameLayout
+import jp.kamusoft.ksdialogs.DialogCurrentPage
+
+class MainActivity : Activity() {
+    private lateinit var pageContainer: FrameLayout
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        pageContainer = findViewById(R.id.page_container)
+        DialogCurrentPage.provider = { pageContainer }
+    }
+
+    override fun onDestroy() {
+        DialogCurrentPage.provider = null
+        super.onDestroy()
+    }
+}
+```
+
+When the function returns `null`, throws, returns a view that is not on a window of the Activity presenting the Dialog, or returns a view with an empty rect, no page is found. A view on the window of a modal dialog shown from the same Activity can be a candidate.
 
 ## Style the built-in Loading and Toast
 
@@ -180,7 +254,7 @@ Toast.instance.style = Toast.instance.style.copy(
 )
 ```
 
-`Loading.instance.options` takes the same `DialogOptions` used for dialog attachment and stands in for the attachment the built-in loading content has no place for; its outside-tap field stays inactive. `defaultPlacement` is the app-wide fallback placement for every toast, which is how an app avoids its own bottom bar. `progressFormat` is a `(String?, Double?) -> String` function, not a format string.
+`Loading.instance.options` takes the same `DialogOptions` used for dialog attachment and stands in for the attachment the built-in loading content has no place for; its outside-tap field stays inactive. `defaultPlacement` is the app-wide fallback placement for every toast, which is how an app avoids its own bottom bar. The built-in toast carries a 24 margin on every edge of its own content, so moving it with `defaultPlacement` does not stick it to the screen edge. The Loading and Toast containers take over the presenting Activity's system bar settings (icon contrast, shown or hidden) and leave them unchanged while showing. `progressFormat` is a `(String?, Double?) -> String` function, not a format string.
 
 ## Configuration failures
 
@@ -189,14 +263,15 @@ Toast.instance.style = Toast.instance.style.copy(
 | Situation | Exception |
 |---|---|
 | No View factory registered for the class (Dialog, Loading, or Toast) | `DialogException.ViewFactoryNotRegistered` |
-| No screen available to present on | `DialogException.PresentationHostUnavailable` |
 | No ViewModel factory registered for a type-based show (Dialog, Loading, or Toast) | `DialogException.ViewModelFactoryNotRegistered` |
 | The same view-model instance is already showing | `DialogException.ViewModelAlreadyShowing` |
 | A value class was used as a view model | `DialogException.ValueClassViewModel` |
 
 On a type-based show, an exception thrown by the view-model factory or by `configure` is a Dialog and Loading failure that propagates to the caller with nothing presented, and a typed `start` does not run its action. Toast reports only the missing view-model factory that way: because its `show` has already returned, an exception from the factory or from `configure` cannot reach the caller, so that one toast is dropped with a warning log.
 
-Cancelling the calling coroutine propagates `CancellationException`; the dialog still finishes its exit animation and removal.
+Having no screen to present on is not a failure. The Android presentation target is an Activity that is resumed and has been drawn; until one appears, a Dialog waits, a Loading waits while its action keeps running, and a Toast waits within its duration rules. Nothing is presented on a screen still opening under the splash screen ([Dialog](dialogs.md) / [Loading](loading.md) / [Toast](toast.md)).
+
+Cancelling the calling coroutine propagates `CancellationException`, whether the call is waiting for a screen or showing. A dialog that is showing still finishes its exit animation and removal.
 
 ## Android-only entry points
 

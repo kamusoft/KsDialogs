@@ -12,6 +12,8 @@ The examples below are split into four parts: the view model, the view, the regi
 
 Every overload is `async throws` and returns `DialogResult<ViewModel.Result>`. Passing `placement` replaces the whole `DialogPlacement` attached to the content ([Layout](layout.md)).
 
+`show` starts in the caller's execution context (`nonisolated(nonsending)`). A type of your own that conforms to `KsDialog`, such as a test double, can implement it as a plain `async` method, `@concurrent`, `@MainActor`, or on an actor without changing the declaration.
+
 | Signature | What it does | When to choose it | Registration needed |
 |---|---|---|---|
 | `show(_ viewModel: ViewModel)` | Passes a view-model instance you built, and a registered view factory creates the content | When the caller assembles the view model (passing values to `init`) | View factory |
@@ -23,7 +25,7 @@ Every overload is `async throws` and returns `DialogResult<ViewModel.Result>`. P
 | `show(_ viewModelType: ViewModel.Type, configure: (ViewModel) async throws -> Void)` | Passes the type, then adjusts the created instance in `configure` before presenting | When values are set before presentation. The content is built after `configure` completes | Same as above |
 | `show(_ viewModelType:placement:)` / `show(_ viewModelType:placement:configure:)` | Type-based forms plus a placement override | Same as above, and placement also changes | Same as above |
 
-Omitted from the table: both a registered factory and an inline factory can be `throws`. A failure thrown by the factory becomes the failure of `show`, and the Dialog is not presented (Loading behaves the same way; only Toast cannot return it to the caller).
+Omitted from the table: both a registered factory and an inline factory can be `throws`. A failure thrown by the factory becomes the failure of `show`, and the Dialog is not presented (Loading behaves the same way when a screen exists at the start; Toast cannot return it to the caller).
 
 In the examples below, `show(ConfirmViewModel(message:))` under "Register and call" is row 1, `show(ItemEditViewModel.self) { ... }` under "Return a result type other than `Bool`" is row 7, and the direct factory under "Show content without registration" is row 3. The remaining rows appear in "Minimal example for each overload" next. Registering the view-model factory that type-based `show` requires is also covered in [View models](view-models.md).
 
@@ -215,7 +217,7 @@ struct ItemScreen: View {
 }
 ```
 
-`show` takes no cancellation argument. A result becomes `.cancelled` from a cancellation report on the notifier, an outside tap (enabled by default), the disposal of the screen the Dialog was presented on, or cancellation of the Task awaiting `show`.
+`show` takes no cancellation argument. A result becomes `.cancelled` from a cancellation report on the notifier, an outside tap (enabled by default), the disposal of the screen the Dialog was presented on, or cancellation of the Task awaiting `show` (including while it waits for a screen).
 
 ## Return a result type other than `Bool`
 
@@ -320,16 +322,50 @@ extension ItemScreenModel {
 }
 ```
 
+## Call before a screen exists
+
+When there is no screen to present on (no key window of a foreground-active scene), `show` does not throw. It waits for the screen to appear and then presents. A `show` called from the `.task` of the first screen right after launch is presented once the scene becomes active. The same applies while the app is in the background or while a system permission alert is up.
+
+The wait has no upper limit. It ends in one of three ways: the screen appears and the Dialog is presented; the Task awaiting `show` is cancelled and `show` returns `.cancelled` without presenting; or the view model reports through `notifier` and `show` returns that result without presenting. A `show` called from a place where a screen never appears does not return, so make such a Task cancellable. A Dialog requested long ago can also appear when the app returns to the foreground.
+
+A missing registration still throws at once, without waiting. The view model's `notifier` is attached before the wait, and the content is created only after the screen is secured, so a second `show` of the same instance while it waits throws `viewModelAlreadyShowing`.
+
+`.task` cancels its Task when the view disappears, which also ends the wait.
+
+```swift
+import SwiftUI
+import KsDialogs
+
+struct WelcomeScreen: View {
+    @State private var status = ""
+
+    var body: some View {
+        Text(status)
+            .task {
+                do {
+                    let result = try await Dialog.shared.show(
+                        ConfirmViewModel(message: "Enable notifications?")
+                    )
+                    status = result == .completed(true) ? "Enabled" : "Skipped"
+                } catch {
+                    status = "Failed"
+                }
+            }
+    }
+}
+```
+
+Waiting Dialogs are presented one by one when the screen appears. Shows called in succession from the main thread are presented in the order they were called, and a later one is placed in front. A `show` called while other Dialogs are waiting lines up behind them even if a screen exists. The order is not guaranteed for shows called off the main thread, or for type-based shows whose `configure` suspends; those line up in the order they become ready.
+
 ## Handle misconfiguration failures
 
 Misconfiguration throws `DialogError` instead of returning `.cancelled`. This keeps a missing registration from being mistaken for an end-user cancellation, and in that case no content is created or presented.
 
-Cancelling the Task that awaits `show` is different: the Dialog closes and `show` returns `.cancelled` without throwing.
+Cancelling the Task that awaits `show` is different: the Dialog closes (or stops waiting for a screen) and `show` returns `.cancelled` without throwing. Having no screen to present on is not a failure either (see "Call before a screen exists").
 
 | `DialogError` case | Message (`localizedDescription`) | Cause and remedy |
 |---|---|---|
 | `viewFactoryNotRegistered(viewModelType:)` | `No View factory is registered for ViewModel type {TypeName}.` | The content for that view-model type cannot be resolved. Call `register(_:factory:)` at startup |
-| `presentationHostUnavailable` | `No screen is available to present the Dialog.` | There is no screen to present on. Show after the first screen appears. It fails immediately rather than queueing |
 | `viewModelFactoryNotRegistered(viewModelType:)` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | A type-based `show` has no view-model factory. Call `register(_:viewModel:)` ([View models](view-models.md)) |
 | `viewModelAlreadyShowing(viewModelType:)` | `This ViewModel instance of type {TypeName} is already being shown.` | The same instance was shown again while showing. Create a new instance for each stacked presentation |
 

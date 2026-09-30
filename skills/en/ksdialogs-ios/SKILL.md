@@ -19,7 +19,7 @@ Whether you call through a shared entry or through an injected contract, you rea
 |---|---|---|
 | Register and show a Dialog | `DialogViewModel`, `DialogViewRegistry`, `Dialog.shared.show`, `DialogResult`, `DialogNotifier` | [Dialog](references/dialogs.md) |
 | Report a result from a view model | `notifier`, view-model factory, type-based `show`, `DialogError` | [View models](references/view-models.md) |
-| Control size, placement, overlay, and outside taps | `DialogOptions`, `DialogPlacement`, `DialogAlignment`, `DialogLayoutArea`, `DialogEdgeInsets` | [Layout](references/layout.md) |
+| Control size, placement, overlay, and outside taps | `DialogOptions`, `DialogPlacement`, `DialogAlignment`, `DialogLayoutArea`, `DialogEdgeInsets`, `markAsDialogCurrentPage()`, `DialogCurrentPage.provider` | [Layout](references/layout.md) |
 | Animate presentation and dismissal | `DialogTransition`, `DialogTransitionEdge`, `ksDialogTransition` | [Transitions](references/transitions.md) |
 | Block interaction while work runs | `Loading.shared`, `LoadingViewRegistry`, `LoadingStyle`, `LoadingProgressReceiver` | [Loading](references/loading.md) |
 | Show fire-and-forget notifications | `Toast.shared`, `ToastStyle`, `ToastViewRegistry` | [Toast](references/toast.md) |
@@ -60,9 +60,9 @@ struct ContentView: View {
 
 | Goal | Recipe to read |
 |---|---|
-| Registration, typed results, inline content, stacked dialogs, `DialogError` diagnosis | [Dialog](references/dialogs.md) |
+| Registration, typed results, inline content, stacked dialogs, calling before a screen exists, `DialogError` diagnosis | [Dialog](references/dialogs.md) |
 | `notifier`, view-model factories, pre-presentation configuration, how type-based calls differ across Dialog / Loading / Toast | [View models](references/view-models.md) |
-| Placement, margins, proportional sizing, overlays, outside-tap cancellation | [Layout](references/layout.md) |
+| Placement, margins, proportional sizing, overlays, outside-tap cancellation, placing relative to the current page (inside tab and navigation bars) | [Layout](references/layout.md) |
 | Presets and custom asynchronous hooks | [Transitions](references/transitions.md) |
-| Imperative and scoped Loading, progress, styling, custom content, type-based `show` / `start` | [Loading](references/loading.md) |
-| Message, registered, inline, and type-based Toast routes | [Toast](references/toast.md) |
+| Imperative and scoped Loading, the thread a scoped action starts on, progress, styling, custom content, type-based `show` / `start` | [Loading](references/loading.md) |
+| Message, registered, inline, and type-based Toast routes, when the display time starts counting | [Toast](references/toast.md) |

@@ -93,10 +93,11 @@ The order is fixed as follows.
 1. The view-model factory creates the view model (Main dispatcher)
 2. `configure` completes (it can be written as `suspend`)
 3. `notifier` is bound
-4. The View factory creates the content
-5. The Dialog is presented
+4. If there is no host screen, the call waits until one appears ("Call before a screen exists" in [Dialog](dialogs.md))
+5. The View factory creates the content
+6. The Dialog is presented
 
-The state set by `configure` is therefore always readable from the content's initialization. A failure thrown by the view-model factory or by `configure` does not become `Cancelled`: it propagates to the caller without proceeding to presentation.
+The state set by `configure` is therefore always readable from the content's initialization. Showing the same instance again during the wait fails with `DialogException.ViewModelAlreadyShowing`, even though it is not on screen yet. A failure thrown by the view-model factory or by `configure` does not become `Cancelled`: it propagates to the caller without proceeding to presentation.
 
 The following registers both slots for a view model that declares `String` as its result type, and presents it after the type-based `show` sets `prompt` in `configure`.
 

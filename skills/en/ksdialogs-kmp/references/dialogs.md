@@ -8,15 +8,15 @@ Shared code has no boolean shorthand (the alias of the view model that omits the
 
 `DialogResult` is a sealed interface: `Completed` carries the value and `Cancelled` carries none. Exactly one of them is returned per `show`.
 
-`show` can be called from any thread and needs no presentation target. It returns only after the exit animation has finished and the container has been removed, so the Dialog is already off screen when the result arrives — even with no animation attached, the built-in cross-fade delays the return by its own duration.
+`show` can be called from any thread and needs no presentation target. When no screen can present it yet, it does not fail; it waits for one to appear and then shows the Dialog (see "Call before a screen is available" below). It returns only after the exit animation has finished and the container has been removed, so the Dialog is already off screen when the result arrives — even with no animation attached, the built-in cross-fade delays the return by its own duration.
 
 | Situation | What shared code sees |
 |---|---|
 | The host content reported completion | `DialogResult.Completed` with the value |
 | Cancel from the content, a tap outside the Dialog, or the Android back button | `DialogResult.Cancelled` |
-| The OS removed the container before any report | `DialogResult.Cancelled` |
-| The calling coroutine was cancelled | `CancellationException`; the Dialog closes and settles internally as cancelled |
-| The view-model class is not registered, no screen can present the Dialog, or this exact instance is already showing | `DialogException` |
+| The OS removed the container before any report, or could not place it after the content was built | `DialogResult.Cancelled` |
+| The calling coroutine was cancelled (while waiting for a screen or while showing) | `CancellationException`; the Dialog closes and settles internally as cancelled |
+| The view-model class is not registered, or this exact instance is already showing or waiting for a screen | `DialogException` |
 
 Outside-tap cancellation is enabled by default; to turn it off, write it in the options the host attaches ([Layout](layout.md)).
 
@@ -140,6 +140,50 @@ class ChoicePairPicker(private val dialogs: KsDialog = Dialog.instance) {
 
 Only the first completion or cancellation reported by the host content takes effect; later reports do nothing. The library never counts how many Dialogs are stacked, and does not expose that as API.
 
+## Call before a screen is available
+
+When there is no screen to present on (the presentation target), `show` does not fail. It waits for a target to appear, then builds the content and shows it. This happens when you call it from the first screen's display code right after launch, while the app is in the background, or while a system permission dialog is up.
+
+| Host | Presentation target |
+|---|---|
+| iOS | The key window of the foreground active scene |
+| Android | An Activity that is resumed and has been drawn. It does not present on a screen still opening under the splash screen, and when an Activity is only destroyed it waits for the next one |
+
+The wait has no upper bound. It ends when a target appears and the Dialog is shown, when the calling coroutine is cancelled (`CancellationException` propagates without the Dialog ever being shown), or when the app reports a result through the notifier while waiting (the result is returned without showing). A `show` called from a place where no target will ever appear — work without a screen, or background processing — does not return, so make it cancellable. After a long time in the background, a Dialog from an old context can also appear.
+
+The following example puts a deadline on the wait and treats a Dialog that could not be shown in time as "do not restore".
+
+```kotlin
+package com.example.shared
+
+import jp.kamusoft.ksdialogs.kmp.Dialog
+import jp.kamusoft.ksdialogs.kmp.DialogException
+import jp.kamusoft.ksdialogs.kmp.DialogResult
+import jp.kamusoft.ksdialogs.kmp.KsDialog
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
+
+class DraftRecovery(private val dialogs: KsDialog = Dialog.instance) {
+    @Throws(DialogException::class, CancellationException::class)
+    suspend fun askToRestore(): Boolean {
+        val result = withTimeoutOrNull(30_000) {
+            dialogs.show(DeleteViewModel("Unsaved draft"))
+        }
+        return result is DialogResult.Completed && result.value
+    }
+}
+```
+
+When several Dialogs are waiting, they are queued in call order and placed one at a time. The next one is placed once the previous one has finished appearing on screen, so later calls stack in front. A `show` called while Dialogs are still waiting lines up behind them even if a target is available. Call order is kept only for consecutive calls from the same UI thread.
+
+| How it was called | Queue order |
+|---|---|
+| Consecutive `show` calls from the same UI thread | Call order |
+| `show` called from a thread other than the UI thread | Not guaranteed; the order they reach the UI thread |
+| Class-based `show` whose `configure` suspends | Not guaranteed; the order `configure` finishes |
+
+While waiting, the notifier stays bound to the instance. Calling `show` again with the same instance fails with `DialogException` even before it is shown. A missing View factory also fails with `DialogException` without waiting, whether or not a target exists.
+
 ## Minimal example per method
 
 Of the selection table, the instance-based `show` is already shown as a minimal example in the sections above. The argument forms that do not appear in those examples are placed here.
@@ -166,7 +210,6 @@ A configuration mistake does not return `Cancelled`; it throws `DialogException`
 | No content for that view-model class is registered in the host | `No View factory is registered for ViewModel type {TypeName}.` | Register it in each host at startup ([Android host](android-host.md) / [iOS host](ios-host.md)) |
 | A class was passed but no view-model factory is registered in shared code | `No ViewModel factory is registered for ViewModel type {TypeName}.` | Register it with `registry.registerViewModel` at startup ([View models](view-models.md)) |
 | The view-model factory returned an instance of a class other than its registration key | `The registered ViewModel factory does not produce ViewModel type {TypeName}. It produced {TypeName} instead. A ViewModel factory must return a ViewModel of the same class as its registration key.` | Make the factory return the same class as its registration key |
-| No screen can present it | `No screen is available to present the Dialog.` | Call `show` after the first screen appears; it fails immediately instead of queueing |
 | The same view-model instance was shown stacked | `This ViewModel instance of type {TypeName} is already being shown.` | Create a new instance for each `show` |
 | The reported result value cannot be converted back to the declared result type (iOS) | `The result value type does not match (expected: {TypeName} / actual: {TypeName}).` | Pass the same type the view model declares to the registration and to `result:` on the `notifier` |
 | The view model was declared as a value class (Android) | `ViewModel type {TypeName} is a value class and cannot be used as a ViewModel.` | Write the view model as a class |

@@ -63,17 +63,19 @@ Everything from the reference area to the outside tap is a property of the conte
 
 | Property | Default | What it does |
 |---|---|---|
-| `layoutArea` | visible area | Picks the reference rect: the whole window, or the window minus the system insets |
-| `dialogMargin` | 24 on every edge | Inset from the reference rect; caps the size and also pushes start- and end-aligned content away from the edge |
+| `layoutArea` | visible area | Picks the reference rect: the whole window, the visible area (the window minus the system insets), or the current page. It applies to both axes |
+| `dialogMargin` | 0 on every edge | Inset from the reference rect; caps the size and also pushes start- and end-aligned content away from the edge. Negative and non-finite edges become 0 |
 | `proportionalWidth` / `proportionalHeight` | unspecified (`-1`) | Fraction of the reference rect on that axis; `0` or less means unspecified, above `1` is clamped to `1` |
 | `overlayColor` | black at 40% | Colour of the layer behind the Dialog |
 | `isCanceledOnTouchOutside` | `true` | Whether a tap outside cancels the Dialog; when off, the tap does not reach the screen behind either |
+
+The margin defaults to 0 on every edge, so an aligned container touches the edge of the reference rect. Attach a `dialogMargin` to keep it away from the edge. Only the built-in Toast carries a 24 margin on every edge of its own content ([Toast](toast.md)).
 
 The spellings differ per host.
 
 | Type | Android | iOS |
 |---|---|---|
-| Reference area | `DialogLayoutArea.WINDOW` / `DialogLayoutArea.VISIBLE_AREA` | `DialogLayoutArea.window` / `DialogLayoutArea.visibleArea` |
+| Reference area | `DialogLayoutArea.WINDOW` / `DialogLayoutArea.VISIBLE_AREA` / `DialogLayoutArea.CURRENT_PAGE` | `DialogLayoutArea.window` / `DialogLayoutArea.visibleArea` / `DialogLayoutArea.currentPage` |
 | Alignment | `DialogAlignment.START` / `CENTER` / `END` / `FILL` | `DialogAlignment.start` / `.center` / `.end` / `.fill` |
 | Edge insets | `DialogEdgeInsets(top, left, bottom, right)`, `DialogEdgeInsets(all)`, `DialogEdgeInsets.ZERO` | `DialogEdgeInsets(top:left:bottom:right:)`, `DialogEdgeInsets(all:)`, `DialogEdgeInsets.zero` |
 | Overlay colour | ARGB 32-bit `Int` | `UIColor` |
@@ -138,11 +140,51 @@ Dialog.shared.kmp.register(DeleteViewModel.self) { viewModel, notifier in
 }
 ```
 
+## Use the current page as the reference
+
+Choosing the current page as the reference area makes the reference rect the inside of the page on screen, without its navigation bar or tab bar (intersected with the visible area). On a screen with a tab bar, an end-aligned Dialog sits `dialogMargin` above the top of the tab bar, and proportional sizes are fractions of the height without the tab bar.
+
+Shared code has no way to choose the reference area and no way to name the page. The host attaches the choice to the content, and each host tells the library which view is the page.
+
+| Host | How to choose it | How to name the page |
+|---|---|---|
+| Android | `DialogLayoutArea.CURRENT_PAGE` | `Modifier.markAsDialogCurrentPage()` in Compose, `DialogCurrentPage.provider` for classic views. Without either, no page is found |
+| iOS | `DialogLayoutArea.currentPage` | `markAsDialogCurrentPage()` in SwiftUI, `DialogCurrentPage.provider` for UIKit. Even with neither, the library walks UIKit navigation and tab containers by default |
+
+When no page is found, the display still does not fail; it comes out as if the visible area had been chosen (the reason goes to an English warning log).
+
+On Android, the attachment only changes the choice.
+
+```kotlin
+Dialog.instance.registry.register(DeleteViewModel::class) { viewModel, notifier ->
+    DeleteContentView(this, viewModel, notifier).apply {
+        ksDialogOptions = DialogOptions(
+            layoutArea = DialogLayoutArea.CURRENT_PAGE,
+            dialogMargin = DialogEdgeInsets(all = 16.0),
+        )
+        ksDialogPlacement = DialogPlacement(verticalAlignment = DialogAlignment.END)
+    }
+}
+```
+
+The iOS attachment is the same.
+
+```swift
+Dialog.shared.kmp.register(DeleteViewModel.self) { viewModel, notifier in
+    DeleteContent(itemName: viewModel.itemName, notifier: notifier)
+        .ksDialogOptions(DialogOptions(layoutArea: .currentPage, dialogMargin: DialogEdgeInsets(all: 16)))
+        .ksDialogPlacement(DialogPlacement(verticalAlignment: .end))
+}
+```
+
+Complete recipes for naming the page are in [Android host](android-host.md) and [iOS host](ios-host.md). Loading and Toast content accept the same value and resolve the page by the same rules as a Dialog, but nothing beyond that is settled (such as how it fits with the Toast app-default placement).
+
 ## When an attachment takes effect
 
 - Write the attachment where it is evaluated before the first display
 - In Compose, a `KsDialogAttributes` placed inside a lazily evaluated scope such as a `LazyColumn` item does not run during the initial composition and has no effect on that display
 - SwiftUI attachments merge from child to parent, so the outer one wins when the same attribute is attached twice
 - The effective values are frozen at the first native layout pass. Rewriting an attachment afterwards does not move a Dialog that is already showing
-- Rotation and changes to the window size or insets re-run the layout with the frozen values
+- Rotation and changes to the window size or insets re-run the layout with the frozen values. With the current page chosen, the page rect is fetched again at that point (replacing how the page is named takes effect from the next display)
+- A navigation that changes the current page while the Dialog is showing does not move it by itself
 - Opening and closing the soft keyboard does not move the Dialog

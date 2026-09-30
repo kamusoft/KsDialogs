@@ -22,12 +22,13 @@ KsDialogs.Maui は AiForms.Maui.Dialogs を、Dialog の結果型・factory に�
 | 再利用 | `IReusableDialog` と `IReusableLoading` の handle | 再利用 handle はなく、content は表示ごとに作り直す |
 | 結果報告 | View に bind した `DialogNotifier` | factory から渡る型付き `DialogNotifier<TResult>`、または `viewModel.Notifier` |
 | レイアウト属性 | `ExtraView` と `DialogView` の property | `Dialog.*` 添付 property、`DialogPlacement`、`DialogOptions` |
+| 基準領域 | 真偽値の `UseCurrentPageLocation` (垂直方向にだけ効く) | 両軸に効く `DialogLayoutArea` (`Window` / `VisibleArea` / `CurrentPage`) |
 | animation | `RunPresentationAnimation` / `RunDismissalAnimation` の override | `Dialog.SetTransition` で添付する `DialogTransition` |
 | 登録と IoC | `Configurations.SetIocConfig` | `RegisterForDialog` / `RegisterForLoading` / `RegisterForToast` と、Dialog に効く `AddKsDialogs` の fallback |
 | 型から show する | `ShowFromModelAsync`、`CreateFromModel` | Dialog / Loading / Toast それぞれの型を渡す `ShowAsync` / `Show` と `configure` コールバック |
 | Loading の設定 | `LoadingConfig` | `Loading.Instance.Style` (`LoadingStyle`) と `Loading.Instance.Options` (`DialogOptions`) |
 | Toast | obsolete で custom `ToastView` 経路のみ | message・登録・inline・型指定の経路を持つ `IKsToast` |
-| 変わった既定値 | 透明な overlay、dialog margin 0、window 全体の layout area | 黒 40% の overlay、全辺 24 の dialog margin、visible area |
+| 変わった既定値 | 透明な overlay、window 全体の layout area | 黒 40% の overlay、visible area (dialog margin の既定は旧と同じ全辺 0) |
 
 ## 能力マップ
 
@@ -38,8 +39,11 @@ KsDialogs.Maui は AiForms.Maui.Dialogs を、Dialog の結果型・factory に�
 | 再利用 Dialog と Loading handle を置き換える | [API 対応表](references/api-mapping.md) |
 | 型から show する旧経路 (`ShowFromModelAsync`・`CreateFromModel`) を置き換える | [API 対応表](references/api-mapping.md) |
 | layout・overlay・animation 設定を `ExtraView` から移す | [API 対応表](references/api-mapping.md) |
+| `UseCurrentPageLocation` を表示中のページ基準 (`DialogLayoutArea.CurrentPage`) へ移す | [API 対応表](references/api-mapping.md) |
+| Loading の処理を始めるスレッドを選ぶ (`LoadingActionThread`) | 下の「最小移行」と [API 対応表](references/api-mapping.md) |
 | obsolete の custom View 専用 Toast API を置き換える | [API 対応表](references/api-mapping.md) |
-| 登録の配線ミスがどう失敗するかを知る | 下の「移行後の失敗の扱い」 |
+| 登録の配線ミスがどう失敗するかを知る | 下の「移行後の失敗・待ち・打ち切り」 |
+| 画面がまだ無いときの show の待ちと、`CancellationToken` による打ち切りを知る | 下の「移行後の失敗・待ち・打ち切り」と [API 対応表](references/api-mapping.md) |
 | KsDialogs.Maui の API 自体を調べる | `ksdialogs-maui` Skill |
 
 ## 導入
@@ -56,7 +60,7 @@ project には `Microsoft.Maui.Controls` 10.0.20 以降も要る。これはラ�
 
 ## 最小移行
 
-処理スコープ付き Loading は、既定エントリと progress の形を維持している。旧 `isCurrentScope` 引数は削除する。表示位置を変える必要がある場合は `DialogPlacement` を渡す。
+処理スコープ付き Loading は、既定エントリと progress の形を維持している。旧 `isCurrentScope` 引数は削除する。表示位置を変える必要がある場合は `DialogPlacement` を渡す。渡した処理は、呼び出し元のスレッドによらず既定 (`LoadingActionThread.Main`) で UI スレッドで始まるので、処理の中から UI スレッドへ移し直さずに画面の要素へ触れる。UI に触れない重い処理は `actionThread: LoadingActionThread.Background` を渡して UI スレッド外で始める。
 
 ```csharp
 using KsDialogs;
@@ -77,9 +81,13 @@ public static class StartupWork
 }
 ```
 
-## 移行後の失敗の扱い
+## 移行後の失敗・待ち・打ち切り
 
 構成ミスは cancel された結果ではなく `DialogException` の入れ子の型として届く。そのうち 1 つは移植元に対応物が無い。1 行登録 (`RegisterForDialog`・`RegisterForLoading`・`RegisterForToast`) が結び付けた View をライブラリが組み立てられなかった場合、失敗は `DialogException.ViewCreationFailed` になり、元の失敗は `InnerException` にそのまま残り、`ViewTypeName` と `ViewModelTypeName` で型名を読める。包まれるのはライブラリ自身が View を組み立てる経路だけで、利用者が書いた factory や fallback resolver が投げた例外は包まれずそのまま届く。Dialog と Loading では show / start の task の失敗として届き、`Toast.Show` は task を返さないため、原因を書いた警告を残してその 1 枚だけを破棄する。
+
+iOS / Android では、出す先の画面 (提示先) がまだ無いときに呼んでも失敗しない。アプリの起動直後に最初の画面の表示処理から呼んだ場合、アプリが背面にいる場合、システムの許可ダイアログが出ている場合などは、画面が現れるのを待ってから表示する。これは Dialog・Loading・Toast で共通で、Loading は待っている間も処理を実行する。`DialogException.PresentationHostUnavailable` が届くのは、表示の仕組みを持たない素の .NET (単体テストの `net10.0` など) で Dialog を show した場合だけである。
+
+待ちに上限は無いので、画面が現れる見込みの無い場所から呼ぶ Dialog には、`ShowAsync` の末尾の `CancellationToken` を渡す。打ち切ると、待っている間ならダイアログは一度も表示されず、表示中ならダイアログが閉じ、どちらも `OperationCanceledException` が投げられる。打ち切りは結果の `Cancelled` には変換されない。`Cancelled` が返るのは、キャンセルの報告・外側タップ・画面の破棄でダイアログが閉じた場合である。
 
 ## 対応表を選ぶ
 

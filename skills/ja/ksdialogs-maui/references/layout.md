@@ -6,8 +6,8 @@
 
 | attached property | 型 | 供給するもの | 既定値 |
 |---|---|---|---|
-| `Dialog.LayoutArea` | `DialogLayoutArea` (`Window` / `VisibleArea`) | サイズと位置の計算の基準領域 | `VisibleArea` |
-| `Dialog.DialogMargin` | `Thickness` | 基準領域の各辺から控除する余白 | 全辺 24 |
+| `Dialog.LayoutArea` | `DialogLayoutArea` (`Window` / `VisibleArea` / `CurrentPage`) | サイズと位置の計算の基準領域 | `VisibleArea` |
+| `Dialog.DialogMargin` | `Thickness` | 基準領域の各辺から控除する余白 | 全辺 0 |
 | `Dialog.ProportionalWidth` / `Dialog.ProportionalHeight` | `double` | その軸の基準領域に対する比率 | `-1` (未指定) |
 | `Dialog.OverlayColor` | `Color?` | Dialog の背後を覆う色 | 黒 40% |
 | `Dialog.IsCanceledOnTouchOutside` | `bool` | 外側タップでキャンセルするか | `true` |
@@ -18,7 +18,15 @@
 
 表の各名前 `X` には `Dialog.GetX` / `Dialog.SetX` の対と、`Dialog.XProperty` という `BindableProperty` がある。たとえば `Dialog.GetLayoutArea`、`Dialog.SetLayoutArea`、`Dialog.LayoutAreaProperty` である。
 
-基準領域は、AiForms.Maui.Dialogs では View の真偽値プロパティ `UseCurrentPageLocation` が担っていたところである。KsDialogs では両軸に効く列挙になっていて、XAML なら `ksd:Dialog.LayoutArea`、code からなら `Dialog.SetLayoutArea` で添付する。
+`DialogLayoutArea` の 3 値が基準にする矩形は次のとおりである。どれを選んでも水平・垂直の両軸に効く。
+
+| 値 | 基準になる矩形 |
+|---|---|
+| `Window` | Dialog を載せる window の全体 |
+| `VisibleArea` | window からシステムバーなどの幅 (insets) を除いた領域。iOS では safe area |
+| `CurrentPage` | 表示中のページのうち、タブバー・ナビゲーションバーを除いた内側と、可視領域との共通部分 (後述の「表示中のページを基準にする」) |
+
+基準領域は、AiForms.Maui.Dialogs では View の真偽値プロパティ `UseCurrentPageLocation` が担っていたところである。KsDialogs では両軸に効く列挙になっていて、XAML なら `ksd:Dialog.LayoutArea`、code からなら `Dialog.SetLayoutArea` で添付する。移行するときは `true` を `DialogLayoutArea.CurrentPage` に、`false` を `DialogLayoutArea.Window` に置き換える。何も指定しなければ `VisibleArea` になるので、`false` のまま使っていた画面は、置き換えないと基準が window 全体から可視領域に変わる。
 
 ## サイズと位置の細則
 
@@ -29,6 +37,8 @@
 | クランプ | 得られたサイズは `DialogMargin` を控除した領域に収まるよう切り詰める |
 | offset | クランプしないため、意図的に画面外へ押し出せる |
 | 計算する場所 | MAUI は添付された値を無変換で渡し、rect は Native 側が計算する |
+| 内容サイズ | content のルートの `WidthRequest` / `HeightRequest` (と `MinimumWidthRequest` / `MinimumHeightRequest`) を含めて MAUI の測り方で決まる。ルートが `ContentView` でも `Grid` でも iOS と Android で同じ大きさになる。Dialog・Loading・Toast の custom View に共通 |
+| 明示サイズと比率・`Fill` | 比率指定や `Fill` で器が大きさを決めた軸では、明示サイズを持つルートは外形いっぱいに広がらず、宣言したサイズのまま外形の中央に置かれる。外形いっぱいに広げたいときは、その軸の明示サイズを外す |
 
 ## 実効値が決まる時点
 
@@ -129,6 +139,82 @@ private async void OnDeleteClicked(object? sender, EventArgs e)
     StatusLabel.Text = result is DialogResult<bool>.Completed ? "Deleted" : "Kept";
 }
 ```
+
+## 表示中のページを基準にする
+
+`Dialog.LayoutArea` に `CurrentPage` を添付すると (XAML なら `ksd:Dialog.LayoutArea="CurrentPage"`)、Dialog を出す window でいま表示中のページを基準にする。タブバーを持つ画面で `VerticalAlignment` を `End` にすれば、Dialog の下端はタブバーの上端から `DialogMargin` の分だけ上に出て、比率サイズもタブバーを除いた高さに対する割合になる。
+
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ksd="clr-namespace:KsDialogs;assembly=KsDialogs.Maui"
+             x:Class="MyApp.PageSheetView"
+             ksd:Dialog.LayoutArea="CurrentPage"
+             ksd:Dialog.ProportionalWidth="1"
+             ksd:Dialog.VerticalAlignment="End">
+    <Label Text="Filter" />
+</ContentView>
+```
+
+ページはライブラリが MAUI のページ構成から探すので、標準の構成なら何も登録しなくてよい。探し方は次のとおりで、iOS と Android で同じである。
+
+1. window の modal stack にページがあれば最後に積んだもの、無ければ `Window.Page` から始める
+2. `Shell`・`FlyoutPage`・`TabbedPage`・`NavigationPage` を、表示中の子 (`FlyoutPage` は `Detail`) へ容れ物でなくなるまで降りる
+3. 降りきったページを基準にする。まだ描画されていないページは得られなかった扱いになる
+
+ページが得られないときは `VisibleArea` を選んだときと同じ結果で表示し、show は失敗しない。
+
+### 基準にするページや要素を自分で教える
+
+独自の切り替えで画面を組んでいて上の探し方では届かないときや、ページの一部の領域を基準にしたいときは、基準にするページか要素を返す関数を `DialogCurrentPage.Provider` (`Func<VisualElement?>?`) に登録する。登録は既定の探し方より優先し、`null` を代入すると既定の探し方に戻る。
+
+- 関数は UI スレッドで、各表示の開始時と、表示中に window の寸法やシステムバーの幅が変わったときに呼ばれる
+- 登録の差し替えは次の表示から効き、表示中の Dialog は開始時点の関数を使い続ける
+- 関数が `null` を返す・例外を投げる・要素がまだ描画されていない・Dialog を出す window に載っていない・window と重ならない場合は、既定の探し方で得たページへ進む
+
+以下は、ヘッダーを除いた本文の領域を基準にする画面である。
+
+```csharp
+using KsDialogs;
+using Microsoft.Maui.Controls;
+
+namespace MyApp;
+
+public sealed class DashboardPage : ContentPage
+{
+    private readonly Grid _contentArea = new();
+
+    public DashboardPage()
+    {
+        var header = new Label { Text = "Dashboard" };
+        Grid.SetRow(_contentArea, 1);
+        Content = new Grid
+        {
+            RowDefinitions =
+            {
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Star),
+            },
+            Children = { header, _contentArea },
+        };
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        DialogCurrentPage.Provider = () => _contentArea;
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        DialogCurrentPage.Provider = null;
+    }
+}
+```
+
+表示中に画面遷移で表示中のページが変わっても、それだけでは Dialog は再配置されない (再配置のきっかけは window の寸法と insets の変化だけ)。Loading と Toast の custom View にも `CurrentPage` を添付でき、Dialog と同じ規則でページを解決するが、Toast の既定配置との組み合わせなど、それ以上の挙動は決まっていない。
 
 ## 値オブジェクトにまとめる
 

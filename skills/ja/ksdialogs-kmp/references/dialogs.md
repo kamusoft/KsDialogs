@@ -8,15 +8,15 @@ Dialog の呼び出しは共有コード (`commonMain`) に書き、中身の Vi
 
 `DialogResult` は sealed interface で、`Completed` は値を持ち `Cancelled` は値を持たない。1 回の `show` につきどちらかがちょうど 1 回返る。
 
-`show` は任意のスレッドから呼べ、提示先の指定も要らない。戻るのは退出の演出が終わって器が撤去された後なので、結果が届いた時点で Dialog はもう画面にない — 演出を何も添付していなくても、内蔵のクロスフェードの分だけ戻りが遅れる。
+`show` は任意のスレッドから呼べ、提示先の指定も要らない。出す先の画面がまだ無ければ、失敗せずに画面が現れるのを待ってから表示する (後述の「出す先の画面がまだ無いときに呼ぶ」)。戻るのは退出の演出が終わって器が撤去された後なので、結果が届いた時点で Dialog はもう画面にない — 演出を何も添付していなくても、内蔵のクロスフェードの分だけ戻りが遅れる。
 
 | 状況 | 共有コードから見えるもの |
 |---|---|
 | host の content が完了を報告した | 値を持つ `DialogResult.Completed` |
 | content からのキャンセル・Dialog の外側のタップ・Android の戻るボタン | `DialogResult.Cancelled` |
-| 報告の前に OS が器を外した | `DialogResult.Cancelled` |
-| 呼び出し元のコルーチンをキャンセルした | `CancellationException`。Dialog は閉じ、内部では cancelled で確定する |
-| ViewModel class が未登録・提示できる画面が無い・同じ instance が表示中 | `DialogException` |
+| 報告の前に OS が器を外した、または中身を作った後に OS が器を載せられなかった | `DialogResult.Cancelled` |
+| 呼び出し元のコルーチンをキャンセルした (画面を待っている間も表示中も) | `CancellationException`。Dialog は閉じ、内部では cancelled で確定する |
+| ViewModel class が未登録・同じ instance が表示中または画面を待っている | `DialogException` |
 
 外側タップでのキャンセルは既定で有効で、無効にしたい場合は host 側で添付する option に書く ([レイアウト](layout.md))。
 
@@ -140,6 +140,50 @@ class ChoicePairPicker(private val dialogs: KsDialog = Dialog.instance) {
 
 host の content が最初に報告した完了またはキャンセルだけが有効で、以降の報告は何もしない。ライブラリは重なりの枚数を数えず、API としても公開しない。
 
+## 出す先の画面がまだ無いときに呼ぶ
+
+出す先の画面 (提示先) が無いときの `show` は失敗しない。提示先が現れるのを待ってから content を作り、表示する。起動直後に最初の画面の表示処理から呼んだとき、アプリが背面にいる間に呼んだとき、システムの許可ダイアログが出ている間に呼んだときがこれに当たる。
+
+| host | 提示先 |
+|---|---|
+| iOS | 前面でアクティブなシーンの key window |
+| Android | resumed で、かつ描画された Activity。起動画面の下で開いている途中の画面には出さず、Activity が破棄されただけでは出さずに次の Activity を待つ |
+
+待ちに上限は無い。待ちが終わるのは、提示先が現れて表示に進んだとき、呼び出し元のコルーチンがキャンセルされたとき (一度も表示せずに `CancellationException` が伝播する)、待っている間にアプリが報告口で結果を報告したとき (表示せずにその結果を返す) である。画面を持たない処理やバックグラウンドの処理など、提示先が現れる見込みの無い場所から呼ぶ `show` は返らないので、打ち切れるようにしておく。長く背面にいた後に、古い文脈の Dialog が表示されることもある。
+
+次は、待ちに期限を付けて、期限までに出せなければ「復元しない」として扱う例である。
+
+```kotlin
+package com.example.shared
+
+import jp.kamusoft.ksdialogs.kmp.Dialog
+import jp.kamusoft.ksdialogs.kmp.DialogException
+import jp.kamusoft.ksdialogs.kmp.DialogResult
+import jp.kamusoft.ksdialogs.kmp.KsDialog
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
+
+class DraftRecovery(private val dialogs: KsDialog = Dialog.instance) {
+    @Throws(DialogException::class, CancellationException::class)
+    suspend fun askToRestore(): Boolean {
+        val result = withTimeoutOrNull(30_000) {
+            dialogs.show(DeleteViewModel("Unsaved draft"))
+        }
+        return result is DialogResult.Completed && result.value
+    }
+}
+```
+
+待っている Dialog が複数あるときは、呼んだ順に並べて 1 枚ずつ載せる。前の 1 枚が画面に載り終えてから次を載せるので、後から呼んだものが手前に重なる。待っている Dialog があるうちに呼んだ `show` は、提示先があってもその後ろに並ぶ。並ぶ順が呼んだ順になるのは、同じ UI スレッドから続けて呼んだ場合だけである。
+
+| 呼び方 | 並ぶ順 |
+|---|---|
+| 同じ UI スレッドから続けて呼んだ `show` | 呼んだ順 |
+| UI スレッド以外から呼んだ `show` | 保証しない。UI スレッドに着いた順 |
+| `configure` が中断する class 指定の `show` | 保証しない。`configure` を終えた順 |
+
+待っている間も、報告口はその instance へ紐付いている。同じ instance をもう一度 `show` すると、まだ表示されていなくても `DialogException` になる。View factory の未登録も、提示先の有無にかかわらず待たずに `DialogException` になる。
+
 ## 各メソッドの最小例
 
 選択表のうち instance を渡す `show` は、上の節の例がそのまま最小例になっている。ここには既存の例に現れない引数の形を置く。
@@ -166,7 +210,6 @@ dialogs.show(DeleteViewModel::class) { viewModel -> viewModel.itemName = "Report
 | その ViewModel class の content が host に未登録 | `No View factory is registered for ViewModel type {TypeName}.` | 起動時に各 host で登録する ([Android host](android-host.md) / [iOS host](ios-host.md)) |
 | class を渡したが共有コードに ViewModel factory が未登録 | `No ViewModel factory is registered for ViewModel type {TypeName}.` | 起動時に `registry.registerViewModel` で登録する ([ViewModel](view-models.md)) |
 | ViewModel factory が登録キーと違う class の instance を返した | `The registered ViewModel factory does not produce ViewModel type {TypeName}. It produced {TypeName} instead. A ViewModel factory must return a ViewModel of the same class as its registration key.` | factory の戻り値を登録キーと同じ class にする |
-| 提示できる画面が無い | `No screen is available to present the Dialog.` | 最初の画面が出た後に `show` する。順番待ちはせず即座に失敗する |
 | 同じ ViewModel instance を重ねて表示した | `This ViewModel instance of type {TypeName} is already being shown.` | `show` ごとに新しい instance を作る |
 | 報告された結果値を宣言結果型へ戻せない (iOS) | `The result value type does not match (expected: {TypeName} / actual: {TypeName}).` | 登録と `notifier` の `result:` に ViewModel の宣言と同じ型を渡す |
 | ViewModel を value class で宣言した (Android) | `ViewModel type {TypeName} is a value class and cannot be used as a ViewModel.` | ViewModel を class で書く |

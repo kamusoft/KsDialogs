@@ -291,6 +291,55 @@ extension SyncScreenModel {
 }
 ```
 
+## Choose the thread a scoped action starts on
+
+The action passed to `start` has the type `@MainActor @Sendable (@Sendable @escaping (Double) -> Void) async throws -> T` on every `start`. A closure written in place therefore starts on the main thread, whatever thread called `start`, and can touch UIKit without `await`. To start heavy work off the main thread, mark the closure `@concurrent`; touching main-actor state inside it without `await` is then a compile error. There is no argument that selects the thread; the isolation of the action decides it.
+
+A main-thread action resumes on the main thread after each `await`, and `await MainActor.run { ... }` inside the action works as usual. Synchronous heavy work left on the main thread blocks it, and progress and message updates do not appear on screen until it returns.
+
+```swift
+import UIKit
+import KsDialogs
+
+extension SyncScreenModel {
+    func applyPhoto(_ photo: UIImage, to imageView: UIImageView) async throws {
+        try await loading.start(message: "Applying") { report in
+            imageView.image = photo
+            report(1)
+        }
+    }
+
+    func buildIndex() async throws -> Int {
+        try await loading.start(message: "Indexing") { @concurrent report in
+            let count = (1...1_000_000).reduce(0) { $0 + $1 % 7 }
+            report(1)
+            return count
+        }
+    }
+}
+```
+
+When you pass a function by name (`start(work)`), the function's own isolation wins over the `@MainActor` of the parameter type.
+
+| The function passed by name | Where it starts |
+|---|---|
+| `@MainActor` | The main thread |
+| `@concurrent` | Off the main thread |
+| `async` with no isolation, `NonisolatedNonsendingByDefault` disabled in your module (the Swift 6 default) | Off the main thread |
+| `async` with no isolation, `NonisolatedNonsendingByDefault` enabled in your module (the default for new Xcode 26 projects) | The main thread (it inherits the caller's isolation) |
+
+In both settings such a function is not declared `@MainActor`, so touching main-actor state (UIKit included) in it without `await` is a compile error.
+
+## Start before a screen exists
+
+When there is no screen to present on (no key window of a foreground-active scene), Loading still runs the work and waits for the screen to appear. `start` returns the work's result as usual.
+
+- If the presentation is still active when the screen appears, the content is created then and shown with its presentation transition
+- If the presentation ends first (the last `start` finishes, or `hide` is called), nothing is shown and the wait stops
+- If the screen appears just as the work ends, the Loading can appear briefly and close
+
+Where the content is created depends on whether a screen existed at the start. With a screen, the factory runs at the start, and a failure it throws is returned to the caller as the failure of the start (the work does not run). Without a screen, the factory runs when the screen appears; a failure it throws is not returned to the caller: a warning is logged, only the presentation is abandoned, and the work keeps running and returns its result. A missing registration is still detected at the start, and a view model's progress receiver is bound at the start, so progress reported before the presentation still reaches it.
+
 ## Configure the appearance of the built-in Loading
 
 `style` and `options` are read when a presentation starts, so changes take effect from the next presentation. Setting them once at application startup is the basic form.

@@ -291,6 +291,55 @@ extension SyncScreenModel {
 }
 ```
 
+## スコープ形の処理が始まるスレッドを選ぶ
+
+`start` に渡す処理の型は、どの `start` でも `@MainActor @Sendable (@Sendable @escaping (Double) -> Void) async throws -> T` である。そのため、その場で書いたクロージャはどのスレッドから `start` を呼んでもメインスレッドで始まり、中で UIKit に `await` なしで触れる。重い処理をメインスレッド外で始めたいときは、クロージャに `@concurrent` を付ける。その場合、中で MainActor の状態に `await` なしで触るとコンパイルエラーになる。スレッドを選ぶ引数は無く、処理の isolation で決まる。
+
+メインスレッドで始まった処理は、`await` の後もメインスレッドで再開する。処理の中で `await MainActor.run { ... }` を使う書き方もそのまま動く。重い同期処理をメインスレッドのまま書くとメインスレッドを塞ぎ、終わるまで進捗やメッセージの更新が画面に出ない。
+
+```swift
+import UIKit
+import KsDialogs
+
+extension SyncScreenModel {
+    func applyPhoto(_ photo: UIImage, to imageView: UIImageView) async throws {
+        try await loading.start(message: "Applying") { report in
+            imageView.image = photo
+            report(1)
+        }
+    }
+
+    func buildIndex() async throws -> Int {
+        try await loading.start(message: "Indexing") { @concurrent report in
+            let count = (1...1_000_000).reduce(0) { $0 + $1 % 7 }
+            report(1)
+            return count
+        }
+    }
+}
+```
+
+関数を名前で渡す (`start(work)`) と、引数の型の `@MainActor` ではなく、その関数自身の isolation が優先される。
+
+| 名前で渡した関数 | 始まるスレッド |
+|---|---|
+| `@MainActor` | メインスレッド |
+| `@concurrent` | メインスレッド外 |
+| isolation の指定が無い `async` 関数で、利用者のモジュールの `NonisolatedNonsendingByDefault` が無効 (Swift 6 の既定) | メインスレッド外 |
+| isolation の指定が無い `async` 関数で、利用者のモジュールの `NonisolatedNonsendingByDefault` が有効 (Xcode 26 の新規プロジェクトの既定) | メインスレッド (呼び出し元の isolation を引き継ぐ) |
+
+どちらの設定でも、その関数は `@MainActor` と宣言されていないので、中で MainActor の状態 (UIKit を含む) に `await` なしで触るとコンパイルエラーになる。
+
+## 画面が出る前に始める
+
+出す先の画面 (前面でアクティブなシーンの key window) が無くても、Loading は処理を実行しながら画面が現れるのを待つ。`start` は処理の結果を通常どおり返す。
+
+- 画面が現れた時点で表示が続いていれば、そこで content を作り、入りの演出から表示する
+- 画面が現れる前に表示が終われば (最後の `start` の終了、または `hide`)、何も表示せず、待ちもやめる
+- 処理の終わり際に画面が現れると、Loading が短い間だけ表示されて閉じることがある
+
+content を作る時点は、開始時点に画面があったかで分かれる。画面があれば factory は開始時点に呼ばれ、投げた失敗は開始の失敗として呼び出し元へ返る (処理は実行しない)。画面が無ければ factory は画面が現れた時点に呼ばれ、投げた失敗は呼び出し元へ返らない。警告ログを残して表示だけを諦め、処理はそのまま続いて結果を返す。登録漏れの判定と ViewModel の進捗の受け口の紐付けは開始時点に行うので、表示の前に報告した進捗も受け口へ届く。
+
 ## 内蔵 Loading の見た目を設定する
 
 `style` と `options` は表示の開始時に読まれるため、変更は次の表示から効く。アプリ起動時に一度設定しておくのが基本形になる。

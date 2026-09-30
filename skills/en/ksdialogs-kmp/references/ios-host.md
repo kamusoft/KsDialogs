@@ -107,10 +107,11 @@ Showing through a KMP entry is a Swift throwing call, so a misconfiguration reac
 | `KsDialogsKmpError.notRegistered(viewModelType:)` | `Dialog.shared.kmp.show` | No content is registered for that shared view-model class. Run the startup registration first |
 | `KsDialogsKmpError.resultTypeMismatch(expected:actual:)` | `Dialog.shared.kmp.show`, `notifier(for:result:)` | The requested result type disagrees with the registration. Match `result:` to the type of the shared `DialogViewModel<R>` |
 | `DialogError.viewFactoryNotRegistered(viewModelType:)` | `Loading.shared.kmp.show`, `Toast.shared.kmp.show` | No content is registered for that shared view-model class. The Loading and Toast entries throw this failure as it is instead of mapping it |
-| `DialogError.presentationHostUnavailable` | `Dialog.shared.kmp.show` | No screen can present it yet. Call once a screen is on display |
 | `DialogError.viewModelAlreadyShowing(viewModelType:)` | `Dialog.shared.kmp.show` | The same view-model instance is shown again while it is showing. Create a new instance per call; the dialog already on screen is unaffected |
 
 The Dialog entry throws the first two as `KsDialogsKmpError` and leaves the rest as `DialogError`. Nothing else is mapped, so write two `catch` clauses when the two kinds need different handling.
+
+Having no screen to present on is not a failure. The iOS presentation target is the key window of the foreground active scene, and `show` waits until one exists. The wait has no upper bound, so when you call it from a place where no screen may appear, keep the calling Task cancellable. Cancelling it makes `show` return `.cancelled`, whether it is waiting or showing.
 
 ```swift
 import KsDialogs
@@ -135,6 +136,70 @@ func confirmDeleteFromSwift() async -> Bool {
 }
 ```
 
+## Tell the library which view is the current page
+
+A Dialog whose content has `DialogLayoutArea.currentPage` attached is placed against the current page ([Layout](layout.md)). The page is resolved by asking the sources below in order, moving down when a source has no candidate. When none yields a page, the result is the same as `.visibleArea`, and the reason goes to an English warning log.
+
+| Order | Source | Name to write |
+|---|---|---|
+| 1 | SwiftUI modifier | `View.markAsDialogCurrentPage()` |
+| 2 | Function registered for UIKit | `DialogCurrentPage.provider` (`(@MainActor () throws -> UIView?)?`) |
+| 3 | Built-in lookup | none (nothing to register) |
+
+Whichever source is used, the reference is the inside of the page view's safe area intersected with the visible area, so the bars are excluded even when the view extends under them.
+
+### Rely on the built-in lookup
+
+With nothing registered, the library walks the view controllers of the window that presents the Dialog, descending through presented screens, the top of a `UINavigationController`, and the selected tab of a `UITabBarController`; the controller it ends on is the page. Stacked Dialog containers are skipped, so a second Dialog still uses the screen behind as its reference. The lookup reaches only as far as UIKit containers: when the root is a SwiftUI screen, it does not descend into `TabView` or `NavigationStack`, and the tab bar is not avoided.
+
+### Mark a SwiftUI screen
+
+Apply it once to the content frame of each screen. The marked view is a candidate only while it is on screen, and it takes precedence over the registered function and the built-in lookup. With several candidates, the inner one wins when they are nested, otherwise the one placed on screen last; views not visible on screen (such as the leaving tab during a `TabView` switch) are dropped.
+
+```swift
+import KsDialogs
+import SwiftUI
+
+struct RootView: View {
+    var body: some View {
+        TabView {
+            NavigationStack {
+                OrdersScreen()
+                    .markAsDialogCurrentPage()
+                    .navigationTitle("Orders")
+            }
+            .tabItem { Label("Orders", systemImage: "list.bullet") }
+
+            SettingsScreen()
+                .markAsDialogCurrentPage()
+                .tabItem { Label("Settings", systemImage: "gearshape") }
+        }
+    }
+}
+```
+
+### Register a function for a custom UIKit container
+
+When screens are switched by a custom container the built-in lookup cannot reach, register once a function that returns the current page's view. Assigning `nil` returns to the built-in lookup. The function is called on the main thread when each display starts and, while it shows, whenever the window size or safe area changes; replacing it takes effect from the next display.
+
+```swift
+import KsDialogs
+import UIKit
+
+final class PagerViewController: UIViewController {
+    private var visibleChild: UIViewController?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        DialogCurrentPage.provider = { [weak self] in
+            self?.visibleChild?.view
+        }
+    }
+}
+```
+
+When the function returns `nil`, throws, returns a view that is not on the window presenting the Dialog, returns a view whose safe-area inside is empty, or returns a view outside the window, the built-in lookup's result is used.
+
 ## Add `@Throws` at the Swift boundary
 
 Any shared function called from Swift that can let an exception escape needs `@Throws`, whether it is suspend or non-suspend. Without the annotation, Kotlin exceptions are not converted to `NSError`: a suspend function terminates the process with an uncaught exception, and a non-suspend function lets nothing reach Swift at all.
@@ -149,7 +214,7 @@ The library declares only the failures each route can report. Its message-only L
 | `Toast.instance.show(viewModel)` | `DialogException` |
 | `Loading.instance.show(message)`, `Loading.instance.start(message, action)`, `Toast.instance.show(message)` | none |
 
-The class-based `show` and `start` are not visible from Swift, so they appear neither in this table nor in `@Throws`.
+The class-based `show` and `start` are not visible from Swift, so they appear neither in this table nor in `@Throws`. When Swift calls `Loading.instance.start` directly, pass `actionThread` explicitly: Kotlin default arguments disappear when exported to Swift, while a shared-code wrapper can still rely on the default ([Loading](loading.md)).
 
 Annotate your own exported wrapper with each exception that wrapper can expose.
 
@@ -251,6 +316,6 @@ class RecordingKsToast : KsToast {
 
 ## Continue with feature recipes
 
-- [Layout](layout.md) for the options and placement you attach to the returned content.
+- [Layout](layout.md) for the options and placement you attach to the returned content, including placement against the current page.
 - [Transitions](transitions.md) for the enter and exit animation.
 - [Dialog](dialogs.md), [Loading](loading.md), and [Toast](toast.md) for the shared-code side.

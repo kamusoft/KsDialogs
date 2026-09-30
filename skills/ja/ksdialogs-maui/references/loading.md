@@ -21,20 +21,20 @@ Loading は Dialog や Toast より前面にあり、ユーザー操作では閉
 | `Task ShowAsync<TViewModel>(TViewModel viewModel, Func<TViewModel, View> factory, DialogPlacement? placement = null)` | content factory をその場で渡して表示する。レジストリには触れない | 1 回だけ使う content | 不要 |
 | `Task HideAsync()` | 現在世代の表示だけを撤去し、撤去完了後に戻る | `ShowAsync` と対にするとき | 不要 |
 | `void SetMessage(string? message)` | 表示中の組み込み content の message を差し替える。唯一の同期操作で、待たない | 表示したまま文言だけ変えるとき | 不要 |
-| `Task StartAsync(Func<IProgress<double>, Task> action, string? message = null, DialogPlacement? placement = null)` | 組み込み content を出したまま action を実行し、終わったら撤去する | 処理の生存期間と表示を対にするとき | 不要 |
-| `Task<T> StartAsync<T>(Func<IProgress<double>, Task<T>> action, string? message = null, DialogPlacement? placement = null)` | 上の戻り値つき版 | 同上で、処理が値を返すとき | 不要 |
-| `Task StartAsync(ILoadingViewModel viewModel, Func<IProgress<double>, Task> action, DialogPlacement? placement = null)` | 登録済みの custom content を出したまま action を実行する | 進捗を自前の見た目で見せるとき | View factory ([DI 登録](di-registration.md)) |
-| `Task<T> StartAsync<T>(ILoadingViewModel viewModel, Func<IProgress<double>, Task<T>> action, DialogPlacement? placement = null)` | 上の戻り値つき版 | 同上で、処理が値を返すとき | View factory ([DI 登録](di-registration.md)) |
-| `Task StartAsync<TViewModel>(TViewModel viewModel, Func<TViewModel, View> factory, Func<IProgress<double>, Task> action, DialogPlacement? placement = null)` | content factory をその場で渡し、それを出したまま action を実行する | 1 回だけ使う content で処理を包むとき | 不要 |
-| `Task<T> StartAsync<TViewModel, T>(TViewModel viewModel, Func<TViewModel, View> factory, Func<IProgress<double>, Task<T>> action, DialogPlacement? placement = null)` | 上の戻り値つき版 | 同上で、処理が値を返すとき | 不要 |
+| `Task StartAsync(Func<IProgress<double>, Task> action, string? message = null, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | 組み込み content を出したまま action を実行し、終わったら撤去する | 処理の生存期間と表示を対にするとき | 不要 |
+| `Task<T> StartAsync<T>(Func<IProgress<double>, Task<T>> action, string? message = null, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | 上の戻り値つき版 | 同上で、処理が値を返すとき | 不要 |
+| `Task StartAsync(ILoadingViewModel viewModel, Func<IProgress<double>, Task> action, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | 登録済みの custom content を出したまま action を実行する | 進捗を自前の見た目で見せるとき | View factory ([DI 登録](di-registration.md)) |
+| `Task<T> StartAsync<T>(ILoadingViewModel viewModel, Func<IProgress<double>, Task<T>> action, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | 上の戻り値つき版 | 同上で、処理が値を返すとき | View factory ([DI 登録](di-registration.md)) |
+| `Task StartAsync<TViewModel>(TViewModel viewModel, Func<TViewModel, View> factory, Func<IProgress<double>, Task> action, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | content factory をその場で渡し、それを出したまま action を実行する | 1 回だけ使う content で処理を包むとき | 不要 |
+| `Task<T> StartAsync<TViewModel, T>(TViewModel viewModel, Func<TViewModel, View> factory, Func<IProgress<double>, Task<T>> action, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | 上の戻り値つき版 | 同上で、処理が値を返すとき | 不要 |
 | `Task ShowAsync<TViewModel>(Action<TViewModel>? configure = null, DialogPlacement? placement = null)` | 登録済みの ViewModel factory が作った ViewModel を `configure` してから、登録済みの custom content を表示する | ViewModel の組み立てを DI に任せるとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
 | `Task ShowAsync<TViewModel>(Func<TViewModel, Task> configure, DialogPlacement? placement = null)` | 上の `configure` を非同期にした版 | 同上で、表示前に非同期のロードが要るとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
-| `Task StartAsync<TViewModel>(Func<IProgress<double>, Task> action, Action<TViewModel>? configure = null, DialogPlacement? placement = null)` | 型を渡して作らせた custom content を出したまま action を実行する | 型を渡す形をスコープ形にするとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
-| `Task StartAsync<TViewModel>(Func<IProgress<double>, Task> action, Func<TViewModel, Task> configure, DialogPlacement? placement = null)` | 上の `configure` を非同期にした版 | 同上で、表示前に非同期のロードが要るとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
-| `Task<T> StartAsync<TViewModel, T>(Func<IProgress<double>, Task<T>> action, Action<TViewModel>? configure = null, DialogPlacement? placement = null)` | 上の戻り値つき版 | 同上で、処理が値を返すとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
-| `Task<T> StartAsync<TViewModel, T>(Func<IProgress<double>, Task<T>> action, Func<TViewModel, Task> configure, DialogPlacement? placement = null)` | 上の戻り値つき版で `configure` が非同期の形 | 同上で、処理が値を返し表示前に非同期のロードも要るとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
+| `Task StartAsync<TViewModel>(Func<IProgress<double>, Task> action, Action<TViewModel>? configure = null, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | 型を渡して作らせた custom content を出したまま action を実行する | 型を渡す形をスコープ形にするとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
+| `Task StartAsync<TViewModel>(Func<IProgress<double>, Task> action, Func<TViewModel, Task> configure, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | 上の `configure` を非同期にした版 | 同上で、表示前に非同期のロードが要るとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
+| `Task<T> StartAsync<TViewModel, T>(Func<IProgress<double>, Task<T>> action, Action<TViewModel>? configure = null, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | 上の戻り値つき版 | 同上で、処理が値を返すとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
+| `Task<T> StartAsync<TViewModel, T>(Func<IProgress<double>, Task<T>> action, Func<TViewModel, Task> configure, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | 上の戻り値つき版で `configure` が非同期の形 | 同上で、処理が値を返し表示前に非同期のロードも要るとき | View factory と ViewModel factory ([DI 登録](di-registration.md)) |
 
-末尾の `placement` を省略すると、custom content では View への添付、添付もなければライブラリ既定の配置が使われる。以下の例では、「処理を包んで表示する」が 7 行目、「手動で表示・更新・非表示にする」が 1・4・5 行目、「custom Loading content を登録する」が 8 行目、「登録せずに custom content を表示する」が 3・10 行目に当たる。ViewModel の型を渡す 12〜17 行目は「型を渡して Loading を表示する」で扱う。残る 2・6・9・11 行目は次節の最小例で示す。
+末尾の `placement` を省略すると、custom content では View への添付、添付もなければライブラリ既定の配置が使われる。`StartAsync` の最後の `actionThread` は action を始めるスレッドの指定である (後述の「処理を始めるスレッドを選ぶ」)。以下の例では、「処理を包んで表示する」が 7 行目、「手動で表示・更新・非表示にする」が 1・4・5 行目、「custom Loading content を登録する」が 8 行目、「登録せずに custom content を表示する」が 3・10 行目に当たる。ViewModel の型を渡す 12〜17 行目は「型を渡して Loading を表示する」で扱う。残る 2・6・9・11 行目は次節の最小例で示す。
 
 ## 残りの overload の最小例
 
@@ -121,6 +121,34 @@ public partial class SyncPage : ContentPage
             message: "Loading");
         StatusLabel.Text = $"{items.Count} items";
     }
+}
+```
+
+## 処理を始めるスレッドを選ぶ
+
+`StartAsync` に渡した action は、既定で UI スレッドで始まる。どのスレッドから `StartAsync` を呼んでも同じなので、action の中から UI スレッドへ移し直さずに画面の要素へ触れられる。どの `StartAsync` も最後の引数に `actionThread` (`LoadingActionThread`、既定は `LoadingActionThread.Main`) を持ち、`LoadingActionThread.Background` を渡すと UI スレッド外 (スレッドプール) で始まる。
+
+| `LoadingActionThread` の値 | action が始まるスレッド | 向いている処理 |
+|---|---|---|
+| `Main` (既定) | UI スレッド | 画面の要素に触れる処理 |
+| `Background` | UI スレッド外 (スレッドプール) | UI に触れない重い処理。UI スレッドで同期に重い処理を書くと、その間は進捗やメッセージの更新も画面に出ない |
+
+保証されるのは action の最初の文を実行するスレッドだけで、`await` の後の実行先は C# の規則に従う。UI スレッドで始まった action は既定では `await` の後も UI スレッドへ戻るが、`ConfigureAwait(false)` を書くと戻らないので、その後で画面に触るなら自分で UI スレッドへ移す。進捗の報告と `SetMessage` は、action がどちらのスレッドで動いていても呼べる。iOS / Android の実装を持たない素の .NET (単体テストの `net10.0` など) では、指定に関係なく呼び出し元のスレッドでそのまま実行され、表示は出ない。
+
+```csharp
+private async void OnExportClicked(object? sender, EventArgs e)
+{
+    var size = await _loading.StartAsync<int>(
+        progress =>
+        {
+            var buffer = new byte[4 * 1024 * 1024];
+            Random.Shared.NextBytes(buffer);
+            progress.Report(1);
+            return Task.FromResult(buffer.Length);
+        },
+        message: "Exporting",
+        actionThread: LoadingActionThread.Background);
+    StatusLabel.Text = $"{size} bytes";
 }
 ```
 
@@ -347,6 +375,18 @@ private Task SynchronizeAsync() =>
         });
 ```
 
+## 画面がまだ無いときに始める
+
+iOS / Android では、Loading を出す画面がまだ無いときに始めた表示も失敗しない。`StartAsync` の action はそのまま実行され、表示は画面が現れるのを待つ。アプリの起動直後や、アプリが背面にいる間に始めた場合がこれに当たる。
+
+| 状況 | 起きること |
+|---|---|
+| 表示が続いているうちに画面が現れた | その時点で content を作り、入りの演出から表示する |
+| 画面が現れる前に表示が終わった (合流の最後の終了、または `HideAsync`) | 何も表示せず、待ちもやめる |
+| 処理の終わり際に画面が現れた | Loading が短い間だけ表示されて閉じる |
+
+View factory の登録は開始時点で引くので、未登録の ViewModel 型は画面の有無にかかわらず開始の失敗になり、action は実行されない。content View を作るのは画面が現れた時点なので、そこで起きた失敗 (`ViewCreationFailed` や自分で書いた factory の例外) は `ShowAsync` / `StartAsync` へは返らず、警告を残して表示だけを諦める。action はそのまま続いて結果を返す。表示の前に報告した進捗も、`ILoadingProgressReceiver` を実装した ViewModel へ届く。
+
 ## 組み込み content を設定する
 
 表示開始前に `Loading.Instance.Style` (`LoadingStyle` record) と `Loading.Instance.Options` (`DialogOptions` record) を設定する。show メソッドに style 引数はない。
@@ -405,7 +445,7 @@ public static class MauiProgram
 
 ## 構成ミスの失敗を扱う
 
-構成ミスは入れ子クラスの `DialogException` で失敗する。`ShowAsync` / `StartAsync` に渡した ViewModel またはその型をその場で解決できない失敗は呼び出し時点で同期に投げられ、View は生成も表示もされず、`StartAsync` の action も実行されない (fail-fast)。content を作る段階で起きる失敗は、呼び出し元がまだ待っているため `Task` の失敗として届く。
+構成ミスは入れ子クラスの `DialogException` で失敗する。`ShowAsync` / `StartAsync` に渡した ViewModel またはその型を解決できない失敗では、View は生成も表示もされず、`StartAsync` の action も実行されない (fail-fast)。ViewModel の instance を渡す入口では呼び出し時点で同期に投げられ、型を渡す入口では返された `Task` の失敗として届くが、どちらも `await` を `try` で囲めば同じように `catch` できる。開始時点で画面があるときに content を作る段階で起きる失敗も、`Task` の失敗として届く。画面が無いまま始めた表示の content の失敗は呼び出し元へ返らない (前述の「画面がまだ無いときに始める」)。
 
 `ViewModelTypeName` を持つ例外は、解決できなかった ViewModel の型名をそのプロパティからも読める。`ViewCreationFailed` はこれに加えて、組み立てようとした View の型名を `ViewTypeName` に、元の失敗を `InnerException` に持つ。
 
@@ -416,7 +456,6 @@ public static class MauiProgram
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | 型を渡す表示に ViewModel factory がない。`Loading.Instance.Registry.RegisterViewModel` か `RegisterForLoading` をその型に対して呼ぶ (Loading には fallback がない) |
 | `DialogException.ValueTypeViewModel` | `ViewModel type {TypeName} is a value type and cannot be used as a ViewModel.` | 値型の ViewModel が表示の入口に届いた。ViewModel を `class` にする (`struct` / `record struct` は使えない) |
 | `DialogException.ServiceProviderUnavailable` | `The app's IServiceProvider is not available yet.` | `RegisterForLoading` で配線した content を、startup が service provider を捕捉する前に表示した。`MauiApp` の構築完了後に表示する ([DI 登録](di-registration.md)) |
-| `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | custom content を作る時点で提示できる画面がない。最初の Page が表示された後に表示する |
 
 表のメッセージは現在の実装が返す値であり、安定した API ではない (変わらないのは例外型と throw される条件であり、文言は予告なく変わりうる)。
 
@@ -460,4 +499,4 @@ private async void OnSyncClicked(object? sender, EventArgs e)
 }
 ```
 
-`ViewModelTypeName` を持たない `ServiceProviderUnavailable` / `PresentationHostUnavailable` も含めてまとめて扱いたい場合は、基底型の `DialogException` で `catch` する。
+`ViewModelTypeName` を持たない `ServiceProviderUnavailable` も含めてまとめて扱いたい場合は、基底型の `DialogException` で `catch` する。画面が無いことは Loading では失敗にならないので、Dialog の `DialogException.PresentationHostUnavailable` にあたる失敗は届かない。

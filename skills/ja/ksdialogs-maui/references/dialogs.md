@@ -4,13 +4,13 @@ class の ViewModel に結果型を宣言し、表示ごとに新しい MAUI Vie
 
 `DialogViewRegistry.Register` は 2 引数 factory `Func<TViewModel, DialogNotifier<TResult>, View>` と 1 引数 factory `Func<TViewModel, View>` を受け取る。factory は show のたびに呼ばれ、その show の結果を完了またはキャンセルする `DialogNotifier<TResult>` を受け取る。1 引数 factory を使う場合は、ViewModel 自身が拡張プロパティ `Notifier` から報告する ([ViewModel](view-models.md))。最初の notifier 報告だけが結果をラッチし、以後の報告は何もしない。結果は退出と器の撤去が完了した後にだけ配送される。
 
-`ShowAsync` は `CancellationToken` を受け取らず、呼び出し元からのキャンセル経路はない。`Cancelled` になるのは、notifier のキャンセル報告、外側タップ、Android の戻るボタン、Dialog を載せていた画面の破棄である。
+`Cancelled` になるのは、notifier のキャンセル報告、外側タップ、Android の戻るボタン、Dialog を載せていた画面の破棄である。呼び出し元から待ちを打ち切るには `ShowAsync` の末尾の `CancellationToken` を使う。打ち切りは `Cancelled` ではなく `OperationCanceledException` として届く (後述の「画面がまだ無いときに呼ぶ・待ちを打ち切る」)。
 
 content は普通の MAUI View なので、XAML で書いた `ContentView` をそのまま中身にできる。
 
 ## `ShowAsync` を選ぶ
 
-`IKsDialog` (`Dialog.Instance` と DI で注入したもののどちらも同じ実体) は `ShowAsync` を下の表に挙げる overload で公開する。選ぶ軸は 2 つで、ViewModel をインスタンスで渡すか型だけ渡すか、そして content の factory を登録済みのものに任せるかその場で渡すかである。どの overload も末尾に省略可能な `placement` 引数を取り、渡すと content に添付された配置をまるごと置換する ([レイアウト](layout.md))。戻り値は `Task<DialogResult<TResult>>` で、非 generic の `IDialogViewModel` で宣言した ViewModel では `TResult` が `bool` になる。
+`IKsDialog` (`Dialog.Instance` と DI で注入したもののどちらも同じ実体) は `ShowAsync` を下の表に挙げる overload で公開する。選ぶ軸は 2 つで、ViewModel をインスタンスで渡すか型だけ渡すか、そして content の factory を登録済みのものに任せるかその場で渡すかである。どの overload も末尾に省略可能な `placement` 引数と `cancellationToken` 引数 (`CancellationToken`、既定は `default`) を取る。`placement` を渡すと content に添付された配置をまるごと置換する ([レイアウト](layout.md))。戻り値は `Task<DialogResult<TResult>>` で、非 generic の `IDialogViewModel` で宣言した ViewModel では `TResult` が `bool` になる。
 
 | シグネチャ | 何をする | いつ選ぶ | 必要な登録 |
 |---|---|---|---|
@@ -272,6 +272,43 @@ private async void OnShowTwoClicked(object? sender, EventArgs e)
 }
 ```
 
+## 画面がまだ無いときに呼ぶ・待ちを打ち切る
+
+iOS / Android では、Dialog を出す画面がまだ無いときに呼んだ `ShowAsync` も失敗せず、画面が現れるのを待ってから表示する。アプリの起動直後に最初の Page の表示時の処理から呼んだとき、アプリが背面にいる間に呼んだとき、システムの許可ダイアログが出ている間に呼んだときがこれに当たる。
+
+- 登録漏れなどの構成ミスは待たずに失敗する。content View は画面が現れてから作られる
+- 待っている Dialog が複数あると、呼んだ順に 1 枚ずつ載り、後から呼んだものが手前に重なる。同じ UI スレッドから続けて呼んだ場合の順序で、UI スレッド以外から呼んだ show や、非同期の `configure` で中断する型指定 show の順序は保証されない
+- 待っている間に ViewModel が `Notifier` で報告すると、表示せずにその結果を返す
+- 待っている間に同じ ViewModel instance を再び show すると、まだ表示されていなくても `DialogException.ViewModelAlreadyShowing` で失敗する
+
+待ちに上限はないので、画面が現れる見込みのない場所から呼ぶ show には `CancellationToken` を渡す。打ち切ったときは次のようになる。
+
+| 打ち切った時点 | 起きること |
+|---|---|
+| 呼び出しの時点で打ち切り済み | 登録の解決も ViewModel の生成もせずに `OperationCanceledException` を投げる |
+| 画面を待っている間 | Dialog は一度も表示されず、`OperationCanceledException` を投げる |
+| 表示中 | Dialog が閉じ (退出の演出は最後まで行う)、`OperationCanceledException` を投げる |
+
+打ち切りは結果の `Cancelled` には変換されないので、利用者が閉じた場合と分けて `catch` する。
+
+```csharp
+private async void OnConfirmWithTimeoutClicked(object? sender, EventArgs e)
+{
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+    try
+    {
+        var result = await _dialogs.ShowAsync(
+            new ConfirmDialogViewModel("Delete this item?"),
+            cancellationToken: cts.Token);
+        StatusLabel.Text = result is DialogResult<bool>.Completed { Value: true } ? "Deleted" : "Kept";
+    }
+    catch (OperationCanceledException)
+    {
+        StatusLabel.Text = "Timed out";
+    }
+}
+```
+
 ## 構成ミスの失敗を扱う
 
 構成ミスは `Cancelled` を返さず、入れ子クラスの `DialogException` で `Task` を fault させる。登録漏れをエンドユーザーのキャンセルと取り違えないためであり、この場合 View は生成も表示もされない。`await` した呼び出し元にそのまま throw されるので、`try` / `catch` で握り潰さず、開発中に気づける形で扱う。
@@ -283,7 +320,7 @@ private async void OnShowTwoClicked(object? sender, EventArgs e)
 | `DialogException.ViewFactoryNotRegistered` | `No View factory is registered for ViewModel type {TypeName}.` | 明示登録も fallback も content View を解決できない。`Register` / `RegisterForDialog` をその ViewModel 型に対して呼ぶか、`UseViewFallback` で規約解決を設定する |
 | `DialogException.ViewCreationFailed` | `Could not create the View {ViewTypeName} registered for ViewModel type {ViewModelTypeName}.` | 1 行登録が結び付けた View をライブラリが組み立てられなかった。よくある原因は constructor の依存が service にないこと。元の失敗は `InnerException` から読む。自分で書いた factory や fallback resolver が投げた失敗はこの型に包まれない |
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | 型指定 show に ViewModel factory がない。`RegisterViewModel` / `RegisterForDialog` を呼ぶか、`UseViewModelFallback` を設定する ([ViewModel](view-models.md)) |
-| `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | 提示できる画面がない。最初の Page が表示された後に show する。キューイングはせず即座に失敗する |
+| `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | iOS / Android の実装を持たない素の .NET (単体テストの `net10.0` など) で show した。iOS / Android では画面が無くてもこの例外にはならず、画面が現れるのを待つ |
 | `DialogException.ServiceProviderUnavailable` | `The app's IServiceProvider is not available yet.` | startup が service provider を捕捉する前に DI 経路 (1 行登録・fallback 解決) を使った。`MauiApp` の構築完了後に show する ([DI 登録](di-registration.md)) |
 | `DialogException.ViewModelAlreadyShowing` | `This ViewModel instance of type {TypeName} is already being shown.` | 同じ ViewModel instance を既に表示している。重ねる show ごとに新しい instance を作る |
 | `DialogException.ValueTypeViewModel` | `ViewModel type {TypeName} is a value type and cannot be used as a ViewModel.` | 値型の ViewModel が提示入口に届いた。ViewModel を `class` にする (`struct` / `record struct` は使えない) |

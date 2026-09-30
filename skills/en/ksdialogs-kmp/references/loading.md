@@ -2,7 +2,7 @@
 
 Loading is a display that blocks interaction with the whole screen while work runs, and only one of them exists process-wide. Concurrent uses coalesce into a single display, and every action still runs. The calls live in shared code (`commonMain`), and you either use the built-in appearance as it is or use content registered in each host.
 
-Loading cannot be closed by the user. An outside tap is not a trigger to close it and does not reach the screen behind. When the work needs to be interruptible, use a Dialog with a cancel control instead ([Dialog](dialogs.md)). Loading also stays in front of every Dialog and of every Toast, whatever the order they started in.
+Loading cannot be closed by the user. An outside tap is not a trigger to close it and does not reach the screen behind. When the work needs to be interruptible, use a Dialog with a cancel control instead ([Dialog](dialogs.md)). Loading also stays in front of every Dialog and of every Toast, whatever the order they started in. While it shows, it keeps the presenting screen's system bar settings (icon contrast, shown or hidden) as they were.
 
 ## Choose between `start` and `show`
 
@@ -10,16 +10,16 @@ There are three axes: whether the display spans the action or you write the star
 
 | Signature | What it does | When to choose it | Registration required |
 |---|---|---|---|
-| `suspend fun <T> start(message: String? = null, placement: DialogPlacement? = null, action: suspend ((Double) -> Unit) -> T): T` | Runs the action with the built-in Loading showing and returns its value | When the span of the action is the span of the display | None |
-| `suspend fun <T> start(viewModel: LoadingViewModel, placement: DialogPlacement? = null, action: suspend ((Double) -> Unit) -> T): T` | Runs the action with registered content showing | The same, when you build the appearance yourself | Content for that view-model class |
-| `suspend fun <VM : LoadingViewModel, T> start(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null, action: suspend ((Double) -> Unit) -> T): T` | Creates the instance with the registered view-model factory and, once `configure` has finished, does the same as the row above | The same, when the library builds it for you | The above plus a shared-code view-model factory |
+| `suspend fun <T> start(message: String? = null, placement: DialogPlacement? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T): T` | Runs the action with the built-in Loading showing and returns its value | When the span of the action is the span of the display | None |
+| `suspend fun <T> start(viewModel: LoadingViewModel, placement: DialogPlacement? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T): T` | Runs the action with registered content showing | The same, when you build the appearance yourself | Content for that view-model class |
+| `suspend fun <VM : LoadingViewModel, T> start(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T): T` | Creates the instance with the registered view-model factory and, once `configure` has finished, does the same as the row above | The same, when the library builds it for you | The above plus a shared-code view-model factory |
 | `suspend fun show(message: String? = null, placement: DialogPlacement? = null)` | Shows the built-in Loading and opens one use | When the start and the end are in different places | None |
 | `suspend fun show(viewModel: LoadingViewModel, placement: DialogPlacement? = null)` | Shows registered content and opens one use | The same, when you build the appearance yourself | Content for that view-model class |
 | `suspend fun <VM : LoadingViewModel> show(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null)` | Creates the instance with the registered view-model factory and, once `configure` has finished, does the same as the row above | The same, when the library builds it for you | The above plus a shared-code view-model factory |
 | `suspend fun setMessage(message: String?)` | Replaces the text of the built-in Loading that is showing | When you report the situation partway through the work | None |
 | `suspend fun hide()` | Closes the display | When you end a display started with `show` | None |
 
-`start` has no matching end — completing the action is the end. The only end that matches `show` is `hide`, which closes immediately regardless of how many uses are open. Omitting `message` uses the default message configured in the host, and omitting `placement` uses the contract default ([Layout](layout.md)). The class-based forms have the view-model factory registered in shared code create the instance; they are for shared Kotlin code only and are not visible from Swift ([View models](view-models.md)). For the Dialog and Toast entry points, see the selection tables in [Dialog](dialogs.md) and [Toast](toast.md).
+`start` has no matching end — completing the action is the end. `actionThread` is the thread the action starts on; when omitted it is the UI thread (see "Choose the thread the action starts on" below). The only end that matches `show` is `hide`, which closes immediately regardless of how many uses are open. Omitting `message` uses the default message configured in the host, and omitting `placement` uses the contract default ([Layout](layout.md)). The class-based forms have the view-model factory registered in shared code create the instance; they are for shared Kotlin code only and are not visible from Swift ([View models](view-models.md)). For the Dialog and Toast entry points, see the selection tables in [Dialog](dialogs.md) and [Toast](toast.md).
 
 ## Show it only while the work runs
 
@@ -47,7 +47,42 @@ class ReportDownloader(
 }
 ```
 
-The reporting handle is a `(Double) -> Unit` function, callable from any thread. Values outside `0`–`1` are clamped, the latest report wins, and there is no API that receives a stream. When no screen can host the display, the display is skipped but the action still runs and `start` returns its value as usual.
+The reporting handle is a `(Double) -> Unit` function, callable whichever thread the action runs on. Values outside `0`–`1` are clamped, the latest report wins, and there is no API that receives a stream. The last report the action issues is never overtaken by the end of the action.
+
+When no screen can host the display yet (no presentation target), the action still runs and `start` returns its value as usual. The display waits for a target to appear; if the display is still open at that point, it comes in with the enter animation. If the display ends before a target appears, nothing is shown. A target that appears just as the action ends makes the Loading show briefly and close.
+
+## Choose the thread the action starts on
+
+The action of a scoped form starts on the thread given by `actionThread`, whatever the caller's thread or coroutine context.
+
+| Value | Thread the action starts on | When to choose it |
+|---|---|---|
+| `LoadingActionThread.MAIN` (default) | The UI thread | When the action touches the UI |
+| `LoadingActionThread.BACKGROUND` | Off the UI thread | Heavy work that does not touch the UI. Heavy synchronous work on the UI thread also keeps progress and message updates off the screen while it blocks |
+
+"Starts" means the thread that runs the first statement of the action. Where it resumes after suspending inside the action follows the usual coroutine rules (the dispatcher the action is running on). In the class-based scoped form, the view-model factory and `configure` run in the caller's context regardless of this setting.
+
+```kotlin
+package com.example.shared
+
+import jp.kamusoft.ksdialogs.kmp.KsLoading
+import jp.kamusoft.ksdialogs.kmp.Loading
+import jp.kamusoft.ksdialogs.kmp.LoadingActionThread
+import kotlin.coroutines.cancellation.CancellationException
+
+class ThumbnailBuilder(private val loading: KsLoading = Loading.instance) {
+    @Throws(CancellationException::class)
+    suspend fun buildAll(images: List<ByteArray>): List<ByteArray> =
+        loading.start(message = "Building", actionThread = LoadingActionThread.BACKGROUND) { report ->
+            images.mapIndexed { index, image ->
+                report((index + 1).toDouble() / images.size)
+                image.copyOf(image.size / 2)
+            }
+        }
+}
+```
+
+When Swift calls `start` directly, pass `actionThread` explicitly: Kotlin default arguments lose their defaults when exported to Swift.
 
 ## Write the start and the end yourself
 
@@ -174,7 +209,9 @@ The messages in the table are the values the current implementation returns, not
 
 An exception thrown by the view-model factory or by `configure` is not wrapped in `DialogException`; it propagates to the caller as it is, and the class-based scoped form does not run the `action` either.
 
-An unregistered class fails with `DialogException` before the action begins, so neither the display nor the action happens. The same holds for a call that was about to join the coalescing, and a Loading that is already showing is unaffected. On iOS the messages also include `The registered View factory cannot accept ViewModel type {TypeName}.` when a registered factory cannot accept that view model, and `Failed to show the Loading.` when the host returns neither a result nor an error.
+An unregistered class fails with `DialogException` before the action begins, so neither the display nor the action happens. This holds whether or not a presentation target exists, and also for a call that was about to join the coalescing. A Loading that is already showing is unaffected.
+
+For a display that started with no presentation target, the host content is built when a target appears. If the host factory fails at that point, the failure does not reach the caller: a warning is logged, only the display is given up, and the action keeps running and returns its result. When a target exists at the start, the same failure is returned to the caller as a failure to start, and the action does not run. On iOS the messages also include `The registered View factory cannot accept ViewModel type {TypeName}.` when a registered factory cannot accept that view model, and `Failed to show the Loading.` when the host returns neither a result nor an error.
 
 For example, if the Android startup path registers only the Dialog content and registers nothing with `Loading.instance.registry`, `start` with an `UploadLoadingViewModel` fails because its content cannot be resolved.
 

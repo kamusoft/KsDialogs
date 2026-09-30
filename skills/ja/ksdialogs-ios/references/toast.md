@@ -138,6 +138,8 @@ try toasts.show(
 
 `placement` を省略した場合は `Toast.shared.style.defaultPlacement`、それも無ければライブラリ既定 (可視領域の下部中央 + 上方向へ 80 pt) になる。
 
+内蔵 View は全辺 24 pt の余白を自分で持ち、これは変えられない。そのためライブラリ既定の配置では、下端は可視領域の下端から 104 pt (余白 24 + オフセット 80) の位置に出て、長いメッセージも左右の端から 24 pt 以上内側に収まる。
+
 この経路は throw しないので、View から直接呼べる。
 
 ```swift
@@ -193,7 +195,7 @@ struct MyApp: App {
 
 custom Toast のレジストリは `Toast.shared.registry` (`ToastViewRegistry`) で、Dialog / Loading のものとは独立している。content の ViewModel は class の `ToastViewModel` にする。
 
-custom content には `DialogTransition` を添付できる。内蔵 View にはこの口が無い ([トランジション](transitions.md))。
+custom content には `DialogTransition` を添付できる。内蔵 View にはこの口が無い ([トランジション](transitions.md))。custom content の余白の既定は全辺 0 で (ライブラリ既定の配置では下端が可視領域の下端から 80 pt の位置に出る)、Dialog と同じく `DialogOptions(dialogMargin:)` を添付して変えられる ([レイアウト](layout.md))。
 
 ```swift
 import SwiftUI
@@ -285,7 +287,7 @@ Toast.shared.registry.register(StatusToastViewModel.self, viewModel: {
 
 `configure` は同期で、`throws` にはできるが `async` にはできない。`show` が戻り値を持たない同期呼び出しであるためで、その完了を待つ口は無い。
 
-ViewModel factory と `configure` は MainActor で、受理順に実行される。
+ViewModel factory と `configure` は MainActor で、表示を画面に取り付ける時点に実行される。
 
 ```swift
 extension NoticeScreenModel {
@@ -297,9 +299,23 @@ extension NoticeScreenModel {
 }
 ```
 
-`configure` と ViewModel factory が投げた失敗は `show` の呼び出し元へ返らない。`show` が同期に戻ったあとに実行されるため、警告ログを残してその表示 1 枚だけが破棄される。この経路が呼び出し時点で throw するのは、slot が未登録のときだけである。
+`configure` と ViewModel factory が投げた失敗は `show` の呼び出し元へ返らない。`show` が同期に戻ったあと、画面に取り付ける時点で実行されるため、警告ログを残してその表示 1 枚だけが破棄される。画面が現れる前に満了した表示では、どちらも呼ばれない。この経路が呼び出し時点で throw するのは、slot が未登録のときだけである。
 
 解決するのは `show` を呼んだ時点の登録内容なので、表示中に登録し直しても出ている Toast は変わらない。
+
+## 画面が出る前に表示する
+
+出す先の画面 (前面でアクティブなシーンの key window) が無くても `show` は失敗しない。Toast は画面を待ち、現れた時点で表示される。content (型渡しの経路では ViewModel factory と `configure` も) は画面に取り付ける時点で作られるので、画面が現れる前に表示時間が満了した Toast は、どれも呼ばずに破棄される。満了した Toast は、その後に画面が現れても表示されない。これはエラーではなく通常の満了である。
+
+表示時間を数え始める時点は、表示を始める時点の状態で決まる。
+
+| 表示を始める時点の状態 | 数え始め |
+|---|---|
+| 画面がある | Toast が受理された時点 |
+| アプリが背面にいる | Toast が受理された時点 |
+| アプリは前面にいるが画面がまだ無い (起動直後・背面からの復帰・システムのアラート表示中) | Toast が画面に取り付けられた時点。その前にアプリが背面へ下がったら、下がった時点 |
+
+アプリが前面にいるとは、foregroundActive か foregroundInactive のシーンが 1 つ以上ある状態を指す。計時は単調時計で行い、背面にいる間も進む。一度決まった期限は巻き戻らない。前面にいるのに画面が現れない間 (起動画面を出し続けるなど) に受理した Toast はまだ期限が決まっていないので、画面が現れるか背面へ下がるまで待ち続ける。
 
 ## 構成ミスの失敗を扱う
 
