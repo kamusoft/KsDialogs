@@ -10,7 +10,7 @@ Dialog の結果は、表示中の ViewModel が `notifier` プロパティか�
 |---|---|
 | 型 | ViewModel が宣言した `Result` の `DialogNotifier<Result>` |
 | `show` の前後 | `nil` (表示中だけ値を返す) |
-| 付く時点 | `show` が content を生成する直前 |
+| 付く時点 | `show` が出す先の画面を待つ前 (したがって content の生成より前)。待っている間に報告すると、表示せずにその結果を返す |
 | 外れる時点 | 結果が呼び出し元へ渡る前。完了・キャンセル・失敗のどの終わり方でも外れる |
 | factory 引数の notifier との関係 | 同じ配送先を指す |
 | 報告の回数 | 最初の 1 回だけが結果を確定させ、以後の報告は何もしない |
@@ -81,8 +81,9 @@ struct EditorView: View {
 1. ViewModel factory がインスタンスを生成する
 2. `configure` が完了する
 3. notifier が紐付く
-4. View factory が content を生成する
-5. Dialog を表示する
+4. 出す先の画面ができるまで待つ (画面があればそのまま進む)
+5. View factory が content を生成する
+6. Dialog を表示する
 
 したがって `configure` で入れた値は、content が状態を読むより前に必ず入っている。生成と `configure` は MainActor で実行される。ViewModel factory と `configure` が投げた失敗はキャンセルにならず、表示へ進まずにそのまま呼び出し元へ伝わる。
 

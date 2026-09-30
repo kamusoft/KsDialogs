@@ -4,13 +4,13 @@ Declare the result type on a class-based view model, register a factory that bui
 
 `DialogViewRegistry.Register` accepts a two-argument factory `Func<TViewModel, DialogNotifier<TResult>, View>` and a one-argument factory `Func<TViewModel, View>`. The factory is called on every show and receives a `DialogNotifier<TResult>` that completes or cancels the result of that show. With the one-argument factory, the view model itself reports through the extension property `Notifier` ([View models](view-models.md)). Only the first notifier report latches the result; later reports do nothing. The result is delivered only after dismissal and container removal finish.
 
-`ShowAsync` takes no `CancellationToken`, so there is no caller-side cancellation path. `Cancelled` comes from a notifier cancel report, an outside tap, the Android back button, or teardown of the screen that hosted the Dialog.
+`Cancelled` comes from a notifier cancel report, an outside tap, the Android back button, or teardown of the screen that hosted the Dialog. To stop waiting from the caller's side, use the trailing `CancellationToken` of `ShowAsync`. Stopping arrives as `OperationCanceledException`, not as `Cancelled` (see "Call before a screen exists, and stop waiting" below).
 
 The content is an ordinary MAUI View, so a `ContentView` written in XAML can be its body as it is.
 
 ## Choose a `ShowAsync`
 
-`IKsDialog` (both `Dialog.Instance` and what DI injects are the same object) exposes `ShowAsync` in the overloads listed in the table below. There are two axes to choose on: pass the view model as an instance or as a type only, and leave the content factory to a registration or pass it on the spot. Every overload takes an optional trailing `placement` argument that replaces the placement attached to the content as a whole ([Layout](layout.md)). The return value is `Task<DialogResult<TResult>>`, where `TResult` is `bool` for a view model declared with the non-generic `IDialogViewModel`.
+`IKsDialog` (both `Dialog.Instance` and what DI injects are the same object) exposes `ShowAsync` in the overloads listed in the table below. There are two axes to choose on: pass the view model as an instance or as a type only, and leave the content factory to a registration or pass it on the spot. Every overload takes an optional trailing `placement` argument and a `cancellationToken` argument (`CancellationToken`, `default` when omitted). A `placement` replaces the placement attached to the content as a whole ([Layout](layout.md)). The return value is `Task<DialogResult<TResult>>`, where `TResult` is `bool` for a view model declared with the non-generic `IDialogViewModel`.
 
 | Signature | What it does | When to choose it | Registration needed |
 |---|---|---|---|
@@ -272,6 +272,43 @@ private async void OnShowTwoClicked(object? sender, EventArgs e)
 }
 ```
 
+## Call before a screen exists, and stop waiting
+
+On iOS and Android, a `ShowAsync` called while there is no screen to present on does not fail; it waits for a screen to appear and then presents. This happens when the call comes from the first Page's appearance handling right after launch, while the app is in the background, or while a system permission dialog is up.
+
+- A misconfiguration such as a missing registration fails without waiting. The content view is created once a screen appears
+- Several waiting Dialogs appear one at a time in call order, the later one stacked in front. That order holds for calls made in succession from the UI thread; it is not guaranteed for shows called off the UI thread or for type-based shows whose asynchronous `configure` suspends
+- If the view model reports through `Notifier` while waiting, the show returns that result without presenting
+- Showing the same view-model instance again while it waits fails with `DialogException.ViewModelAlreadyShowing`, even though nothing is on screen yet
+
+The wait has no upper limit, so pass a `CancellationToken` to a show called from a place where no screen may ever appear. Stopping has these effects.
+
+| When it is stopped | What happens |
+|---|---|
+| Already stopped at the call | `OperationCanceledException` is thrown without resolving the registration or creating the view model |
+| While waiting for a screen | The Dialog is never shown, and `OperationCanceledException` is thrown |
+| While shown | The Dialog closes (the dismissal animation runs to the end), and `OperationCanceledException` is thrown |
+
+Stopping is never turned into a `Cancelled` result, so `catch` it separately from a close by the user.
+
+```csharp
+private async void OnConfirmWithTimeoutClicked(object? sender, EventArgs e)
+{
+    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+    try
+    {
+        var result = await _dialogs.ShowAsync(
+            new ConfirmDialogViewModel("Delete this item?"),
+            cancellationToken: cts.Token);
+        StatusLabel.Text = result is DialogResult<bool>.Completed { Value: true } ? "Deleted" : "Kept";
+    }
+    catch (OperationCanceledException)
+    {
+        StatusLabel.Text = "Timed out";
+    }
+}
+```
+
 ## Handle misconfiguration failures
 
 A misconfiguration does not return `Cancelled`; it faults the `Task` with a nested `DialogException` class, so that a missing registration cannot be mistaken for an end user's cancellation, and in that case no view is created or shown. It is thrown straight to the awaiting caller, so handle it in a form that surfaces during development rather than swallowing it in a `try` / `catch`.
@@ -283,7 +320,7 @@ An exception that carries `ViewModelTypeName` also reads back, from that propert
 | `DialogException.ViewFactoryNotRegistered` | `No View factory is registered for ViewModel type {TypeName}.` | Neither an explicit registration nor a fallback resolves the content view. Call `Register` / `RegisterForDialog` for that view-model type, or set up convention resolution with `UseViewFallback` |
 | `DialogException.ViewCreationFailed` | `Could not create the View {ViewTypeName} registered for ViewModel type {ViewModelTypeName}.` | The library could not construct the view bound by a one-line registration, a missing constructor dependency being the usual cause. Read `InnerException` for the original failure. A failure thrown by a factory you wrote or by a fallback resolver is not wrapped in this type |
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | Type-based show has no view-model factory. Call `RegisterViewModel` / `RegisterForDialog`, or set up `UseViewModelFallback` ([View models](view-models.md)) |
-| `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | No screen is available to present on. Show after the first Page appears; it fails immediately rather than queueing |
+| `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | The show ran on plain .NET without the iOS / Android implementation (a unit-test `net10.0` target, for example). On iOS and Android a missing screen does not raise this exception; the show waits for a screen to appear |
 | `DialogException.ServiceProviderUnavailable` | `The app's IServiceProvider is not available yet.` | A DI-backed route (one-line registration, fallback resolution) ran before startup captured the service provider. Show after `MauiApp` has been built ([DI registration](di-registration.md)) |
 | `DialogException.ViewModelAlreadyShowing` | `This ViewModel instance of type {TypeName} is already being shown.` | The same view-model instance is already being shown. Build a new instance for each stacked show |
 | `DialogException.ValueTypeViewModel` | `ViewModel type {TypeName} is a value type and cannot be used as a ViewModel.` | A value-type view model reached the presentation entry. Make the view model a `class` (`struct` and `record struct` cannot be used) |

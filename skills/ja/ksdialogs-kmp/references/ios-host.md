@@ -107,10 +107,11 @@ KMP 入口の表示は Swift の throwing なので、構成ミスは結果に�
 | `KsDialogsKmpError.notRegistered(viewModelType:)` | `Dialog.shared.kmp.show` | 共有 ViewModel の class に content を登録していない。起動経路の登録を先に走らせる |
 | `KsDialogsKmpError.resultTypeMismatch(expected:actual:)` | `Dialog.shared.kmp.show`, `notifier(for:result:)` | 指定した結果型が登録時のものと食い違う。`result:` を共有 `DialogViewModel<R>` の型に合わせる |
 | `DialogError.viewFactoryNotRegistered(viewModelType:)` | `Loading.shared.kmp.show`, `Toast.shared.kmp.show` | 共有 ViewModel の class に content を登録していない。Loading と Toast の入口はこの失敗を写し替えず、そのまま投げる |
-| `DialogError.presentationHostUnavailable` | `Dialog.shared.kmp.show` | 提示できる画面がまだ無い。画面が載ってから呼ぶ |
 | `DialogError.viewModelAlreadyShowing(viewModelType:)` | `Dialog.shared.kmp.show` | 表示中と同じ ViewModel インスタンスを重ねて show した。呼び出しごとに新しいインスタンスを作る。先に出ているダイアログは影響を受けない |
 
 Dialog の入口は前の 2 つを `KsDialogsKmpError` として投げ、残りは `DialogError` のまま投げる。写し替えの対象を増やさないため、種類ごとに分けたい場合は 2 つの `catch` を並べる。
+
+出す先の画面が無いことは失敗にならない。iOS の提示先は前面でアクティブなシーンの key window で、それが現れるまで `show` は待つ。待ちに上限は無いので、画面が現れない場所から呼ぶ場合は呼び出し元の Task をキャンセルできるようにする。キャンセルすると、待っている間でも表示中でも `show` は `.cancelled` を返す。
 
 ```swift
 import KsDialogs
@@ -135,6 +136,70 @@ func confirmDeleteFromSwift() async -> Bool {
 }
 ```
 
+## 表示中のページを教える
+
+content に `DialogLayoutArea.currentPage` を添付した Dialog は、表示中のページを基準に配置される ([レイアウト](layout.md))。ページは次の順に問い合わせて決まり、上が候補を持たないときに下へ進む。どこからも得られなければ `.visibleArea` と同じ結果になり、理由が英語の警告ログに出る。
+
+| 順 | 取得元 | 書く名前 |
+|---|---|---|
+| 1 | SwiftUI の modifier | `View.markAsDialogCurrentPage()` |
+| 2 | UIKit 向けの関数の登録 | `DialogCurrentPage.provider` (`(@MainActor () throws -> UIView?)?`) |
+| 3 | 既定の探し方 | なし (登録不要) |
+
+どの取得元でも、基準になるのはページの View の safe area の内側と可視領域の共通部分なので、バーの下まで伸びた View でもバーは除かれる。
+
+### 既定の探し方に任せる
+
+何も登録しなくても、ライブラリは Dialog を出す window の view controller を辿り、present された画面・`UINavigationController` の先頭・`UITabBarController` の選択中のタブまで降りた先をページにする。重ねて出した Dialog の器は通り抜けるので、2 枚目の基準も背後の画面のままである。届くのは UIKit のコンテナまでで、root が SwiftUI の画面では `TabView` や `NavigationStack` の内側まで降りず、タブバーを避けない。
+
+### SwiftUI の画面で印を付ける
+
+各画面の中身の枠に 1 回付ける。付けた View は画面に載っている間だけ候補になり、関数の登録と既定の探し方より優先される。候補が複数あるときは、入れ子なら内側、それ以外は最後に画面に載ったものが選ばれ、画面に表示されていないもの (`TabView` の切り替え中に去るタブなど) は外れる。
+
+```swift
+import KsDialogs
+import SwiftUI
+
+struct RootView: View {
+    var body: some View {
+        TabView {
+            NavigationStack {
+                OrdersScreen()
+                    .markAsDialogCurrentPage()
+                    .navigationTitle("Orders")
+            }
+            .tabItem { Label("Orders", systemImage: "list.bullet") }
+
+            SettingsScreen()
+                .markAsDialogCurrentPage()
+                .tabItem { Label("Settings", systemImage: "gearshape") }
+        }
+    }
+}
+```
+
+### UIKit の独自コンテナで関数を登録する
+
+既定の探し方が届かない独自のコンテナで画面を切り替えている場合は、表示中のページの View を返す関数を一度登録する。`nil` を代入すると既定の探し方に戻る。関数はメインスレッドで、各表示の開始時と、表示中に window の寸法や safe area が変わったときに呼ばれ、登録の差し替えは次の表示から効く。
+
+```swift
+import KsDialogs
+import UIKit
+
+final class PagerViewController: UIViewController {
+    private var visibleChild: UIViewController?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        DialogCurrentPage.provider = { [weak self] in
+            self?.visibleChild?.view
+        }
+    }
+}
+```
+
+関数が `nil` を返す・エラーを投げる・返した View が Dialog を出す window に載っていない・safe area の内側が空・window の外にある、のいずれかなら、既定の探し方の結果を使う。
+
 ## Swift boundary に `@Throws` を付ける
 
 Swift から呼ぶ共有 function で exception が外へ出る可能性がある場合は、suspend か non-suspend かを問わず `@Throws` が必要である。annotation がないと Kotlin exception は `NSError` に変換されず、suspend の function では未処理例外で process が終了し、non-suspend の function では Swift 側へ何も伝わらない。
@@ -149,7 +214,7 @@ library は各経路が報告できる failure だけを宣言している。mes
 | `Toast.instance.show(viewModel)` | `DialogException` |
 | `Loading.instance.show(message)`, `Loading.instance.start(message, action)`, `Toast.instance.show(message)` | なし |
 
-class を渡す `show` と `start` は Swift から見えないため、この表にも `@Throws` にも現れない。
+class を渡す `show` と `start` は Swift から見えないため、この表にも `@Throws` にも現れない。Swift から `Loading.instance.start` を直接呼ぶときは、`actionThread` を明示で渡す。Kotlin の既定値は Swift へ書き出すと消えるためで、共有コードの wrapper から呼べば既定値が使える ([Loading](loading.md))。
 
 自分の exported wrapper が外へ出す可能性のある exception は、それぞれその wrapper に annotation する。
 
@@ -251,6 +316,6 @@ class RecordingKsToast : KsToast {
 
 ## 機能別レシピへ進む
 
-- 返した content に添付する option と placement は [レイアウト](layout.md)。
+- 返した content に添付する option と placement、表示中のページを基準にする配置は [レイアウト](layout.md)。
 - 出入りの演出は [トランジション](transitions.md)。
 - 共有コード側は [Dialog](dialogs.md)・[Loading](loading.md)・[Toast](toast.md)。

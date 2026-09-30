@@ -16,6 +16,7 @@ public enum MauiDialogAlignment: Int, Sendable {
 public enum MauiDialogLayoutArea: Int, Sendable {
     case window = 0
     case visibleArea = 1
+    case currentPage = 2
 }
 
 /// MAUI 側で中身に添付された静的メタ属性を運ぶ入れ物。
@@ -99,6 +100,7 @@ extension DialogLayoutArea {
         switch area {
         case .window: self = .window
         case .visibleArea: self = .visibleArea
+        case .currentPage: self = .currentPage
         }
     }
 }
@@ -155,6 +157,7 @@ extension MauiDialogLayoutArea {
         switch area {
         case .window: self = .window
         case .visibleArea: self = .visibleArea
+        case .currentPage: self = .currentPage
         @unknown default: self = .visibleArea
         }
     }

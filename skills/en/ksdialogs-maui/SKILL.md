@@ -18,10 +18,12 @@ A call through a default entry and a call through an injected contract reach the
 | Goal | API | Recipe |
 |---|---|---|
 | Register and show a Dialog | `IDialogViewModel`, `DialogViewRegistry.Register`, `Dialog.Instance.ShowAsync` | [Dialog](references/dialogs.md) |
+| Stop a Dialog show that is waiting for a screen | The `CancellationToken` of `ShowAsync`, `OperationCanceledException` | [Dialog](references/dialogs.md) |
 | Let a view model report a result, or show by type | `DialogNotifier<TResult>`, `Notifier`, `RegisterViewModel`, type-based `ShowAsync` | [View models](references/view-models.md) |
 | Control size, placement, overlay, and outside taps | `Dialog` attached properties, `DialogOptions`, `DialogPlacement` | [Layout](references/layout.md) |
+| Place relative to the current page | `DialogLayoutArea.CurrentPage`, `DialogCurrentPage.Provider` | [Layout](references/layout.md) |
 | Animate presentation and dismissal | `DialogTransition`, `DialogTransitionEdge`, `Dialog.SetTransition` | [Transitions](references/transitions.md) |
-| Block interaction while work runs | `Loading.Instance`, `LoadingViewRegistry`, `LoadingStyle`, `ILoadingProgressReceiver` | [Loading](references/loading.md) |
+| Block interaction while work runs | `Loading.Instance`, `LoadingViewRegistry`, `LoadingStyle`, `ILoadingProgressReceiver`, `LoadingActionThread` | [Loading](references/loading.md) |
 | Show fire-and-forget notifications | `Toast.Instance`, `ToastViewRegistry`, `ToastStyle` | [Toast](references/toast.md) |
 | Wire views and view models through MAUI DI | `AddKsDialogs`, `RegisterForDialog`, `RegisterForLoading`, `RegisterForToast` | [DI registration](references/di-registration.md) |
 
@@ -60,10 +62,10 @@ public static class Notifications
 
 | Goal | Recipe to read |
 |---|---|
-| Registration, typed results, inline content, stacked Dialogs, configuration failures | [Dialog](references/dialogs.md) |
+| Registration, typed results, inline content, stacked Dialogs, shows that wait for a screen and stopping them, configuration failures | [Dialog](references/dialogs.md) |
 | `Notifier`, view-model factories, pre-presentation configuration, type-based presentation shared by Dialog, Loading, and Toast | [View models](references/view-models.md) |
-| XAML and code-behind attachment, placement, margins, proportional sizing, overlays, outside-tap cancellation | [Layout](references/layout.md) |
+| XAML and code-behind attachment, placement, margins, proportional sizing, content size, current-page reference, overlays, outside-tap cancellation | [Layout](references/layout.md) |
 | Presets and custom asynchronous hooks | [Transitions](references/transitions.md) |
-| Imperative and scoped Loading, progress, styling, custom content | [Loading](references/loading.md) |
-| Message, registered, and inline Toast routes | [Toast](references/toast.md) |
+| Imperative and scoped Loading, the thread the work starts on, starting before a screen exists, progress, styling, custom content | [Loading](references/loading.md) |
+| Message, registered, and inline Toast routes, when the duration starts counting, default placement and margin | [Toast](references/toast.md) |
 | One-line registration, fallback resolution, and view-construction failures | [DI registration](references/di-registration.md) |

@@ -103,12 +103,12 @@ Toast.instance.style = Toast.instance.style.copy(defaultDuration = 2000)
 - **OS の `android.widget.Toast` は使っていない** — 自前の全画面透過 Window の器に載せている。API 30 以降のカスタム View 非推奨・実質 3.5 秒のクランプ・重力指定の配置・多重の順番待ちといった OS Toast の制約は、この面には無い
 - **`hide` に相当する操作は無い** — Loading と違い、Toast の契約には閉じる操作もメッセージ更新もスコープ形も進捗の報告口も無い ([Android の Loading 公開面](loading-surface.md))
 - **器メタ属性の受け口が無い** — 覆いの色や外側タップの扱いを渡すプロパティを Toast は持たない。渡せるのは配置 (`DialogPlacement`) だけである
-- **factory のレシーバは提示先画面の `Context`** (`Context.(VM) -> View`)。中身の生成は提示先の Context を確保してから行うため、型指定 show の VM factory と configure もその時点で走る — 提示先 (resumed Activity) が現れないまま duration が満了した表示では、どちらも呼ばれずに破棄される
+- **factory のレシーバは提示先画面の `Context`** (`Context.(VM) -> View`)。中身の生成は提示先の Context を確保してから行うため、型指定 show の VM factory と configure もその時点で走る — 提示先の画面が現れないまま duration が満了した表示では、どちらも呼ばれずに破棄される
 - **カスタム View の演出**は中身への `DialogTransition` 添付で差し替える ([Android のトランジション公開面](transition-surface.md))。デフォルト View にはこの口が無い
 
 ## 関連
 
-- [Toast のルール](../../core/api/toast-semantics.md) — duration・失敗モデル・多重表示・非対話 (契約の正)
+- [Toast のルール](../../core/api/toast-semantics.md) — duration・失敗モデル・多重表示・非対話 (契約の記述はこちら)
 - [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) — 型指定 show の順序保証と VM factory 解決 (3 機能共通の契約)
 - [Android の Loading 公開面](loading-surface.md) — 操作の多い側との対比
 - [Android のレイアウト公開面](layout-surface.md) — `DialogPlacement` の型と添付面

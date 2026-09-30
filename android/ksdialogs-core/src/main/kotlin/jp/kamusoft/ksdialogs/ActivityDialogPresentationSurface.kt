@@ -1,21 +1,26 @@
 package jp.kamusoft.ksdialogs
 
 /**
- * 追跡中の resumed な Activity を提示先としてダイアログを出す面。
+ * 追跡中の、resumed で描画済みの Activity を提示先としてダイアログを出す面 (core/ADR-0044)。
  *
- * 提示先の指定は要らず、show を呼んだ時点で前面にある画面がそのまま提示先になる。
+ * 提示先の指定は要らず、提示の時点で前面にある画面がそのまま提示先になる。
  * 提示先の画面が破棄されるときは、器を閉じて結果を確定させる。
+ *
+ * @param hostWaitQueue 提示先を待つ show の列。既定はアプリケーションの提示先を共有する全 show の列
  */
 internal class ActivityDialogPresentationSurface(
     private val activityProvider: ResumedActivityProvider = ResumedActivityTracker.shared,
     private val destroyObserver: ActivityDestroyObserver = ResumedActivityTracker.shared,
+    private val changeObserver: ResumedActivityChangeObserver = ResumedActivityTracker.shared,
+    override val hostWaitQueue: DialogHostWaitQueue = DialogHostWaitQueue.application,
 ) : DialogPresentationSurface {
 
     override val canPresent: Boolean
         get() = activityProvider.resumedActivity != null
 
     override fun present(request: DialogPresentationRequest): PresentedDialog {
-        val activity = activityProvider.resumedActivity ?: throw DialogException.PresentationHostUnavailable()
+        // 提示先を確かめてから呼ばれるまでの間に提示先が消えていれば、器は載せられない
+        val activity = activityProvider.resumedActivity ?: return notPresented(request.resultChannel)
         val container = DialogContainer(
             context = activity,
             contentView = request.createContentView(activity),
@@ -28,5 +33,20 @@ internal class ActivityDialogPresentationSurface(
         container.onRemoved = { registration.cancel() }
         container.show()
         return PresentedDialog { handler -> container.onDelivery(handler) }
+    }
+
+    /**
+     * 器を載せられなかった 1 枚を、器の消失と同じく確定させる。
+     *
+     * 中身は作らない。未確定なら cancelled で確定し、確定済みの結果をそのまま届ける。
+     */
+    private fun notPresented(resultChannel: DialogResultChannel): PresentedDialog {
+        resultChannel.settle(DialogOutcome.Cancelled, DialogDismissalOrigin.HOST_LOST)
+        return PresentedDialog { handler -> handler(resultChannel.settledOutcome ?: DialogOutcome.Cancelled) }
+    }
+
+    override fun observeHostChange(onHostChanged: () -> Unit): DialogHostRegistration {
+        val registration = changeObserver.observeResumedChange(onHostChanged)
+        return DialogHostRegistration { registration.cancel() }
     }
 }

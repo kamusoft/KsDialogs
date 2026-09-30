@@ -8,12 +8,37 @@
             android:exported="false"
             android:theme="@android:style/Theme.Material.Light.NoActionBar" />
 
+        <!--
+          表示中のページを基準にした配置を確かめるための提示先。
+          回転では作り直さず、同じ画面のまま寸法だけが変わるよう構成の変化を自分で受ける
+        -->
+        <activity
+            android:name="jp.kamusoft.ksdialogs.support.DialogCurrentPageTestActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+
         <!-- ソフトキーボードとシステムのジェスチャの届き方を確かめるための提示先 -->
         <activity
             android:name="jp.kamusoft.ksdialogs.support.ToastInputTestActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Material.Light.NoActionBar"
             android:windowSoftInputMode="adjustResize" />
+
+        <!--
+          器がシステムバーの指定を変えないことを確かめるための提示先。
+          アイコンの明暗の指定のしかたを起動時の引数で選ぶ
+        -->
+        <activity
+            android:name="jp.kamusoft.ksdialogs.support.SystemBarsTestActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+
+        <!-- resumed だが未描画の提示先を作るための画面。最初の描画をテストが解除するまで止める -->
+        <activity
+            android:name="jp.kamusoft.ksdialogs.support.FirstDrawBlockingTestActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
 
 </manifest>

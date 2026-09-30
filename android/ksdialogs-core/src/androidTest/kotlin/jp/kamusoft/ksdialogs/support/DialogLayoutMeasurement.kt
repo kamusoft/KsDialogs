@@ -55,12 +55,15 @@ internal object DialogLayoutMeasurement {
         options = options,
         attachedPlacement = attachedPlacement,
         showPlacement = showPlacement,
+        pageArea = layoutCase.pageArea,
         label = layoutCase.id,
     )
 
     /**
      * 画面条件を直に指定して組み立て、外形を論理単位 (dp) で返す。
      *
+     * @param pageArea 表示中ページの View の矩形 (原点はウィンドウの左上)。
+     *   null でなければ Activity 側にその位置のページ領域の View を置き、それを返す関数を登録して組み立てる
      * @param label レイアウトが完了しなかったときに条件を読み取れるようにする名前
      */
     fun measureDialogRect(
@@ -71,11 +74,13 @@ internal object DialogLayoutMeasurement {
         options: DialogOptions? = null,
         attachedPlacement: DialogPlacement? = null,
         showPlacement: DialogPlacement? = null,
+        pageArea: DialogLayoutCase.Rect? = null,
         label: String = "",
     ): DialogLayoutCase.Rect {
         val measured = AtomicReference<Rect>()
         val density = AtomicReference(1f)
         val laidOut = CountDownLatch(1)
+        val pageView = pageArea?.let { CurrentPageAreaFixture.place(scenario, it) }
 
         scenario.onActivity { activity ->
             val displayDensity = activity.resources.displayMetrics.density
@@ -88,19 +93,21 @@ internal object DialogLayoutMeasurement {
                 contentHeight = toPixels(contentSize.h).roundToInt(),
             ).attach(options, attachedPlacement)
 
-            val host = DialogLayoutHost(
-                context = activity,
-                snapshot = DialogLayoutSnapshot(contentView, showPlacement),
-                contentView = contentView,
-                visibleAreaInsets = {
-                    DialogPixelInsets(
-                        top = toPixels(insets.top),
-                        left = toPixels(insets.left),
-                        bottom = toPixels(insets.bottom),
-                        right = toPixels(insets.right),
-                    )
-                },
-            )
+            val host = CurrentPageAreaFixture.registeringPage(pageView) {
+                DialogLayoutHost(
+                    context = activity,
+                    snapshot = DialogLayoutSnapshot(contentView, showPlacement),
+                    contentView = contentView,
+                    visibleAreaInsets = {
+                        DialogPixelInsets(
+                            top = toPixels(insets.top),
+                            left = toPixels(insets.left),
+                            bottom = toPixels(insets.bottom),
+                            right = toPixels(insets.right),
+                        )
+                    },
+                )
+            }
 
             val observer = activity.hostContainer.viewTreeObserver
             observer.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {

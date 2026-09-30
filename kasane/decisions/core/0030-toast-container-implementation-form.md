@@ -3,6 +3,7 @@ id: 0030
 title: Toast の器は Loading の器の非モーダル派生とし、1 Toast 1器・重なりは追加順・Loading が常に前面とする
 status: accepted
 date: 2026-08-27
+amended-by: 0038
 ---
 
 ## Context
@@ -40,3 +41,4 @@ Toast の器は Loading の器 (ADR-0026 の形) を土台にした、タッチ�
   - 「Loading が常に前面」の実現形: iOS は Toast の器を Loading の器の下へ挿入 (`insertSubview(_:belowSubview:)`)、Android は Toast の Window を出した直後に Loading へ演出なし再前面化 (既存の再取り付け機構の流用) を依頼する。依頼の向きは Toast → Loading の一方向で、Loading は Toast の存在を知らない。Loading の入りの演出中に依頼が来た場合は演出の完了を待ってから載せ替える (演出途中の載せ替えは中身が透明のまま固まるため)
 
 出典: kasane/roadmaps/library-foundation/phases/phase-8-toast-rebuild/history.md (2026-08-27 器の実装形) / kasane/changes/archive/2026-08-28-add-toast/design.md (Decision 4・5) / kasane/changes/archive/2026-08-28-add-toast/review-001.md (Major 1 — 演出中の再前面化)
+関連: kasane/concepts/core/api/toast-semantics.md「多重表示と表示の継続」— Consequences の実装観測のうち利用者に観察できる部分 (Android の器の作り直しをまたいで残り duration が巻き戻らない・Loading が常に前面) の現在の記述先。coordinator の構成と載せ替えの手順は内部実装のためコードが正 (2026-09-26 ksn-drift で確認)

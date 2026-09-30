@@ -16,6 +16,8 @@ internal object DialogLayoutResolver {
      * @param windowHeight ウィンドウの高さ (px)
      * @param visibleAreaInsets ウィンドウから可視領域を狭めるシステム領域の幅 (px)
      * @param density 論理単位 1dp あたりの px 数
+     * @param currentPageInsets ウィンドウから表示中のページの基準矩形を切り出す4辺の幅 (px)。
+     *   ページが得られなかったときは null で、基準は可視領域に落ちる
      */
     fun resolve(
         layout: DialogLayout,
@@ -23,10 +25,12 @@ internal object DialogLayoutResolver {
         windowHeight: Float,
         visibleAreaInsets: DialogPixelInsets,
         density: Float,
+        currentPageInsets: DialogPixelInsets? = null,
     ): DialogLayoutSolution {
         val insets = when (layout.layoutArea) {
             DialogLayoutArea.WINDOW -> DialogPixelInsets.ZERO
             DialogLayoutArea.VISIBLE_AREA -> visibleAreaInsets
+            DialogLayoutArea.CURRENT_PAGE -> currentPageInsets ?: visibleAreaInsets
         }
 
         val horizontal = resolveAxis(

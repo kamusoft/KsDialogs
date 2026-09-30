@@ -50,8 +50,18 @@ internal object DialogLayoutCaseLoader {
             contentSize = parseSize(json.getJSONObject("contentSize")),
             attributes = parseAttributes(json.optJSONObject("attributes")),
             expected = parseExpected(id, json),
+            pageArea = json.optJSONObject("pageArea")?.let(::parseRect),
         )
     }
+
+    /** 表示中ページの矩形を読む。原点はウィンドウの左上。 */
+    private fun parseRect(json: JSONObject): DialogLayoutCase.Rect =
+        DialogLayoutCase.Rect(
+            x = json.getDouble("x"),
+            y = json.getDouble("y"),
+            w = json.getDouble("w"),
+            h = json.getDouble("h"),
+        )
 
     private fun parseSize(json: JSONObject): DialogLayoutCase.Size =
         DialogLayoutCase.Size(w = json.getDouble("w"), h = json.getDouble("h"))

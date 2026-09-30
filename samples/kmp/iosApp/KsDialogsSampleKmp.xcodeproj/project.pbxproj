@@ -91,6 +91,30 @@
 			isa = PBXBuildFile;
 			fileRef = C1000002000000000000A014;
 		};
+		968EABA331E2D26F5A865643 = {
+			isa = PBXBuildFile;
+			fileRef = 26876F1D2C4DBE7F0BE1E223;
+		};
+		96289269DD255AB61852BBC6 = {
+			isa = PBXBuildFile;
+			fileRef = CD2F3D6626E6DEDDFB9D716A;
+		};
+		3587E877B1F3FEE194CAE9BA = {
+			isa = PBXBuildFile;
+			fileRef = 4B7961BAE97B8EDB67EBB6DE;
+		};
+		6924AB85B349CD287B481048 = {
+			isa = PBXBuildFile;
+			fileRef = 9D25DB25588EDEB8EB14FEC7;
+		};
+		5E1A7C3B9D2F4E6A8B0C1D21 = {
+			isa = PBXBuildFile;
+			fileRef = 5E1A7C3B9D2F4E6A8B0C1D22;
+		};
+		8C512513E33195262B9CC271 = {
+			isa = PBXBuildFile;
+			fileRef = 22C438042E92D716B288E258;
+		};
 		C1000003000000000000B001 = {
 			isa = PBXBuildFile;
 			productRef = C1000004000000000000B001;
@@ -285,7 +309,7 @@
 		C1000002000000000000A00F = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
-			path = SampleAlignmentSegments.swift;
+			path = SampleSegments.swift;
 			sourceTree = "<group>";
 		};
 		C1000002000000000000A010 = {
@@ -303,7 +327,7 @@
 		C1000002000000000000A012 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
-			path = SampleLayoutPanelHeader.swift;
+			path = SampleLayoutPanelToolbar.swift;
 			sourceTree = "<group>";
 		};
 		C1000002000000000000A013 = {
@@ -316,6 +340,42 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = SampleLayoutPanelScreen.swift;
+			sourceTree = "<group>";
+		};
+		26876F1D2C4DBE7F0BE1E223 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SampleLayoutInfoPage.swift;
+			sourceTree = "<group>";
+		};
+		CD2F3D6626E6DEDDFB9D716A = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SampleLayoutPanelForm.swift;
+			sourceTree = "<group>";
+		};
+		4B7961BAE97B8EDB67EBB6DE = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SampleLayoutPanelTab.swift;
+			sourceTree = "<group>";
+		};
+		9D25DB25588EDEB8EB14FEC7 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SampleLayoutAreaChoice.swift;
+			sourceTree = "<group>";
+		};
+		5E1A7C3B9D2F4E6A8B0C1D22 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SampleMarginChoice.swift;
+			sourceTree = "<group>";
+		};
+		22C438042E92D716B288E258 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SampleSegmentChoice.swift;
 			sourceTree = "<group>";
 		};
 		C1000005000000000000C001 = {
@@ -521,6 +581,12 @@
 				C1000002000000000000A012,
 				C1000002000000000000A013,
 				C1000002000000000000A014,
+				26876F1D2C4DBE7F0BE1E223,
+				CD2F3D6626E6DEDDFB9D716A,
+				4B7961BAE97B8EDB67EBB6DE,
+				9D25DB25588EDEB8EB14FEC7,
+				5E1A7C3B9D2F4E6A8B0C1D22,
+				22C438042E92D716B288E258,
 				C1000002000000000000A015,
 				C1000002000000000000A016,
 				C1000002000000000000A017,
@@ -678,6 +744,12 @@
 				C1000001000000000000A012,
 				C1000001000000000000A013,
 				C1000001000000000000A014,
+				968EABA331E2D26F5A865643,
+				96289269DD255AB61852BBC6,
+				3587E877B1F3FEE194CAE9BA,
+				6924AB85B349CD287B481048,
+				5E1A7C3B9D2F4E6A8B0C1D21,
+				8C512513E33195262B9CC271,
 				C1000001000000000000A015,
 				C1000001000000000000A016,
 				C1000001000000000000A017,

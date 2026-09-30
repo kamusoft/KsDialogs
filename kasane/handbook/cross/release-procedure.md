@@ -4,7 +4,7 @@ applies-when:
   always: false
   tasks: [リリースの実施, release workflow の secrets / Environment の設定, リリースの再実行, リリースのリハーサル, 放棄した version の後片付け]
 title: リリース手順
-description: main ブランチと branch protection の用意、配信リポジトリの deploy key、Environment release と secrets 7 件、nuget.org の Trusted Publisher、事前確認からリリース PR (`## Changes` の記入)・起動・見守り・公開後の確認までの各段、validate 段と publish 段に分けた失敗時の再実行と 2 枠の deployment の後始末、放棄した version の扱い、dry-run によるリハーサル
+description: main ブランチと branch protection の用意、配信リポジトリの deploy key、Environment release と secrets 7 件、nuget.org の Trusted Publisher、事前確認からリリース PR (`## Changes` の記入)・起動・見守り・公開後の確認までの各段、validate 段と publish 段に分けた失敗時の再実行と 2 枠の deployment の後始末、反映待ちの失敗を分類から読み分ける手掛かり、放棄した version の扱い、dry-run によるリハーサル
 timestamp: 2026-09-13
 ---
 
@@ -260,6 +260,20 @@ scripts/release/central-portal.sh drop <deployment-id>
 
 公開レジストリへ一度出したものは取り消せない (nuget.org は unlist のみ、Maven Central は削除できない)。smoke が失敗しても tag と Release は残したまま、原因を次の version で直す。
 
+### 反映待ちでの失敗
+
+publish が終わった後、反映待ち job が上限 (45 分) まで待っても反映を確認できずに失敗することがある。公開そのものは済んでいるので作り直すものは無い。失敗のログは待ち対象 10 件それぞれについて、その時点で保持していた分類を出す。レジストリが遅いのか壊れているのかは、この分類で読み分ける。
+
+| ログの分類 | 起きていること | 次の手 |
+|---|---|---|
+| 未反映 | 照会は届いていて、当該 version がミラーにまだ無い | 同期の遅れ。時間を置いてから `Re-run failed jobs` で反映待ちと smoke だけを回し直す |
+| 判定不能 (通信そのものの失敗) | 要求が相手に届かない、または応答が返らない | runner 側かレジストリ側の障害。Central Portal と nuget.org の稼働状況を見てから回し直す |
+| 判定不能 (応答が成功を示さない) | 2xx でも 404 でもない応答 (5xx など) が返っている | レジストリ側の不調。同上 |
+| 判定不能 (応答を解釈できない) | 応答の形が想定と違い、version の有無を読み取れない | レジストリの応答仕様が変わった可能性。`scripts/release/wait-for-registries.sh` の判定を見直す (待ち直しでは直らない) |
+| 未照会 | 上限に達するまで一度もその対象を照会しなかった | 手前の対象の照会が時間を使い切っている。判定不能の対象を先に疑う |
+
+10 件すべてが未反映なら待てば解決する見込みで、判定不能が混ざっていれば待っても解決しない可能性がある。分類が分かれている (反映済みが含まれる) ときは、公開が届いていること自体は確認できている。
+
 ### version を放棄するとき
 
 配信リポジトリの tag は KMP の発行より前に作られるため (cross/ADR-0024)、KMP 以降で失敗した version を再実行せずに放棄すると「iOS だけ解決できる tag」が残る。
@@ -294,4 +308,5 @@ Release ノートの扱いは起動ブランチで変わる。
 - [検証 CI の範囲と実行条件](verification-ci.md) — 必須 status check になる 10 job の中身
 - [インストール例の契約](install-examples.md) — リリースが書き換えない例の守る形
 - [ローカル開発環境の準備](local-development-setup.md) — リリース用スクリプトの自己テスト
-- cross/ADR-0009 (lockstep の単一 version) / cross/ADR-0016 (ブランチモデル) / cross/ADR-0024 (publish の順序) / cross/ADR-0027 (インストール例と最新リリースの指定) / cross/ADR-0028 (Release ノートの組み立て)
+- 公開の枠組みの ADR: cross/ADR-0009 (lockstep の単一 version) / cross/ADR-0016 (ブランチモデル) / cross/ADR-0024 (publish の順序)
+- 利用者から見える契約の ADR: cross/ADR-0027 (インストール例と最新リリースの指定) / cross/ADR-0028 (Release ノートの組み立て) / cross/ADR-0030 (release がインストール例を書き戻さない)

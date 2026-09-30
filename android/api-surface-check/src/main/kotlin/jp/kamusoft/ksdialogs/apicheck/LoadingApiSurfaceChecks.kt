@@ -10,6 +10,7 @@ import jp.kamusoft.ksdialogs.DialogOptions
 import jp.kamusoft.ksdialogs.DialogPlacement
 import jp.kamusoft.ksdialogs.KsLoading
 import jp.kamusoft.ksdialogs.Loading
+import jp.kamusoft.ksdialogs.LoadingActionThread
 import jp.kamusoft.ksdialogs.LoadingProgressReceiver
 import jp.kamusoft.ksdialogs.LoadingStyle
 import jp.kamusoft.ksdialogs.LoadingViewModel
@@ -189,5 +190,65 @@ public object LoadingApiSurfaceChecks {
             report(1.0)
             "完了 ($count)"
         }
+    }
+
+    /**
+     * スコープ形の 4 本と Compose の `startCompose` は、処理を始めるスレッドの指定を
+     * 省略・`MAIN`・`BACKGROUND` のいずれでも受け取り、処理は後置ラムダのまま書ける。
+     */
+    public suspend fun LD_HA_01_acceptsActionThreadOnEveryScopeEntry(loading: KsLoading): Int {
+        val threads = listOf(LoadingActionThread.MAIN, LoadingActionThread.BACKGROUND)
+        var total = loading.start(message = "読み込み中") { report ->
+            report(0.5)
+            1
+        }
+        for (thread in threads) {
+            // 既定ローディング
+            total += loading.start(message = "読み込み中", actionThread = thread) { report ->
+                report(0.5)
+                1
+            }
+            total += loading.start(actionThread = thread) { 1 }
+            // 登録済みのインスタンス渡し
+            total += loading.start(ConsumerLoadingViewModel("同期中"), actionThread = thread) { 1 }
+            total += loading.start(
+                ConsumerLoadingViewModel("同期中"),
+                placement = DialogPlacement(verticalAlignment = DialogAlignment.END),
+                actionThread = thread,
+            ) { 1 }
+            // その場の factory (従来 View 系)
+            total += loading.start(
+                ConsumerLoadingViewModel("その場"),
+                factory = { viewModel -> TextView(this).apply { text = viewModel.title } },
+                actionThread = thread,
+            ) { 1 }
+            // 型指定
+            total += loading.start(ConsumerLoadingViewModel::class, actionThread = thread) { 1 }
+            total += loading.start(
+                ConsumerLoadingViewModel::class,
+                configure = { viewModel -> check(viewModel.title.isNotEmpty()) },
+                actionThread = thread,
+            ) { 1 }
+            // その場の Compose のコンテンツ
+            total += loading.startCompose(
+                ConsumerProgressLoadingViewModel(),
+                content = { viewModel -> check(viewModel.progress >= 0.0) },
+                actionThread = thread,
+            ) { 1 }
+        }
+        // 指定を省略した形も、同じ入口で引き続き書ける
+        total += loading.start(ConsumerLoadingViewModel("同期中")) { 1 }
+        total += loading.start(
+            ConsumerLoadingViewModel("その場"),
+            factory = { viewModel -> TextView(this).apply { text = viewModel.title } },
+        ) { 1 }
+        total += loading.start(ConsumerLoadingViewModel::class) { 1 }
+        total += loading.startCompose(
+            ConsumerProgressLoadingViewModel(),
+            content = { viewModel -> check(viewModel.progress >= 0.0) },
+        ) { 1 }
+        // 既定シングルトンからも同じ形で呼べる
+        total += Loading.instance.start(actionThread = LoadingActionThread.BACKGROUND) { 1 }
+        return total
     }
 }

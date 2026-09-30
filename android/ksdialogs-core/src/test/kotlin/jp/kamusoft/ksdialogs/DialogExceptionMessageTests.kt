@@ -42,12 +42,28 @@ class DialogExceptionMessageTests {
                     DialogException.ValueClassViewModel(typeName).message,
                 )
             },
-            {
-                assertEquals(
-                    "No screen is available to present the Dialog.",
-                    DialogException.PresentationHostUnavailable().message,
-                )
-            },
         )
+    }
+
+    @Test
+    fun `PB-HA-03 DialogException のサブクラスに提示先の不在が無い`() {
+        val failures: List<DialogException> = listOf(
+            DialogException.ViewFactoryNotRegistered("A"),
+            DialogException.ViewModelFactoryNotRegistered("B"),
+            DialogException.ViewModelAlreadyShowing("C"),
+            DialogException.ValueClassViewModel("D"),
+        )
+
+        // else を持たない網羅の when。提示先の不在を表すサブクラスがあればコンパイルが通らない
+        val labels = failures.map { failure ->
+            when (failure) {
+                is DialogException.ViewFactoryNotRegistered -> "view-factory"
+                is DialogException.ViewModelFactoryNotRegistered -> "view-model-factory"
+                is DialogException.ViewModelAlreadyShowing -> "already-showing"
+                is DialogException.ValueClassViewModel -> "value-class"
+            }
+        }
+
+        assertEquals(listOf("view-factory", "view-model-factory", "already-showing", "value-class"), labels)
     }
 }

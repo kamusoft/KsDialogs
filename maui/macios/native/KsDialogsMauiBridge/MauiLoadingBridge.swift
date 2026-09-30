@@ -145,8 +145,10 @@ public final class MauiLoadingBridge: NSObject, Sendable {
     ) async throws {
         let placement = content.placement.map { DialogPlacement($0) }
         let boxedAction = MauiUncheckedSendableBox(action)
+        // MAUI 側の処理を始めるスレッドは C# 層が指定どおりに振り分けるため、ここでは UI スレッドを
+        // 経由させない。完了通知を待つだけの処理なので、UI スレッド外で始める
         guard let contentProvider = content.contentProvider else {
-            try await loading.start(message: content.message, placement: placement) { report in
+            try await loading.start(message: content.message, placement: placement) { @concurrent report in
                 await MauiLoadingBridge.awaitAction(boxedAction.value, report)
             }
             return
@@ -155,7 +157,7 @@ public final class MauiLoadingBridge: NSObject, Sendable {
             contentProvider: contentProvider,
             progressReceiver: content.progressReceiver
         )
-        try await loading.start(viewModel, placement: placement) { report in
+        try await loading.start(viewModel, placement: placement) { @concurrent report in
             await MauiLoadingBridge.awaitAction(boxedAction.value, report)
         }
     }

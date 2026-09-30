@@ -3,7 +3,7 @@ type: concept
 title: 配布物の構成 (4 形態)
 description: 4 形態 (SwiftPM 配信リポジトリ / Android Maven 2 座標 / MAUI NuGet 3 パッケージ / KMP Maven 5 publication) の配布物が何を含み、version がどこで決まって注入され、開発版が公開レジストリへ流れないためのガードがどこにあるか
 tags: [cross, distribution, swiftpm, maven, nuget, kmp, version]
-timestamp: 2026-09-10
+timestamp: 2026-09-13
 ---
 
 # 配布物の構成 (4 形態)
@@ -93,7 +93,7 @@ facade 1 件と binding 2 件の 3 パッケージで、利用者が参照する
 
 | 同梱物 | 内容 |
 |---|---|
-| README | monorepo ルートの `README.md` (nuget.org のパッケージページに表示される)。release workflow が pack の前にインストール例の version を入力値へ置き換えるため、同梱される README は公開する version を指す |
+| README | monorepo ルートの `README.md` (nuget.org のパッケージページに表示される)。インストール例は具体 version を持たず (cross/ADR-0027)、release workflow は pack の前後いずれでもこの内容を書き換えない。読者は最新版の案内から版を得る |
 | XML ドキュメント | `KsDialogs.Maui.xml` を 3 TFM すべての `lib/<TFM>/` に同梱する (日本語の doc コメント)。binding 2 件は生成しない指定だが、Android binding には .NET Android SDK の binding 用ビルド定義が Resource designer の説明だけの小さな `.xml` を残す (csproj からは止められず、利用者に害は無い) |
 | `buildTransitive/` | 最低 OS 版の定数を持つ props と、利用者ビルドで検査する targets。TFM ごとに走る内側のビルド (inner build) のうち platform TFM で、`SupportedOSPlatformVersion` が Android API 24 / iOS 17.0 未満ならエラー `KSDLG0001` で止める。素の `net10.0` と、複数 TFM を束ねる外側のビルド (outer build) では何もしない |
 | snupkg / SourceLink | 3 パッケージとも symbol package を対で発行し、SourceLink で public リポジトリのソースへ辿れる |

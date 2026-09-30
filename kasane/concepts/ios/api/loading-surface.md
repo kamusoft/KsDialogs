@@ -1,9 +1,9 @@
 ---
 type: concept
 title: iOS の Loading 公開面
-description: iOS Native (Swift) で Loading を使うときの公開名と署名 — 契約と既定エントリ・show / hide / setMessage / スコープ形の署名・進捗報告口と進捗受け口・カスタム View の登録 (UIKit / SwiftUI)・型指定 show / start と VM factory 登録・LoadingStyle と器メタ属性・MainActor と throws の注意
+description: iOS Native (Swift) で Loading を使うときの公開名と署名 — 契約と既定エントリ・show / hide / setMessage / スコープ形の署名・スコープ形の処理の型 (@MainActor) と UI スレッド外で始める @concurrent・進捗報告口と進捗受け口・カスタム View の登録 (UIKit / SwiftUI)・型指定 show / start と VM factory 登録・LoadingStyle と器メタ属性・MainActor と throws の注意
 tags: [ios, loading, api, surface]
-timestamp: 2026-09-07
+timestamp: 2026-09-29
 ---
 
 # iOS の Loading 公開面
@@ -38,6 +38,36 @@ timestamp: 2026-09-07
 | 型指定 start | `start(_:placement:configure:_:)` (第 1 引数は `VM.self`。`async throws`。最後の引数が処理) |
 
 スコープ形の処理に渡る**進捗報告口**は `@Sendable (Double) -> Void` のクロージャで、任意スレッドから呼べる。
+
+## スコープ形の処理が始まるスレッド
+
+スコープ形のすべての入口 (protocol 要件と extension の省略形) で、処理の型は `@MainActor @Sendable (@Sendable @escaping (Double) -> Void) async throws -> T` である。スレッドを指定する引数は無く、どちらのスレッドで始まるかは処理の isolation で決まる。UI スレッドへ移すのは Swift の isolation の規則で、ライブラリに実行時の切り替えは無い。契約 (既定は UI スレッド・「始まる」の定義・保証の範囲) は [Loading のルール](../../core/api/loading-semantics.md) の「スコープ形の処理が始まるスレッド」が正である。
+
+```swift
+// 既定: その場で書いたクロージャは UI スレッドで始まる。中で UIKit に await なしで触れる
+try await Loading.shared.start { report in
+    imageView.image = resized
+}
+
+// UI スレッド外で始める: クロージャに @concurrent を付ける
+// (中で MainActor の状態に await なしで触るとコンパイルエラーになる)
+try await Loading.shared.start { @concurrent report in
+    try await heavyWork(report)
+}
+```
+
+UI スレッドで始まったクロージャは、中で `await` した後も `@MainActor` のまま UI スレッドで再開する。処理の中で `await MainActor.run { … }` を使う書き方もそのまま動く。
+
+### 関数を名前で渡したとき
+
+関数を名前で渡す (`start(work)`) と、処理の型の `@MainActor` ではなく**その関数自身の isolation が優先される** (Swift の言語規則)。`@MainActor` の関数なら UI スレッドで、`@concurrent` の関数なら UI スレッド外で始まる。isolation の指定が無い `async` 関数は、利用者のモジュールの並行性設定 `NonisolatedNonsendingByDefault` によって始まるスレッドが変わる。
+
+| 利用者のモジュールの `NonisolatedNonsendingByDefault` | isolation の指定が無い `async` 関数を名前で渡したとき |
+|---|---|
+| 無効 (Swift 6 の既定) | UI スレッド外で始まる |
+| 有効 (Xcode 26 の新規プロジェクトの既定) | 呼び出し元の isolation を引き継ぎ、UI スレッドで始まる |
+
+どちらの設定でも、その関数は `@MainActor` と宣言されていないので、中で MainActor の状態 (UIKit を含む) に `await` なしで触るとコンパイルエラーになる。その場で書いたクロージャと `@concurrent` を付けたクロージャは、設定に関係なく上の例のとおりに始まる。
 
 ## カスタム View の登録
 
@@ -106,12 +136,14 @@ Loading.shared.style = LoadingStyle(indicatorColor: .systemBlue, defaultMessage:
 
 ## framework 固有の注意
 
-- **factory は `throws`** — 中身の組み立てで失敗を投げられる。投げた失敗は表示の開始そのものの失敗として呼び出し元へ返る
+- **factory は `throws`** — 中身の組み立てで失敗を投げられる。開始時点で提示先があれば、投げた失敗は表示の開始そのものの失敗として呼び出し元へ返る (提示先が無いまま始まった表示は下記)
 - **未登録の ViewModel 型で表示すると `DialogError.viewFactoryNotRegistered` が throw される** (Dialog と同じ enum の case — [iOS の Dialog 公開面](dialog-surface.md))
 - **型指定 show / start は VM factory と View factory の両方を呼び出し時点で解決する** — 欠けているスロットに応じて別の case で失敗する (下表)。VM factory と configure は `@MainActor` で実行される
 - **factory と進捗受け口は `@MainActor`** なので、中で UIKit の API をそのまま呼べる
-- **`show` / `start` は任意スレッドから `await` できる**。内部で main へ移して受理順に直列化される
+- **`show` / `start` は任意スレッドから `await` できる**。内部で main へ移して受理順に直列化される。スコープ形の処理が始まるスレッドは呼び出し元ではなく処理の isolation で決まる (「スコープ形の処理が始まるスレッド」)
 - **カスタム View 版の演出**は中身への `DialogTransition` 添付で差し替える ([iOS のトランジション公開面](transition-surface.md))。既定ローディングにはこの口が無い
+
+提示先が無いまま始まった表示では、factory は提示先が現れた時点で呼ばれる。そこで投げた失敗は呼び出し元へ返らず、警告ログを残して表示だけを諦める。処理はそのまま続く ([Loading のルール](../../core/api/loading-semantics.md) の「提示先が無いまま始まった表示」)。
 
 型指定 show / start が呼び出し時点で失敗する構成ミスは次の 2 つで、判定は VM factory が先である。
 
@@ -122,7 +154,7 @@ Loading.shared.style = LoadingStyle(indicatorColor: .systemBlue, defaultMessage:
 
 ## 関連
 
-- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の正)
+- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の記述はこちら)
 - [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) — 型指定 show の順序保証と VM factory 解決 (3 機能共通の契約)
 - [iOS の Dialog 公開面](dialog-surface.md) — 登録・表示の書き方 (Loading と同型の呼び分け)
 - [iOS のレイアウト公開面](layout-surface.md) — `DialogOptions` / `DialogPlacement` の型と添付面

@@ -46,3 +46,4 @@ public 化の前に利用者向けドキュメントを揃えるにあたり (pa
 
 ---
 出典: kasane/roadmaps/package-distribution/phases/phase-2-docs-rollout/agenda.md (踏襲決定「README はルート英日 2 枚のみ」・決定事項「`samples/` 配下 README 5 本は廃止し、正を handbook / concepts へ移送する」) / kasane/roadmaps/package-distribution/phases/phase-2-docs-rollout/history.md (2026-09-04) / kasane/changes/archive/2026-09-05-rollout-user-docs/design.md (Decision 2・Decision 5) / kasane/changes/archive/2026-09-05-rollout-user-docs/deviation.md (Task 7.4) / ../KsSettingsView/kasane/decisions/cross/0023-readme-root-only-and-developer-knowledge-in-concepts.md (翻案元。踏襲部分の Decision・Consequences の原文)
+関連: kasane/lessons/inbox/retire-doc-check-accepted-adr-mentions.md と kasane/lessons/inbox/spec-residual-check-must-exclude-append-only-history.md — Consequences の実装観測 (廃止文書への残存参照 0 件は append-only の履歴を除いて判定する・廃止する文書を名指しする accepted ADR を先に確かめる) の現在の置き場 (2026-09-26 ksn-drift で移送)

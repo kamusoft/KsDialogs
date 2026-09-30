@@ -22,12 +22,13 @@ KsDialogs.Maui replaces AiForms.Maui.Dialogs with Dialog result types, factory-b
 | Reuse | `IReusableDialog` and `IReusableLoading` handles | no reuse handle; content is built again for each display |
 | Result reporting | `DialogNotifier` bound on the View | typed `DialogNotifier<TResult>` from the factory, or `viewModel.Notifier` |
 | Layout attributes | properties on `ExtraView` and `DialogView` | `Dialog.*` attached properties, `DialogPlacement`, `DialogOptions` |
+| Reference area | the `UseCurrentPageLocation` bool, effective on the vertical axis only | `DialogLayoutArea` (`Window` / `VisibleArea` / `CurrentPage`), effective on both axes |
 | Animation | `RunPresentationAnimation` / `RunDismissalAnimation` overrides | `DialogTransition` attached with `Dialog.SetTransition` |
 | Registration and IoC | `Configurations.SetIocConfig` | `RegisterForDialog` / `RegisterForLoading` / `RegisterForToast`, and `AddKsDialogs` fallbacks for dialogs |
 | Show from a model type | `ShowFromModelAsync`, `CreateFromModel` | a type-based `ShowAsync` / `Show` for dialogs, loading, and toasts, with a `configure` callback |
 | Loading settings | `LoadingConfig` | `Loading.Instance.Style` (`LoadingStyle`) and `Loading.Instance.Options` (`DialogOptions`) |
 | Toast | obsolete, custom `ToastView` routes only | `IKsToast` with message, registered, inline, and type-based routes |
-| Changed defaults | transparent overlay, dialog margin 0, window-wide layout area | 40% black overlay, dialog margin 24 on every side, visible area |
+| Changed defaults | transparent overlay, window-wide layout area | 40% black overlay, visible area (the dialog margin default stays 0 on every side, as before) |
 
 ## Capability map
 
@@ -38,8 +39,11 @@ KsDialogs.Maui replaces AiForms.Maui.Dialogs with Dialog result types, factory-b
 | Replace reusable dialogs and loading handles | [API mapping](references/api-mapping.md) |
 | Replace model-type-based show (`ShowFromModelAsync`, `CreateFromModel`) | [API mapping](references/api-mapping.md) |
 | Move layout, overlay, and animation settings off `ExtraView` | [API mapping](references/api-mapping.md) |
+| Move `UseCurrentPageLocation` to the current-page reference area (`DialogLayoutArea.CurrentPage`) | [API mapping](references/api-mapping.md) |
+| Choose the thread a Loading operation starts on (`LoadingActionThread`) | Minimal migration below, then [API mapping](references/api-mapping.md) |
 | Replace the obsolete custom-view-only toast API | [API mapping](references/api-mapping.md) |
-| Understand how a mis-wired registration fails now | Failures after migrating below |
+| Understand how a mis-wired registration fails now | Failures, waiting, and cancellation below |
+| Understand how a show waits while no screen exists yet, and how to cancel it with a `CancellationToken` | Failures, waiting, and cancellation below, then [API mapping](references/api-mapping.md) |
 | Look up the KsDialogs.Maui API itself | the `ksdialogs-maui` Skill |
 
 ## Setup
@@ -56,7 +60,7 @@ The project also needs `Microsoft.Maui.Controls` 10.0.20 or later. That is the v
 
 ## Minimal migration
 
-The operation-scoped loading route keeps the same default entry and progress shape. Remove the old `isCurrentScope` argument; pass a `DialogPlacement` when the display must move.
+The operation-scoped loading route keeps the same default entry and progress shape. Remove the old `isCurrentScope` argument; pass a `DialogPlacement` when the display must move. Whatever thread the caller is on, the operation starts on the UI thread by default (`LoadingActionThread.Main`), so it can touch screen elements without moving back to the UI thread. For heavy work that does not touch the UI, pass `actionThread: LoadingActionThread.Background` to start it off the UI thread.
 
 ```csharp
 using KsDialogs;
@@ -77,9 +81,13 @@ public static class StartupWork
 }
 ```
 
-## Failures after migrating
+## Failures, waiting, and cancellation
 
 Setup mistakes surface as `DialogException` subtypes rather than as a cancelled result. One new subtype has no counterpart in the old library: when a one-line registration (`RegisterForDialog`, `RegisterForLoading`, `RegisterForToast`) cannot build the View it wired, the failure is `DialogException.ViewCreationFailed`, which keeps the original failure in `InnerException` and exposes `ViewTypeName` and `ViewModelTypeName`. Only the route where the library itself builds the View is wrapped — an exception thrown by a factory you wrote or by a fallback resolver arrives unwrapped. Dialog and Loading report it as a faulted show or start task; `Toast.Show` returns no task, so it discards that one toast with a warning that names the cause.
+
+On iOS and Android, a call made while there is no screen to present on (no presentation host) does not fail. When you call from the first screen's appearance code right after launch, while the app is in the background, or while a system permission dialog is up, the display waits until a screen appears. Dialog, Loading, and Toast share this behavior, and Loading keeps running its operation while it waits. `DialogException.PresentationHostUnavailable` arrives only when a dialog is shown on plain .NET, which has no presentation machinery (the `net10.0` target of a unit test, for example).
+
+The wait has no upper bound, so pass the trailing `CancellationToken` of `ShowAsync` to a dialog called from a place where a screen may never appear. Cancelling during the wait means the dialog is never shown; cancelling while it is shown closes it; either way `OperationCanceledException` is thrown. Cancellation is not converted to a `Cancelled` result: `Cancelled` is returned when the dialog closes through a cancel report, an outside tap, or the destruction of its screen.
 
 ## Choose the mapping
 

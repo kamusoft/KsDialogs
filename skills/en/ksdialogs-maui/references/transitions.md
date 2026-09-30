@@ -136,7 +136,7 @@ The constructor is `DialogTransition(presentation, dismissal, overlayDuration)` 
 - Both hooks are `Func<VisualElement, Task>` and receive the MAUI view hosting the laid-out content, started on the UI thread
 - What a transition holds is readable from `DialogTransition.Presentation`, `DialogTransition.Dismissal`, and `DialogTransition.OverlayDuration`
 - A hook fault or cancellation is absorbed into the log and does not propagate to the Dialog result
-- The library applies no timeout and waits for hook completion, so a task that never completes stops container removal and result delivery
+- The library applies no timeout and waits for hook completion, so a task that never completes stops container removal and result delivery. The only ways out are an OS-initiated loss of the container and stopping through the `CancellationToken` passed to `ShowAsync` ([Dialog](dialogs.md))
 
 Attachment works exactly as for a preset: pass it to `Dialog.SetTransition` from the code-behind of the content view.
 

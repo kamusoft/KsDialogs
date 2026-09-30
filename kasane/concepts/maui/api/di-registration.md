@@ -12,7 +12,7 @@ timestamp: 2026-09-08
 
 先に core の [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) (型指定 show・VM factory・`vm.Notifier`) と [登録と表示の呼び出し面のルール](../../core/api/registration-show-semantics.md) (register / show の基本形) を読むと分かりやすい。この文書はその MAUI 固有の上乗せだけを扱う。
 
-**この文書が正であり、実装はここに合わせる**。根拠決定は [maui/ADR-0005](../../../decisions/maui/0005-fallback-resolver-sugar.md) (fallback resolver の採用と static 差し込み口の廃止)・[core/ADR-0021](../../../decisions/core/0021-vm-factory-registry-resolution.md) (VM factory による解決)・[core/ADR-0035](../../../decisions/core/0035-loading-toast-typed-show-vm-factory.md) (Loading / Toast のレジストリへの VM factory スロット追加)。
+この文書は、MAUI 形態の実装とテストが満たしている DI 登録の挙動を記述する (一次情報はコードとテスト)。根拠決定は [maui/ADR-0005](../../../decisions/maui/0005-fallback-resolver-sugar.md) (fallback resolver の採用と static 差し込み口の廃止)・[core/ADR-0021](../../../decisions/core/0021-vm-factory-registry-resolution.md) (VM factory による解決)・[core/ADR-0035](../../../decisions/core/0035-loading-toast-typed-show-vm-factory.md) (Loading / Toast のレジストリへの VM factory スロット追加)。
 
 この糖衣は **MAUI 限定**である。Native (Swift / Kotlin) / KMP には持ち込まない — Swift / Kotlin はクロージャの型推論で factory 登録が既に1行なのに対し、C# は部分的型引数推論を持たないため、低水準の `Register` では型引数とラムダの両方を書かされて原典 (移植元 AiForms.Maui.Dialogs) 比で書き味が後退する。その回復がこの糖衣の存在理由であり、Native にはその後退がない。
 
@@ -40,7 +40,7 @@ builder.Services
 
 show のたびに TView を生成する。生成は `ActivatorUtilities.CreateInstance` で行い (コンストラクタ依存はサービスから解決される)、**現在 show されている VM インスタンスを明示引数として渡す** — TView のコンストラクタが TViewModel を受ける構成なら show 対象の VM がそのまま注入され、**コンストラクタに渡る VM・BindingContext・show 対象は同一インスタンス、VM の追加生成はゼロ**になる。生成した View には BindingContext = 現在の VM が設定される。
 
-この生成に失敗した場合 (コンストラクタが要求する依存がサービスに無い等) は、`DialogException.ViewCreationFailed` として報告する。元の失敗は `InnerException` にそのまま残り、組み立てようとした View と ViewModel の型名を `ViewTypeName` / `ViewModelTypeName` で読める。「factory が登録されていない」とは原因も直し方も違うため、既存の `ViewFactoryNotRegistered` には寄せない。包むのはライブラリ自身が View を組み立てるこの経路だけで、利用者が書いた factory (`Register` / インライン show) や fallback resolver が投げた例外は包まずそのまま届く (resolver は利用者コードで、View の型名も知り得ない)。Dialog / Loading では show (start) がこの例外で失敗し、iOS / Android の実機経路でもユニットテストの fake gateway 経路でも同じ型が届く (Android 側の経路は [core/ADR-0036](../../../decisions/core/0036-maui-android-content-supply-symmetry.md))。Toast は Show が戻り値を持たないため呼び出し元へは返さず、既存の受理後の失敗モデル (警告 + その 1 枚だけ破棄、後続は継続) のまま、警告に `ViewCreationFailed` が原因として残る。
+この生成に失敗した場合 (コンストラクタが要求する依存がサービスに無い等) は、`DialogException.ViewCreationFailed` として報告する。元の失敗は `InnerException` にそのまま残り、組み立てようとした View と ViewModel の型名を `ViewTypeName` / `ViewModelTypeName` で読める。「factory が登録されていない」とは原因も直し方も違うため、既存の `ViewFactoryNotRegistered` には寄せない。包むのはライブラリ自身が View を組み立てるこの経路だけで、利用者が書いた factory (`Register` / インライン show) や fallback resolver が投げた例外は包まずそのまま届く (resolver は利用者コードで、View の型名も知り得ない)。Dialog / Loading では show (start) がこの例外で失敗し (Loading は開始時点で提示先がある場合。提示先が無いまま始まった表示では警告を残して表示だけを諦める)、iOS / Android の実機経路でもユニットテストの fake gateway 経路でも同じ型が届く (Android 側の経路は [core/ADR-0036](../../../decisions/core/0036-maui-android-content-supply-symmetry.md))。Toast は Show が戻り値を持たないため呼び出し元へは返さず、既存の受理後の失敗モデル (警告 + その 1 枚だけ破棄、後続は継続) のまま、警告に `ViewCreationFailed` が原因として残る。
 
 ### VM factory の配線
 

@@ -182,8 +182,39 @@ internal object SampleText {
     /** 垂直方向の移動量を入れる行の項目名。 */
     const val OFFSET_Y_LABEL: String = "OffsetY"
 
-    /** 基準領域に可視領域を使うかを切り替える行の項目名。 */
-    const val USE_VISIBLE_AREA_LABEL: String = "Use visible area"
+    /** 基準領域を選ぶ行の項目名。 */
+    const val LAYOUT_AREA_LABEL: String = "Layout area"
+
+    /** 基準領域の選択肢 (ウィンドウ全体)。 */
+    const val LAYOUT_AREA_WINDOW: String = "Window"
+
+    /** 基準領域の選択肢 (可視領域)。 */
+    const val LAYOUT_AREA_VISIBLE_AREA: String = "Visible area"
+
+    /** 基準領域の選択肢 (表示中のページ)。 */
+    const val LAYOUT_AREA_CURRENT_PAGE: String = "Current page"
+
+    /** 余白を選ぶ行の項目名。 */
+    const val MARGIN_LABEL: String = "Margin"
+
+    /** 余白の選択肢 (0 — 契約の既定値)。 */
+    const val MARGIN_0: String = "0"
+
+    /** 余白の選択肢 (24)。 */
+    const val MARGIN_24: String = "24"
+
+    /** 余白の選択肢 (48)。 */
+    const val MARGIN_48: String = "48"
+
+    /** 属性調整パネルのタブ名。 */
+    const val PANEL_TAB: String = "Panel"
+
+    /** 説明文だけを置くタブのタブ名。 */
+    const val INFO_TAB: String = "Info"
+
+    /** 説明文だけを置くタブの本文。 */
+    const val INFO_TAB_BODY: String =
+        "このタブにはタイトルバーがありません。Current page を選ぶと、ダイアログはタブバーの内側 (このページの領域) を基準に置かれます。"
 
     /** 属性調整パネルの表示操作。 */
     const val SHOW_ACTION: String = "Show"
@@ -202,6 +233,9 @@ internal object SampleText {
 
     /** ローディングの処理が終わったときの結果表示。結果値を持たないので書式ではなく固定の文言にする。 */
     const val LOADING_COMPLETED_RESULT: String = "結果: 完了"
+
+    /** ローディングの処理が始まったときの結果表示。処理の中から直接書き込む。 */
+    const val LOADING_PROCESSING_RESULT: String = "結果: 処理中"
 
     /** 演出の時間の表示 (ミリ秒)。 */
     fun durationValue(milliseconds: Int): String = "$milliseconds ms"

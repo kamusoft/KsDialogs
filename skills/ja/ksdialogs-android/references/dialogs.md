@@ -6,7 +6,7 @@ class の ViewModel に結果型を宣言し、表示ごとに新しいコンテ
 
 factory は show のたびに呼ばれ、その show の結果を完了またはキャンセルする `DialogNotifier<R>` を受け取る。ViewModel だけを受け取る factory を使う場合は、ViewModel 自身が拡張プロパティ `notifier` から報告する ([ViewModel](view-models.md))。最初の報告だけが結果を確定し、以後の報告は何もしない。
 
-`Cancelled` になるのは、notifier のキャンセル報告、覆いへの外側タップ、戻るボタン、Dialog を載せていた画面の破棄である。
+`Cancelled` になるのは、notifier のキャンセル報告、覆いへの外側タップ、戻るボタン、Dialog を載せていた画面の破棄、そしてコンテンツを作った後に Dialog を画面へ載せられなかった場合 (factory の実行中に表示先の画面が消えたときなど) である。
 
 ## `show` を選ぶ
 
@@ -268,11 +268,39 @@ suspend fun showTwoDialogs(): Pair<DialogResult<Boolean>, DialogResult<Boolean>>
 }
 ```
 
+表示先の画面が無い間に呼んだ show が複数あるときは、表示先が現れた後に呼んだ順で 1 枚ずつ載り、後から呼んだものが手前に重なる。待っている Dialog があるうちに呼んだ show は、表示先があってもその後ろに並ぶ。この順序が成り立つのは同じ UI スレッドから続けて呼んだ場合で、UI スレッド以外から呼んだ show や `configure` が中断する型指定 `show` は、準備ができた順に並ぶ。
+
+## 画面が出る前に呼ぶ
+
+表示先 (resumed で、かつ描画済みの `Activity`) が無いときに呼んだ `show` は、例外を投げずに表示先が現れるまで待ってから表示する。起動直後に最初の画面の初期化から呼んだ場合、アプリが背面にいる間に呼んだ場合、システムの許可ダイアログが出ている間に呼んだ場合がこれに当たる。起動画面の下で開いている途中の画面には出さず、Activity が破棄されただけでは表示されずに、次の Activity が resume して描画された時点で表示される。
+
+待ちに上限は無い。待ちが終わるのは次のどれかのときである。
+
+- 表示先が現れた。コンテンツを作って表示する
+- ViewModel が待っている間に `notifier` で結果を報告した。表示せずにその結果を返す
+- 呼び出し元のコルーチンがキャンセルされた。一度も表示せずに `CancellationException` が伝播する
+
+画面が現れる見込みの無い場所から呼ぶ `show` は、キャンセルできるスコープで呼ぶ。以下は 30 秒の上限を付けた例で、上限に達すると `null` が返る。上限は表示中にも効くため、時間内に応答が無ければ表示中の Dialog も閉じる。
+
+```kotlin
+import jp.kamusoft.ksdialogs.Dialog
+import jp.kamusoft.ksdialogs.DialogResult
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.seconds
+
+suspend fun confirmResumeUpload(): DialogResult<Boolean>? =
+    withTimeoutOrNull(30.seconds) {
+        Dialog.instance.show(ConfirmViewModel("Resume the upload?"))
+    }
+```
+
+登録の解決・ViewModel factory・`configure` は待つ前に済むので、構成ミスは表示先の有無にかかわらず待たずに失敗する。コンテンツ (View) を作るのは表示先が現れた後である。
+
 ## 構成ミスの失敗を扱う
 
-構成ミスは `Cancelled` を返さず、入れ子クラスの `DialogException` で `show` を失敗させる。登録漏れを利用者のキャンセルと取り違えないためであり、この場合コンテンツは生成も表示もされない。呼び出し元の coroutine をキャンセルした場合はこれとは別で、`CancellationException` が伝播し、退出の演出と器の撤去は最後まで完遂される。
+構成ミスは `Cancelled` を返さず、入れ子クラスの `DialogException` で `show` を失敗させる。登録漏れを利用者のキャンセルと取り違えないためであり、この場合コンテンツは生成も表示もされない。呼び出し元の coroutine をキャンセルした場合はこれとは別で、表示先を待っている間でも表示中でも `CancellationException` が伝播し、表示中なら退出の演出と器の撤去は最後まで完遂される。
 
-`PresentationHostUnavailable` 以外の例外は、対象の ViewModel 型名を `viewModelTypeName` から読める。
+どの例外も、対象の ViewModel 型名を `viewModelTypeName` から読める。
 
 | 例外 | メッセージ | 原因と対処 |
 |---|---|---|
@@ -280,7 +308,6 @@ suspend fun showTwoDialogs(): Pair<DialogResult<Boolean>, DialogResult<Boolean>>
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | 型を渡す `show` に ViewModel factory がない。`registerViewModel` を呼ぶ ([ViewModel](view-models.md)) |
 | `DialogException.ViewModelAlreadyShowing` | `This ViewModel instance of type {TypeName} is already being shown.` | 同じ ViewModel インスタンスを既に表示している。重ねる show ごとに新しいインスタンスを作る |
 | `DialogException.ValueClassViewModel` | `ViewModel type {TypeName} is a value class and cannot be used as a ViewModel.` | value class を ViewModel にした。ViewModel を class にする |
-| `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | resumed な Activity がない。最初の画面が resumed になってから show する。キューイングはせず即座に失敗する |
 
 表のメッセージは現在の実装が返す値であり、安定した API ではない (変わらないのは例外型と throw される条件であり、文言は予告なく変わりうる)。
 
@@ -313,4 +340,4 @@ suspend fun confirmDeletion(): DialogResult<Boolean> =
     }
 ```
 
-`viewModelTypeName` を持たない `PresentationHostUnavailable` も含めてまとめて扱いたい場合は、基底型の `DialogException` で `catch` する。
+構成ミスをまとめて扱いたい場合は、基底型の `DialogException` で `catch` する。基底型は `viewModelTypeName` を持たないので、型名が要るときは入れ子の例外型で受ける。

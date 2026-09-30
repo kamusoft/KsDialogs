@@ -1,9 +1,9 @@
 ---
 type: concept
 title: MAUI の Loading 公開面
-description: .NET MAUI (C#) で Loading を使うときの公開名と署名 — 契約と既定エントリ・ShowAsync / HideAsync / SetMessage / StartAsync の署名・IProgress の報告口と進捗受け口・カスタム View の登録と DI 糖衣・型指定 show / start と VM factory 登録 (オーバーロード束縛の注意)・LoadingStyle と器メタ属性・中身は MAUI の View だけであること
+description: .NET MAUI (C#) で Loading を使うときの公開名と署名 — 契約と既定エントリ・ShowAsync / HideAsync / SetMessage / StartAsync の署名・処理を始めるスレッドの指定 (LoadingActionThread)・IProgress の報告口と進捗受け口・カスタム View の登録と DI 糖衣・型指定 show / start と VM factory 登録 (オーバーロード束縛の注意)・LoadingStyle と器メタ属性・中身は MAUI の View だけであること
 tags: [maui, loading, api, surface]
-timestamp: 2026-09-08
+timestamp: 2026-09-29
 ---
 
 # MAUI の Loading 公開面
@@ -34,8 +34,8 @@ timestamp: 2026-09-08
 | 型指定 show (VM の型を渡す) | `ShowAsync<TViewModel>(configure, placement)` (configure は `Action<TViewModel>?` と `Func<TViewModel, Task>` の 2 形。省略可) |
 | 閉鎖 | `HideAsync()` |
 | メッセージの差し替え | `SetMessage(message)` (唯一の同期メソッド。待たない) |
-| スコープ形 | `StartAsync(action, message, placement)` / `StartAsync<T>(...)` / `StartAsync(viewModel, action, placement)` / `StartAsync<TViewModel>(viewModel, factory, action, placement)` |
-| 型指定 start | `StartAsync<TViewModel>(action, configure, placement)` / `StartAsync<TViewModel, T>(action, configure, placement)` (action が先頭。configure は同じく 2 形) |
+| スコープ形 | `StartAsync(action, message, placement, actionThread)` / `StartAsync<T>(...)` / `StartAsync(viewModel, action, placement, actionThread)` / `StartAsync<TViewModel>(viewModel, factory, action, placement, actionThread)` |
+| 型指定 start | `StartAsync<TViewModel>(action, configure, placement, actionThread)` / `StartAsync<TViewModel, T>(action, configure, placement, actionThread)` (action が先頭。configure は同じく 2 形) |
 
 **閉鎖の綴りは `HideAsync`** で、他形態のような短い名前ではない (C# の非同期メソッドの命名慣習に従う)。スコープ形は値を返さない形と `Task<T>` を返す形の対で提供する。
 
@@ -47,6 +47,28 @@ var uploaded = await Loading.Instance.StartAsync(async progress =>
     return await UploadAsync(progress);   // progress.Report(0.0〜1.0) で進捗を報告する
 }, message: "アップロード中…");
 ```
+
+## スコープ形の処理が始まるスレッド
+
+処理を始めるスレッドは `public enum LoadingActionThread { Main, Background }` で指定する。10 本の `StartAsync` すべての**最後の引数** (既存の `placement` の後) が `LoadingActionThread actionThread = LoadingActionThread.Main` で、省略すれば UI スレッドで始まる。既定値つきの末尾引数なので、省略した呼び出しのオーバーロード束縛は変わらない。契約 (呼び出し元に関係なく保証すること・「始まる」の定義・保証の範囲) は [Loading のルール](../../core/api/loading-semantics.md) の「スコープ形の処理が始まるスレッド」が正である。
+
+| 値 | 処理が始まるスレッド |
+|---|---|
+| `Main` (既定) | UI スレッド。MAUI の UI スレッドへの移送 (`MainThread`) を通して呼ぶので、中から UI スレッドへ移し直さずに画面の要素へ触れる |
+| `Background` | UI スレッド外 (スレッドプール。`Task.Run` で呼ぶ)。UI に触れない重い処理に使う |
+
+```csharp
+await Loading.Instance.StartAsync(async progress =>
+{
+    await HeavyWorkAsync(progress);   // UI スレッド外で始まる
+}, actionThread: LoadingActionThread.Background);
+```
+
+切り替えは Native ではなく C# 側 (managed) で行う。両 OS の Native 互換面が C# の処理をどのスレッドで呼び戻すかは OS ごとに違うが、C# 側で振り分けるのでその差に左右されず、iOS と Android で同じ保証になる。
+
+指定が効くのは UI スレッドを持つ iOS / Android だけである。iOS / Android の実装を持たない素の .NET (単体テストの `net10.0` など) では UI スレッドも表示先も無いため、指定に関係なく処理を呼び出し元のスレッドでその場で実行する。
+
+保証するのは処理の最初の文を実行するスレッドだけで、`await` の後の実行先は C# の規則に従う。UI スレッドで始まった処理は、既定では `await` の後も UI スレッドの同期コンテキストへ戻るが、`ConfigureAwait(false)` を書くと UI スレッドへは戻らない。その後で画面の要素に触るなら、自分で UI スレッドへ移す。
 
 ## カスタム View の登録
 
@@ -109,14 +131,16 @@ Loading.Instance.Style = Loading.Instance.Style with { DefaultMessage = "処理�
 - **カスタム View への属性・演出の添付はダイアログと同じ添付プロパティ** (`ksd:Dialog.*`) を使う ([MAUI のレイアウト公開面](layout-surface.md))。既定ローディングには添付する View が無いため `Loading.Instance.Options` がその代わりになる
 - **`IsCanceledOnTouchOutside` は Loading では常に無効**で、添付しても設定しても効かない
 - **VM factory 未登録の型指定 show / start は `DialogException.ViewModelFactoryNotRegistered`** で失敗する (View factory 未登録とは別の例外)
-- **`RegisterForLoading` で 1 行登録した View を組み立てられなかった場合は `DialogException.ViewCreationFailed`** で show / start が失敗する (元の失敗は `InnerException`)。包む範囲は [MAUI の DI 連携と登録糖衣](di-registration.md)
+- **`RegisterForLoading` で 1 行登録した View を組み立てられなかった場合は `DialogException.ViewCreationFailed`** で show / start が失敗する (元の失敗は `InnerException`)。包む範囲は [MAUI の DI 連携と登録糖衣](di-registration.md)。下記の場合を除く
 - **fallback resolver は Loading には効かない** — `AddKsDialogs` の fallback は Dialog レジストリの機構で、Loading は明示登録か 1 行登録のみ
 - **レイアウト計算は Native 側**で行う。MAUI の面は属性を無変換で渡すパススルーである
 - **カスタム View 版の演出**は中身への `DialogTransition` 添付で差し替える ([MAUI のトランジション公開面](transition-surface.md))。既定ローディングにはこの口が無い
 
+提示先が無いまま始まった表示では、中身を提示先が現れた時点で作る。そこでの生成の失敗 (`ViewCreationFailed` や利用者の factory の例外) は show / start へは返らず、警告を残して表示だけを諦める。処理はそのまま続く ([Loading のルール](../../core/api/loading-semantics.md) の「提示先が無いまま始まった表示」)。
+
 ## 関連
 
-- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の正)
+- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の記述はこちら)
 - [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) — 型指定 show の順序保証と VM factory 解決 (3 機能共通の契約)
 - [MAUI の DI 連携と登録糖衣](di-registration.md) — サービス登録と 1 行登録の規則
 - [MAUI のレイアウト公開面](layout-surface.md) — `DialogOptions` / `DialogPlacement` と添付プロパティ

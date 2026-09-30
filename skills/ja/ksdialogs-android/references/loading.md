@@ -2,7 +2,7 @@
 
 Loading は処理中の操作をブロックする表示で、`KsLoading` (`Loading.instance` と DI で注入したもののどちらも同じ実体) から呼ぶ。組み込みの既定 Loading をそのまま出すか、自分で書いたコンテンツを ViewModel 型に紐付けて出すかの 2 通りがある。
 
-同時に走る利用はプロセス単位の 1 つの表示へ合流し、コンテンツは最初の開始のものが維持される。Loading では外側タップによるキャンセルは無効のままである。
+同時に走る利用はプロセス単位の 1 つの表示へ合流し、コンテンツは最初の開始のものが維持される。Loading では外側タップによるキャンセルは無効のままである。器は表示先の画面のシステムバーの指定 (アイコンの明暗・バーの表示/非表示) を変えない。
 
 ## `show` と `start` を選ぶ
 
@@ -15,11 +15,11 @@ Loading は処理中の操作をブロックする表示で、`KsLoading` (`Load
 | `show(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null)` | ViewModel の型だけを渡し、登録済みの ViewModel factory が作ったインスタンスを `configure` してから表示する | ViewModel の生成をライブラリに任せ、表示の直前に状態を整えるとき | View factory + ViewModel factory (`registerViewModel`) |
 | `show(viewModel: VM, placement: DialogPlacement? = null, factory: Context.(VM) -> View)` | ViewModel インスタンスと View factory の両方をその場で渡す。レジストリは読まず、変えもしない | 1 回だけ使う View コンテンツ | 不要 |
 | `showCompose(viewModel: VM, placement: DialogPlacement? = null, content: @Composable (VM) -> Unit)` | ViewModel インスタンスと Compose コンテンツの両方をその場で渡す。レジストリは読まず、変えもしない | 1 回だけ使う Compose コンテンツ | 不要 (`jp.kamusoft.ksdialogs.compose` から import) |
-| `start(message: String? = null, placement: DialogPlacement? = null, action: suspend ((Double) -> Unit) -> T)` | 既定 Loading を出したまま `action` を実行し、その戻り値を返す | 表示の開始と終了を処理に合わせるとき | 不要 |
-| `start(viewModel: LoadingViewModel, placement: DialogPlacement? = null, action: suspend ((Double) -> Unit) -> T)` | 登録済みのコンテンツを出したまま `action` を実行する | 同上で、見た目を自分で書くとき | View factory |
-| `start(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null, action: suspend ((Double) -> Unit) -> T)` | 型から作らせた ViewModel のコンテンツを出したまま `action` を実行する | 同上で、ViewModel の生成もライブラリに任せるとき | View factory + ViewModel factory |
-| `start(viewModel: VM, placement: DialogPlacement? = null, factory: Context.(VM) -> View, action: suspend ((Double) -> Unit) -> T)` | ViewModel・View factory・処理をその場で渡す | 1 回だけ使う View コンテンツで処理を包むとき | 不要 |
-| `startCompose(viewModel: VM, placement: DialogPlacement? = null, content: @Composable (VM) -> Unit, action: suspend ((Double) -> Unit) -> T)` | ViewModel・Compose コンテンツ・処理をその場で渡す | 1 回だけ使う Compose コンテンツで処理を包むとき | 不要 (compose artifact) |
+| `start(message: String? = null, placement: DialogPlacement? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | 既定 Loading を出したまま `action` を実行し、その戻り値を返す | 表示の開始と終了を処理に合わせるとき | 不要 |
+| `start(viewModel: LoadingViewModel, placement: DialogPlacement? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | 登録済みのコンテンツを出したまま `action` を実行する | 同上で、見た目を自分で書くとき | View factory |
+| `start(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | 型から作らせた ViewModel のコンテンツを出したまま `action` を実行する | 同上で、ViewModel の生成もライブラリに任せるとき | View factory + ViewModel factory |
+| `start(viewModel: VM, placement: DialogPlacement? = null, factory: Context.(VM) -> View, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | ViewModel・View factory・処理をその場で渡す | 1 回だけ使う View コンテンツで処理を包むとき | 不要 |
+| `startCompose(viewModel: VM, placement: DialogPlacement? = null, content: @Composable (VM) -> Unit, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T)` | ViewModel・Compose コンテンツ・処理をその場で渡す | 1 回だけ使う Compose コンテンツで処理を包むとき | 不要 (compose artifact) |
 | `hide()` | 表示を閉じる。合流数によらず即座に閉じ、走行中の処理には干渉しない | `show` で開いた表示を閉じるとき | — |
 | `setMessage(message: String?)` | 表示中のメッセージを差し替える | 既定 Loading の進み具合を伝えるとき | — |
 
@@ -49,7 +49,7 @@ suspend fun performSynchronization() {}
 
 ## Loading のスコープ内で処理を実行する
 
-`start` を使い、表示の生存期間と suspend 処理を対応させる。報告した進捗は `0.0..1.0` に丸められる。別の利用と表示が合流しても処理は実行され、処理の値または失敗が呼び出し元へ返る。
+`start` を使い、表示の生存期間と suspend 処理を対応させる。処理は、呼び出し元のスレッドに関係なく既定で UI スレッドで始まるので、処理の中から View に直接触れられる。報告した進捗は `0.0..1.0` に丸められる。別の利用と表示が合流しても処理は実行され、処理の値または失敗が呼び出し元へ返る。
 
 ```kotlin
 import jp.kamusoft.ksdialogs.Loading
@@ -64,6 +64,50 @@ suspend fun download(): ByteArray =
 
 suspend fun fetchData(): ByteArray = byteArrayOf()
 ```
+
+## 処理を UI スレッド外で始める
+
+UI に触れない重い処理は、`start` の `actionThread` に `LoadingActionThread.BACKGROUND` を渡して UI スレッド外で始める。既定の `LoadingActionThread.MAIN` のまま重い処理を同期で書くと UI スレッドを塞ぎ、その間は進捗やメッセージの更新が画面に出ない。`actionThread` は `start` と `startCompose` のどの overload にもあり、位置は処理 (末尾の lambda) の直前である。
+
+| 値 | 処理が始まるスレッド |
+|---|---|
+| `LoadingActionThread.MAIN` (既定) | UI スレッド (Main dispatcher)。処理の中から View に直接触れる |
+| `LoadingActionThread.BACKGROUND` | UI スレッド外 (Default dispatcher)。UI に触れない重い処理に使う |
+
+```kotlin
+import android.graphics.Bitmap
+import jp.kamusoft.ksdialogs.Loading
+import jp.kamusoft.ksdialogs.LoadingActionThread
+import java.io.ByteArrayOutputStream
+
+suspend fun compress(bitmap: Bitmap): ByteArray =
+    Loading.instance.start(
+        message = "Compressing",
+        actionThread = LoadingActionThread.BACKGROUND,
+    ) { report ->
+        val output = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)
+        report(1.0)
+        output.toByteArray()
+    }
+```
+
+- 指定が決めるのは処理の最初の文が実行されるスレッドで、処理の中で中断した後の再開先はコルーチンの通常の規則 (処理が動いている dispatcher) に従う
+- 進捗の報告口 (`report`) と `setMessage` はどちらのスレッドからでも呼べ、処理が最後に報告した進捗が終了に追い越されることはない
+- 型指定 `start` の ViewModel factory と `configure` は、この指定に関係なく UI スレッドで実行される
+
+## 表示先が無いまま始めたとき
+
+表示先 (resumed で、かつ描画済みの `Activity`) が無いときに `show` / `start` した Loading は、失敗せずに表示先の出現を待つ。`start` の処理は待たずにそのまま実行され、結果も通常どおり返る。
+
+- 表示先が現れた時点で表示が続いていれば (合流が終わっておらず `hide` もされていなければ)、コンテンツを作って表示する
+- 表示先が現れる前に表示が終われば、何も表示せずに待ちもやめる
+- 処理の終わり際に表示先が現れると、Loading が短い間だけ表示されて閉じる
+- View factory の登録は開始時点で引くので、未登録の ViewModel 型は表示先の有無にかかわらず開始の失敗になり、`start` の処理も実行されない
+- 表示先が現れた時点でコンテンツの生成が失敗した場合は、警告ログを残して表示だけを諦める。開始時点で表示先があった場合と違って呼び出し元へは返らず、処理はそのまま続く
+- 表示前に報告した進捗も、`LoadingProgressReceiver` を実装した ViewModel へ届く
+
+表示中の器が別の画面へ移るのは、載っている画面が破棄されたときと、描画済みの別の表示先が現れたときである。アプリが背面へ下がって戻る間は器は付いたままで、戻った画面の最初のコマから覆いが見えている。
 
 ## 既定 Loading を設定する
 
@@ -271,7 +315,7 @@ Loading.instance.showCompose(InlineComposeLoadingViewModel()) { CircularProgress
 
 表のメッセージは現在の実装が返す値であり、安定した API ではない (変わらないのは例外型と throw される条件であり、文言は予告なく変わりうる)。
 
-どちらの例外も `viewModelTypeName` から対象の ViewModel 型名を読める。たとえば起動時の登録を書き忘れたまま `ProgressLoadingViewModel` で `start` を呼ぶと、`DialogException.ViewFactoryNotRegistered` になる。
+どの例外も `viewModelTypeName` から対象の ViewModel 型名を読める。たとえば起動時の登録を書き忘れたまま `ProgressLoadingViewModel` で `start` を呼ぶと、`DialogException.ViewFactoryNotRegistered` になる。
 
 ```kotlin
 import android.app.Application

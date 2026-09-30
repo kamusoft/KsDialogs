@@ -29,8 +29,8 @@
 | [0023](0023-maui-controls-floor-follows-maui-adr-0004.md) | toolchain 固定境界のうち MAUI 本体の版は maui/ADR-0004 の「workload set 同梱版」に従う (0018 を一部改訂) | accepted | 2026-09-09 |
 | [0024](0024-release-dispatch-serial-publish-spm-tag-before-kmp.md) | release は dispatch 起動・取り消せる順で直列に publish し、SPM tag は KMP の Maven 発行より前に置く (0016 を一部改訂。一部改訂: 0030 — インストール例の書き戻し) | accepted | 2026-09-10 |
 | [0025](0025-default-branch-main.md) | 既定ブランチは main とし、リポジトリの入口が最新リリースの README を指すようにする (0016 を一部改訂) | accepted | 2026-09-10 |
-| [0026](0026-lint-job-includes-release-script-checks.md) | 検証 CI の lint job にリリース用スクリプトの自己テスト・待ちの時間予算の検査・publish の step 順序の検査を加え、11 検査とする (0022 を一部改訂。一部改訂: 0029 — lint job の検査の集合) | proposed | 2026-09-13 |
-| [0027](0027-install-examples-without-pinned-version.md) | インストール例は具体 version を持たず、プレースホルダ `{version}` と最新リリースの案内に委ねる (置換機構を撤去し、GitHub Release は prerelease 印を付けず最新として明示指定する) | proposed | 2026-09-13 |
-| [0028](0028-release-notes-from-main-pull-request-body.md) | Release ノートは `main` 宛て pull request 本文の `## Changes` から組み立て、収集と検査は validate 段で一度だけ行う | proposed | 2026-09-13 |
-| [0029](0029-lint-job-includes-install-example-lint.md) | 検証 CI の lint job にインストール例の契約の検査を加え、12 検査とする (0026 を一部改訂) | proposed | 2026-09-13 |
-| [0030](0030-release-does-not-write-back-install-examples.md) | release は publish の後にインストール例を `develop` へ書き戻さず、publish の順序を 7 段で終える (0024 を一部改訂) | proposed | 2026-09-13 |
+| [0026](0026-lint-job-includes-release-script-checks.md) | 検証 CI の lint job にリリース用スクリプトの自己テスト・待ちの時間予算の検査・publish の step 順序の検査を加え、11 検査とする (0022 を一部改訂。一部改訂: 0029 — lint job の検査の集合) | accepted | 2026-09-13 |
+| [0027](0027-install-examples-without-pinned-version.md) | インストール例は具体 version を持たず、プレースホルダ `{version}` と最新リリースの案内に委ねる (置換機構を撤去し、GitHub Release は prerelease 印を付けず最新として明示指定する) | accepted | 2026-09-13 |
+| [0028](0028-release-notes-from-main-pull-request-body.md) | Release ノートは `main` 宛て pull request 本文の `## Changes` から組み立て、収集と検査は validate 段で一度だけ行う | accepted | 2026-09-13 |
+| [0029](0029-lint-job-includes-install-example-lint.md) | 検証 CI の lint job にインストール例の契約の検査を加え、12 検査とする (0026 を一部改訂) | accepted | 2026-09-13 |
+| [0030](0030-release-does-not-write-back-install-examples.md) | release は publish の後にインストール例を `develop` へ書き戻さず、publish の順序を 7 段で終える (0024 を一部改訂) | accepted | 2026-09-13 |

@@ -26,5 +26,5 @@ timestamp: 2026-09-08
 
 ## 関連
 
-- [検証 CI の範囲と実行条件](verification-ci.md) — lint job が回す同期スクリプトの自己テスト (cross/ADR-0020)
+- [検証 CI の範囲と実行条件](verification-ci.md) — lint job が回す同期スクリプトの自己テスト (cross/ADR-0020) と、`scripts/release/` の自己テスト・時間予算・step 順序の検査 (cross/ADR-0026)
 - cross/ADR-0008 — SwiftPM の配信リポジトリへのスナップショット同期 (この規約が最初に適用されたスクリプトの背景)

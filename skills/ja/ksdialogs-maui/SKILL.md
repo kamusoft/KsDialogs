@@ -18,10 +18,12 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 | やりたいこと | API | レシピ |
 |---|---|---|
 | Dialog を登録して表示する | `IDialogViewModel`、`DialogViewRegistry.Register`、`Dialog.Instance.ShowAsync` | [Dialog](references/dialogs.md) |
+| 画面を待つ Dialog の表示を打ち切る | `ShowAsync` の `CancellationToken`、`OperationCanceledException` | [Dialog](references/dialogs.md) |
 | ViewModel から結果を報告する・型を渡して表示する | `DialogNotifier<TResult>`、`Notifier`、`RegisterViewModel`、型指定 `ShowAsync` | [ViewModel](references/view-models.md) |
 | 大きさ・配置・覆い・外側タップを制御する | `Dialog` の attached property、`DialogOptions`、`DialogPlacement` | [レイアウト](references/layout.md) |
+| 表示中のページを基準に配置する | `DialogLayoutArea.CurrentPage`、`DialogCurrentPage.Provider` | [レイアウト](references/layout.md) |
 | 出現と退出をアニメーションさせる | `DialogTransition`、`DialogTransitionEdge`、`Dialog.SetTransition` | [トランジション](references/transitions.md) |
-| 処理中の操作をブロックする | `Loading.Instance`、`LoadingViewRegistry`、`LoadingStyle`、`ILoadingProgressReceiver` | [Loading](references/loading.md) |
+| 処理中の操作をブロックする | `Loading.Instance`、`LoadingViewRegistry`、`LoadingStyle`、`ILoadingProgressReceiver`、`LoadingActionThread` | [Loading](references/loading.md) |
 | fire-and-forget の通知を表示する | `Toast.Instance`、`ToastViewRegistry`、`ToastStyle` | [Toast](references/toast.md) |
 | MAUI DI で View と ViewModel を配線する | `AddKsDialogs`、`RegisterForDialog`、`RegisterForLoading`、`RegisterForToast` | [DI 登録](references/di-registration.md) |
 
@@ -60,10 +62,10 @@ public static class Notifications
 
 | やりたいこと | 読むレシピ |
 |---|---|
-| 登録、型付き結果、インライン content、多段表示、構成ミスの失敗 | [Dialog](references/dialogs.md) |
+| 登録、型付き結果、インライン content、多段表示、画面を待つ show と打ち切り、構成ミスの失敗 | [Dialog](references/dialogs.md) |
 | `Notifier`、ViewModel factory、表示前 configure、Dialog / Loading / Toast に共通する型指定の表示 | [ViewModel](references/view-models.md) |
-| XAML と code-behind からの添付、配置、margin、比率サイズ、overlay、外側タップキャンセル | [レイアウト](references/layout.md) |
+| XAML と code-behind からの添付、配置、margin、比率サイズ、中身の大きさ、表示中のページ基準、overlay、外側タップキャンセル | [レイアウト](references/layout.md) |
 | preset と非同期 custom hook | [トランジション](references/transitions.md) |
-| 命令形・スコープ形の Loading、進捗、style、custom content | [Loading](references/loading.md) |
-| message、登録、インラインの Toast 経路 | [Toast](references/toast.md) |
+| 命令形・スコープ形の Loading、処理を始めるスレッド、画面が無いときの開始、進捗、style、custom content | [Loading](references/loading.md) |
+| message、登録、インラインの Toast 経路、duration の数え始め、既定の配置と余白 | [Toast](references/toast.md) |
 | 1 行登録、fallback 解決、View の組み立て失敗 | [DI 登録](references/di-registration.md) |

@@ -11,7 +11,7 @@
 | [0005](0005-no-view-reuse-mechanism.md) | View 再利用機構は契約に持ち込まず、show は毎回生成の使い捨てモデルとする | accepted | 2026-08-13 |
 | [0006](0006-multi-display-os-delegation.md) | 多段表示は OS の提示機構への委譲とし、契約は観察可能な意味論のみを規定する | accepted | 2026-08-13 |
 | [0007](0007-layout-spec-not-shared-code.md) | レイアウト計算は観察可能な規則を core 仕様として1本化し、実装は各 OS のレイアウト機構に委ねる | accepted | 2026-08-13 |
-| [0008](0008-layout-attributes-deliberate-deviations.md) | レイアウト属性は原典踏襲を基本とし、実装都合の歪みは仕様の一貫性で意図的に乖離する | accepted | 2026-08-18 |
+| [0008](0008-layout-attributes-deliberate-deviations.md) | レイアウト属性は原典踏襲を基本とし、実装都合の歪みは仕様の一貫性で意図的に乖離する (一部改訂: 0039 — 余白の既定値を全辺 0 に戻す) | accepted | 2026-08-18 |
 | [0009](0009-layout-spec-test-case-table.md) | レイアウト共通仕様テストは共通ケース表を単一の正とし、全量検証は Native 2実装・ラッパーはパススルー検証とする | accepted | 2026-08-18 |
 | [0010](0010-dual-content-view-technology.md) | ダイアログコンテンツは従来 View 系 (Android.View / UIView) と宣言的 UI 系 (Compose / SwiftUI) の両対応を必須とする | accepted | 2026-08-17 |
 | [0011](0011-dual-content-registration-overloads.md) | 両対応の登録 API は技術別オーバーロードを公開面とし、内部は単一の型消去表現に収束する | accepted | 2026-08-17 |
@@ -33,10 +33,19 @@
 | [0027](0027-loading-process-coordinator-single-source.md) | プロセス内 Loading coordinator を状態の唯一の正とし、全入口が委譲する | accepted | 2026-08-25 |
 | [0028](0028-toast-default-and-custom-view.md) | Toast は既定 View とカスタム View の両対応とし、メッセージだけで出せる入口を設ける | accepted | 2026-08-27 |
 | [0029](0029-toast-registry-and-inline-factory.md) | カスタム Toast は型指定レジストリとインライン factory の両対応とし、レジストリは共有層からの呼び出し経路を担う | accepted | 2026-08-27 |
-| [0030](0030-toast-container-implementation-form.md) | Toast の器は Loading の器の非モーダル派生とし、1 Toast 1器・重なりは追加順・Loading が常に前面とする | accepted | 2026-08-27 |
+| [0030](0030-toast-container-implementation-form.md) | Toast の器は Loading の器の非モーダル派生とし、1 Toast 1器・重なりは追加順・Loading が常に前面とする (一部改訂: 0038 — 「器はページ構造を知らない」に Dialog の基準領域だけ例外) | accepted | 2026-08-27 |
 | [0031](0031-toast-non-interactive-fire-and-forget.md) | Toast は完全非対話とし、時間経過でのみ消える fire-and-forget の表示とする | accepted | 2026-08-27 |
-| [0032](0032-toast-default-view-and-placement.md) | Toast の既定 View は OS 慣習寄せのピルとし、既定配置は下部中央 + ボトムバー回避オフセット、styling とアプリ既定配置は ToastStyle で受ける | accepted | 2026-08-27 |
-| [0033](0033-user-factory-failure-boundary.md) | 利用者 View factory の失敗は言語境界の内側で捕捉し、各機能の既存失敗契約へ合流させる (一部改訂: 0036 — MAUI Android の Dialog / Loading も預かり口を通す) | accepted | 2026-08-28 |
+| [0032](0032-toast-default-view-and-placement.md) | Toast の既定 View は OS 慣習寄せのピルとし、既定配置は下部中央 + ボトムバー回避オフセット、styling とアプリ既定配置は ToastStyle で受ける (一部改訂: 0038 — 「器はページ構造を知らない」に Dialog の基準領域だけ例外) | accepted | 2026-08-27 |
+| [0033](0033-user-factory-failure-boundary.md) | 利用者 View factory の失敗は言語境界の内側で捕捉し、各機能の既存失敗契約へ合流させる (一部改訂: 0036 — MAUI Android の Dialog / Loading も預かり口を通す / 一部改訂: 0042 — 提示先が無いまま始まった Loading の生成失敗は表示だけを諦める) | accepted | 2026-08-28 |
 | [0034](0034-contract-type-name-singular-feature.md) | 契約の型名は「Ks + 機能名 (単数)」で揃え、Dialog の契約は KsDialogs から KsDialog へ改名する | accepted | 2026-09-06 |
 | [0035](0035-loading-toast-typed-show-vm-factory.md) | Loading / Toast のレジストリに VM factory スロットを追加し、型指定 show を Dialog と同型で提供する | accepted | 2026-09-06 |
 | [0036](0036-maui-android-content-supply-symmetry.md) | MAUI Android の Dialog / Loading の中身供給も managed 側の預かり口を通し、3 面を対称化する (0033 の amends — 却下案「Android は配線しない」を置き換え) | accepted | 2026-09-08 |
+| [0037](0037-loading-action-starts-on-ui-thread.md) | Loading のスコープ形の action は既定で UI スレッドで始め、UI スレッド外で始める指定を入口に持たせる | accepted | 2026-09-25 |
+| [0038](0038-current-page-layout-area-via-registered-provider.md) | 基準領域に「表示中のページ」を足し、器はページを自分で探さずアプリが登録した現在ページ provider から矩形を得る | accepted | 2026-09-25 |
+| [0039](0039-dialog-margin-default-zero.md) | 余白の契約既定値を原典と同じ 0 に戻し、既定 Toast のピルだけは従来の余白を自分で持つ (0008 を一部改訂) | accepted | 2026-09-27 |
+| [0040](0040-containers-keep-host-system-bar-settings.md) | Dialog / Loading / Toast の器は、提示先の画面のシステムバーの指定を変えない | accepted | 2026-09-27 |
+| [0041](0041-wait-for-host-appearance.md) | 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる (一部改訂: 0043 — Toast の寿命を、前面で提示先を待つ間に受け付けた表示に限って置き換え) | accepted | 2026-09-27 |
+| [0042](0042-content-created-after-host-secured.md) | Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める (0033 の amends — Loading の失敗の合流先を、提示先が無いまま始まった表示に限って置き換え) | accepted | 2026-09-27 |
+| [0043](0043-toast-duration-from-visible-when-accepted-in-foreground-without-host.md) | アプリが前面にいるのに提示先が無い間に受け付けた Toast は、画面が利用者に見えた時点から表示時間を数える (0041 の amends — Toast の寿命を、前面で提示先を待つ間に受け付けた表示に限って置き換え) | accepted | 2026-09-29 |
+| [0044](0044-android-host-is-drawn-resumed-activity.md) | Android の提示先は resumed で、かつ描画された Activity とし、Dialog・Loading・Toast の 3 機能で揃える (載っている Loading・Toast の器は、Activity の破棄か別の提示先の出現まで外さない) | accepted | 2026-09-29 |
+| [0045](0045-ks-prefix-limited-to-view-attachments.md) | 接頭辞 ks は OS の View 型に後付けする属性とその SwiftUI の対に限る | accepted | 2026-09-30 |

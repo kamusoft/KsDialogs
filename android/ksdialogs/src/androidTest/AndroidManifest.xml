@@ -7,6 +7,12 @@
             android:name="jp.kamusoft.ksdialogs.compose.support.ComposeDialogTestActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+
+        <!-- Compose の modifier で表示中のページを名乗らせた画面。テストからのみ起動する -->
+        <activity
+            android:name="jp.kamusoft.ksdialogs.compose.support.CurrentPageComposeTestActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
 
 </manifest>

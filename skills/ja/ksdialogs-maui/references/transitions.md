@@ -136,7 +136,7 @@ constructor は `DialogTransition(presentation, dismissal, overlayDuration)` で
 - どちらの hook も `Func<VisualElement, Task>` で、layout 済みの content を載せた MAUI View を受け取り、UI thread 上で開始される
 - transition が保持する値は `DialogTransition.Presentation`、`DialogTransition.Dismissal`、`DialogTransition.OverlayDuration` から読める
 - hook の fault や cancellation はログへ吸収され、Dialog の結果には伝播しない
-- ライブラリは timeout を設けず hook の完了を待つため、完了しない Task は器の撤去と結果配送を止める
+- ライブラリは timeout を設けず hook の完了を待つため、完了しない Task は器の撤去と結果配送を止める。そこから抜け出す経路は、OS 発の器の消失と、`ShowAsync` に渡した `CancellationToken` による打ち切りだけである ([Dialog](dialogs.md))
 
 添付の仕方は preset と同じで、content View の code-behind から `Dialog.SetTransition` に渡す。
 

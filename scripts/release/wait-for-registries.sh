@@ -1,6 +1,9 @@
 #!/bin/bash
 # 公開レジストリへの反映待ち。
 #
+# 待ちの上限の既定値は、この job の打ち切りとの突き合わせのために
+# scripts/release/check-time-budget.py が読む (cross/ADR-0026)。
+#
 # 使い方:
 #   scripts/release/wait-for-registries.sh <version>
 #   scripts/release/wait-for-registries.sh --selftest

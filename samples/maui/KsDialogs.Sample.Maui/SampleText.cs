@@ -181,8 +181,39 @@ public static class SampleText
     /// <summary>垂直方向の移動量を入れる行の項目名。</summary>
     public const string OffsetYLabel = "OffsetY";
 
-    /// <summary>基準領域に可視領域を使うかを切り替える行の項目名。</summary>
-    public const string UseVisibleAreaLabel = "Use visible area";
+    /// <summary>基準領域を選ぶ行の項目名。</summary>
+    public const string LayoutAreaLabel = "Layout area";
+
+    /// <summary>基準領域の選択肢 (ウィンドウ全体)。</summary>
+    public const string LayoutAreaWindow = "Window";
+
+    /// <summary>基準領域の選択肢 (可視領域)。</summary>
+    public const string LayoutAreaVisibleArea = "Visible area";
+
+    /// <summary>基準領域の選択肢 (表示中のページ)。</summary>
+    public const string LayoutAreaCurrentPage = "Current page";
+
+    /// <summary>余白を選ぶ行の項目名。</summary>
+    public const string MarginLabel = "Margin";
+
+    /// <summary>余白の選択肢 (0 — 契約の既定値)。</summary>
+    public const string Margin0 = "0";
+
+    /// <summary>余白の選択肢 (24)。</summary>
+    public const string Margin24 = "24";
+
+    /// <summary>余白の選択肢 (48)。</summary>
+    public const string Margin48 = "48";
+
+    /// <summary>属性調整パネルのタブ名。</summary>
+    public const string PanelTab = "Panel";
+
+    /// <summary>説明文だけを置くタブのタブ名。</summary>
+    public const string InfoTab = "Info";
+
+    /// <summary>説明文だけを置くタブの本文。</summary>
+    public const string InfoTabBody =
+        "このタブにはタイトルバーがありません。Current page を選ぶと、ダイアログはタブバーの内側 (このページの領域) を基準に置かれます。";
 
     /// <summary>属性調整パネルの表示操作。</summary>
     public const string ShowAction = "Show";
@@ -201,6 +232,9 @@ public static class SampleText
 
     /// <summary>ローディングの処理が終わったときの結果表示。結果値を持たないので書式ではなく固定の文言にする。</summary>
     public const string LoadingCompletedResult = "結果: 完了";
+
+    /// <summary>ローディングの処理が始まったときの結果表示。処理の中から直接書き込む。</summary>
+    public const string LoadingProcessingResult = "結果: 処理中";
 
     /// <summary>演出の時間の表示 (ミリ秒)。</summary>
     /// <param name="milliseconds">片道の時間。</param>

@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using KsDialogs.Bridge;
-using Microsoft.Maui;
 using Microsoft.Maui.ApplicationModel;
 
 namespace KsDialogs;
@@ -16,26 +15,36 @@ namespace KsDialogs;
 /// </remarks>
 internal sealed class PlatformDialogGateway : IDialogGateway
 {
+    /// <summary>基準領域「表示中のページ」のページを Native 実装へ教える口を、最初の表示より前に登録しておく。</summary>
+    public PlatformDialogGateway() => PlatformCurrentPage.EnsureInstalled();
+
     /// <inheritdoc/>
     public async Task<DialogOutcome> PresentAsync(DialogPresentationRequest request)
     {
         DialogPresentationCompletion completion = new(request.ResultChannel);
         // 中身を作れなかった失敗はこの提示 1 回分の預かり口に残り、閉鎖の通知で呼び出し元へ返る
         BridgeContentFailure contentFailure = new();
+        using DialogCallerCancellation cancellation = new(request.CancellationToken);
 
-        // 提示先の解決は画面の状態を読むため UI スレッドで行う。show 自体は任意のスレッドから呼べる
-        MauiDialogPresentation presentation = await MainThread.InvokeOnMainThreadAsync(() =>
+        // 互換面は UI スレッドから呼ぶ。show 自体は任意のスレッドから呼べる。
+        // 提示先の有無はここでは判定しない。提示先が無ければ互換面の先 (Native) が出現を待ち、
+        // MAUI の画面の文脈はその後に呼ばれる中身の供給の中で、その時点の提示先から解決する
+        MauiDialogPresentation? presentation = await MainThread.InvokeOnMainThreadAsync(() =>
+            cancellation.Present(
+                () => MauiDialogBridge.Shared!.Present(
+                    new ContentProvider(request, contentFailure),
+                    new ClosureListener(completion, contentFailure)),
+                handle => handle.Cancel())).ConfigureAwait(false);
+        if (presentation is null)
         {
-            // platform view 化に要る文脈が取れない時点で提示先が無いため、View を作らずに失敗させる
-            IMauiContext mauiContext = PlatformDialogContent.ResolveMauiContext()
-                ?? throw new DialogException.PresentationHostUnavailable();
+            // 互換面を呼ぶ前に打ち切られた。何も表示せずに cancelled で終える
+            completion.Settle(DialogOutcome.Cancelled.Instance);
+            completion.Deliver();
+            return await completion.Delivered.ConfigureAwait(false);
+        }
 
-            return MauiDialogBridge.Shared!.Present(
-                new ContentProvider(request, mauiContext, contentFailure),
-                new ClosureListener(completion, contentFailure));
-        }).ConfigureAwait(false);
-
-        // 結果を確定した show が、自分の出した 1 枚だけを閉じる
+        // 結果を確定した show が、自分の出した 1 枚だけを閉じる。中身を作る前に確定した場合は、
+        // 中身を作らずに提示そのものが止まる
         _ = request.ResultChannel.Result.ContinueWith(
             _ => presentation.Dismiss(),
             TaskContinuationOptions.ExecuteSynchronously);
@@ -52,17 +61,15 @@ internal sealed class PlatformDialogGateway : IDialogGateway
     /// 元の失敗は預かり口に残り、その通知を受けたときに呼び出し元へそのまま返る (core/ADR-0033・core/ADR-0036)。
     /// </remarks>
     /// <param name="request">その show が提示する内容。</param>
-    /// <param name="mauiContext">platform view 化に使う文脈。</param>
     /// <param name="contentFailure">中身を作れなかった失敗の預かり口。</param>
     private sealed class ContentProvider(
         DialogPresentationRequest request,
-        IMauiContext mauiContext,
         BridgeContentFailure contentFailure)
         : Java.Lang.Object, IMauiDialogContentProvider
     {
         public MauiDialogContent? CreateContent() =>
             BridgeContentSupply.CreateOrFail(
-                () => PlatformDialogContent.Create(request.CreateContent(), mauiContext),
+                () => PlatformDialogContent.CreateInPresentationContext(request.CreateContent),
                 contentFailure);
     }
 
@@ -79,6 +86,7 @@ internal sealed class PlatformDialogGateway : IDialogGateway
         BridgeContentFailure contentFailure)
         : Java.Lang.Object, IMauiDialogClosureListener
     {
+        // 利用者の操作か、呼び出し元の打ち切りで閉じた
         public void OnCancelled()
         {
             completion.Settle(DialogOutcome.Cancelled.Instance);
@@ -87,9 +95,6 @@ internal sealed class PlatformDialogGateway : IDialogGateway
 
         // 呼び出し側からの閉鎖要求。結果はその時点で確定済みで、この通知が撤去済みの合図になる
         public void OnDismissed() => completion.Deliver();
-
-        public void OnPresentationHostUnavailable(string? message) =>
-            completion.Fail(new DialogException.PresentationHostUnavailable());
 
         public void OnFailed(string? message) =>
             completion.Fail(contentFailure.Cause ?? new InvalidOperationException(

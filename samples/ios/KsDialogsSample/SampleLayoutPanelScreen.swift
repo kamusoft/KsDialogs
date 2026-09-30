@@ -1,6 +1,10 @@
 import SwiftUI
 
 /// レイアウト属性を調整してからダイアログを表示する画面。
+///
+/// 下部のタブバーで、ナビゲーションバーを持つパネルのタブと、タイトルバーを持たない説明のタブを切り替える。
+/// 基準領域「表示中のページ」がバーを除いた領域になることを 2 つのタブで見比べられるよう、
+/// 各タブの中身の枠 (バーの内側) を表示中のページとして名乗らせる。
 struct SampleLayoutPanelScreen: View {
     /// 確定した結果をメニュー画面へ渡す。
     let onResult: (String) -> Void
@@ -8,58 +12,33 @@ struct SampleLayoutPanelScreen: View {
     let onClose: () -> Void
 
     @State private var model = SampleLayoutPanelModel()
+    @State private var selectedTab = SampleLayoutPanelTab.panel
 
     var body: some View {
-        VStack(spacing: 0) {
-            SampleLayoutPanelHeader(
-                onBack: onClose,
-                onShow: { Task { await showLayoutDialog() } }
-            )
-            SampleDivider()
-
-            SampleSettingRow(title: SampleText.horizontalLabel) {
-                SampleAlignmentSegments(
-                    axisLabel: SampleText.horizontalLabel,
-                    selection: $model.horizontalAlignment
-                )
+        TabView(selection: $selectedTab) {
+            NavigationStack {
+                SampleLayoutPanelForm(model: model)
+                    .markAsDialogCurrentPage()
+                    .background { SampleTheme.surface.ignoresSafeArea() }
+                    .navigationTitle(SampleText.layoutDialogItem)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        SampleLayoutPanelToolbar(
+                            onBack: onClose,
+                            onShow: { Task { await showLayoutDialog() } }
+                        )
+                    }
             }
-            SampleDivider()
+            .tabItem { Label(SampleText.panelTab, systemImage: "list.bullet") }
+            .tag(SampleLayoutPanelTab.panel)
 
-            SampleSettingRow(title: SampleText.verticalLabel) {
-                SampleAlignmentSegments(
-                    axisLabel: SampleText.verticalLabel,
-                    selection: $model.verticalAlignment
-                )
-            }
-            SampleDivider()
-
-            SampleSettingRow(title: SampleText.offsetXLabel) {
-                SampleOffsetField(label: SampleText.offsetXLabel, text: $model.offsetX)
-            }
-            SampleDivider()
-
-            SampleSettingRow(title: SampleText.offsetYLabel) {
-                SampleOffsetField(label: SampleText.offsetYLabel, text: $model.offsetY)
-            }
-            SampleDivider()
-
-            SampleSettingRow(title: SampleText.useVisibleAreaLabel) {
-                Toggle("", isOn: $model.usesVisibleArea)
-                    .labelsHidden()
-                    .tint(SampleTheme.primary)
-                    // 行の項目名は別の要素なので、トグル自身にも読み上げ名を与える
-                    .accessibilityLabel(SampleText.useVisibleAreaLabel)
-            }
-            SampleDivider()
-
-            if let lastResult = model.lastResult {
-                SampleResultArea(result: lastResult)
-                    .background(SampleTheme.surfaceVariant)
-            }
-
-            Spacer(minLength: 0)
+            SampleLayoutInfoPage(onShow: { Task { await showLayoutDialog() } })
+                .markAsDialogCurrentPage()
+                .background { SampleTheme.surface.ignoresSafeArea() }
+                .tabItem { Label(SampleText.infoTab, systemImage: "info.circle") }
+                .tag(SampleLayoutPanelTab.info)
         }
-        .background { SampleTheme.surface.ignoresSafeArea() }
+        .tint(SampleTheme.primary)
     }
 
     private func showLayoutDialog() async {

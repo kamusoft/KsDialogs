@@ -5,5 +5,8 @@
 同じ物を使うため、どちらのモジュールにも属さないここに置き、双方の androidTest ソースセットへ
 ディレクトリごと足している。
 
+状態遷移の落ち着き待ちと観測履歴 (`InstrumentedStateSettling` / `StateHistory`) も、両モジュールの
+androidTest が同じ物を使うためここに置く。
+
 ここに置くのは、ライブラリの公開 API だけで書ける補助に限る。モジュール内部 (internal) に触れる補助は
 そのモジュールの androidTest 側に置く。

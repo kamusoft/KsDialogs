@@ -13,8 +13,8 @@ class DialogAttributeDefaultsTests {
         /** 契約が定める覆いの既定色 (黒の 40% 不透明)。 */
         const val DEFAULT_OVERLAY_COLOR = 0x66000000
 
-        /** 契約が定める余白の既定値 (dp)。 */
-        const val DEFAULT_MARGIN_DP = 24.0
+        /** 契約が定める余白の既定値 (dp)。全辺 0 (core/ADR-0039)。 */
+        const val DEFAULT_MARGIN_DP = 0.0
     }
 
     @Test
@@ -82,7 +82,7 @@ class DialogAttributeDefaultsTests {
     }
 
     @Test
-    fun `余白は辺ごとに 負が 0 へ 非有限値が既定値へ丸められる`() {
+    fun `余白は辺ごとに 負と非有限値が 0 へ丸められる`() {
         val layout = DialogLayout(
             options = DialogOptions(
                 dialogMargin = DialogEdgeInsets(
@@ -94,7 +94,8 @@ class DialogAttributeDefaultsTests {
             ),
         )
 
-        assertEquals(DialogEdgeInsets(top = 0.0, left = DEFAULT_MARGIN_DP, bottom = DEFAULT_MARGIN_DP, right = 8.0), layout.dialogMargin)
+        // 非有限値の辺は既定値へ戻り、既定値は全辺 0 なので負の辺と同じく 0 になる
+        assertEquals(DialogEdgeInsets(top = 0.0, left = 0.0, bottom = 0.0, right = 8.0), layout.dialogMargin)
     }
 
     /** 比率だけを与えたときの実効値。 */

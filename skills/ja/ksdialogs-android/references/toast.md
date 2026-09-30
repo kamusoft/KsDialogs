@@ -2,7 +2,7 @@
 
 Toast は結果を返さない fire-and-forget の通知で、`KsToast` (`Toast.instance` と DI で注入したもののどちらも同じ実体) から呼ぶ。組み込みのメッセージ Toast をそのまま出すか、自分で書いたコンテンツを ViewModel 型に紐付けて出すかの 2 通りがある。
 
-受理された各表示は指定された duration と placement、自身の timer を持ち、他の Toast と重ねられる。Toast はタッチを奪わず、覆いの色や外側タップの受け口も持たない。Loading と同時に見えるときは Loading が前面に残る。
+受理された各表示は指定された duration と placement、自身の timer を持ち、他の Toast と重ねられる。Toast はタッチを奪わず、覆いの色や外側タップの受け口も持たない。Loading と同時に見えるときは Loading が前面に残る。器は表示先の画面のシステムバーの指定 (アイコンの明暗・バーの表示/非表示) を変えない。
 
 ## `show` を選ぶ
 
@@ -24,6 +24,8 @@ Toast は結果も `hide` も持たない。表示は duration の経過で自�
 
 `durationMs` はミリ秒で、省略するか 0 以下を渡すと `ToastStyle.defaultDuration` を使い、それも 0 以下なら `ToastStyle.BUILTIN_DEFAULT_DURATION` (1500) へ丸める (0 以下を渡した場合と `defaultDuration` が 0 以下の場合は警告ログを残す。省略した場合は残さない)。placement を省略するとアプリ既定、さらに無ければライブラリ既定 (可視領域の下部中央から上方向へ論理単位 80) に配置される。
 
+組み込みのメッセージ Toast は各辺 24 の余白 (`dialogMargin`) を自分のコンテンツに持ち、どの配置で置いてもこの余白が効く。ライブラリ既定の配置では下端が可視領域の下端から 104 (余白 24 + 移動量 80) の位置に出て、長いメッセージは左右の端から 24 内側で折り返す。この余白を変える口は無い。自分で書いたコンテンツの余白は既定で 0 で、Dialog と同じくコンテンツへの添付で変えられる ([レイアウト](layout.md))。
+
 ```kotlin
 import jp.kamusoft.ksdialogs.DialogAlignment
 import jp.kamusoft.ksdialogs.DialogPlacement
@@ -40,6 +42,23 @@ fun notifySaved() {
     )
 }
 ```
+
+## duration を数え始める時点
+
+duration は単調時計で実時間として消費され、アプリが背面にいる間も進む。いつから数えるかは、表示の開始処理 (受理順に UI スレッドで行う手番) の時点の状態で決まる。
+
+| 開始処理の時点の状態 | 数え始め |
+|---|---|
+| 表示先 (resumed で、かつ描画済みの `Activity`) がある | 受理した時点 |
+| アプリが背面にいる | 受理した時点 |
+| アプリが前面にいるのに表示先が無い (起動直後の画面の描画前・画面の切り替え中・システムの許可ダイアログの表示中など) | 表示先に載った時点。載る前にアプリが背面へ下がったら、下がった時点 |
+
+- 背面で受け付けた Toast は、表示先が現れないまま duration が満了すると、表示されずに破棄される (エラーにはならない)。期限を過ぎた表示は、その後に表示先が現れても出ない
+- 前面で表示先を待っている Toast は、表示先に載るか背面へ下がるまで期限が決まらない。起動直後や割り込みの最中に出した Toast が、利用者に見えないまま duration を使い切らないためである
+- 一度決まった期限は、Activity の作り直し・別の画面への載せ替え・背面からの復帰をまたいでも巻き戻らない
+- 起動直後は画面の描画が起動画面の退場より先に来るので、退場の演出の分だけ起動画面の下で数え、見えている時間はその分 duration より短い
+
+表示中の器が別の画面へ移るのは、載っている画面が破棄されたときと、描画済みの別の表示先が現れたときである。アプリが背面へ下がって戻る間は器は付いたままで、戻った画面の最初のコマから見えている。
 
 ## Toast の既定値を設定する
 
@@ -169,7 +188,7 @@ fun notifySynchronized() {
 }
 ```
 
-Android では ViewModel の生成も `configure` も、コンテンツの生成と同じく提示先 (resumed な Activity) を確保してから走る。提示先が現れないまま duration が満了した表示では、どちらも呼ばれないまま破棄される。
+Android では ViewModel の生成も `configure` も、コンテンツの生成と同じく表示先 (resumed で、かつ描画済みの `Activity`) を確保してから走る。表示先が現れないまま duration が満了した表示では、どちらも呼ばれないまま破棄される。
 
 ## 登録せずにカスタムコンテンツを表示する
 
@@ -228,7 +247,7 @@ fun notifyInlineCompose() {
 
 表のメッセージは現在の実装が返す値であり、安定した API ではない (変わらないのは例外型と throw される条件であり、文言は予告なく変わりうる)。
 
-どちらの例外も `viewModelTypeName` から対象の ViewModel 型名を読める。たとえば起動時の登録を書き忘れたまま `StatusToastViewModel` を show すると、`DialogException.ViewFactoryNotRegistered` になる。
+どの例外も `viewModelTypeName` から対象の ViewModel 型名を読める。たとえば起動時の登録を書き忘れたまま `StatusToastViewModel` を show すると、`DialogException.ViewFactoryNotRegistered` になる。
 
 ```kotlin
 import android.app.Application

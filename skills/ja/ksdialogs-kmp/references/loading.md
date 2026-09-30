@@ -2,7 +2,7 @@
 
 Loading は処理の間だけ画面全体の操作をブロックする表示で、プロセス全体で 1 つしか出ない。同時に使われた分は 1 つの表示へ合流し、各処理はいずれも実行される。呼び出しは共有コード (`commonMain`) に書き、内蔵の見た目をそのまま使うか、各 host に登録した content を使う。
 
-Loading はユーザー操作では閉じない。外側タップは閉じる契機にならず、背後の画面へも届かない。処理を中断できるようにしたい場合は、キャンセル操作を持つ Dialog を使う ([Dialog](dialogs.md))。Loading はまた、起動順によらずどの Dialog よりも、どの Toast よりも前面に出る。
+Loading はユーザー操作では閉じない。外側タップは閉じる契機にならず、背後の画面へも届かない。処理を中断できるようにしたい場合は、キャンセル操作を持つ Dialog を使う ([Dialog](dialogs.md))。Loading はまた、起動順によらずどの Dialog よりも、どの Toast よりも前面に出る。表示中も、提示先の画面のシステムバーの指定 (アイコンの明暗・表示/非表示) は変えない。
 
 ## `start` と `show` を選ぶ
 
@@ -10,16 +10,16 @@ Loading はユーザー操作では閉じない。外側タップは閉じる契
 
 | シグネチャ | 何をする | いつ選ぶ | 必要な登録 |
 |---|---|---|---|
-| `suspend fun <T> start(message: String? = null, placement: DialogPlacement? = null, action: suspend ((Double) -> Unit) -> T): T` | 内蔵 Loading を出したまま処理を実行し、戻り値を返す | 処理の範囲がそのまま表示の範囲になるとき | 不要 |
-| `suspend fun <T> start(viewModel: LoadingViewModel, placement: DialogPlacement? = null, action: suspend ((Double) -> Unit) -> T): T` | 登録済みの content を出したまま処理を実行する | 同上で、見た目を自分で作るとき | その ViewModel class の content |
-| `suspend fun <VM : LoadingViewModel, T> start(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null, action: suspend ((Double) -> Unit) -> T): T` | 登録済みの ViewModel factory で instance を作り、`configure` の完了後に上と同じことをする | 同上で、組み立てをライブラリに任せるとき | 上に加えて共有コードの ViewModel factory |
+| `suspend fun <T> start(message: String? = null, placement: DialogPlacement? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T): T` | 内蔵 Loading を出したまま処理を実行し、戻り値を返す | 処理の範囲がそのまま表示の範囲になるとき | 不要 |
+| `suspend fun <T> start(viewModel: LoadingViewModel, placement: DialogPlacement? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T): T` | 登録済みの content を出したまま処理を実行する | 同上で、見た目を自分で作るとき | その ViewModel class の content |
+| `suspend fun <VM : LoadingViewModel, T> start(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null, actionThread: LoadingActionThread = LoadingActionThread.MAIN, action: suspend ((Double) -> Unit) -> T): T` | 登録済みの ViewModel factory で instance を作り、`configure` の完了後に上と同じことをする | 同上で、組み立てをライブラリに任せるとき | 上に加えて共有コードの ViewModel factory |
 | `suspend fun show(message: String? = null, placement: DialogPlacement? = null)` | 内蔵 Loading を出し、合流 1 件を開始する | 開始と終了が別の場所にあるとき | 不要 |
 | `suspend fun show(viewModel: LoadingViewModel, placement: DialogPlacement? = null)` | 登録済みの content を出し、合流 1 件を開始する | 同上で、見た目を自分で作るとき | その ViewModel class の content |
 | `suspend fun <VM : LoadingViewModel> show(viewModelClass: KClass<VM>, placement: DialogPlacement? = null, configure: (suspend (VM) -> Unit)? = null)` | 登録済みの ViewModel factory で instance を作り、`configure` の完了後に上と同じことをする | 同上で、組み立てをライブラリに任せるとき | 上に加えて共有コードの ViewModel factory |
 | `suspend fun setMessage(message: String?)` | 表示中の内蔵 Loading の文言を差し替える | 処理の途中で状況を伝えるとき | 不要 |
 | `suspend fun hide()` | 表示を閉じる | `show` で開始した表示を終えるとき | 不要 |
 
-`start` に対応する終了は無い — 処理の完了が終了である。`show` に対応する終了は `hide` だけで、合流数によらず即座に閉じる。`message` を省略すると host 側で設定された既定メッセージになり、`placement` を省略すると契約の既定値になる ([レイアウト](layout.md))。class を渡す形は共有コードに登録した ViewModel factory が instance を作るもので、共有 Kotlin コード専用であり Swift からは見えない ([ViewModel](view-models.md))。Dialog と Toast の入口は [Dialog](dialogs.md) と [Toast](toast.md) にそれぞれの選択表がある。
+`start` に対応する終了は無い — 処理の完了が終了である。`actionThread` は処理を始めるスレッドで、省略すると UI スレッドになる (後述の「処理を始めるスレッドを選ぶ」)。`show` に対応する終了は `hide` だけで、合流数によらず即座に閉じる。`message` を省略すると host 側で設定された既定メッセージになり、`placement` を省略すると契約の既定値になる ([レイアウト](layout.md))。class を渡す形は共有コードに登録した ViewModel factory が instance を作るもので、共有 Kotlin コード専用であり Swift からは見えない ([ViewModel](view-models.md))。Dialog と Toast の入口は [Dialog](dialogs.md) と [Toast](toast.md) にそれぞれの選択表がある。
 
 ## 処理の間だけ表示する
 
@@ -47,7 +47,42 @@ class ReportDownloader(
 }
 ```
 
-進捗の報告口は `(Double) -> Unit` の関数で、任意のスレッドから呼べる。`0`〜`1` の範囲外は丸められ、最新の報告が勝ち、逐次列を受け取る API は無い。表示できる画面が無い場合、表示は行われないが処理は実行され、`start` は通常どおり値を返す。
+進捗の報告口は `(Double) -> Unit` の関数で、処理がどちらのスレッドで動いていても呼べる。`0`〜`1` の範囲外は丸められ、最新の報告が勝ち、逐次列を受け取る API は無い。処理が最後に発行した報告は、処理の終了に追い越されない。
+
+表示できる画面 (提示先) がまだ無い場合も、処理はそのまま実行され、`start` は通常どおり値を返す。表示は提示先が現れるのを待ち、そのとき表示が続いていれば入りの演出から出る。現れる前に表示が終われば何も出さない。処理の終わり際に提示先が現れると、Loading が短い間だけ出て閉じる。
+
+## 処理を始めるスレッドを選ぶ
+
+スコープ形の処理は、呼び出し元のスレッドやコルーチン文脈に関係なく、`actionThread` で指定したスレッドで始まる。
+
+| 値 | 処理が始まるスレッド | いつ選ぶか |
+|---|---|---|
+| `LoadingActionThread.MAIN` (既定) | UI スレッド | 処理の中から UI に触れるとき |
+| `LoadingActionThread.BACKGROUND` | UI スレッド外 | UI に触れない重い処理。UI スレッドで同期の重い処理を走らせると、止まっている間は進捗やメッセージの更新も画面に出ない |
+
+「始まる」は処理の最初の文が実行されるスレッドを指す。処理の中で中断した後の再開先は、コルーチンの通常の規則 (処理が動いている dispatcher) に従う。class を渡すスコープ形でも、ViewModel factory と `configure` はこの指定に関係なく呼び出し元の文脈で走る。
+
+```kotlin
+package com.example.shared
+
+import jp.kamusoft.ksdialogs.kmp.KsLoading
+import jp.kamusoft.ksdialogs.kmp.Loading
+import jp.kamusoft.ksdialogs.kmp.LoadingActionThread
+import kotlin.coroutines.cancellation.CancellationException
+
+class ThumbnailBuilder(private val loading: KsLoading = Loading.instance) {
+    @Throws(CancellationException::class)
+    suspend fun buildAll(images: List<ByteArray>): List<ByteArray> =
+        loading.start(message = "Building", actionThread = LoadingActionThread.BACKGROUND) { report ->
+            images.mapIndexed { index, image ->
+                report((index + 1).toDouble() / images.size)
+                image.copyOf(image.size / 2)
+            }
+        }
+}
+```
+
+Swift から `start` を直接呼ぶときは `actionThread` を明示で渡す。Kotlin の既定値つき引数は Swift へ書き出すと既定値が消えるためである。
 
 ## 開始と終了を自分で書く
 
@@ -174,7 +209,9 @@ loading.start(
 
 ViewModel factory と `configure` が投げた例外は `DialogException` に包まれず、そのまま呼び出し元へ伝わる。class を渡すスコープ形では `action` も実行されない。
 
-未登録の class は処理を始める前に `DialogException` で失敗するので、表示も処理も行われない。合流に加わろうとした呼び出しも同じで、先に表示されている Loading は影響を受けない。iOS ではこのほかに、登録済み factory がその ViewModel を受け取れないときの `The registered View factory cannot accept ViewModel type {TypeName}.` と、host 側から結果もエラーも返らなかったときの `Failed to show the Loading.` がメッセージになる。
+未登録の class は処理を始める前に `DialogException` で失敗するので、表示も処理も行われない。提示先の有無にかかわらず同じで、合流に加わろうとした呼び出しも同じである。先に表示されている Loading は影響を受けない。
+
+提示先が無いまま始まった表示では、host の content は提示先が現れた時点で作られる。そのとき host の factory が失敗しても呼び出し元へは返らず、警告ログを残して表示だけを諦め、処理はそのまま続いて結果を返す。提示先がある開始では、同じ失敗は開始の失敗として呼び出し元へ返り、処理は実行されない。iOS ではこのほかに、登録済み factory がその ViewModel を受け取れないときの `The registered View factory cannot accept ViewModel type {TypeName}.` と、host 側から結果もエラーも返らなかったときの `Failed to show the Loading.` がメッセージになる。
 
 たとえば Android の起動経路が Dialog の content だけを登録し、`Loading.instance.registry` へ何も登録していないと、`UploadLoadingViewModel` を渡した `start` は content を解決できずに失敗する。
 

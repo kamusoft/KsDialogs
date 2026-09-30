@@ -71,7 +71,7 @@ public static class MauiProgram
 | `IReusableDialog.ShowResultAsync<TResult>()` | 直接の対応先なし | 型付き `ShowAsync` を呼び、`DialogResult<TResult>` を処理する |
 | `IReusableDialog.Dispose()` | 直接の対応先なし | 再利用 Dialog の手動 dispose を削除する。KsDialogs は show ごとに新しい content を作る |
 
-`DialogViewRegistry` は View と ViewModel の factory slot を持つ。instance 渡しの show の前に View factory を登録し、型指定 show の前には ViewModel factory (`RegisterViewModel` または `RegisterForDialog`) も登録する。View factory が無い場合は `DialogException.ViewFactoryNotRegistered`、ViewModel factory と fallback の両方が無い場合は `DialogException.ViewModelFactoryNotRegistered`、1 行登録が結び付けた View をライブラリが組み立てられなかった場合は `DialogException.ViewCreationFailed`、提示先の画面が無い場合は `DialogException.PresentationHostUnavailable` で失敗する。いずれも faulted Task として届き、cancelled result には変換されない。
+`DialogViewRegistry` は View と ViewModel の factory slot を持つ。instance 渡しの show の前に View factory を登録し、型指定 show の前には ViewModel factory (`RegisterViewModel` または `RegisterForDialog`) も登録する。View factory が無い場合は `DialogException.ViewFactoryNotRegistered`、ViewModel factory と fallback の両方が無い場合は `DialogException.ViewModelFactoryNotRegistered`、1 行登録が結び付けた View をライブラリが組み立てられなかった場合は `DialogException.ViewCreationFailed` で失敗する。いずれも faulted Task として届き、cancelled result には変換されない。`DialogException.PresentationHostUnavailable` は、表示の仕組みを持たない素の .NET (単体テストの `net10.0` など) で show した場合だけに起きる。iOS / Android で提示先の画面がまだ無いときは失敗せず、画面が現れるのを待ってから表示する。待っている Dialog が複数ある場合は、UI スレッドから続けて呼んだものなら呼んだ順に 1 枚ずつ出て、後から呼んだものが手前に重なる (UI スレッド以外から呼んだ show と、非同期の configure が待つ型指定 show の順番は保証しない)。
 
 `ShowResultFromModelAsync<TViewModel, TParameter, TResult>` の書き換え — 結果型は ViewModel が宣言し、報告は notifier で行う:
 
@@ -107,6 +107,25 @@ DialogResult<bool> result = await Dialog.Instance.ShowAsync(
     (viewModel, notifier) => new ConfirmContentView(viewModel, notifier));
 ```
 
+画面が現れない場所から呼ぶ show を打ち切る — 提示先の待ちには上限が無いため、`ShowAsync` の全 overload が末尾に取る `CancellationToken` を渡す。待っている間に打ち切るとダイアログは一度も表示されず、表示中に打ち切るとダイアログは退出の演出を終えて閉じる。どちらも `OperationCanceledException` が投げられ、結果の `Cancelled` にはならない。呼び出しの時点で打ち切り済みなら、登録の解決も ViewModel の生成もせずに投げる:
+
+```csharp
+using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+
+bool confirmed;
+try
+{
+    DialogResult<bool> result = await Dialog.Instance.ShowAsync(
+        new ConfirmViewModel("Delete this item?"),
+        cancellationToken: cts.Token);
+    confirmed = result is DialogResult<bool>.Completed { Value: true };
+}
+catch (OperationCanceledException)
+{
+    confirmed = false;
+}
+```
+
 ## ViewModel と結果報告を移行する
 
 | 旧メンバー | 新しい対応先または状態 | 移行方法 |
@@ -129,19 +148,35 @@ ViewModel は class にする。登録と型指定 show は値型をコンパイ
 
 | 旧メンバー | 新しい対応先または状態 | 移行方法 |
 |---|---|---|
-| `ILoading.StartAsync(action, message, isCurrentScope)` | `IKsLoading.StartAsync(action, message, placement)` | `isCurrentScope` を削除し、位置を変えるときは placement を使う |
+| `ILoading.StartAsync(action, message, isCurrentScope)` | `IKsLoading.StartAsync(action, message, placement, actionThread)` | `isCurrentScope` を削除し、位置を変えるときは placement を使う。処理は既定 (`LoadingActionThread.Main`) で UI スレッドで始まる |
 | `ILoading.Show(message, isCurrentScope)` | `IKsLoading.ShowAsync(message, placement)` | 新しい提示開始を await し、`isCurrentScope` を削除する |
 | `ILoading.Hide()` | `IKsLoading.HideAsync()` | dismissal と撤去を await する |
 | `ILoading.SetMessage(message)` | `IKsLoading.SetMessage(message)` | 名前は同じ。表示中の built-in Loading content に効く |
 | `ILoading.Create<TView>(object viewModel = null)` | 直接の対応先なし | custom Loading factory (`RegisterForLoading` または `Loading.Instance.Registry.Register<TViewModel>`) を登録し、その ViewModel を `ShowAsync` または `StartAsync` に渡す |
 | `ILoading.Create(LoadingView view, object viewModel = null)` | 直接の対応先なし | inline factory、または新しい通常の MAUI `View` を返す登録済み factory を使う |
 | `ILoading.Create(object viewModel)` | 直接の対応先なし | `ILoadingViewModel` を実装して factory を登録し、新しいエントリに instance を渡す |
-| `ILoading.CreateFromModel<TViewModel>()` | `IKsLoading.ShowAsync<TViewModel>(configure, placement)` または `StartAsync<TViewModel>(action, configure, placement)` | `RegisterForLoading` で 2 スロットを配線し、ViewModel の型を渡す。instance は登録済みの ViewModel factory が解決する |
+| `ILoading.CreateFromModel<TViewModel>()` | `IKsLoading.ShowAsync<TViewModel>(configure, placement)` または `StartAsync<TViewModel>(action, configure, placement, actionThread)` | `RegisterForLoading` で 2 スロットを配線し、ViewModel の型を渡す。instance は登録済みの ViewModel factory が解決する |
 | debug 限定の `ILoading.Dispose()` | 直接の対応先なし | test 限定 dispose 呼び出しを削除する。新しいエントリに public disposal 契約はない |
 | `IReusableLoading.Show(bool isCurrentScope = false)` | `IKsLoading.ShowAsync(viewModel, placement)` | 登録済み custom content を表示する。再利用 handle はない |
-| `IReusableLoading.StartAsync(action, bool isCurrentScope = false)` | `IKsLoading.StartAsync(viewModel, action, placement)` | 再利用 handle を保持せず、表示を処理のスコープに合わせる |
+| `IReusableLoading.StartAsync(action, bool isCurrentScope = false)` | `IKsLoading.StartAsync(viewModel, action, placement, actionThread)` | 再利用 handle を保持せず、表示を処理のスコープに合わせる |
 | `IReusableLoading.Hide()` (公開 interface と実装では `Task`) | 所有 handle として直接同等の対応先なし。`IKsLoading.HideAsync()` は共有中の現在 generation に作用する | 機械的に置き換えない。`IKsLoading.StartAsync` を優先し、共有表示を明示的に閉じる意図がある場合だけ `IKsLoading.HideAsync()` を await する。旧 README の `void` 表記は誤り |
 | `IReusableLoading.Dispose()` | 直接の対応先なし | 再利用 handle の dispose を削除する |
+
+スコープ形の `StartAsync` は、どの overload も最後の引数に `LoadingActionThread actionThread = LoadingActionThread.Main` を取り、渡した処理を始めるスレッドを呼び出し元のスレッドによらず決める。省略した呼び出しの overload 束縛は変わらない。
+
+| 値 | 処理が始まるスレッド |
+|---|---|
+| `LoadingActionThread.Main` (既定) | UI スレッド。処理の中から UI スレッドへ移し直さずに画面の要素へ触れる |
+| `LoadingActionThread.Background` | UI スレッド外 (スレッドプール)。UI に触れない重い処理に使う |
+
+決まるのは処理の最初の文を実行するスレッドだけで、`await` の後の実行先は C# の規則に従う (`ConfigureAwait(false)` を書くと UI スレッドへは戻らない)。UI スレッドを持たない素の .NET では、指定に関係なく呼び出し元のスレッドでその場で実行する。UI に触れない重い処理を既定のまま同期で書くと UI スレッドを塞ぎ、その間は進捗やメッセージの更新が画面に出ない:
+
+```csharp
+await Loading.Instance.StartAsync(
+    async progress => await CompressAsync(progress),
+    message: "Compressing",
+    actionThread: LoadingActionThread.Background);
+```
 
 custom Loading の ViewModel は `ILoadingViewModel` を実装し、進捗を受け取るには `ILoadingProgressReceiver` も実装する:
 
@@ -156,7 +191,7 @@ public sealed class UploadViewModel : ILoadingViewModel, ILoadingProgressReceive
 }
 ```
 
-再利用 custom Loading handle の書き換え — 表示は処理のスコープに合う。ViewModel 型が解決できれば提示先が無くても action は実行され、未登録の型なら action の開始前に失敗する:
+再利用 custom Loading handle の書き換え — 表示は処理のスコープに合う。ViewModel 型が解決できれば提示先が無くても action は実行され、表示は提示先が現れた時点でまだ続いていれば出る (その前に処理が終われば何も表示しない)。未登録の型なら提示先の有無にかかわらず action の開始前に失敗する:
 
 ```csharp
 await Loading.Instance.StartAsync(
@@ -169,7 +204,7 @@ await Loading.Instance.StartAsync(
     });
 ```
 
-`CreateFromModel<TViewModel>` の書き換え — ViewModel の型を渡し、登録済みの ViewModel factory が DI から instance を解決する。`configure` は中身の View を作る前に完了する。ViewModel factory が未登録なら `DialogException.ViewModelFactoryNotRegistered` で失敗し、これは View factory 未登録とは別の失敗である。`RegisterForLoading` が結び付けた View をライブラリが組み立てられなかった場合は `DialogException.ViewCreationFailed` で show / start が失敗する。すでに出ている表示に合流した呼び出しでも ViewModel の生成と `configure` は行われるが、その instance は画面に出ない:
+`CreateFromModel<TViewModel>` の書き換え — ViewModel の型を渡し、登録済みの ViewModel factory が DI から instance を解決する。`configure` は中身の View を作る前に完了する。ViewModel factory が未登録なら `DialogException.ViewModelFactoryNotRegistered` で失敗し、これは View factory 未登録とは別の失敗である。`RegisterForLoading` が結び付けた View をライブラリが組み立てられなかった場合、開始時点で提示先があれば `DialogException.ViewCreationFailed` で show / start が失敗する。提示先が無いまま始まった表示では中身を提示先が現れた時点で作るため、そこでの生成の失敗は show / start へ返らず、警告を残して表示だけを諦め、処理はそのまま続く。すでに出ている表示に合流した呼び出しでも ViewModel の生成と `configure` は行われるが、その instance は画面に出ない:
 
 ```csharp
 builder.Services.RegisterForLoading<UploadLoadingView, UploadViewModel>();
@@ -198,7 +233,7 @@ await Loading.Instance.StartAsync<UploadViewModel>(
 
 ## ExtraView の layout と lifecycle を移す
 
-旧来の見た目を保つ場合は、変わった3つの既定値を確認する。overlay は透明から黒 40%、dialog margin は 0 から全辺 24、layout area は window 全体から visible area に変わる。
+旧来の見た目を保つ場合は、変わった既定値を確認する。overlay は透明から黒 40%、layout area は window 全体から visible area に変わる。dialog margin の既定は旧と同じ全辺 0 なので、旧来の margin を保つだけなら添付は要らない。
 
 | 旧メンバー | 新しい対応先または状態 | 移行方法 |
 |---|---|---|
@@ -231,7 +266,9 @@ await Loading.Instance.StartAsync<UploadViewModel>(
 
 alignment の行が使う `DialogAlignment` は `Start`・`Center`・`End`・`Fill` を持つ。`Start` と `End` は軸の物理的な前端 / 後端を指し、右から左へ読む環境でも入れ替わらない。`Center` は有効領域の中央に置き、`Fill` は位置だけでなくサイズも有効領域いっぱいに広げる — 比率サイズが指定されている軸では `Fill` は `Center` として扱われる。
 
-animation の2行はいずれも、新しい hook が content View を受け取る `Func<VisualElement, Task>` になり、`DialogTransition(presentation, dismissal, overlayDuration)` が両 hook と overlay の fade 時間 (`OverlayDuration`) を運ぶ。preset の `DialogTransition.Fade(duration, easing)`、`DialogTransitionEdge` を取る `DialogTransition.Slide(from, duration, easing)`、`DialogTransition.Zoom(duration, easing)`、`DialogTransition.None()` は埋まった組を返すので、片側だけ preset にしたい場合は `.Presentation` または `.Dismissal` を取り出して自作 hook と組み合わせる。`DialogTransitionEdge` は `Top`・`Bottom`・`Start`・`End` を持ち、`Start` と `End` はレイアウト方向に追随して右から左へ読む環境では入れ替わり、`Top` と `Bottom` は物理方向のまま変わらない。KsDialogs は戻された `Task` の完了まで待ち、暗黙 timeout を持たない。dismissal の報告後、Dialog result は dismissal hook と overlay の撤去が完了してから配送される。transition の値は closure を持つため、XAML ではなく code-behind から添付する (`Dialog.SetTransition` / `Dialog.GetTransition` / `Dialog.TransitionProperty`)。
+中身の大きさは、ルートの `WidthRequest` / `HeightRequest` を含めて MAUI の測り方で決まり、ルートが `ContentView` でも `Grid` でも iOS と Android で同じ大きさになる。比率サイズや `Fill` で器が大きさを決めた軸でも、明示サイズを持つルートは外形いっぱいには広がらず、宣言サイズのまま外形の中央に置かれる。外形いっぱいに広げたい場合は、その軸の明示サイズを外す。
+
+animation の2行はいずれも、新しい hook が content View を受け取る `Func<VisualElement, Task>` になり、`DialogTransition(presentation, dismissal, overlayDuration)` が両 hook と overlay の fade 時間 (`OverlayDuration`) を運ぶ。preset の `DialogTransition.Fade(duration, easing)`、`DialogTransitionEdge` を取る `DialogTransition.Slide(from, duration, easing)`、`DialogTransition.Zoom(duration, easing)`、`DialogTransition.None()` は埋まった組を返すので、片側だけ preset にしたい場合は `.Presentation` または `.Dismissal` を取り出して自作 hook と組み合わせる。`DialogTransitionEdge` は `Top`・`Bottom`・`Start`・`End` を持ち、`Start` と `End` はレイアウト方向に追随して右から左へ読む環境では入れ替わり、`Top` と `Bottom` は物理方向のまま変わらない。KsDialogs は戻された `Task` の完了まで待ち、暗黙 timeout を持たない。終わらない hook から抜ける手段は、OS による器の消失と、`ShowAsync` に渡した `CancellationToken` による打ち切りである。dismissal の報告後、Dialog result は dismissal hook と overlay の撤去が完了してから配送される。transition の値は closure を持つため、XAML ではなく code-behind から添付する (`Dialog.SetTransition` / `Dialog.GetTransition` / `Dialog.TransitionProperty`)。
 
 移した設定は code-behind で content View に添付する:
 
@@ -268,13 +305,23 @@ layout 属性は content View 自身の XAML にも書ける:
 | `DialogView.IsCanceledOnTouchOutsideProperty` | `Dialog.IsCanceledOnTouchOutsideProperty` | XAML style またはコードの直接 `BindableProperty` 参照を新しい添付 property に置き換える |
 | `DialogView.OverlayColor` | `Dialog.SetOverlayColor` | 通常の MAUI content View に添付する |
 | `DialogView.OverlayColorProperty` | `Dialog.OverlayColorProperty` | XAML style またはコードの直接 `BindableProperty` 参照を新しい添付 property に置き換える |
-| `DialogView.UseCurrentPageLocation` | `Dialog.SetLayoutArea` と `DialogLayoutArea.VisibleArea` または `Window` | `true` は `DialogLayoutArea.VisibleArea`、`false` は `DialogLayoutArea.Window` へ対応させる。新しい既定は `VisibleArea` |
-| `DialogView.UseCurrentPageLocationProperty` | `Dialog.LayoutAreaProperty` と `DialogLayoutArea.VisibleArea` または `Window` | 旧 bool `BindableProperty` を置き換え、値は `DialogView.UseCurrentPageLocation` と同じ規則で対応させる |
+| `DialogView.UseCurrentPageLocation` | `Dialog.SetLayoutArea` と `DialogLayoutArea.CurrentPage` または `Window` | `true` は `DialogLayoutArea.CurrentPage`、`false` は `DialogLayoutArea.Window` へ対応させる。何も添付しない場合の新しい既定は `VisibleArea` |
+| `DialogView.UseCurrentPageLocationProperty` | `Dialog.LayoutAreaProperty` と `DialogLayoutArea.CurrentPage` または `Window` | 旧 bool `BindableProperty` を置き換え、値は `DialogView.UseCurrentPageLocation` と同じ規則で対応させる |
 | `DialogView.DialogNotifierProperty` | 直接の対応先なし | View に bind した `BindableProperty` を削除し、factory notifier または `viewModel.Notifier` を使う |
 | `DialogView.SetUp()` | 直接の対応先なし | factory で新しい View を初期化するか、提示前に ViewModel を configure する |
 | `DialogView.TearDown()` | 直接の対応先なし | 再利用 View の reset 処理を削除し、通常の resource cleanup を使う |
 
 `ShowAsync` に `DialogPlacement` を渡すと、添付された placement object — `HorizontalAlignment`・`VerticalAlignment`・`OffsetX`・`OffsetY` — がまるごと置換される。したがって `Dialog.SetOffsetY` だけを添付していても、placement 引数に合成されることはない。上の表の静的な属性には show 引数が無く、添付だけで供給する。
+
+`DialogLayoutArea.CurrentPage` は、ダイアログを出すウィンドウの表示中のページから、そのページ自身のナビゲーションバーやタブバーを除いた内側 (と可視領域の共通部分) を基準にする。旧 `true` と違って水平・垂直の両軸に効き、ページはモーダルで出したページ、`Shell`・`FlyoutPage`・`TabbedPage`・`NavigationPage` の表示中の子を辿って標準のページ構成なら登録なしで見つかる。ページが得られない場合 (まだ描画されていないときを含む) は失敗せず、`VisibleArea` と同じ結果で表示する。
+
+独自の切り替えで画面を組んでいてこの辿り方で届かない場合や、ページの一部の領域を基準にしたい場合は、基準にするページまたは要素を返す関数を `DialogCurrentPage.Provider` に一度登録する。登録は既定の探し方より優先し、関数が `null` を返す・例外を投げる・要素がまだ描画されていない・要素がダイアログを出すウィンドウに載っていない場合は既定の探し方へ進む。関数は UI スレッドで、各表示の開始時と表示中のウィンドウ寸法の変化時に呼ばれ、登録の差し替えは次の表示から効く。`null` を代入すると既定の探し方に戻る:
+
+```csharp
+Dialog.SetLayoutArea(content, DialogLayoutArea.CurrentPage);
+
+DialogCurrentPage.Provider = () => mainPage.ContentArea;
+```
 
 ## LoadingView の挙動を移す
 
@@ -301,7 +348,11 @@ layout 属性は content View 自身の XAML にも書ける:
 
 `Show` は `void` を返し、表示を待つ・更新する・閉じる手段はない — Toast は duration の経過で消える。0 以下の `durationMs` は未指定として扱われ、`ToastStyle.DefaultDuration` (`ToastStyle.BuiltinDefaultDuration`、1500 ミリ秒) に落ちる。`ToastStyle` は built-in の message View 向けに `BackgroundColor`・`TextColor`・`FontSize`・`CornerRadius` を持ち、`DefaultPlacement` は built-in と custom の双方に効く app-wide の配置になる。`BackgroundColor` の出発点は組み込みのメッセージ Toast の既定色 `ToastStyle.BuiltinBackgroundColor` (半透明のダークグレー) で、`DefaultDuration` に対する `ToastStyle.BuiltinDefaultDuration` と同じ位置づけである。未登録の ViewModel 型で表示すると `DialogException.ViewFactoryNotRegistered` で失敗する。
 
-型を渡す表示は、`RegisterForToast` か `Toast.Instance.Registry.RegisterViewModel<TViewModel>` で ViewModel factory を配線すれば使える。`Show` が即座に戻るため `configure` は同期の形だけである。ViewModel factory が未登録なら呼び出し時点で `DialogException.ViewModelFactoryNotRegistered` を投げる一方、ViewModel factory や `configure` が投げた例外は呼び出し元へ届かず、警告を残してその 1 枚だけを破棄する (他の表示と後続の表示には影響しない)。`RegisterForToast` が結び付けた View をライブラリが組み立てられなかった場合も同じ経路で、警告には `DialogException.ViewCreationFailed` が原因として残る:
+built-in の message View は全辺 24 の余白を自分の中身に持ち、利用者が変える口は無い。custom View の余白は Dialog と同じく既定が全辺 0 で、`Dialog.SetDialogMargin` の添付で変えられる。
+
+提示先の画面が無いときの `Show` も失敗せず、画面が現れるのを待って表示する。表示時間の数え始めは受け付けた時点の状態で決まる。提示先があるとき、またはアプリが背面にいるときは受け付けた時点から数えるので、背面の間に duration を使い切った Toast は表示されずに破棄される。アプリが前面にいるのに提示先がまだ無いとき (起動直後の画面の準備中やシステムの許可ダイアログの最中など) は、画面に載った時点から数える。
+
+型を渡す表示は、`RegisterForToast` か `Toast.Instance.Registry.RegisterViewModel<TViewModel>` で ViewModel factory を配線すれば使える。`Show` が即座に戻るため `configure` は同期の形だけである。ViewModel factory と `configure` は、中身の View と同じく提示先に取り付ける時点で走るので、提示先が現れないまま duration を使い切った表示では一度も呼ばれない。ViewModel factory が未登録なら呼び出し時点で `DialogException.ViewModelFactoryNotRegistered` を投げる一方、ViewModel factory や `configure` が投げた例外は呼び出し元へ届かず、警告を残してその 1 枚だけを破棄する (他の表示と後続の表示には影響しない)。`RegisterForToast` が結び付けた View をライブラリが組み立てられなかった場合も同じ経路で、警告には `DialogException.ViewCreationFailed` が原因として残る:
 
 ```csharp
 Toast.Instance.Style = Toast.Instance.Style with { DefaultDuration = 2000 };

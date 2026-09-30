@@ -56,7 +56,7 @@ The shared `DialogViewModel<R>` only declares the result type; it does not hold 
 |---|---|
 | Type | `DialogNotifier<R>` for the result type the view model declared |
 | Readable period | Only while it is showing. It is empty before `show`, and after the result or the exception reaches the caller |
-| Unit of binding | One per view-model instance. Showing the same instance concurrently fails as a configuration mistake |
+| Unit of binding | One per view-model instance. Showing the same instance concurrently fails as a configuration mistake, even while the earlier display is still waiting for a screen |
 | How to report | `complete(value)` returns a value, and `cancel()` reports cancellation |
 | Reports after the first | Only the first report takes effect; later ones do nothing |
 
@@ -145,11 +145,13 @@ An unregistered view-model factory, and a factory that returns a class other tha
 
 ## The order from creation to result
 
-1. The caller creates a view-model instance and passes it to `show`
-2. The library binds the reporting handle to that instance
-3. The host View factory is called and the content is created (the handle is already readable at this point)
-4. The content is displayed and the enter transition runs
-5. The content reports the result with `complete` or `cancel`. An outside tap or the Android back button also settles it as cancelled
-6. The exit transition finishes, the container is removed, and `show` returns the `DialogResult`. The handle binding is released here
+1. The caller creates a view-model instance and passes it to `show` (when a class is passed, the view-model factory creates it and `configure` runs)
+2. The library looks up the host View factory registration. If none is registered, `DialogException` is thrown here
+3. The library binds the reporting handle to that instance
+4. If there is no screen to present on yet, it waits for one to appear ([Dialog](dialogs.md))
+5. The host View factory is called and the content is created (the handle is already readable at this point)
+6. The content is displayed and the enter transition runs
+7. The content reports the result with `complete` or `cancel`. An outside tap or the Android back button also settles it as cancelled
+8. The exit transition finishes, the container is removed, and `show` returns the `DialogResult`. The handle binding is released here
 
 The handle binding is always released, not only on a normal result delivery but also on a route where the display failed. That is why the same instance can be shown again right after a failure.

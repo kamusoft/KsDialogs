@@ -89,4 +89,21 @@ public class DiagnosticMessageTests
                 Is.EqualTo("The Native library owns the content of the default Loading."));
         });
     }
+
+    /// <summary>中身の供給の時点で画面の文脈が取れないときの例外文言が英語文言と完全一致する。</summary>
+    /// <remarks>
+    /// 提示の仕組みが無いことを表す <see cref="DialogException.PresentationHostUnavailable"/> ではなく、
+    /// 中身の生成の失敗として <see cref="InvalidOperationException"/> になる。
+    /// </remarks>
+    [Test]
+    [Description("画面の文脈が取れない中身の供給は英語文言の InvalidOperationException になる")]
+    public void TheMissingPresentationContextFailsWithTheEnglishMessage()
+    {
+        InvalidOperationException? failure =
+            Assert.Throws<InvalidOperationException>(() => DialogPresentationContext.Require(null));
+
+        Assert.That(
+            failure?.Message,
+            Is.EqualTo("No MAUI context is available for the screen that presents the content."));
+    }
 }

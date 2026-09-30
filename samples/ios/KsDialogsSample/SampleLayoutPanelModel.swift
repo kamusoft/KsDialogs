@@ -3,7 +3,7 @@ import Observation
 
 /// 属性調整パネルが持つ状態。
 ///
-/// 初期値は契約の既定値 (中央配置・移動なし・可視領域基準) に揃える。
+/// 初期値は契約の既定値 (中央配置・移動なし・可視領域基準・余白 0) に揃える。
 @MainActor
 @Observable
 final class SampleLayoutPanelModel {
@@ -15,8 +15,10 @@ final class SampleLayoutPanelModel {
     var offsetX: String = "0"
     /// 垂直方向の移動量の入力。
     var offsetY: String = "0"
-    /// サイズと位置の計算に可視領域を使うか。
-    var usesVisibleArea: Bool = true
+    /// サイズと位置の計算に使う基準領域。
+    var layoutArea: SampleLayoutAreaChoice = .visibleArea
+    /// 全辺そろえの余白。
+    var margin: SampleMarginChoice = .zero
 
     /// 直近の結果の表示文言。まだ一度もダイアログを閉じていない間は nil。
     private(set) var lastResult: String?
@@ -28,7 +30,8 @@ final class SampleLayoutPanelModel {
     func showLayoutDialog() async -> String? {
         let viewModel = LayoutDialogViewModel(
             message: SampleText.layoutDialogMessage,
-            usesVisibleArea: usesVisibleArea
+            layoutArea: layoutArea.layoutArea,
+            dialogMargin: margin.value
         )
         // 置き場所は呼び出しごとに変わるので show の引数で渡す
         let placement = DialogPlacement(
@@ -46,7 +49,7 @@ final class SampleLayoutPanelModel {
             }
             return lastResult
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
             return nil
         }

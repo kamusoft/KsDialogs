@@ -21,20 +21,20 @@ Progress values are accepted from any thread, arrive as an `IProgress<double>`, 
 | `Task ShowAsync<TViewModel>(TViewModel viewModel, Func<TViewModel, View> factory, DialogPlacement? placement = null)` | Shows content whose factory is passed on the spot. It does not touch the registry | Content used once | None |
 | `Task HideAsync()` | Removes the display of the current generation only, and returns after removal finishes | When pairing with `ShowAsync` | None |
 | `void SetMessage(string? message)` | Replaces the message of the built-in content being shown. The only synchronous operation; it does not wait | When only the wording changes while shown | None |
-| `Task StartAsync(Func<IProgress<double>, Task> action, string? message = null, DialogPlacement? placement = null)` | Runs the action with the built-in content shown, and removes it when the action finishes | When the lifetime of the work is paired with the display | None |
-| `Task<T> StartAsync<T>(Func<IProgress<double>, Task<T>> action, string? message = null, DialogPlacement? placement = null)` | The value-returning form of the above | The same, when the work returns a value | None |
-| `Task StartAsync(ILoadingViewModel viewModel, Func<IProgress<double>, Task> action, DialogPlacement? placement = null)` | Runs the action with registered custom content shown | When progress is shown in a look of your own | A view factory ([DI registration](di-registration.md)) |
-| `Task<T> StartAsync<T>(ILoadingViewModel viewModel, Func<IProgress<double>, Task<T>> action, DialogPlacement? placement = null)` | The value-returning form of the above | The same, when the work returns a value | A view factory ([DI registration](di-registration.md)) |
-| `Task StartAsync<TViewModel>(TViewModel viewModel, Func<TViewModel, View> factory, Func<IProgress<double>, Task> action, DialogPlacement? placement = null)` | Passes the content factory on the spot and runs the action with it shown | When work is wrapped in content used once | None |
-| `Task<T> StartAsync<TViewModel, T>(TViewModel viewModel, Func<TViewModel, View> factory, Func<IProgress<double>, Task<T>> action, DialogPlacement? placement = null)` | The value-returning form of the above | The same, when the work returns a value | None |
+| `Task StartAsync(Func<IProgress<double>, Task> action, string? message = null, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | Runs the action with the built-in content shown, and removes it when the action finishes | When the lifetime of the work is paired with the display | None |
+| `Task<T> StartAsync<T>(Func<IProgress<double>, Task<T>> action, string? message = null, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | The value-returning form of the above | The same, when the work returns a value | None |
+| `Task StartAsync(ILoadingViewModel viewModel, Func<IProgress<double>, Task> action, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | Runs the action with registered custom content shown | When progress is shown in a look of your own | A view factory ([DI registration](di-registration.md)) |
+| `Task<T> StartAsync<T>(ILoadingViewModel viewModel, Func<IProgress<double>, Task<T>> action, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | The value-returning form of the above | The same, when the work returns a value | A view factory ([DI registration](di-registration.md)) |
+| `Task StartAsync<TViewModel>(TViewModel viewModel, Func<TViewModel, View> factory, Func<IProgress<double>, Task> action, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | Passes the content factory on the spot and runs the action with it shown | When work is wrapped in content used once | None |
+| `Task<T> StartAsync<TViewModel, T>(TViewModel viewModel, Func<TViewModel, View> factory, Func<IProgress<double>, Task<T>> action, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | The value-returning form of the above | The same, when the work returns a value | None |
 | `Task ShowAsync<TViewModel>(Action<TViewModel>? configure = null, DialogPlacement? placement = null)` | Runs `configure` on the view model built by the registered view-model factory, then shows the registered custom content | When assembling the view model is left to DI | A view factory and a view-model factory ([DI registration](di-registration.md)) |
 | `Task ShowAsync<TViewModel>(Func<TViewModel, Task> configure, DialogPlacement? placement = null)` | The form of the above whose `configure` is asynchronous | The same, when an asynchronous load is needed before presentation | A view factory and a view-model factory ([DI registration](di-registration.md)) |
-| `Task StartAsync<TViewModel>(Func<IProgress<double>, Task> action, Action<TViewModel>? configure = null, DialogPlacement? placement = null)` | Runs the action with custom content the library built from the type shown | When the type-based form is used as a scope | A view factory and a view-model factory ([DI registration](di-registration.md)) |
-| `Task StartAsync<TViewModel>(Func<IProgress<double>, Task> action, Func<TViewModel, Task> configure, DialogPlacement? placement = null)` | The form of the above whose `configure` is asynchronous | The same, when an asynchronous load is needed before presentation | A view factory and a view-model factory ([DI registration](di-registration.md)) |
-| `Task<T> StartAsync<TViewModel, T>(Func<IProgress<double>, Task<T>> action, Action<TViewModel>? configure = null, DialogPlacement? placement = null)` | The value-returning form of the above | The same, when the work returns a value | A view factory and a view-model factory ([DI registration](di-registration.md)) |
-| `Task<T> StartAsync<TViewModel, T>(Func<IProgress<double>, Task<T>> action, Func<TViewModel, Task> configure, DialogPlacement? placement = null)` | The value-returning form whose `configure` is asynchronous | The same, when the work returns a value and an asynchronous load is needed first | A view factory and a view-model factory ([DI registration](di-registration.md)) |
+| `Task StartAsync<TViewModel>(Func<IProgress<double>, Task> action, Action<TViewModel>? configure = null, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | Runs the action with custom content the library built from the type shown | When the type-based form is used as a scope | A view factory and a view-model factory ([DI registration](di-registration.md)) |
+| `Task StartAsync<TViewModel>(Func<IProgress<double>, Task> action, Func<TViewModel, Task> configure, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | The form of the above whose `configure` is asynchronous | The same, when an asynchronous load is needed before presentation | A view factory and a view-model factory ([DI registration](di-registration.md)) |
+| `Task<T> StartAsync<TViewModel, T>(Func<IProgress<double>, Task<T>> action, Action<TViewModel>? configure = null, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | The value-returning form of the above | The same, when the work returns a value | A view factory and a view-model factory ([DI registration](di-registration.md)) |
+| `Task<T> StartAsync<TViewModel, T>(Func<IProgress<double>, Task<T>> action, Func<TViewModel, Task> configure, DialogPlacement? placement = null, LoadingActionThread actionThread = LoadingActionThread.Main)` | The value-returning form whose `configure` is asynchronous | The same, when the work returns a value and an asynchronous load is needed first | A view factory and a view-model factory ([DI registration](di-registration.md)) |
 
-Omitting the trailing `placement` uses, for custom content, the attachment on the view, and the library default placement when there is no attachment either. In the examples below, "Wrap work in a display" is the seventh row, "Show, update, and hide manually" the first, fourth, and fifth, "Register custom Loading content" the eighth, and "Show custom content without registration" the third and tenth. Rows twelve through seventeen, which take the view-model type, are covered in "Show a Loading by view-model type". The remaining rows — second, sixth, ninth, and eleventh — appear as minimal examples in the next section.
+Omitting the trailing `placement` uses, for custom content, the attachment on the view, and the library default placement when there is no attachment either. The last argument of `StartAsync`, `actionThread`, chooses the thread the action starts on (see "Choose the thread the work starts on" below). In the examples below, "Wrap work in a display" is the seventh row, "Show, update, and hide manually" the first, fourth, and fifth, "Register custom Loading content" the eighth, and "Show custom content without registration" the third and tenth. Rows twelve through seventeen, which take the view-model type, are covered in "Show a Loading by view-model type". The remaining rows — second, sixth, ninth, and eleventh — appear as minimal examples in the next section.
 
 ## Minimal examples for the remaining overloads
 
@@ -121,6 +121,34 @@ public partial class SyncPage : ContentPage
             message: "Loading");
         StatusLabel.Text = $"{items.Count} items";
     }
+}
+```
+
+## Choose the thread the work starts on
+
+The action passed to `StartAsync` starts on the UI thread by default. That holds no matter which thread calls `StartAsync`, so the action can touch screen elements without moving back to the UI thread. Every `StartAsync` takes `actionThread` as its last argument (`LoadingActionThread`, `LoadingActionThread.Main` when omitted), and passing `LoadingActionThread.Background` starts the action off the UI thread (on the thread pool).
+
+| `LoadingActionThread` value | Thread the action starts on | Suited to |
+|---|---|---|
+| `Main` (default) | The UI thread | Work that touches screen elements |
+| `Background` | Off the UI thread (the thread pool) | Heavy work that does not touch the UI. Heavy synchronous work written on the UI thread also keeps progress and message updates from reaching the screen while it runs |
+
+Only the thread that runs the first statement of the action is guaranteed; where execution continues after an `await` follows the C# rules. An action started on the UI thread returns to it after an `await` by default, but not after `ConfigureAwait(false)`, so move back to the UI thread yourself before touching the screen from there. Progress reports and `SetMessage` can be called whichever thread the action runs on. On plain .NET without the iOS / Android implementation (a unit-test `net10.0` target, for example), the action runs on the calling thread regardless of the value, and nothing is displayed.
+
+```csharp
+private async void OnExportClicked(object? sender, EventArgs e)
+{
+    var size = await _loading.StartAsync<int>(
+        progress =>
+        {
+            var buffer = new byte[4 * 1024 * 1024];
+            Random.Shared.NextBytes(buffer);
+            progress.Report(1);
+            return Task.FromResult(buffer.Length);
+        },
+        message: "Exporting",
+        actionThread: LoadingActionThread.Background);
+    StatusLabel.Text = $"{size} bytes";
 }
 ```
 
@@ -347,6 +375,18 @@ private Task SynchronizeAsync() =>
         });
 ```
 
+## Start before a screen exists
+
+On iOS and Android, a display started while there is no screen to present on does not fail either. The action of `StartAsync` runs as usual, and the display waits for a screen to appear. This happens when the Loading starts right after launch or while the app is in the background.
+
+| Situation | What happens |
+|---|---|
+| A screen appears while the display is still active | The content is created at that moment and shown with its entrance animation |
+| The display ends before a screen appears (the last participant finishes, or `HideAsync`) | Nothing is shown, and the wait stops |
+| A screen appears just as the work finishes | The Loading shows briefly and closes |
+
+The view-factory registration is looked up at the start, so an unregistered view-model type fails the start whether or not a screen exists, and the action does not run. The content view is created when the screen appears, so a failure there (`ViewCreationFailed` or an exception from a factory you wrote) does not return to `ShowAsync` / `StartAsync`; a warning is logged and only the display is given up, while the action keeps running and returns its result. Progress reported before the display appears still reaches a view model that implements `ILoadingProgressReceiver`.
+
 ## Configure the built-in content
 
 Set `Loading.Instance.Style` (a `LoadingStyle` record) and `Loading.Instance.Options` (a `DialogOptions` record) before a display starts. The show methods take no style argument.
@@ -405,7 +445,7 @@ public static class MauiProgram
 
 ## Handle misconfiguration failures
 
-A misconfiguration fails with a nested `DialogException` class. A failure that leaves the view model — or the view-model type — passed to `ShowAsync` / `StartAsync` unresolvable on the spot is thrown synchronously at the call, no view is created or shown, and the action of `StartAsync` does not run either (fail-fast). A failure that arises while the content is being built arrives as a `Task` failure, because the caller is still awaiting.
+A misconfiguration fails with a nested `DialogException` class. When the view model — or the view-model type — passed to `ShowAsync` / `StartAsync` cannot be resolved, no view is created or shown, and the action of `StartAsync` does not run either (fail-fast). The entries that take a view-model instance throw synchronously at the call, and the entries that take a view-model type deliver it as a failure of the returned `Task`; wrapping the `await` in a `try` catches both the same way. A failure while building the content, when a screen existed at the start, also arrives as a `Task` failure. A content failure for a display started without a screen does not return to the caller (see "Start before a screen exists" above).
 
 An exception that carries `ViewModelTypeName` also reads back, from that property, the type name of the view model that could not be resolved. `ViewCreationFailed` adds `ViewTypeName` for the view it was building and keeps the original failure in `InnerException`.
 
@@ -416,7 +456,6 @@ An exception that carries `ViewModelTypeName` also reads back, from that propert
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | Showing by view-model type has no view-model factory. Call `Loading.Instance.Registry.RegisterViewModel` or `RegisterForLoading` for that type (Loading has no fallback) |
 | `DialogException.ValueTypeViewModel` | `ViewModel type {TypeName} is a value type and cannot be used as a ViewModel.` | A value-type view model reached the show entry. Make the view model a `class` (`struct` and `record struct` cannot be used) |
 | `DialogException.ServiceProviderUnavailable` | `The app's IServiceProvider is not available yet.` | Content wired with `RegisterForLoading` was shown before startup captured the service provider. Show after `MauiApp` has been built ([DI registration](di-registration.md)) |
-| `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | No screen is available to present on at the moment the custom content is built. Show after the first Page appears |
 
 The messages in the table are the values the current implementation returns, not a stable API (what does not change is the exception type and the condition it is thrown under; the wording can change without notice).
 
@@ -460,4 +499,4 @@ private async void OnSyncClicked(object? sender, EventArgs e)
 }
 ```
 
-To handle them together, including `ServiceProviderUnavailable` and `PresentationHostUnavailable` which carry no `ViewModelTypeName`, `catch` the base `DialogException`.
+To handle them together, including `ServiceProviderUnavailable` which carries no `ViewModelTypeName`, `catch` the base `DialogException`. A missing screen is not a failure for Loading, so nothing corresponding to the Dialog's `DialogException.PresentationHostUnavailable` arrives.

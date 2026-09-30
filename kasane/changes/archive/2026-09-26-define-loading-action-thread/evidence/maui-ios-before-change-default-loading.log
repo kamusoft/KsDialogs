@@ -1,0 +1,23 @@
+# MAUI iOS (Debug, iOS Simulator): 変更前のライブラリ + 変更後の Sample で Default Loading を実行したときのログ抜粋
+#
+# 構成: ライブラリは変更前 (HEAD b0657a9 の maui/ ios/ をそのまま)、Sample は tasks 5.2 の変更
+#       (Default Loading の action の最初の文で ShowResult(SampleText.LoadingProcessingResult)) だけを重ねたもの。
+#       dotnet build -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 (Debug)
+# 手順: xcrun simctl launch <uuid> jp.kamusoft.ksdialogs.samples.maui --loading-step-interval-ms 8000
+#       → メニューの Default Loading をタップ (20:27:38.287 の gesture)
+# 結果: 約 0.3 秒後に action の中の結果表示の更新が UIKit のスレッド検査に掛かり、未処理例外でアプリが終了した
+#       (クラッシュレポートは EXC_CRASH / SIGABRT、メインスレッドの xamarin_unhandled_exception_handler → abort)。
+#       Loading も結果表示も画面に残らず、ホーム画面へ戻った。
+#       os_log の 1 件あたりの長さ制限でスタックは途中で切れており、Sample 側のフレームまでは記録に残っていない。
+# 出典: xcrun simctl spawn <uuid> log show --predicate 'process == "KsDialogs.Sample.Maui"' を
+#       scripts/log-sanitize.py に通した後の抜粋 (全文は手元保管)。
+#
+# 変更後のライブラリで同じ操作をした結果は sample-maui-ios-default-loading-*.png (処理中 → 完了、落ちない)。
+
+2026-09-25 20:27:38.287 A  KsDialogs.Sample.Maui[99652:655c03] (UIKitCore) send gesture actions
+2026-09-25 20:27:38.606 Df KsDialogs.Sample.Maui[99652:655c03] (libxamarin-dotnet-debug.dylib) Unhandled managed exception: UIKit Consistency error: you are calling a UIKit method that can only be invoked from the UI thread. (UIKit.UIKitThreadAccessException)
+   at UIKit.UIApplication.EnsureUIThread() in /Users/<USER>/azdo/_work/1/s/macios/src/UIKit/UIApplication.cs:line 133
+   at UIKit.UIView.SetNeedsLayout() in /Users/<USER>/azdo/_work/1/s/macios/src/build/dotnet/ios/generated-sources/UIKit/UIView.g.cs:line 1852
+   at Microsoft.Maui.Platform.ViewExtensions.InvalidateMeasure(UIView platformView)
+   at Microsoft.Maui.Platform.ViewExtensions.InvalidateMeasure(UIView platformView, IView view)
+   at Microsoft.Maui.Handlers.ViewHandler.MapInvalidateMeasure(IViewHandler handler, IView view, Object args)

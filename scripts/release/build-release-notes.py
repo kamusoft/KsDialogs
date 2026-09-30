@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release ノートの組み立て。
+"""Release ノートの組み立て (cross/ADR-0028)。
 
 GitHub Release の本文を、前回のリリース以降に `main` へ入った pull request の本文から作る。
 載せる内容は人が pull request 本文の `## Changes` セクションに明示的に書いたものだけで、

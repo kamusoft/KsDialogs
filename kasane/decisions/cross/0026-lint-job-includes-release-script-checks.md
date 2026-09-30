@@ -1,7 +1,7 @@
 ---
 id: 0026
 title: 検証 CI の lint job にリリース用スクリプトの自己テストと待ちの時間予算・publish の step 順序の検査を加え、11 検査とする (0022 を一部改訂)
-status: proposed
+status: accepted
 date: 2026-09-13
 amends: [cross/0022]
 amended-by: [cross/0029]
@@ -52,5 +52,5 @@ cross/ADR-0022 の決定のうち「検証 CI の lint job に README 最小例�
 - lint job の所要が `timeout-minutes: 10` に対して余裕を失ったとき
 
 ---
-出典: kasane/changes/backport-registry-wait-hardening/proposal.md (Why の弱点 4 点・時間予算の方針・既存 ADR との関係) / ../KsSettingsView/kasane/outbox/KsDialogs/2026-09-12-release-mechanism-hardening-and-notes-rework.md (sibling の改修結果と時間予算の破れ)
+出典: kasane/changes/archive/2026-09-13-backport-registry-wait-hardening/proposal.md (Why の弱点 4 点・時間予算の方針・既存 ADR との関係) / ../KsSettingsView/kasane/outbox/KsDialogs/2026-09-12-release-mechanism-hardening-and-notes-rework.md (sibling の改修結果と時間予算の破れ)
 関連: cross/ADR-0022 (lint job の検査の集合。本決定で 8 → 11 検査に置き換え) / cross/ADR-0020 (自己テストを本検査と同じ step で先に走らせる理屈) / cross/ADR-0017 (検証 CI の構成とトリガー) / cross/ADR-0024 (publish が develop へインストール例を反映する前に掛ける 3 検査)

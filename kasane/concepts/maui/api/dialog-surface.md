@@ -1,9 +1,9 @@
 ---
 type: concept
 title: MAUI の Dialog 公開面
-description: .NET MAUI (C#) からダイアログを使うときの公開名と署名 — 既定エントリと登録の入口・真偽値の顔・中身は MAUI の View だけであること・インライン show・結果報告口の取得・構成ミスの例外型・型指定 show と非同期 configure・移植元の API 名との対応
+description: .NET MAUI (C#) からダイアログを使うときの公開名と署名 — 既定エントリと登録の入口・真偽値の顔・中身は MAUI の View だけであること・インライン show・結果報告口の取得・構成ミスの例外型・出す先の画面が無いときの待ちと `CancellationToken` による打ち切り・型指定 show と非同期 configure・移植元の API 名との対応
 tags: [maui, dialog, api, surface]
-timestamp: 2026-09-08
+timestamp: 2026-09-29
 ---
 
 # MAUI の Dialog 公開面
@@ -24,7 +24,7 @@ timestamp: 2026-09-08
 | 既定の表示エントリ | `Dialog.Instance` |
 | DI で注入する表示契約 | `IKsDialog` (実体は `Dialog`) |
 | 登録の入口 | `Dialog.Instance.Registry` (実体は `DialogViewRegistry.Shared`) |
-| 表示 | `ShowAsync(...)` (`Task<DialogResult<TResult>>` を返す) |
+| 表示 | `ShowAsync(...)` (`Task<DialogResult<TResult>>` を返す。全 7 本の末尾に省略可能な `CancellationToken cancellationToken = default`) |
 
 DI から使う構成と1行登録の糖衣は [MAUI の DI 連携と登録糖衣](di-registration.md) が定める。
 
@@ -34,7 +34,7 @@ C# には型引数の既定値がないため、型引数のない `IDialogViewM
 
 ## 中身は MAUI の View だけ
 
-MAUI には Android の Compose に相当する第二の UI 技術がなく、**MAUI の `View` が唯一の中身の形**である。したがって技術別の呼び分け (別名・オーバーロード) もない。factory は `Func<TViewModel, DialogNotifier<TResult>, View>` の形で、報告口を取らない1引数形 `Func<TViewModel, View>` のオーバーロードもある。
+MAUI には Android の Compose に相当する第二の UI 技術がなく、**MAUI の `View` が唯一の中身の形**である。したがって技術別の呼び分け (別名・オーバーロード) もない。factory は `Func<TViewModel, DialogNotifier<TResult>, View>` の形である。報告口を取らない 1 引数形 `Func<TViewModel, View>` のオーバーロードは登録 (`DialogViewRegistry.Register`) にだけあり、インラインの `ShowAsync` は 2 引数形だけを取る。
 
 ## インライン show
 
@@ -79,7 +79,7 @@ show は `Task<DialogResult<TResult>>` を返し、結果は `DialogResult` の 
 | 事象 | 例外 |
 |---|---|
 | View factory 未登録 | `DialogException.ViewFactoryNotRegistered` |
-| 提示先の画面が無い | `DialogException.PresentationHostUnavailable` |
+| 表示の仕組みを持たない実行環境 (iOS / Android ではない素の .NET) で show した | `DialogException.PresentationHostUnavailable` |
 | VM factory 未登録 (型指定 show) | `DialogException.ViewModelFactoryNotRegistered` |
 | 同一 ViewModel インスタンスの並行 show | `DialogException.ViewModelAlreadyShowing` |
 | 値型を ViewModel にした | `DialogException.ValueTypeViewModel` |
@@ -90,7 +90,29 @@ show は `Task<DialogResult<TResult>>` を返し、結果は `DialogResult` の 
 
 例外名の末尾が `ValueTypeViewModel` なのは C# の語彙 (値型) に合わせたもので、Kotlin 側とは意図的に非対称である。並行 show の `ViewModelAlreadyShowing` と VM factory 未登録の `ViewModelFactoryNotRegistered` は Kotlin と同名である。
 
-**MAUI には呼び出し元キャンセルの経路がない** — `ShowAsync` は呼び出し元のキャンセル手段 (`CancellationToken` に相当する引数) を受け取らないため、「待機側が打ち切った」という観察自体が存在しない。`Cancelled` が返るのはこの経路とは別で、利用者の操作 (キャンセル報告・外側タップ) や画面破棄によってダイアログが閉じた場合である (条件は [結果通知のルール](../../core/api/result-notification-semantics.md) の「どの操作がキャンセルになるか」)。
+iOS / Android では、出す先の画面がまだ無いときも `ShowAsync` は失敗せず、画面が現れるのを待ってから表示する (待つのは各 OS の Native)。`PresentationHostUnavailable` が届くのは素の .NET だけである。MAUI の画面の文脈は、Native が中身を求めた時点で、その時点の Native の提示先に対応する画面から解決する。そこで文脈が取れなかった場合は、理由の文言つきの `InvalidOperationException` が中身の生成の失敗として届く (Native の提示先を確保した後なので、通常は起きない防御である)。
+
+待ちに上限は無いので、画面が現れない場所から呼ぶ show には `CancellationToken` を渡す。打ち切ったときの振る舞いは次のとおり ([maui/ADR-0006](../../../decisions/maui/0006-dialog-show-caller-cancellation.md)):
+
+| 打ち切った時点 | 起きること |
+|---|---|
+| 呼び出しの時点で打ち切り済み | 登録の解決・ViewModel の生成・Native の呼び出しをせずに `OperationCanceledException` を投げる |
+| 提示先を待っている間 | ダイアログは一度も表示されず、`OperationCanceledException` を投げる |
+| 表示中 | ダイアログが閉じ (退出の演出は最後まで行う)、`OperationCanceledException` を投げる |
+
+打ち切りは結果の `Cancelled` には変換されない。`Cancelled` が返るのは、利用者の操作 (キャンセル報告・外側タップ) や画面破棄によってダイアログが閉じた場合である (条件は [結果通知のルール](../../core/api/result-notification-semantics.md) の「どの操作がキャンセルになるか」)。
+
+```csharp
+using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+try
+{
+    var result = await Dialog.Instance.ShowAsync(new ConfirmViewModel("削除しますか?"), cancellationToken: cts.Token);
+}
+catch (OperationCanceledException)
+{
+    // 待っている間か表示中に打ち切られた。ダイアログは画面に残っていない
+}
+```
 
 ## 移植元 (AiForms.Maui.Dialogs) の API 名との対応
 

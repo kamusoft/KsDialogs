@@ -15,6 +15,9 @@ namespace KsDialogs;
 /// </remarks>
 internal sealed class PlatformLoadingGateway : ILoadingGateway
 {
+    /// <summary>基準領域「表示中のページ」のページを Native 実装へ教える口を、最初の表示より前に登録しておく。</summary>
+    public PlatformLoadingGateway() => PlatformCurrentPage.EnsureInstalled();
+
     /// <inheritdoc/>
     public void ApplyStyle(LoadingStyle style) =>
         MauiLoadingBridge.Shared.ApplyStyle(ToBridgeStyle(style));
@@ -36,7 +39,10 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     }
 
     /// <inheritdoc/>
-    public async Task RunAsync(LoadingPresentationRequest request, Func<IProgress<double>, Task> action)
+    public async Task RunAsync(
+        LoadingPresentationRequest request,
+        Func<IProgress<double>, Task> action,
+        LoadingActionThread actionThread)
     {
         TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         // 処理の失敗は互換面へ渡さず、こちらで抱えたまま合流1件の終了だけを伝える。
@@ -47,8 +53,10 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
 
         MauiLoadingBridge.Shared.Start(
             ToBridgeContent(request, contentFailure),
+            // 互換面がこの口を呼ぶのは UI スレッド外だが、処理を始めるスレッドは手順の側が指定どおりに振り分ける
             (report, actionCompletion) => _ = LoadingActionRunner.RunAsync(
                 action,
+                actionThread,
                 progress => report(progress),
                 () => actionCompletion(),
                 thrown => failure = thrown),
@@ -131,11 +139,7 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
         ILoadingProgressReceiver? receiver = request.ProgressReceiver;
         return new MauiLoadingContent(
             () => BridgeContentSupply.CreateOrFail(
-                () => PlatformDialogContent.Create(
-                    request.CreateContent(),
-                    // 供給元が呼ばれるのは器が提示先を確保した後なので、この時点では文脈が取れる
-                    PlatformDialogContent.ResolveMauiContext()
-                        ?? throw new DialogException.PresentationHostUnavailable()),
+                () => PlatformDialogContent.CreateInPresentationContext(request.CreateContent),
                 contentFailure),
             placement,
             receiver is null ? null : progress => receiver.OnProgress(progress));

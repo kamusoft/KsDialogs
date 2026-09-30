@@ -2,7 +2,6 @@ import KsDialogs
 import Observation
 
 /// 進捗を報告する刻みの数。0 から 1 までをこの数で割った値を順に報告する。
-/// ローディングの処理は UI スレッドの外でも走るため、刻みの定数は画面から独立して置く。
 private let loadingStepCount = 4
 /// メッセージを差し替える刻み。
 private let loadingMessageUpdateStep = 2
@@ -90,7 +89,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -108,7 +107,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -129,7 +128,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -145,7 +144,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -170,7 +169,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.cancelledResult
             }
         } catch {
-            // 提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 同じ ViewModel の重ね表示などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -178,19 +177,18 @@ final class SampleMenuModel {
     /// Default Loading を実行し、完了を直近の結果として取り込む。
     ///
     /// スコープ形の start は処理の間だけ既定ローディングを出し、処理の完了で自動的に閉じる。
-    /// 処理は 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
+    /// 処理は UI スレッドで始まるため、最初の文で結果表示を直接「処理中」に書き換える。
+    /// そのあと 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
     func runDefaultLoading() async {
-        // 進捗を報告するクロージャは MainActor の外で動き、隔離されたプロパティを読めないため、
-        // ここで値を取り出しておく
-        let stepIntervalMilliseconds = loadingStepIntervalMilliseconds
         do {
             try await Loading.shared.start(message: SampleText.loadingStartMessage) { report in
+                lastResult = SampleText.loadingProcessingResult
                 for step in 0...loadingStepCount {
                     report(Double(step) / Double(loadingStepCount))
                     if step == loadingMessageUpdateStep {
                         await Loading.shared.setMessage(SampleText.loadingUpdateMessage)
                     }
-                    try await Task.sleep(for: .milliseconds(stepIntervalMilliseconds))
+                    try await Task.sleep(for: .milliseconds(loadingStepIntervalMilliseconds))
                 }
             }
             lastResult = SampleText.loadingCompletedResult
@@ -206,19 +204,16 @@ final class SampleMenuModel {
     /// 実体はレジストリの ViewModel factory が作る。
     /// 報告した進捗は ViewModel の受け口へ転送され、中身のカスタム View がそれを読んで表示を更新する。
     func runCustomLoading() async {
-        // 進捗を報告するクロージャは MainActor の外で動き、隔離されたプロパティを読めないため、
-        // ここで値を取り出しておく
-        let stepIntervalMilliseconds = loadingStepIntervalMilliseconds
         do {
             try await Loading.shared.start(CustomLoadingViewModel.self) { report in
                 for step in 0...loadingStepCount {
                     report(Double(step) / Double(loadingStepCount))
-                    try await Task.sleep(for: .milliseconds(stepIntervalMilliseconds))
+                    try await Task.sleep(for: .milliseconds(loadingStepIntervalMilliseconds))
                 }
             }
             lastResult = SampleText.loadingCompletedResult
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ローディングを表示できませんでした: \(error)")
         }
     }
@@ -255,7 +250,7 @@ final class SampleMenuModel {
                 InlineToastCard(viewModel: viewModel)
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("Toast を表示できませんでした: \(error)")
         }
     }

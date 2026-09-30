@@ -29,11 +29,13 @@ final class SampleMenuModel {
     /// 共有 Presenter の外にあるデモ (Inline・パネル系) はこの経路では何も起こらない。
     func autoPlay(_ demo: SampleDemoId) async {
         do {
-            if let result = try await presenter.autoPlay(demo: demo) {
+            if let result = try await presenter.autoPlay(demo: demo, showInterimResult: { result in
+                self.lastResult = result
+            }) {
                 lastResult = result
             }
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("デモを再生できませんでした: \(error)")
         }
     }
@@ -43,7 +45,7 @@ final class SampleMenuModel {
         do {
             lastResult = try await presenter.showBasicDialog()
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -53,7 +55,7 @@ final class SampleMenuModel {
         do {
             lastResult = try await presenter.showDeclarativeDialog()
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -65,7 +67,7 @@ final class SampleMenuModel {
         do {
             lastResult = try await presenter.showModelDialog()
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -75,7 +77,7 @@ final class SampleMenuModel {
         do {
             lastResult = try await presenter.showTextInputDialog()
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }
@@ -83,9 +85,12 @@ final class SampleMenuModel {
     /// Default Loading を実行し、完了を直近の結果として取り込む。
     ///
     /// 呼び出しは共有 Presenter に閉じており、この型は結果の文言を受け取るだけである。
+    /// 処理中の文言は処理の中から UI スレッドで渡されるので、そのまま結果表示へ出す。
     func runDefaultLoading() async {
         do {
-            lastResult = try await presenter.runDefaultLoading()
+            lastResult = try await presenter.runDefaultLoading(showInterimResult: { result in
+                self.lastResult = result
+            })
         } catch {
             // 処理の失敗は呼び出し元へ伝わる。Sample の処理は失敗しないので開発中に気づけるよう止める
             assertionFailure("ローディングの処理が失敗しました: \(error)")
@@ -99,7 +104,7 @@ final class SampleMenuModel {
         do {
             lastResult = try await presenter.runCustomLoading()
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ローディングを表示できませんでした: \(error)")
         }
     }
@@ -160,7 +165,7 @@ final class SampleMenuModel {
         do {
             lastResult = try await presenter.runToastOverlap()
         } catch {
-            // 未登録・提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 未登録などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("Toast を表示できませんでした: \(error)")
         }
     }
@@ -186,7 +191,7 @@ final class SampleMenuModel {
                 lastResult = SampleText.shared.CANCELLED_RESULT
             }
         } catch {
-            // 提示先不在は Sample の組み立ての誤りなので、開発中に気づけるよう止める
+            // 同じ ViewModel の重ね表示などの構成エラーは Sample の組み立ての誤りなので、開発中に気づけるよう止める
             assertionFailure("ダイアログを表示できませんでした: \(error)")
         }
     }

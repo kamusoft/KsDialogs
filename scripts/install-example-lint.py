@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""インストール例の契約の検査。
+"""インストール例の契約の検査 (cross/ADR-0029)。
 
 貼ってそのまま使える依存宣言は、ルート README 2 枚 (英語 / 日本語) と利用者向け Skill
 5 本 x 2 言語 (`skills/{en,ja}/ksdialogs-*/`) の導入節にある。KMP の Skill はホスト別の
 手順を `references/android-host.md` と `references/ios-host.md` に分けており、そこにも
 宣言がある。これらの例は具体的な version を持たず、version の位置にはプレースホルダ
-`{version}` を置く。埋め忘れは依存解決の失敗として利用者に必ず露見し、リリースのたびに
-書き換える必要もない。
+`{version}` を置く (cross/ADR-0027)。埋め忘れは依存解決の失敗として利用者に必ず露見し、
+リリースのたびに書き換える必要もない。
 
 検査する契約は次の 4 つ。
 

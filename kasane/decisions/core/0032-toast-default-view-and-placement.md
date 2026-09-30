@@ -3,6 +3,7 @@ id: 0032
 title: Toast の既定 View は OS 慣習寄せのピルとし、既定配置は下部中央 + ボトムバー回避オフセット、styling とアプリ既定配置は ToastStyle で受ける
 status: accepted
 date: 2026-08-27
+amended-by: 0038
 ---
 
 ## Context
@@ -35,3 +36,4 @@ Toast は既定 View を持つと決めた (ADR-0028)。その見た目・既定
 - 実装で確定した帰結 (出典: 実装結果): ToastStyle の項目の適用範囲は2種に分かれる — 視覚項目 (背景色・文字色・フォントサイズ・角丸) はデフォルト View にのみ効き、既定値項目 (既定 duration・アプリ既定配置) はカスタム View を含むすべての Toast に効く (該当引数・添付の省略時の既定として)
 
 出典: kasane/roadmaps/library-foundation/phases/phase-8-toast-rebuild/history.md (2026-08-27 デフォルト View の見た目と styling の受け口) / kasane/changes/archive/2026-08-28-add-toast/design.md (Decision 6) / kasane/changes/archive/2026-08-28-add-toast/specs/dialog-contract/spec.md (配置属性と ToastStyle)
+関連: kasane/concepts/core/api/toast-semantics.md「配置と一括設定」— Consequences の実装観測 (ToastStyle の視覚項目はデフォルト View のみ、既定値項目は全 Toast に効く) の現在の記述先 (2026-09-26 ksn-drift で確認)

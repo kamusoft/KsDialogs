@@ -2,7 +2,7 @@
 
 A Toast is a fire-and-forget notification that returns no result, and is called from `KsToast` (`Toast.instance` and an injected instance are the same thing). There are two routes: presenting the built-in message Toast as it is, or presenting your own content bound to a view-model type.
 
-Each accepted display uses its supplied duration and placement, has its own timer, and may overlap other Toasts. A Toast does not intercept touches and has neither an overlay color nor an outside-tap handler. When one is visible at the same time as a Loading, the Loading stays in front.
+Each accepted display uses its supplied duration and placement, has its own timer, and may overlap other Toasts. A Toast does not intercept touches and has neither an overlay color nor an outside-tap handler. When one is visible at the same time as a Loading, the Loading stays in front. The container does not change the host screen's system bar settings (icon contrast, bar visibility).
 
 ## Choose a `show`
 
@@ -24,6 +24,8 @@ In the recipes below, "Show the built-in message Toast" is the first row, "Regis
 
 `durationMs` is in milliseconds; omitting it or passing a value of 0 or less uses `ToastStyle.defaultDuration`, and when that is also 0 or less it falls back to `ToastStyle.BUILTIN_DEFAULT_DURATION` (1500). Passing a value of 0 or less leaves a warning in the log, as does a `defaultDuration` of 0 or less; omitting `durationMs` leaves none. Omitting the placement uses the app default, or the library default (bottom centre of the visible area, offset 80 logical units upward) when there is none.
 
+The built-in message Toast carries a margin (`dialogMargin`) of 24 on each edge in its own content, and that margin applies whichever placement it is given. With the library default placement its bottom edge sits 104 (margin 24 + offset 80) above the bottom of the visible area, and a long message wraps 24 inside the left and right edges. There is no way to change this margin. Your own content has a margin of 0 by default, which can be changed by attaching it to the content as with a Dialog ([Layout](layout.md)).
+
 ```kotlin
 import jp.kamusoft.ksdialogs.DialogAlignment
 import jp.kamusoft.ksdialogs.DialogPlacement
@@ -40,6 +42,23 @@ fun notifySaved() {
     )
 }
 ```
+
+## When the duration starts counting
+
+The duration is consumed in real time on a monotonic clock, and keeps running while the app is in the background. When counting starts depends on the state at the display's start step (the turn taken on the UI thread in acceptance order).
+
+| State at the start step | Counting starts |
+|---|---|
+| A host (an `Activity` that is resumed and has been drawn) exists | When the Toast is accepted |
+| The app is in the background | When the Toast is accepted |
+| The app is in the foreground but there is no host (before the first screen is drawn at startup, while switching screens, while a system permission dialog is up, and so on) | When the Toast goes onto a host. If the app goes to the background before that, when it goes to the background |
+
+- A Toast accepted in the background is discarded without being shown if its duration expires before a host appears (this is not an error). A display past its deadline does not appear even if a host appears later
+- A Toast waiting for a host in the foreground has no deadline until it goes onto a host or the app goes to the background. This keeps a Toast shown at startup or during an interruption from using up its duration unseen
+- Once set, the deadline is not rewound across Activity recreation, a move to another screen, or a return from the background
+- Right after launch the screen is drawn before the splash screen finishes leaving, so the Toast counts under the splash screen for the length of that exit animation, and is visible for that much less than its duration
+
+A container on screen moves to another screen only when the screen it sits on is destroyed or another drawn host appears. While the app goes to the background and comes back, the container stays attached and is visible from the first frame of the returning screen.
 
 ## Configure Toast defaults
 
@@ -169,7 +188,7 @@ fun notifySynchronized() {
 }
 ```
 
-On Android, creating the view model and running `configure` happen after the host (a resumed `Activity`) is secured, just like creating the content. A display whose duration expires before a host appears is discarded without either of them being called.
+On Android, creating the view model and running `configure` happen after the host (an `Activity` that is resumed and has been drawn) is secured, just like creating the content. A display whose duration expires before a host appears is discarded without either of them being called.
 
 ## Show custom content without registration
 
@@ -228,7 +247,7 @@ A configuration mistake presents nothing and throws `DialogException` synchronou
 
 The messages in the table are the values the current implementation returns, not a stable API (what does not change is the exception type and the condition it is thrown under; the wording can change without notice).
 
-Both exceptions expose the view-model type name through `viewModelTypeName`. For example, showing `StatusToastViewModel` while the startup registration is missing raises `DialogException.ViewFactoryNotRegistered`.
+Each of these exceptions exposes the view-model type name through `viewModelTypeName`. For example, showing `StatusToastViewModel` while the startup registration is missing raises `DialogException.ViewFactoryNotRegistered`.
 
 ```kotlin
 import android.app.Application

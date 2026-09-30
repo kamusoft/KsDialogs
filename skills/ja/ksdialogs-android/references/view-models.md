@@ -93,10 +93,11 @@ View コンテンツも同じ 1 引数の形で `register` に渡せる。コン
 1. ViewModel factory が ViewModel を生成する (Main dispatcher)
 2. `configure` が完了する (`suspend` として書ける)
 3. `notifier` が紐付く
-4. View factory がコンテンツを生成する
-5. Dialog を表示する
+4. 表示先の画面が無ければ、現れるまで待つ ([Dialog](dialogs.md) の「画面が出る前に呼ぶ」)
+5. View factory がコンテンツを生成する
+6. Dialog を表示する
 
-したがって `configure` が入れた状態は、コンテンツの初期化から必ず読める。ViewModel factory や `configure` が投げた失敗は `Cancelled` にはならず、表示へ進まずに呼び出し元へ伝播する。
+したがって `configure` が入れた状態は、コンテンツの初期化から必ず読める。待っている間に同じインスタンスを再び表示すると、まだ画面に出ていなくても `DialogException.ViewModelAlreadyShowing` になる。ViewModel factory や `configure` が投げた失敗は `Cancelled` にはならず、表示へ進まずに呼び出し元へ伝播する。
 
 以下は結果型に `String` を宣言した ViewModel を 2 つのスロットとも登録し、型指定 `show` の `configure` で `prompt` を入れてから表示する例である。
 

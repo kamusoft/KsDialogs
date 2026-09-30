@@ -4,7 +4,8 @@ namespace KsDialogs.ApiSurfaceCheck.NegativeChecks;
 
 /// <summary>
 /// 既定ローディングの表示 API に options 引数はない (器メタ属性はシングルトンの設定プロパティで
-/// 渡す。表示 API から渡せるのは placement だけ。core/ADR-0015・ADR-0023)。
+/// 渡す。器メタ属性のうち表示 API から渡せるのは placement だけ。core/ADR-0015・ADR-0023)。
+/// スコープ形が受け取る actionThread は処理を始めるスレッドの指定で、器メタ属性ではない。
 /// </summary>
 /// <remarks>
 /// このソースはビルドプロパティ KsDialogsNegativeCheckLoadingShowOptions を true にしたときだけ加わり、

@@ -154,7 +154,81 @@ suspend fun importLibrary(source: ImportSource): Int =
     }
 ```
 
-`configure` は Dialog と Loading では中断関数として書け、Toast では `show` が fire-and-forget なので同期のみになる。DI コンテナが組み立てる ViewModel は ViewModel factory の中身として書く。ライブラリはコンテナを知らない。共有コードにも同じ形の `show(VM::class)` があるが、引く ViewModel factory の表は別なので、共有コードから表示するなら共有コードで登録する ([ViewModel](view-models.md))。iOS host の Swift 入口にはこの形が無い。
+Android Native の `start` にも、共有コードと同じ `actionThread` 引数 (`LoadingActionThread`) がある。Android Native の型指定 `start` では、ViewModel factory と `configure` は指定に関係なく UI スレッドで走る。`configure` は Dialog と Loading では中断関数として書け、Toast では `show` が fire-and-forget なので同期のみになる。DI コンテナが組み立てる ViewModel は ViewModel factory の中身として書く。ライブラリはコンテナを知らない。共有コードにも同じ形の `show(VM::class)` があるが、引く ViewModel factory の表は別なので、共有コードから表示するなら共有コードで登録する ([ViewModel](view-models.md))。iOS host の Swift 入口にはこの形が無い。
+
+## 表示中のページを教える
+
+content に `DialogLayoutArea.CURRENT_PAGE` を添付した Dialog は、表示中のページを基準に配置される ([レイアウト](layout.md))。Android には OS の概念としてのページが無く、ライブラリは自分ではページを探さないので、アプリが教える。教え方は 2 つあり、両方あれば上が優先される。どちらからも得られなければ `VISIBLE_AREA` と同じ結果になり、理由が警告ログ (タグ `KsDialogs`) に出る。
+
+| 順 | 画面の作り | 書く名前 | 配布物 |
+|---|---|---|---|
+| 1 | Compose | `Modifier.markAsDialogCurrentPage()` | `jp.kamusoft:ksdialogs` |
+| 2 | 従来 View | `DialogCurrentPage.provider` (`(() -> View?)?`) | `jp.kamusoft:ksdialogs-core` |
+
+基準になるのは、教えた composable / View の矩形と可視領域の共通部分である。バーを含む画面全体ではなく、バーの内側の枠 (中身の領域) を教える。
+
+### Compose の画面で印を付ける
+
+中身の枠に 1 回付ける。付けた composable は画面に載っている間だけ候補になり、組み立てから外れると候補から外れる。候補が複数あるときは、入れ子なら内側、それ以外は最後に画面に載ったものが選ばれる。
+
+```kotlin
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import jp.kamusoft.ksdialogs.compose.markAsDialogCurrentPage
+
+@Composable
+fun PageWithBottomBar(
+    bottomBar: @Composable () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Column(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .markAsDialogCurrentPage(),
+        ) {
+            content()
+        }
+        bottomBar()
+    }
+}
+```
+
+`Crossfade` や `AnimatedContent`、Navigation Compose のフェード遷移では、切り替えの間は去る画面の印も候補に残るため、その間に出した Dialog は去る画面を基準にしうる。
+
+### 従来 View の画面で関数を登録する
+
+表示中のページの View を返す関数を一度登録する。`null` を代入すると登録を解除する。関数は UI スレッドで、各表示の開始時と、表示中にウィンドウの寸法やシステムバーの幅が変わったときに呼ばれる。登録の差し替えは次の表示から効く。
+
+```kotlin
+import android.app.Activity
+import android.os.Bundle
+import android.widget.FrameLayout
+import jp.kamusoft.ksdialogs.DialogCurrentPage
+
+class MainActivity : Activity() {
+    private lateinit var pageContainer: FrameLayout
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        pageContainer = findViewById(R.id.page_container)
+        DialogCurrentPage.provider = { pageContainer }
+    }
+
+    override fun onDestroy() {
+        DialogCurrentPage.provider = null
+        super.onDestroy()
+    }
+}
+```
+
+関数が `null` を返す・例外を投げる・返した View が Dialog を出す Activity のウィンドウに載っていない・矩形が空、のいずれかなら、ページは得られなかった扱いになる。同じ Activity で出したモーダル・ダイアログのウィンドウに載った View は候補にできる。
 
 ## 内蔵 Loading と Toast の見た目を設定する
 
@@ -180,7 +254,7 @@ Toast.instance.style = Toast.instance.style.copy(
 )
 ```
 
-`Loading.instance.options` は Dialog の添付で使うのと同じ `DialogOptions` を受け取り、内蔵 Loading content に添付の口が無い代わりになる。外側タップの項目は設定しても無効のままである。`defaultPlacement` は全 Toast に効くアプリ既定の配置で、アプリ自身のボトムバーを避けるための逃げ道になる。`progressFormat` は書式文字列ではなく `(String?, Double?) -> String` の関数である。
+`Loading.instance.options` は Dialog の添付で使うのと同じ `DialogOptions` を受け取り、内蔵 Loading content に添付の口が無い代わりになる。外側タップの項目は設定しても無効のままである。`defaultPlacement` は全 Toast に効くアプリ既定の配置で、アプリ自身のボトムバーを避けるための逃げ道になる。組み込みの Toast は自分の中身に全辺 24 の余白を持つので、`defaultPlacement` で動かしても画面の端には貼り付かない。内蔵 Loading と Toast の器は、表示中も提示先の Activity のシステムバーの指定 (アイコンの明暗・表示/非表示) を引き継いで変えない。`progressFormat` は書式文字列ではなく `(String?, Double?) -> String` の関数である。
 
 ## 構成ミスの失敗
 
@@ -189,14 +263,15 @@ Toast.instance.style = Toast.instance.style.copy(
 | 状況 | 例外 |
 |---|---|
 | その class の View factory が未登録 (Dialog / Loading / Toast のいずれも) | `DialogException.ViewFactoryNotRegistered` |
-| 提示できる画面が無い | `DialogException.PresentationHostUnavailable` |
 | 型指定 show で ViewModel factory が未登録 (Dialog / Loading / Toast のいずれも) | `DialogException.ViewModelFactoryNotRegistered` |
 | 同じ ViewModel instance が既に表示中 | `DialogException.ViewModelAlreadyShowing` |
 | value class を ViewModel にした | `DialogException.ValueClassViewModel` |
 
 型指定 show で ViewModel factory や `configure` が投げた例外は、Dialog と Loading では表示に進まずに呼び出し元へ伝わり、型指定の `start` は処理を実行しない。Toast がこの形で返せるのは ViewModel factory の未登録だけである。`show` が既に戻っているため factory と `configure` の例外は呼び出し元へ返せず、警告を記録に残してその 1 枚だけが破棄される。
 
-呼び出し元のコルーチンをキャンセルすると `CancellationException` が伝播する。Dialog は退出の演出と撤去を最後まで完遂する。
+出す先の画面が無いことは失敗にならない。Android の提示先は resumed で、かつ描画された Activity で、それが現れるまで Dialog は待ち、Loading は処理を続けながら待ち、Toast は期限の範囲で待つ。起動画面の下で開いている途中の画面には出さない ([Dialog](dialogs.md) / [Loading](loading.md) / [Toast](toast.md))。
+
+呼び出し元のコルーチンをキャンセルすると、画面を待っている間でも表示中でも `CancellationException` が伝播する。表示中の Dialog は退出の演出と撤去を最後まで完遂する。
 
 ## Android 専用の入口
 

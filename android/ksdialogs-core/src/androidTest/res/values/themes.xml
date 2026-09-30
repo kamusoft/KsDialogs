@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      テーマでアイコンの明暗を明るい地向けに指定する提示先のテーマ。
+      明暗の属性は Android 8.1 以上 (values-v27) で足す
+    -->
+    <style name="KsDialogsTest.LightBarsTheme" parent="@android:style/Theme.Material.Light.NoActionBar" />
+</resources>

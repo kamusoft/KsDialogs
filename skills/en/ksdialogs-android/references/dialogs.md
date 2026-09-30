@@ -6,7 +6,7 @@ Content can be written in Jetpack Compose or as an Android View. Both register i
 
 The factory is invoked on every show and receives a `DialogNotifier<R>` that completes or cancels that presentation. With a factory that receives only the view model, the view model itself reports through the extension property `notifier` ([View models](view-models.md)). Only the first report settles the result; later reports do nothing.
 
-A result is `Cancelled` when the notifier reports cancellation, when the overlay is tapped outside the content, when the back button is pressed, or when the screen hosting the Dialog is destroyed.
+A result is `Cancelled` when the notifier reports cancellation, when the overlay is tapped outside the content, when the back button is pressed, when the screen hosting the Dialog is destroyed, or when the Dialog cannot be put on screen after its content has been created (for example, when the host screen disappears while the factory is running).
 
 ## Choose a `show`
 
@@ -268,11 +268,39 @@ suspend fun showTwoDialogs(): Pair<DialogResult<Boolean>, DialogResult<Boolean>>
 }
 ```
 
+When several shows are called while there is no host screen, they go on screen one at a time in call order once a host appears, and a later call stacks in front. A show called while other Dialogs are still waiting lines up behind them even if a host exists. This order holds for calls made in succession from the same UI thread; shows called from other threads, and type-based `show` calls whose `configure` suspends, line up in the order they become ready.
+
+## Call before a screen exists
+
+A `show` called while there is no host (an `Activity` that is resumed and has been drawn) throws nothing; it waits for a host to appear and then presents. This covers calling from the first screen's initialization right after launch, calling while the app is in the background, and calling while a system permission dialog is up. The Dialog is not put on a screen that is still opening under the splash screen, and an `Activity` merely being destroyed does not make it appear; it appears once the next `Activity` is resumed and drawn.
+
+The wait has no upper bound. It ends in one of these ways:
+
+- A host appears. The content is created and presented
+- The view model reports a result through `notifier` while waiting. That result is returned without presenting
+- The calling coroutine is cancelled. `CancellationException` propagates without the Dialog ever being presented
+
+Call a `show` that may never see a screen from a scope that can be cancelled. The following puts a 30-second limit on it and returns `null` when the limit is reached. The limit also applies while the Dialog is shown, so a Dialog without an answer in time is closed as well.
+
+```kotlin
+import jp.kamusoft.ksdialogs.Dialog
+import jp.kamusoft.ksdialogs.DialogResult
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.seconds
+
+suspend fun confirmResumeUpload(): DialogResult<Boolean>? =
+    withTimeoutOrNull(30.seconds) {
+        Dialog.instance.show(ConfirmViewModel("Resume the upload?"))
+    }
+```
+
+Registration lookup, the view-model factory, and `configure` all run before the wait, so a configuration mistake fails without waiting whether or not a host exists. The content (View) is created only after a host appears.
+
 ## Recover from a configuration mistake
 
-A configuration mistake does not return `Cancelled`; it fails `show` with a nested `DialogException` class. That keeps a missing registration from being mistaken for a user cancellation, and in this case no content is created or presented. Cancelling the calling coroutine is different: it propagates `CancellationException`, and the dismissal animation and container removal still run to completion.
+A configuration mistake does not return `Cancelled`; it fails `show` with a nested `DialogException` class. That keeps a missing registration from being mistaken for a user cancellation, and in this case no content is created or presented. Cancelling the calling coroutine is different: whether it happens while waiting for a host or while the Dialog is shown, it propagates `CancellationException`, and if the Dialog is shown, the dismissal animation and container removal still run to completion.
 
-For every exception except `PresentationHostUnavailable`, the type name of the view model in question is readable from `viewModelTypeName`.
+For each of these exceptions, the type name of the view model in question is readable from `viewModelTypeName`.
 
 | Exception | Message | Cause and remedy |
 |---|---|---|
@@ -280,7 +308,6 @@ For every exception except `PresentationHostUnavailable`, the type name of the v
 | `DialogException.ViewModelFactoryNotRegistered` | `No ViewModel factory is registered for ViewModel type {TypeName}.` | The type-based `show` has no view-model factory. Call `registerViewModel` (see [View models](view-models.md)) |
 | `DialogException.ViewModelAlreadyShowing` | `This ViewModel instance of type {TypeName} is already being shown.` | The same view-model instance is already being shown. Create a new instance for each stacked show |
 | `DialogException.ValueClassViewModel` | `ViewModel type {TypeName} is a value class and cannot be used as a ViewModel.` | A value class was used as a view model. Make the view model a class |
-| `DialogException.PresentationHostUnavailable` | `No screen is available to present the Dialog.` | There is no resumed Activity. Show after the first screen becomes resumed. Calls are not queued; they fail immediately |
 
 The messages in the table are the values the current implementation returns, not a stable API (what does not change is the exception type and the condition it is thrown under; the wording can change without notice).
 
@@ -313,4 +340,4 @@ suspend fun confirmDeletion(): DialogResult<Boolean> =
     }
 ```
 
-To handle all of them together, including `PresentationHostUnavailable`, which has no `viewModelTypeName`, `catch` the base type `DialogException`.
+To handle configuration mistakes together, `catch` the base type `DialogException`. The base type has no `viewModelTypeName`, so catch the nested exception type when the type name is needed.

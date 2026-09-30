@@ -1,0 +1,69 @@
+# MAUI iOS Sample: 配備した .app に変更後の互換面が入っていたことの確認 (handbook cross/runtime-behavior-verification.md)
+#
+# 経緯 (正直な記録):
+#   1 回目の撮影 (2026-09-25 20:25) の時点では、この確認をしていなかった。
+#   相方レビューの指摘を受け、同日 22:0x に次の手順で確認と撮り直しを行った。
+#     1. 作業ツリーで MAUI iOS Sample を Debug で再ビルド
+#        (dotnet build -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 -c Debug → 0 警告 0 エラー)
+#        再リンクで実行ファイルの md5 が 6519d5b1… → ff75ba1f… に変わった。KsDialogs.Maui.dll と
+#        KsDialogs.Binding.iOS.dll の md5 は再ビルドの前後で同じ (4a4763b9… / 496a3c17…)
+#     2. Shutdown 状態の Simulator (iPhone Air、iOS 26.5) を boot し、.app を install
+#     3. Simulator のアプリコンテナ内に配備された .app を、下の 3 つの判定材料で検査 (結果は下記)
+#     4. 同じ配備物で Default Loading を撮り直し、sample-maui-ios-default-loading-*.png を差し替えた
+#        (22:02〜22:03 撮影。1 回目の撮影と同じく 処理中 → 完了、撮影後もプロセスは生存)
+#     5. Simulator を shutdown
+#   1 回目の撮影に使った .app は、1 の再ビルドの前に上書きされずディスクに残っていたが、
+#   配備先 (Simulator) のコピーは後の比較ビルドの install で上書きされているため、1 回目の配備物そのものは検査できない。
+#   ディスク上の元 .app (再ビルド前、md5 6519d5b1…) には、下の判定材料 (a) (b) (c) がすべて出ていた (同じ nm / strings で確認)。
+#
+# 判定材料:
+#   (a) Native の Loading.start の action 型が @MainActor になっていること。mangled 名の action 部分が
+#       変更後は `...YaYbKScMYcXE...` (@Swift.MainActor)、変更前は `...YaYbKXE...`。
+#       互換面の MauiLoadingBridge はこの start を呼ぶので、変更後の Native に対してリンクされたことを示す。
+#   (b) 互換面の `@concurrent` 化で生じる reabstraction thunk
+#       `$sSdIeghy_IghHg_SdIeghy_yts5Error_pIeghHgrzo_TR` があること。
+#       互換面自身の closure の mangled 名は @concurrent の有無で変わらない (変更前後の .app で同一) ため、この thunk で判定する。
+#       thunk が @concurrent 由来であることは、scratchpad で同じ形の最小コードを
+#       `xcrun -sdk iphonesimulator swiftc -target arm64-apple-ios26.0-simulator -swift-version 6 -emit-object` で
+#       2 通りにコンパイルして確かめた:
+#         `@MainActor @Sendable (@Sendable @escaping (Double) -> Void) async throws -> T` を受ける start へ
+#         `{ @concurrent report in ... }` を渡す → 上の thunk (と TA / TQ0_ / Tu 派生) が出る
+#         `{ report in ... }` を渡す             → 出ない
+#   (c) managed 側 KsDialogs.Maui.dll の metadata に `LoadingActionThread` と `Background` があること
+#       (LoadingActionRunner の振り分け)。変更前の dll には無い。
+
+## 変更後: 撮り直しに使った配備物 (Simulator のアプリコンテナ内)
+# 配備物 (Simulator のアプリコンテナ内の .app) の検査
+md5:
+ff75ba1f4be8d86eca44d1b1c1c8d66c <app-container>/KsDialogs.Sample.Maui
+4a4763b9446b849def804403cf140627 <app-container>/KsDialogs.Maui.dll
+
+nm -a <app-container>/KsDialogs.Sample.Maui | grep -F 'KsDialogs7LoadingC5start7message9placement'
+_$s9KsDialogs7LoadingC5start7message9placement_xSSSg_AA15DialogPlacementVSgxySdYbcYaYbKScMYcXEtYaKs8SendableRzlF
+
+nm -a <app-container>/KsDialogs.Sample.Maui | grep -F 'sSdIeghy_IghHg_SdIeghy_yts5Error_pIeghHgrzo_TR'
+_$sSdIeghy_IghHg_SdIeghy_yts5Error_pIeghHgrzo_TR
+
+strings -a <app-container>/KsDialogs.Maui.dll | grep -xE 'LoadingActionThread|LoadingActionRunner|InvokeOnMainThreadAsync|Background'
+InvokeOnMainThreadAsync
+LoadingActionThread
+Background
+LoadingActionRunner
+
+## 変更前: UIKitThreadAccessException の比較ビルド (maui-ios-before-change-default-loading.log)
+# HEAD b0657a9 を git archive で scratchpad に展開し、Sample の変更 (SampleText.cs / SampleMenuPage.xaml.cs) だけを重ねて Debug でビルドしたもの。
+# 配備先のコピーは後で上書きされたため、install 元のディスク上の .app (20:27 のビルド後に再ビルドなし) を検査した。
+# (a) は変更前の型、(b) は 0 件、(c) は LoadingActionThread / Background が無い → 比較対象は変更前の互換面と変更前の Runner だった。
+md5:
+c5affecc3e181bf77e8d972e5bdc7600 <before-app>/KsDialogs.Sample.Maui
+b6e3ef429313f31f4a5b32c5a8fb36f6 <before-app>/KsDialogs.Maui.dll
+
+nm -a <before-app>/KsDialogs.Sample.Maui | grep -F 'KsDialogs7LoadingC5start7message9placement'
+_$s9KsDialogs7LoadingC5start7message9placement_xSSSg_AA15DialogPlacementVSgxySdYbcYaYbKXEtYaKs8SendableRzlF
+
+nm -a <before-app>/KsDialogs.Sample.Maui | grep -cF 'sSdIeghy_IghHg_SdIeghy_yts5Error_pIeghHgrzo_TR'
+0
+
+strings -a <before-app>/KsDialogs.Maui.dll | grep -xE 'LoadingActionThread|LoadingActionRunner|InvokeOnMainThreadAsync|Background'
+InvokeOnMainThreadAsync
+LoadingActionRunner

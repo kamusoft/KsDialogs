@@ -14,6 +14,9 @@ namespace KsDialogs;
 /// </remarks>
 internal sealed class PlatformLoadingGateway : ILoadingGateway
 {
+    /// <summary>基準領域「表示中のページ」のページを Native 実装へ教える口を、最初の表示より前に登録しておく。</summary>
+    public PlatformLoadingGateway() => PlatformCurrentPage.EnsureInstalled();
+
     /// <inheritdoc/>
     public void ApplyStyle(LoadingStyle style) =>
         MauiLoadingBridge.Shared!.ApplyStyle(ToBridgeStyle(style));
@@ -36,7 +39,10 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     }
 
     /// <inheritdoc/>
-    public async Task RunAsync(LoadingPresentationRequest request, Func<IProgress<double>, Task> action)
+    public async Task RunAsync(
+        LoadingPresentationRequest request,
+        Func<IProgress<double>, Task> action,
+        LoadingActionThread actionThread)
     {
         TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         // 処理の失敗は互換面へ渡さず、こちらで抱えたまま合流1件の終了だけを伝える。
@@ -47,7 +53,7 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
 
         MauiLoadingBridge.Shared!.Start(
             ToBridgeContent(request, contentFailure),
-            new ActionRunner(action, failure),
+            new ActionRunner(action, actionThread, failure),
             new CompletionListener(completion, contentFailure));
 
         await completion.Task.ConfigureAwait(false);
@@ -128,11 +134,7 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     {
         public MauiDialogContent? CreateContent() =>
             BridgeContentSupply.CreateOrFail(
-                () => PlatformDialogContent.Create(
-                    request.CreateContent(),
-                    // 供給元が呼ばれるのは器が提示先を確保した後なので、この時点では文脈が取れる
-                    PlatformDialogContent.ResolveMauiContext()
-                        ?? throw new DialogException.PresentationHostUnavailable()),
+                () => PlatformDialogContent.CreateInPresentationContext(request.CreateContent),
                 contentFailure);
     }
 
@@ -154,15 +156,23 @@ internal sealed class PlatformLoadingGateway : ILoadingGateway
     }
 
     /// <summary>MAUI 側の処理を、互換面が呼ぶ口として差し出す。</summary>
+    /// <remarks>
+    /// 互換面がこの口を呼ぶのは UI スレッドだが、処理を始めるスレッドは手順の側が指定どおりに振り分ける。
+    /// </remarks>
     /// <param name="action">実行する処理。</param>
+    /// <param name="actionThread">処理を始めるスレッド。</param>
     /// <param name="failure">処理が失敗したときにその理由を預ける先。</param>
-    private sealed class ActionRunner(Func<IProgress<double>, Task> action, LoadingActionFailure failure)
+    private sealed class ActionRunner(
+        Func<IProgress<double>, Task> action,
+        LoadingActionThread actionThread,
+        LoadingActionFailure failure)
         : Java.Lang.Object, IMauiLoadingAction
     {
         public void Run(IMauiLoadingProgressReport report, Java.Lang.IRunnable completion) =>
             // 完了通知は処理が終わるまで持ち越すため、その間 Java 側の実体を掴んだままにする
             _ = LoadingActionRunner.RunAsync(
                 action,
+                actionThread,
                 progress => report.Report(progress),
                 completion.Run,
                 thrown => failure.Value = thrown);

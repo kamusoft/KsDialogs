@@ -28,6 +28,9 @@ public enum class MauiDialogLayoutArea {
 
     /** ウィンドウからシステムバーなどが占める余白を控除した可視領域。 */
     VISIBLE_AREA,
+
+    /** 表示中のページの矩形のうち、可視領域と重なる部分。 */
+    CURRENT_PAGE,
 }
 
 /**
@@ -45,16 +48,16 @@ public class MauiDialogOptions {
     public var layoutArea: MauiDialogLayoutArea = MauiDialogLayoutArea.VISIBLE_AREA
 
     /** 基準 rect の上辺から控除する余白。 */
-    public var marginTop: Double = 24.0
+    public var marginTop: Double = 0.0
 
     /** 基準 rect の左辺から控除する余白。 */
-    public var marginLeft: Double = 24.0
+    public var marginLeft: Double = 0.0
 
     /** 基準 rect の下辺から控除する余白。 */
-    public var marginBottom: Double = 24.0
+    public var marginBottom: Double = 0.0
 
     /** 基準 rect の右辺から控除する余白。 */
-    public var marginRight: Double = 24.0
+    public var marginRight: Double = 0.0
 
     /** 基準 rect の幅に対する比率。0 以下は未指定。 */
     public var proportionalWidth: Double = -1.0
@@ -103,6 +106,7 @@ internal fun MauiDialogAlignment.toDialogAlignment(): DialogAlignment = when (th
 internal fun MauiDialogLayoutArea.toDialogLayoutArea(): DialogLayoutArea = when (this) {
     MauiDialogLayoutArea.WINDOW -> DialogLayoutArea.WINDOW
     MauiDialogLayoutArea.VISIBLE_AREA -> DialogLayoutArea.VISIBLE_AREA
+    MauiDialogLayoutArea.CURRENT_PAGE -> DialogLayoutArea.CURRENT_PAGE
 }
 
 /** 互換面の静的メタ属性を Native ライブラリの型へ写す。 */

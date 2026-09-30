@@ -63,15 +63,16 @@ class SamplePresenter(
      * この Presenter の外にあるため、それらは OS の UI 層が受け持つ。
      *
      * @param demo 再生するデモ
+     * @param showInterimResult 処理の途中で結果表示エリアを書き換える受け口 ([runDefaultLoading] と同じ)
      * @return 結果表示エリアに出す文言。OS の UI 層が受け持つデモなら null
      */
     @Throws(DialogException::class, CancellationException::class)
-    suspend fun autoPlay(demo: SampleDemoId): String? = when (demo) {
+    suspend fun autoPlay(demo: SampleDemoId, showInterimResult: (String) -> Unit): String? = when (demo) {
         SampleDemoId.BASIC_DIALOG -> showBasicDialog()
         SampleDemoId.DECLARATIVE_DIALOG -> showDeclarativeDialog()
         SampleDemoId.MODEL_DIALOG -> showModelDialog()
         SampleDemoId.TEXT_INPUT_DIALOG -> showTextInputDialog()
-        SampleDemoId.DEFAULT_LOADING -> runDefaultLoading()
+        SampleDemoId.DEFAULT_LOADING -> runDefaultLoading(showInterimResult)
         SampleDemoId.CUSTOM_LOADING -> runCustomLoading()
         SampleDemoId.DEFAULT_TOAST -> {
             showDefaultToast()
@@ -190,12 +191,17 @@ class SamplePresenter(
      * 調整した属性で Layout Dialog を表示し、結果を表示用の文言にして返す。
      *
      * @param placement この呼び出しでの置き場所
-     * @param usesVisibleArea サイズと位置の計算に可視領域を使うか
+     * @param layoutArea サイズと位置の計算に使う基準領域
+     * @param dialogMargin 全辺そろえで中身に添付する余白 (論理単位)
      * @return 結果表示エリアに出す文言
      */
     @Throws(DialogException::class, CancellationException::class)
-    suspend fun showLayoutDialog(placement: DialogPlacement, usesVisibleArea: Boolean): String {
-        val viewModel = LayoutDialogViewModel(SampleText.LAYOUT_DIALOG_MESSAGE, usesVisibleArea)
+    suspend fun showLayoutDialog(
+        placement: DialogPlacement,
+        layoutArea: SampleLayoutAreaPreset,
+        dialogMargin: Double,
+    ): String {
+        val viewModel = LayoutDialogViewModel(SampleText.LAYOUT_DIALOG_MESSAGE, layoutArea, dialogMargin)
         return when (val result = dialogs.show(viewModel, placement)) {
             is DialogResult.Completed -> SampleText.completedResult(result.value)
             DialogResult.Cancelled -> SampleText.CANCELLED_RESULT
@@ -206,13 +212,17 @@ class SamplePresenter(
      * Default Loading を実行し、完了を表示用の文言にして返す。
      *
      * スコープ形の start は処理の間だけ既定ローディングを出し、処理の完了で自動的に閉じる。
-     * 処理は 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
+     * 処理は UI スレッドで始まるため、最初の文で結果表示を直接「処理中」に書き換える。
+     * そのあと 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
      *
+     * @param showInterimResult 処理の途中で結果表示エリアを書き換える受け口。処理の中から
+     *   UI スレッドで呼ばれるので、受け取った側はそのまま画面へ反映してよい
      * @return 結果表示エリアに出す文言
      */
     @Throws(DialogException::class, CancellationException::class)
-    suspend fun runDefaultLoading(): String {
+    suspend fun runDefaultLoading(showInterimResult: (String) -> Unit): String {
         loading.start(message = SampleText.LOADING_START_MESSAGE) { report ->
+            showInterimResult(SampleText.LOADING_PROCESSING_RESULT)
             for (step in 0..LOADING_STEP_COUNT) {
                 report(step.toDouble() / LOADING_STEP_COUNT)
                 if (step == LOADING_MESSAGE_UPDATE_STEP) {

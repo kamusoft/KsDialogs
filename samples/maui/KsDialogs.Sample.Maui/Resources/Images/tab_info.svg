@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 説明のタブのアイコン (情報)。色はタブバーが選択状態に応じて塗り直す -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <circle cx="12" cy="12" r="9" fill="none" stroke="#000000" stroke-width="2"/>
+  <circle cx="12" cy="7.75" r="1.25" fill="#000000"/>
+  <rect x="11" y="10.5" width="2" height="7" rx="1" fill="#000000"/>
+</svg>

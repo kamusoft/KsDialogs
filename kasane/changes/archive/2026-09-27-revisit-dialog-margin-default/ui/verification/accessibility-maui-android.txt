@@ -1,0 +1,62 @@
+# maui-android: 属性調整パネルの accessibility ノード (uiautomator dump から、操作できるノードを抜粋)
+# 取得: 2026-09-27、Android エミュレータ (Pixel 6 相当 AVD, API 35, 1080x2400)、--es demo layout-dialog で起動
+# 状態: initial = 起動直後 / changed = Current page・Horizontal End・Vertical End・Margin 24 を選択 / back-to-panel = Horizontal Start・Vertical Start にして Info タブで Show → 戻る → Panel タブへ戻る
+# 列: class (ノード自身) / name (自身か子孫の content-desc、無ければ text) / role (自身か子孫の擬似ノードが示す部品種別) / 状態
+# MAUI Android はセグメントの選択状態を View.Selected (selected) に載せる (既存の配置・基準領域のセグメントと同じ)
+## initial
+  class=Button name='戻る' text='‹' role=Button checkable=false checked=false selected=false
+  class=Button name='Show' text='Show' role=Button checkable=false checked=false selected=false
+  class=Button name='Horizontal Start' text='Start' role=Button checkable=false checked=false selected=false
+  class=Button name='Horizontal Center' text='Center' role=Button checkable=false checked=false selected=true
+  class=Button name='Horizontal End' text='End' role=Button checkable=false checked=false selected=false
+  class=Button name='Vertical Start' text='Start' role=Button checkable=false checked=false selected=false
+  class=Button name='Vertical Center' text='Center' role=Button checkable=false checked=false selected=true
+  class=Button name='Vertical End' text='End' role=Button checkable=false checked=false selected=false
+  class=EditText name='OffsetX, 0' text='OffsetX, 0' role=EditText checkable=false checked=false selected=false
+  class=EditText name='OffsetY, 0' text='OffsetY, 0' role=EditText checkable=false checked=false selected=false
+  class=Button name='Window' text='Window' role=Button checkable=false checked=false selected=false
+  class=Button name='Visible area' text='Visible area' role=Button checkable=false checked=false selected=true
+  class=Button name='Current page' text='Current page' role=Button checkable=false checked=false selected=false
+  class=Button name='Margin 0' text='0' role=Button checkable=false checked=false selected=true
+  class=Button name='Margin 24' text='24' role=Button checkable=false checked=false selected=false
+  class=Button name='Margin 48' text='48' role=Button checkable=false checked=false selected=false
+  class=TextView name='Panel' text='Panel' role=- checkable=false checked=false selected=true
+  class=FrameLayout name='Info' text='Info' role=- checkable=false checked=false selected=false
+## changed
+  class=Button name='戻る' text='‹' role=Button checkable=false checked=false selected=false
+  class=Button name='Show' text='Show' role=Button checkable=false checked=false selected=false
+  class=Button name='Horizontal Start' text='Start' role=Button checkable=false checked=false selected=false
+  class=Button name='Horizontal Center' text='Center' role=Button checkable=false checked=false selected=false
+  class=Button name='Horizontal End' text='End' role=Button checkable=false checked=false selected=true
+  class=Button name='Vertical Start' text='Start' role=Button checkable=false checked=false selected=false
+  class=Button name='Vertical Center' text='Center' role=Button checkable=false checked=false selected=false
+  class=Button name='Vertical End' text='End' role=Button checkable=false checked=false selected=true
+  class=EditText name='OffsetX, 0' text='OffsetX, 0' role=EditText checkable=false checked=false selected=false
+  class=EditText name='OffsetY, 0' text='OffsetY, 0' role=EditText checkable=false checked=false selected=false
+  class=Button name='Window' text='Window' role=Button checkable=false checked=false selected=false
+  class=Button name='Visible area' text='Visible area' role=Button checkable=false checked=false selected=false
+  class=Button name='Current page' text='Current page' role=Button checkable=false checked=false selected=true
+  class=Button name='Margin 0' text='0' role=Button checkable=false checked=false selected=false
+  class=Button name='Margin 24' text='24' role=Button checkable=false checked=false selected=true
+  class=Button name='Margin 48' text='48' role=Button checkable=false checked=false selected=false
+  class=TextView name='Panel' text='Panel' role=- checkable=false checked=false selected=true
+  class=FrameLayout name='Info' text='Info' role=- checkable=false checked=false selected=false
+## back-to-panel
+  class=Button name='戻る' text='‹' role=Button checkable=false checked=false selected=false
+  class=Button name='Show' text='Show' role=Button checkable=false checked=false selected=false
+  class=Button name='Horizontal Start' text='Start' role=Button checkable=false checked=false selected=true
+  class=Button name='Horizontal Center' text='Center' role=Button checkable=false checked=false selected=false
+  class=Button name='Horizontal End' text='End' role=Button checkable=false checked=false selected=false
+  class=Button name='Vertical Start' text='Start' role=Button checkable=false checked=false selected=true
+  class=Button name='Vertical Center' text='Center' role=Button checkable=false checked=false selected=false
+  class=Button name='Vertical End' text='End' role=Button checkable=false checked=false selected=false
+  class=EditText name='OffsetX, 0' text='OffsetX, 0' role=EditText checkable=false checked=false selected=false
+  class=EditText name='OffsetY, 0' text='OffsetY, 0' role=EditText checkable=false checked=false selected=false
+  class=Button name='Window' text='Window' role=Button checkable=false checked=false selected=false
+  class=Button name='Visible area' text='Visible area' role=Button checkable=false checked=false selected=false
+  class=Button name='Current page' text='Current page' role=Button checkable=false checked=false selected=true
+  class=Button name='Margin 0' text='0' role=Button checkable=false checked=false selected=false
+  class=Button name='Margin 24' text='24' role=Button checkable=false checked=false selected=true
+  class=Button name='Margin 48' text='48' role=Button checkable=false checked=false selected=false
+  class=TextView name='Panel' text='Panel' role=- checkable=false checked=false selected=true
+  class=FrameLayout name='Info' text='Info' role=- checkable=false checked=false selected=false

@@ -30,10 +30,9 @@ public static class SampleDialogRegistration
                     onCancel: notifier.Cancel,
                     onComplete: () => notifier.Complete(true));
 
-                // 基準領域は中身の性質として扱う静的メタ属性なので、View への添付で供給する
-                Dialog.SetLayoutArea(
-                    view,
-                    viewModel.UsesVisibleArea ? DialogLayoutArea.VisibleArea : DialogLayoutArea.Window);
+                // 基準領域と余白は中身の性質として扱う静的メタ属性なので、パネルで選んだ値を View への添付で供給する
+                Dialog.SetLayoutArea(view, viewModel.LayoutArea);
+                Dialog.SetDialogMargin(view, new Thickness(viewModel.DialogMargin));
 
                 return view;
             });

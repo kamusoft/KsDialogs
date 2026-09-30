@@ -1,0 +1,183 @@
+# KsDialogs probe round2 dumpsys 抜粋 (dumpsys window / dumpsys window -a windows から Sample のウィンドウと DisplayPolicy の要点のみ)
+# win <id> ty=BASE_APPLICATION が提示先 (Activity)、ty=APPLICATION が器 (Dialog / Loading / Toast)。apr / bhv が無表示 = 0
+# req = Requested non-default-visibility types (記載の型を非表示に要求中)
+# (a) Small_Phone API 35 / probe-mode=hide (提示先で systemBars を hide + BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE)
+
+== a-hidden-menu
+win 919250e ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=SHOW_TRANSIENT_BARS_BY_SWIPE None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION EDGE_TO_EDGE_ENFORCED FORCE_DRAW_STATUS_BAR_BACKGROUND FIT_INSETS_CONTROLLED
+  req 919250e: non-default-visibility=statusBars navigationBars captionBar
+  mLastStatusBarAppearanceRegions= AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1280]}
+  mLastBehavior=SHOW_TRANSIENT_BARS_BY_SWIPE
+  status: WINDOW_STATE_HIDDEN
+  nav: WINDOW_STATE_HIDDEN
+  mTopFullscreenOpaqueWindowState=Window{919250e u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  InsetsSource statusBars visible=false
+  InsetsSource navigationBars visible=false
+
+== a-hidden-basic-dialog
+win 57933b7 ty=APPLICATION apr=LIGHT_STATUS_BARS bhv=SHOW_TRANSIENT_BARS_BY_SWIPE None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION EDGE_TO_EDGE_ENFORCED FORCE_DRAW_STATUS_BAR_BACKGROUND FIT_INSETS_CONTROLLED
+win 7a22060 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=SHOW_TRANSIENT_BARS_BY_SWIPE None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+  req 57933b7: non-default-visibility=statusBars navigationBars
+  req 7a22060: non-default-visibility=statusBars navigationBars captionBar
+  mLastStatusBarAppearanceRegions= AppearanceRegion{LIGHT_STATUS_BARS bounds=[0,0][720,1280]}
+  mLastBehavior=SHOW_TRANSIENT_BARS_BY_SWIPE
+  status: WINDOW_STATE_HIDDEN
+  nav: WINDOW_STATE_HIDDEN
+  mTopFullscreenOpaqueWindowState=Window{57933b7 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  InsetsSource statusBars visible=false
+  InsetsSource navigationBars visible=false
+
+== a-hidden-default-loading
+win a267036 ty=APPLICATION apr=None bhv=DEFAULT None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION EDGE_TO_EDGE_ENFORCED FORCE_DRAW_STATUS_BAR_BACKGROUND FIT_INSETS_CONTROLLED
+win 588dbe3 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=SHOW_TRANSIENT_BARS_BY_SWIPE None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+  req a267036: non-default-visibility=(なし=既定どおり表示)
+  req 588dbe3: non-default-visibility=statusBars navigationBars captionBar
+  mLastStatusBarAppearanceRegions= AppearanceRegion{ bounds=[0,0][720,1280]}
+  mLastBehavior=DEFAULT
+  status: WINDOW_STATE_SHOWING
+  nav: WINDOW_STATE_SHOWING
+  mTopFullscreenOpaqueWindowState=Window{a267036 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  InsetsSource statusBars visible=true
+  InsetsSource navigationBars visible=true
+
+== a-hidden-default-toast
+win 6e5c58c ty=APPLICATION apr=None bhv=DEFAULT None  onScreen=true viewVis=None
+    fl=NOT_FOCUSABLE NOT_TOUCHABLE LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+    pfl=NO_MOVE_ANIMATION EDGE_TO_EDGE_ENFORCED FORCE_DRAW_STATUS_BAR_BACKGROUND FIT_INSETS_CONTROLLED
+win cedecd7 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=SHOW_TRANSIENT_BARS_BY_SWIPE None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+  req 6e5c58c: non-default-visibility=(なし=既定どおり表示)
+  req cedecd7: non-default-visibility=statusBars navigationBars captionBar
+  mLastStatusBarAppearanceRegions= AppearanceRegion{ bounds=[0,0][720,1280]}
+  mLastBehavior=SHOW_TRANSIENT_BARS_BY_SWIPE
+  status: WINDOW_STATE_HIDDEN
+  nav: WINDOW_STATE_HIDDEN
+  mTopFullscreenOpaqueWindowState=Window{6e5c58c u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  InsetsSource statusBars visible=false
+  InsetsSource navigationBars visible=false
+
+# (b) ksn_api31 API 31。b1=AndroidX isAppearanceLightStatusBars / b2=insetsController.setSystemBarsAppearance / b3=decorView.systemUiVisibility |= SYSTEM_UI_FLAG_LIGHT_STATUS_BAR (追加変種)
+# API 31 の DisplayPolicy は mLastAppearance (0 のとき行ごと出ない) がステータスバーの明暗の最終値
+
+== b1-menu
+win ac50167 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED FIT_INSETS_CONTROLLED
+  req ac50167: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{ac50167 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastAppearance=LIGHT_STATUS_BARS
+  mLastBehavior=DEFAULT
+
+== b1-basic-dialog
+win a66b78d ty=APPLICATION apr=LIGHT_STATUS_BARS bhv=None None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED BEHAVIOR_CONTROLLED FIT_INSETS_CONTROLLED
+win 3c3d994 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED FIT_INSETS_CONTROLLED
+  req a66b78d: non-default-visibility=(なし=既定どおり表示)
+  req 3c3d994: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{a66b78d u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastAppearance=LIGHT_STATUS_BARS
+
+== b1-default-loading
+win 73bddb3 ty=APPLICATION apr=None bhv=DEFAULT None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST FIT_INSETS_CONTROLLED
+win d66720c ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED FIT_INSETS_CONTROLLED
+  req 73bddb3: non-default-visibility=(なし=既定どおり表示)
+  req d66720c: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{73bddb3 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastBehavior=DEFAULT
+  (mLastAppearance 行なし = 0)
+
+== b1-default-toast
+win 3418dec ty=APPLICATION apr=None bhv=DEFAULT None  onScreen=true viewVis=None
+    fl=NOT_FOCUSABLE NOT_TOUCHABLE LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST FIT_INSETS_CONTROLLED
+win 8c810e9 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED FIT_INSETS_CONTROLLED
+  req 3418dec: non-default-visibility=(なし=既定どおり表示)
+  req 8c810e9: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{3418dec u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastAppearance=LIGHT_STATUS_BARS
+  mLastBehavior=DEFAULT
+
+== b2-menu
+win dc7bf60 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED FIT_INSETS_CONTROLLED
+  req dc7bf60: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{dc7bf60 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastAppearance=LIGHT_STATUS_BARS
+  mLastBehavior=DEFAULT
+
+== b2-basic-dialog
+win 2745a13 ty=APPLICATION apr=LIGHT_STATUS_BARS bhv=None None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED BEHAVIOR_CONTROLLED FIT_INSETS_CONTROLLED
+win 97c543a ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED FIT_INSETS_CONTROLLED
+  req 2745a13: non-default-visibility=(なし=既定どおり表示)
+  req 97c543a: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{2745a13 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastAppearance=LIGHT_STATUS_BARS
+
+== b2-default-loading
+win 553a473 ty=APPLICATION apr=None bhv=DEFAULT None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST FIT_INSETS_CONTROLLED
+win baa2001 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED FIT_INSETS_CONTROLLED
+  req 553a473: non-default-visibility=(なし=既定どおり表示)
+  req baa2001: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{553a473 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastBehavior=DEFAULT
+  (mLastAppearance 行なし = 0)
+
+== b2-default-toast
+win 3c1fed4 ty=APPLICATION apr=None bhv=DEFAULT None  onScreen=true viewVis=None
+    fl=NOT_FOCUSABLE NOT_TOUCHABLE LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST FIT_INSETS_CONTROLLED
+win 17667ba ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED FIT_INSETS_CONTROLLED
+  req 3c1fed4: non-default-visibility=(なし=既定どおり表示)
+  req 17667ba: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{3c1fed4 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastAppearance=LIGHT_STATUS_BARS
+  mLastBehavior=DEFAULT
+
+== b3-menu
+win d324aa8 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST FIT_INSETS_CONTROLLED
+  req d324aa8: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{d324aa8 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastAppearance=LIGHT_STATUS_BARS
+  mLastBehavior=DEFAULT
+
+== b3-basic-dialog
+win db064cc ty=APPLICATION apr=None bhv=None None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST APPEARANCE_CONTROLLED BEHAVIOR_CONTROLLED FIT_INSETS_CONTROLLED
+win 2aa40f ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST FIT_INSETS_CONTROLLED
+  req db064cc: non-default-visibility=(なし=既定どおり表示)
+  req 2aa40f: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{db064cc u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  (mLastAppearance 行なし = 0)
+
+== b3-default-loading
+win 3ed8598 ty=APPLICATION apr=None bhv=DEFAULT None  onScreen=true viewVis=None
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST FIT_INSETS_CONTROLLED
+win ed2ab67 ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+  req 3ed8598: non-default-visibility=(なし=既定どおり表示)
+  req ed2ab67: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{3ed8598 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastBehavior=DEFAULT
+  (mLastAppearance 行なし = 0)
+
+== b3-default-toast
+win 52882c9 ty=APPLICATION apr=None bhv=DEFAULT None  onScreen=true viewVis=None
+    fl=NOT_FOCUSABLE NOT_TOUCHABLE LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+    pfl=NO_MOVE_ANIMATION FORCE_DRAW_STATUS_BAR_BACKGROUND USE_BLAST FIT_INSETS_CONTROLLED
+win 34e47cc ty=BASE_APPLICATION apr=LIGHT_STATUS_BARS bhv=DEFAULT None vsysui=LIGHT_STATUS_BAR onScreen=true viewVis=None
+  req 52882c9: non-default-visibility=(なし=既定どおり表示)
+  req 34e47cc: non-default-visibility=(なし=既定どおり表示)
+  mTopFullscreenOpaqueWindowState=Window{52882c9 u0 jp.kamusoft.ksdialogs.samples.android/jp.kamusoft.ksdialogs.samples.android.MainActivity}
+  mLastAppearance=LIGHT_STATUS_BARS
+  mLastBehavior=DEFAULT

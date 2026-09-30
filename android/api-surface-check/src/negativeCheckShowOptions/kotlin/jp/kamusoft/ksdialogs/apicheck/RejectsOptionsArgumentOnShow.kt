@@ -9,7 +9,8 @@ import jp.kamusoft.ksdialogs.KsDialog
  *
  * このソースは `-Pksdialogs.negativeCheck.showOptions` を付けたときだけビルドに加わり、
  * **コンパイルエラーで失敗すること**が期待結果になる。
- * 期待する診断: No parameter with name 'options' found.
+ * 期待する診断: `None of the following candidates is applicable:` の 1 件だけ
+ * (引数名不明の診断は出ない。2026-09-25 実測)
  */
 public object RejectsOptionsArgumentOnShow {
     public suspend fun show(dialogs: KsDialog): DialogResult<Boolean> =

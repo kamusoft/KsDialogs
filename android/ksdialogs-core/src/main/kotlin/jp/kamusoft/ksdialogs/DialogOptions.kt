@@ -14,8 +14,8 @@ import androidx.annotation.ColorInt
  * 正規化されるので、指定した値がそのまま計算に使われるとは限らない。
  *
  * @property layoutArea サイズと位置の計算の基準になる領域。既定は可視領域
- * @property dialogMargin 基準 rect の各辺から控除する余白。最大サイズと配置の両方に効く。既定は全辺 24。
- *   負の辺はその辺だけ 0 に、非有限値の辺は既定値に丸める
+ * @property dialogMargin 基準 rect の各辺から控除する余白。最大サイズと配置の両方に効く。既定は全辺 0。
+ *   負の辺と非有限値の辺は、その辺だけ 0 に丸める
  * @property proportionalWidth 基準 rect の幅に対する比率。0 < 値 ≤ 1 で比率指定が成立する。
  *   1 を超える値は 1 に丸め、0 以下と非有限値はすべて未指定として扱う。既定は未指定 (-1)
  * @property proportionalHeight 基準 rect の高さに対する比率。扱いは [proportionalWidth] と同じ
@@ -25,7 +25,8 @@ import androidx.annotation.ColorInt
  */
 public data class DialogOptions(
     public val layoutArea: DialogLayoutArea = DialogLayoutArea.VISIBLE_AREA,
-    public val dialogMargin: DialogEdgeInsets = DialogEdgeInsets(24.0),
+    // 余白の既定は全辺 0 (core/ADR-0039)。
+    public val dialogMargin: DialogEdgeInsets = DialogEdgeInsets(0.0),
     public val proportionalWidth: Double = -1.0,
     public val proportionalHeight: Double = -1.0,
     @param:ColorInt @get:ColorInt public val overlayColor: Int = 0x66000000,

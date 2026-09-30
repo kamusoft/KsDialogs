@@ -2,10 +2,11 @@
 scope: impl
 kind: pain
 severity: normal
-count: 1
+count: 2
 first-seen: 2026-09-10
-last-seen: 2026-09-10
+last-seen: 2026-09-13
 evidence:
+  - backport-registry-wait-hardening (自己テストが「待機の止まらない誤実装」を停止ではなく失敗として表すかの確認で、レビューに名指しされた 1 種類 (`PUBLISHED` の枠を待機対象から外さない) だけを再現して塞いだ。同じ機構の他の終端 (`FAILED` / `NOT_FOUND` を終端として扱わない) が残り、review-002 が実測で 2 件を検出。その修正がさらに既存検査の判別力を食い (上限判定を丸ごと外しても緑)、review-003 が検出。収束まで 3 サイクル)
   - fix-release-published-wait (公開待ちの上限を 30 分 → 90 分へ上げる修正で、publish job にある 3 つの待ち (新設の一括待ち step・Android 枠と KMP 枠の再実行経路の `wait-published` 分岐) のうち 1 つだけを変え、残る 2 つは `central-portal.sh` の既定 1800 秒のままだった。しかも 2 つは step が別で枠ごとに直列に待つため、この change が解消したはずの「足し算になる直列待ち」が再実行時に 30 分 × 2 で復活していた。review-001 Major が検出)
 ---
 

@@ -64,7 +64,8 @@ The order is fixed.
 1. Create the view model
 2. Run `configure` to completion
 3. Bind the notifier
-4. Build the content view
+4. If there is no screen to present on, wait for one to appear ([Dialog](dialogs.md))
+5. Build the content view
 
 Configuration therefore completes before the content factory reads state. A failure thrown by the view-model factory or by `configure` propagates to the caller instead of turning into a cancelled result.
 
@@ -151,7 +152,7 @@ These points differ per feature.
 |---|---|---|---|
 | Dialog | synchronous and asynchronous | notifier | Propagates to the caller without reaching presentation |
 | Loading | synchronous and asynchronous | progress receiver. Coalescing is decided after `configure` completes, and the view model of a call that joins an existing display is not used for presentation | Propagates without reaching presentation or coalescing, and the action of `StartAsync` does not run |
-| Toast | synchronous only | none | `Show` has already returned, so nothing propagates: a warning is recorded and that single Toast is discarded |
+| Toast | synchronous only. Called when the Toast is placed on a screen, and not called for a display whose deadline passes before a screen appears | none | `Show` has already returned, so nothing propagates: a warning is recorded and that single Toast is discarded |
 
 Fallback resolution applies to the Dialog registry alone; Loading and Toast look only at an explicit registration or the one-line registration ([DI registration](di-registration.md)). How to write each is in [Loading](loading.md) and [Toast](toast.md).
 

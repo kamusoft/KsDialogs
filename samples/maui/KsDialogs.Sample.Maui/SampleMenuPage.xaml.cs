@@ -77,22 +77,22 @@ public partial class SampleMenuPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        // 自動再生は最初の画面の表示時に始める。提示先が現れるまで待つのはライブラリの役目
         AutoPlay();
     }
 
     /// <summary>起動引数で指定されたデモを、メニュー項目のタップと同じ入口で自動再生する。</summary>
     /// <remarks>再生はプロセスの起動につき 1 回だけで、画面が作り直されても繰り返さない。</remarks>
-    private void AutoPlay()
+    private async void AutoPlay()
     {
         if (SampleCaptureAutoPlay.ConsumeDemo() is not SampleDemoId demo)
         {
             return;
         }
 
-        // ダイアログの提示先はメニューが画面に載ってから決まるため、再生もその時点まで待つ。
         // 再生を待機して例外を観測し、失敗をメニュー項目のタップと同じ倒れ方で表面化させる
         // (握り潰すと、自動再生が失敗した画面と定義外の ID を渡した画面が見分けられなくなる)
-        Dispatcher.Dispatch(async () => await PlayAsync(demo));
+        await PlayAsync(demo);
     }
 
     /// <summary>メニュー項目のタップハンドラと同じ入口を呼ぶ。</summary>
@@ -258,13 +258,15 @@ public partial class SampleMenuPage : ContentPage
     /// <returns>実行から結果の取り込みまでを表す待機可能な操作。</returns>
     /// <remarks>
     /// スコープ形の StartAsync は処理の間だけ既定ローディングを出し、処理の完了で自動的に閉じる。
-    /// 処理は 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
+    /// 処理は UI スレッドで始まるため、最初の文で結果表示を直接「処理中」に書き換える。
+    /// そのあと 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
     /// </remarks>
     private async Task RunDefaultLoadingAsync()
     {
         await Loading.Instance.StartAsync(
             async progress =>
             {
+                ShowResult(SampleText.LoadingProcessingResult);
                 for (int step = 0; step <= LoadingStepCount; step++)
                 {
                     progress.Report((double)step / LoadingStepCount);
@@ -429,7 +431,7 @@ public partial class SampleMenuPage : ContentPage
     /// <returns>画面遷移を表す待機可能な操作。</returns>
     private async Task OpenLayoutPanelAsync()
     {
-        SampleLayoutPanelPage panel = new(ShowResult);
+        SampleLayoutPanelTabbedPage panel = new(ShowResult);
         await Navigation.PushModalAsync(panel);
     }
 

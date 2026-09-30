@@ -1,7 +1,7 @@
 ---
 id: 0029
 title: 検証 CI の lint job にインストール例の契約の検査を加え、12 検査とする (0026 を一部改訂)
-status: proposed
+status: accepted
 date: 2026-09-13
 amends: [cross/0026]
 ---
@@ -50,5 +50,5 @@ cross/ADR-0026 の決定のうち「リリース用スクリプトの自己テ�
 - lint job の所要が `timeout-minutes: 10` に対して余裕を失ったとき
 
 ---
-出典: kasane/changes/install-examples-and-release-notes/proposal.md (What Changes 3・既存 ADR との関係) / 同 design.md (Decision 3・9) / 同 specs/install-examples/spec.md (Requirement「インストール例の契約の検査」)
+出典: kasane/changes/archive/2026-09-13-install-examples-and-release-notes/proposal.md (What Changes 3・既存 ADR との関係) / 同 design.md (Decision 3・9) / 同 specs/install-examples/spec.md (Requirement「インストール例の契約の検査」)
 関連: cross/ADR-0026 (lint job の検査の集合。本決定で 11 → 12 検査に置き換え) / cross/ADR-0027 (インストール例は具体 version を持たない — 検査が守る契約) / cross/ADR-0020 (自己テストを本検査と同じ step で先に走らせる理屈と数え方)

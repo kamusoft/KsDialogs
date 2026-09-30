@@ -3,6 +3,7 @@ package jp.kamusoft.ksdialogs.kmp.apicheck
 import jp.kamusoft.ksdialogs.kmp.DialogAlignment
 import jp.kamusoft.ksdialogs.kmp.DialogPlacement
 import jp.kamusoft.ksdialogs.kmp.KsLoading
+import jp.kamusoft.ksdialogs.kmp.LoadingActionThread
 import jp.kamusoft.ksdialogs.kmp.LoadingProgressReceiver
 import jp.kamusoft.ksdialogs.kmp.LoadingViewModel
 
@@ -98,6 +99,20 @@ public object LoadingApiSurfaceChecks {
             report(1.0)
             "完了"
         }
+
+    /** 3 本のスコープ形はどれも、処理を始めるスレッドを名前付き引数で指定できる。 */
+    public suspend fun LD_HK_01_acceptsActionThreadOnEveryScopedStart(loading: KsLoading): String {
+        loading.start(message = "読み込み中", actionThread = LoadingActionThread.BACKGROUND) { report ->
+            report(0.5)
+        }
+        loading.start(ConsumerLoadingViewModel(), actionThread = LoadingActionThread.MAIN) { report ->
+            report(1.0)
+        }
+        return loading.start(
+            ConsumerLoadingViewModel::class,
+            actionThread = LoadingActionThread.BACKGROUND,
+        ) { "完了" }
+    }
 
     /** configure から suspend 関数を呼べることを示すための取得処理。 */
     private suspend fun loadProgress(): Double = kotlin.run { 0.5 }

@@ -1,8 +1,11 @@
 package jp.kamusoft.ksdialogs.samples.android
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.compose.ui.platform.ComposeView
+import androidx.core.view.WindowCompat
 import jp.kamusoft.ksdialogs.Dialog
 import jp.kamusoft.ksdialogs.DialogAlignment
 import jp.kamusoft.ksdialogs.DialogPlacement
@@ -21,7 +24,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 internal class MainActivity : ComponentActivity() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var menuView: SampleMenuView
-    private var layoutPanelView: SampleLayoutPanelView? = null
+    private var layoutPanelView: ComposeView? = null
+
+    /** 属性調整パネルの調整値。パネルを閉じて開き直しても保つ。 */
+    private val layoutPanelState = SampleLayoutPanelState()
     private var transitionPanelView: SampleTransitionPanelView? = null
 
     /**
@@ -63,10 +69,16 @@ internal class MainActivity : ComponentActivity() {
         )
         setContentView(menuView)
         onBackPressedDispatcher.addCallback(this, panelBackCallback)
+        // Android 15 以降は画面が端から端まで広がり、ステータスバーが白い地の上に重なる。
+        // 既定の白いアイコンのままでは読めないため、明るい地向けの暗いアイコンにする
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = true
+        }
 
         val options = SampleCaptureOptions.from(intent)
         loadingStepIntervalMilliseconds =
             options.loadingStepIntervalMilliseconds ?: DEFAULT_LOADING_STEP_INTERVAL_MILLISECONDS
+        // 自動再生は最初の画面を組み立てたこの時点で始める。提示先が現れるまで待つのはライブラリの役目
         if (savedInstanceState == null) {
             autoPlay(options.demo)
         }
@@ -76,14 +88,13 @@ internal class MainActivity : ComponentActivity() {
      * 起動引数で指定されたデモを、メニュー項目のタップと同じ入口で自動再生する。
      *
      * 再生はプロセスの起動につき 1 回だけで、画面の再生成では再生しない。
-     * ダイアログの提示先はメニューが画面に載ってから決まるため、再生もその時点まで待つ。
      */
     private fun autoPlay(demo: SampleDemoId?) {
         if (demo == null || autoPlayConsumed) {
             return
         }
         autoPlayConsumed = true
-        menuView.post { play(demo) }
+        play(demo)
     }
 
     /** メニュー項目のタップハンドラと同じ入口を呼ぶ。 */
@@ -182,11 +193,13 @@ internal class MainActivity : ComponentActivity() {
      * Default Loading を実行し、完了を直近の結果として取り込む。
      *
      * スコープ形の start は処理の間だけ既定ローディングを出し、処理の完了で自動的に閉じる。
-     * 処理は 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
+     * 処理は UI スレッドで始まるため、最初の文で結果表示を直接「処理中」に書き換える。
+     * そのあと 0 から 1 まで進捗を段階的に報告し、途中で表示中のメッセージを差し替える。
      */
     private fun runDefaultLoading() {
         scope.launch {
             Loading.instance.start(message = SampleText.LOADING_START_MESSAGE) { report ->
+                menuView.showResult(SampleText.LOADING_PROCESSING_RESULT)
                 for (step in 0..LOADING_STEP_COUNT) {
                     report(step.toDouble() / LOADING_STEP_COUNT)
                     if (step == LOADING_MESSAGE_UPDATE_STEP) {
@@ -325,13 +338,17 @@ internal class MainActivity : ComponentActivity() {
         offsetY = offsetY,
     )
 
-    /** 属性調整パネルを開く。開いている間の状態は同じ View に保たれる。 */
+    /** 属性調整パネルを開く。開き直しても調整値は同じ状態に保たれる。 */
     private fun openLayoutPanel() {
-        val panel = layoutPanelView ?: SampleLayoutPanelView(
-            context = this,
-            onBack = ::closeLayoutPanel,
-            onShow = ::showLayoutDialog,
-        ).also { layoutPanelView = it }
+        val panel = layoutPanelView ?: ComposeView(this).apply {
+            setContent {
+                SampleLayoutPanelScreen(
+                    state = layoutPanelState,
+                    onBack = ::closeLayoutPanel,
+                    onShow = ::showLayoutDialog,
+                )
+            }
+        }.also { layoutPanelView = it }
         setContentView(panel)
         panelBackCallback.isEnabled = true
     }
@@ -344,15 +361,16 @@ internal class MainActivity : ComponentActivity() {
 
     /** パネルで調整した属性でダイアログを表示し、結果をパネルとメニューの両方へ出す。 */
     private fun showLayoutDialog() {
-        val panel = layoutPanelView ?: return
+        val panel = layoutPanelState
         scope.launch {
             val viewModel = LayoutDialogViewModel(
                 message = SampleText.LAYOUT_DIALOG_MESSAGE,
-                usesVisibleArea = panel.usesVisibleArea,
+                layoutArea = panel.layoutArea.layoutArea,
+                dialogMargin = panel.margin.value,
             )
             // 置き場所は呼び出しごとに変わるので show の引数で渡す
             val result = displayText(Dialog.instance.show(viewModel, panel.placement()))
-            panel.showResult(result)
+            panel.lastResult = result
             menuView.showResult(result)
         }
     }

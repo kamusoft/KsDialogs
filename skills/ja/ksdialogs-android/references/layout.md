@@ -1,6 +1,6 @@
 # レイアウトを添付する
 
-Dialog の大きさ・位置・背後の覆い・外側タップの扱いは、コンテンツに添付して指定する。この文書は添付できる属性と値の決まり方、Compose と View それぞれの添付の書き方を扱う。
+Dialog の大きさ・位置・背後の覆い・外側タップの扱いは、コンテンツに添付して指定する。この文書は添付できる属性と値の決まり方、Compose と View それぞれの添付の書き方、表示中のページ (画面のバーの内側) を基準にした配置を扱う。
 
 ## 添付する 2 つの値
 
@@ -15,13 +15,21 @@ Dialog の大きさ・位置・背後の覆い・外側タップの扱いは、�
 
 | プロパティ | 型 | 供給するもの | 既定値 |
 |---|---|---|---|
-| `layoutArea` | `DialogLayoutArea` (`WINDOW` / `VISIBLE_AREA`) | 大きさと位置の計算の基準になる領域 | `VISIBLE_AREA` |
-| `dialogMargin` | `DialogEdgeInsets` | 基準領域の各辺から控除する余白 | 全辺 24 |
+| `layoutArea` | `DialogLayoutArea` (`WINDOW` / `VISIBLE_AREA` / `CURRENT_PAGE`) | 大きさと位置の計算の基準になる領域 | `VISIBLE_AREA` |
+| `dialogMargin` | `DialogEdgeInsets` | 基準領域の各辺から控除する余白 | 全辺 0 |
 | `proportionalWidth` / `proportionalHeight` | `Double` | その軸の基準領域に対する比率 | `-1.0` (未指定) |
 | `overlayColor` | `Int` (`@ColorInt` の ARGB 32bit) | Dialog の背後を覆う色 | `0x66000000` (黒 40%) |
 | `isCanceledOnTouchOutside` | `Boolean` | 外側タップでキャンセルするか | `true` |
 
 `DialogEdgeInsets` は 4 辺を `top`、`left`、`bottom`、`right` の順に取る。全辺が同じ値なら `DialogEdgeInsets(24.0)`、余白なしなら `DialogEdgeInsets.ZERO` と書ける。
+
+`DialogLayoutArea` の値は次の基準領域を選ぶ。どれを選んでも水平・垂直の両軸に効く。
+
+| 値 | 基準になる領域 |
+|---|---|
+| `WINDOW` | Dialog を載せるウィンドウの全体 |
+| `VISIBLE_AREA` | ウィンドウからシステムバーなどが占める幅を除いた領域 |
+| `CURRENT_PAGE` | アプリが教えた表示中のページの矩形のうち、可視領域と重なる部分 (「表示中のページを基準にする」) |
 
 ### `DialogPlacement` のプロパティ
 
@@ -35,7 +43,7 @@ Dialog の大きさ・位置・背後の覆い・外側タップの扱いは、�
 ## 値の決まり方
 
 - **比率** — `0` より大きく `1` 以下の値はそのまま使い、`1` を超える値は `1` に丸める。ゼロ・負数・非有限値は未指定になる
-- **余白** — 負の辺はその辺だけ `0` に、非有限値の辺は既定の 24 に丸める
+- **余白** — 負の辺も非有限値の辺も、その辺だけ `0` に丸める
 - **移動量** — 非有限値は `0` になる
 - **大きさの優先順位** — 比率 > `FILL` 配置 > コンテンツ自身の大きさ。1 つの軸では比率が `FILL` に勝ち、そのとき `FILL` は中央配置として働く
 - **上限** — 比率の基準は余白を控除する前の領域、大きさの上限は控除した後の領域である。offset はこの上限で切り詰めないため、コンテンツを画面の外へ押し出せる
@@ -48,6 +56,8 @@ Dialog の大きさ・位置・背後の覆い・外側タップの扱いは、�
 - 表示中に添付値を書き換えても、出ている Dialog には反映されない
 - ウィンドウの寸法やシステムバーの insets が変わったときは、その実効値のまま再配置される
 - ソフトキーボードの出入りでは動かない
+- `CURRENT_PAGE` のページの矩形は、表示の開始時と、この再配置のたびに取り直す。画面遷移で表示中のページが変わっただけでは再配置しない
+- 器は表示先の画面のシステムバーの指定 (アイコンの明暗・バーの表示/非表示) を変えない。`overlayColor` に透明を指定しても同じである
 - `show` に渡した `placement` は、添付された `DialogPlacement` をオブジェクトごと置き換える。フィールド単位では合成しない
 - `DialogOptions` を `show` の引数で渡す経路はない
 
@@ -192,3 +202,135 @@ class ItemActivity : ComponentActivity() {
     }
 }
 ```
+
+## 表示中のページを基準にする
+
+`DialogLayoutArea.CURRENT_PAGE` を選ぶと、画面のトップバーやボトムバーを除いたページの内側を基準に大きさと位置が決まる。タブバーを持つ画面で末尾寄せにすれば、Dialog の下端はタブバーの上端から `dialogMargin` だけ上に出て、比率サイズもタブバーを除いた高さに対する割合になる。
+
+Android には OS としての「ページ」が無いので、どこがページかをアプリが教える。教え方は 2 つあり、両方あるときは上が優先され、上に候補が無いときに下を使う。
+
+| 順 | UI 技術 | 教え方 | 配布物 |
+|---|---|---|---|
+| 1 | Compose | ページの枠に `Modifier.markAsDialogCurrentPage()` を付ける | `jp.kamusoft:ksdialogs` |
+| 2 | Android View | ページの View を返す関数を `DialogCurrentPage.provider` に登録する | `jp.kamusoft:ksdialogs-core` |
+
+どちらからもページが得られないときは、表示を失敗させずに `VISIBLE_AREA` と同じ結果で表示し、理由をタグ `KsDialogs` の警告ログに出す。基準になるのは教えた矩形そのもの (と可視領域の共通部分) なので、バーを含む画面全体ではなく、バーの内側の枠を教える。
+
+### Compose の画面に印を付ける
+
+`Scaffold` を使う画面では、content 枠 (`innerPadding` の内側) に 1 回付ける。付けた composable は画面に載っている間だけ候補になり、画面遷移などで組み立てから外れると候補から外れる。
+
+```kotlin
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import jp.kamusoft.ksdialogs.compose.markAsDialogCurrentPage
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OrdersScreen() {
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Orders") }) },
+        bottomBar = { NavigationBar {} },
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .markAsDialogCurrentPage(),
+        ) {
+            Text("Order list")
+        }
+    }
+}
+```
+
+候補が複数あるときは、矩形が入れ子なら内側を、それ以外は最後に画面に載ったものを採る。`Crossfade`・`AnimatedContent`・Navigation Compose のフェード遷移では、切り替えの間は去る画面の印も候補に残るため、その間に出した Dialog は去る画面を基準にすることがある。条件分岐で画面を切り替える構成ではこれは起きない。
+
+### View の画面でページを返す関数を登録する
+
+ページの View を返す関数を `DialogCurrentPage.provider` に代入する。`null` を代入すると登録を解除する。関数は UI スレッドで、各表示の開始時と、表示中にウィンドウの寸法やシステムバーの幅が変わったときに呼ばれる。表示中に差し替えた登録は次の表示から効く。
+
+```kotlin
+import android.os.Bundle
+import android.view.View
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import androidx.activity.ComponentActivity
+import jp.kamusoft.ksdialogs.DialogCurrentPage
+
+class OrdersActivity : ComponentActivity() {
+    private lateinit var pageContainer: FrameLayout
+    private val pageProvider: () -> View? = { pageContainer }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        pageContainer = FrameLayout(this)
+        val bottomBar = LinearLayout(this)
+        setContentView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(pageContainer, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+                addView(bottomBar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 160))
+            },
+        )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        DialogCurrentPage.provider = pageProvider
+    }
+
+    override fun onDestroy() {
+        if (DialogCurrentPage.provider === pageProvider) {
+            DialogCurrentPage.provider = null
+        }
+        super.onDestroy()
+    }
+}
+```
+
+関数が `null` を返した・例外を投げた・返した View の矩形が空だった・返した View が Dialog を出す Activity のウィンドウ (同じ Activity で出したモーダル・ダイアログのウィンドウを含む) に載っていない、のいずれかなら、ページは得られなかった扱いになる。
+
+### コンテンツ側で基準領域を選ぶ
+
+基準領域の指定は他の `DialogOptions` と同じくコンテンツに添付する。以下はページの下端に幅いっぱいで出すシート風のコンテンツである。
+
+```kotlin
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import jp.kamusoft.ksdialogs.DialogAlignment
+import jp.kamusoft.ksdialogs.DialogEdgeInsets
+import jp.kamusoft.ksdialogs.DialogLayoutArea
+import jp.kamusoft.ksdialogs.DialogNotifier
+import jp.kamusoft.ksdialogs.DialogOptions
+import jp.kamusoft.ksdialogs.DialogPlacement
+import jp.kamusoft.ksdialogs.compose.KsDialogAttributes
+
+@Composable
+fun PageSheetContent(viewModel: ConfirmViewModel, notifier: DialogNotifier<Boolean>) {
+    KsDialogAttributes(
+        options = DialogOptions(
+            layoutArea = DialogLayoutArea.CURRENT_PAGE,
+            dialogMargin = DialogEdgeInsets(16.0),
+            proportionalWidth = 1.0,
+        ),
+        placement = DialogPlacement(verticalAlignment = DialogAlignment.END),
+    )
+    Column {
+        Text(viewModel.message)
+        Button(onClick = { notifier.complete(true) }) { Text("OK") }
+    }
+}
+```
+
+`Loading.instance.options` でも `CURRENT_PAGE` を選べ、Dialog と同じ規則でページを解決するが、Loading と Toast でこの値を選んだときの見え方は今後変わりうる。

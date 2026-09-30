@@ -6,7 +6,7 @@ applies-when:
   tasks: [Sample のデモ項目の追加・変更, Sample の文言・色トークンの変更, Sample の OS 操作 (戻る・回転) への反応の変更, Sample の撮影支援の起動引数の変更]
 title: Sample パリティ規約
 description: samples/ の4ルート (ios / android / maui / kmp) が一致させるデモ項目・文言・色トークンと、Sample を検証装置として保つための禁止事項
-timestamp: 2026-09-04
+timestamp: 2026-09-30
 ---
 
 # Sample パリティ規約
@@ -58,6 +58,7 @@ Sample は**プラットフォーム間パリティの検証装置**である。
 | Model Dialog のメッセージ | `ViewModel から表示しています` (Basic と同一デザイン。差は実装経路 — ViewModel 主導の呼び出し — のみ) |
 | Default Loading の開始メッセージ | `Loading...` |
 | Default Loading の途中更新メッセージ | `Soon...` (setMessage による差し替えのデモ) |
+| Default Loading の処理中の結果表示 | `結果: 処理中` (スコープ形の処理の最初の文で結果表示を直接更新する中間表示。UI スレッドへ明示的に移す書き方は使わず、処理が既定で UI スレッドで始まることに任せる。完了後は `結果: 完了` に変わる) |
 | Custom Loading のカスタム View 内の見出し | `カスタムローディング` |
 | Custom Loading の百分率表示 (書式) | `<進捗>%` (0〜100 の整数。進捗の帯とともに VM の進捗受け口経由で更新される) |
 | Loading 完了の結果表示 | `結果: 完了` (Default / Custom 共通。Loading は結果値を持たないため completed 書式は使わない) |
@@ -93,10 +94,29 @@ Sample は**プラットフォーム間パリティの検証装置**である。
 | 配置を選ぶ行 | `Horizontal` / `Vertical` |
 | 配置の選択肢 | `Start` / `Center` / `End` |
 | 移動量を入れる行 | `OffsetX` / `OffsetY` (初期値 `0`) |
-| 基準領域を切り替える行 | `Use visible area` (初期は ON = 可視領域基準) |
+| 基準領域を選ぶ行 | `Layout area` |
+| 基準領域の選択肢 | `Window` / `Visible area` / `Current page` (初期 `Visible area`) |
+| 余白を選ぶ行 | `Margin` |
+| 余白の選択肢 | `0` / `24` / `48` (初期 `0`) |
 | 表示操作 | `Show` |
+| タブ名 | `Panel` / `Info` (アイコン + 文字) |
+| Info タブの本文 | `このタブにはタイトルバーがありません。Current page を選ぶと、ダイアログはタブバーの内側 (このページの領域) を基準に置かれます。` |
+| Info タブの表示操作 | `Show` (パネルの設定をそのまま使う) |
 
-パネルの初期値は**契約の既定値** (中央配置・移動なし・可視領域基準) と一致させる。パネルは表示操作のあとも開いたままにし、配置を続けて試せるようにする。メニューへは画面左上の戻る記号で戻る。
+画面の構成 (4ルート同一):
+
+| 項目 | 規範 |
+|---|---|
+| タブ | 画面の下部に OS 標準のタブバーを置き、`Panel` と `Info` を切り替える。タブのアイコンは OS 標準のシンボル (MAUI は同梱の画像) から「一覧」「情報」に相当するものを選ぶ。4ルートで意味が揃えばよく、字形の一致は求めない |
+| `Panel` タブ | OS 標準のナビゲーションバー (ページの外側にある本物のバー) にタイトル・戻る記号 `‹`・`Show` を置く。バーの高さ・タイトルの寄せ・戻るの字形は OS 実装のまま |
+| `Info` タブ | タイトルバーを持たないページ。本文と `Show` を置く |
+| 基準領域の行 | 項目名の下に 3 択のセグメントを全幅で置き、選択肢の幅を等分する (部品は配置のセグメントと同じ) |
+| 表示中のページの名乗り | iOS Native と KMP (iOS) は各タブの中身の枠に SwiftUI の `.markAsDialogCurrentPage()`、Android Native と KMP (Android) は各タブの中身の枠 (Scaffold のバーの内側) に Compose の `Modifier.markAsDialogCurrentPage()`、MAUI は登録せず MAUI 層の既定の探し方に任せる |
+| 余白の行 | 基準領域の行の下に 1 行で置き、項目名を左・3 択のセグメントを右に置く (配置の行と同じ並びと部品)。全辺そろえの値だけを選び、辺ごとの指定は持たない |
+| タブを切り替えたとき | 配置・移動量・基準領域・余白の設定は保たれる |
+| パネルが出すダイアログの余白 | パネルで選んだ余白を全辺そろえの dialogMargin として添付する (余白は show の引数で渡せない静的メタ属性なので、基準領域と同じく ViewModel から各ルートの `SampleDialogRegistration` の View factory へ流し、Layout Dialog の中身に付ける)。初期値の 0 ではカードが基準領域の端 (タブバーの上端・ナビゲーションバーの下端・ステータスバーの下端) に接し、基準領域どおりに置かれたかを見た目で判定できる。4 ルートとも同じ値を添付するので、並べた画面の差は基準領域の差として読める |
+
+パネルの初期値は**契約の既定値** (中央配置・移動なし・可視領域基準・余白 0) と一致させる。パネルは表示操作のあとも開いたままにし、配置を続けて試せるようにする。メニューへは `Panel` タブのナビゲーションバーの戻る記号で戻る。
 
 結果は**メニューの結果表示エリアとパネル内の結果表示エリアの両方**に出す。どちらも一度も結果が出ていない初期状態では表示しない。
 
@@ -134,11 +154,13 @@ Sample は**プラットフォーム間パリティの検証装置**である。
 
 #### パネル操作部の読み上げ
 
-戻る記号の読み上げ規約と同型で、属性調整パネルの操作部 (配置の選択肢・移動量欄・基準領域トグル) にも**読み上げ用の名前・役割・状態**を4ルート一致で与える (画面の見た目は変えず、スクリーンリーダーにだけ効く):
+戻る記号の読み上げ規約と同型で、属性調整パネルの操作部 (配置の選択肢・移動量欄・基準領域の選択肢・余白の選択肢・タブ) にも**読み上げ用の名前・役割・状態**を4ルート一致で与える (画面の見た目は変えず、スクリーンリーダーにだけ効く):
 
 - 読み上げ名は画面の文言と同一を基本とする
-- 同名になる選択肢 (Horizontal / Vertical それぞれの `Start` / `Center` / `End`) だけは「所属行の文言 + 選択肢の文言」の複合名 (例 `Horizontal Start`) とする
-- 状態 (選択肢の選択状態・トグルの ON/OFF・移動量欄の現在値) は OS 標準の役割・状態機構に載せる (読み上げ名への埋め込みで代用しない)
+- 同名になる選択肢 (Horizontal / Vertical それぞれの `Start` / `Center` / `End`) だけは「所属行の文言 + 選択肢の文言」の複合名 (例 `Horizontal Start`) とする。基準領域の選択肢 (`Window` / `Visible area` / `Current page`) は一意なので選択肢の文言だけを読み上げ名にする
+- 余白の選択肢は数字だけでは何の値か読めないため、同じく複合名 (`Margin 0` / `Margin 24` / `Margin 48`) とする
+- 状態 (選択肢の選択状態・移動量欄の現在値) は OS 標準の役割・状態機構に載せる (読み上げ名への埋め込みで代用しない)
+- タブは OS 標準のタブバーが与える名前 (タブ名)・役割・選択状態をそのまま使う
 - 検証は accessibility tree の検査 (自動検査または実機スクリーンリーダー) で行い、4ルートの証跡を残す
 
 ## 色トークン (SampleTheme)
@@ -205,6 +227,8 @@ Android 系のルート (android / kmp) では Activity の再生成がダイア
 
 キーの直後に値がない場合、空文字、範囲外、未定義のデモ ID は、そのキーだけを無視して既定動作へ倒す。起動そのものは失敗させない。自動再生はプロセス起動につき 1 回だけで、画面や Activity の再生成では繰り返さない。撮り直すときは、起動中のアプリへ再配達せず終了してから起動し直す。
 
+自動再生は、4 ルートとも最初の画面の表示時の処理から呼び、再生を最初の描画の後や次の周回へ回さない。提示先 (iOS は前面でアクティブなシーンの key window、Android は resumed で、かつ描画された Activity) の出現を待つのも、起動直後に受け付けた Toast を画面が見えてから数えるのも、ライブラリの役目なので (core/ADR-0043・0044)、Sample 側で提示先の条件をなぞらない。
+
 ### OS ごとの外部表現
 
 | OS 系統 | 渡し方 | 例 |
@@ -256,3 +280,5 @@ Android 系のルート (android / kmp) では Activity の再生成がダイア
 - [cross/ADR-0006](../../decisions/cross/0006-samples-aggregated-consumer-boundary.md) — Sample の集約配置と、ルートごとの参照方式
 - [cross/ADR-0007](../../decisions/cross/0007-sample-parity-demo-item-unit.md) — 一致の単位をデモ項目とした決定
 - [changes/archive/2026-09-04-fix-sample-android-back-and-rotation](../../changes/archive/2026-09-04-fix-sample-android-back-and-rotation/exploration.md) — OS 操作 (戻る・回転) への反応を一致対象に加えた探索と実機証跡
+- [changes/archive/2026-09-29-align-sample-autoplay-start](../../changes/archive/2026-09-29-align-sample-autoplay-start/deviation.md) — 自動再生を最初の画面の表示時の処理から呼び、Android 系だけ最初の描画の後へ回す理由と実機証跡
+- [changes/archive/2026-09-30-fix-android-startup-toast-under-splash](../../changes/archive/2026-09-30-fix-android-startup-toast-under-splash/deviation.md) — Android 系 3 ルートの待ちを外した経緯と実機での判定

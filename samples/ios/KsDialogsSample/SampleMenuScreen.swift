@@ -89,15 +89,17 @@ struct SampleMenuScreen: View {
                 onClose: { showsTransitionPanel = false }
             )
         }
-        .task { await autoPlay() }
+        .onAppear {
+            // 自動再生は最初の画面の表示時に始める。提示先が現れるまで待つのはライブラリの役目。
+            // 取り出しは 1 回限りなので、画面が再び表示されても繰り返さない。
+            // 画面の状態が変わっても再生中のデモを打ち切らないよう、この画面の task ではなく独立した Task で走らせる
+            Task { await autoPlay() }
+        }
     }
 
     /// 起動引数で指定されたデモを、メニュー項目のタップと同じ入口で自動再生する。
     private func autoPlay() async {
         guard let demo = SampleCaptureAutoPlay.consumeDemo() else { return }
-        // 初回表示と同じターンで画面状態を変えると全画面表示の提示を取りこぼしたため、
-        // MainActor のターンを 1 回譲ってから再生する (9 デモの通し撮影で安定を確認済み)
-        await Task.yield()
         switch demo {
         case .basicDialog: await model.showBasicDialog()
         case .declarativeDialog: await model.showDeclarativeDialog()

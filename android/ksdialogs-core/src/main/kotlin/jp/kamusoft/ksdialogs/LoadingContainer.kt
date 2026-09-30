@@ -96,8 +96,12 @@ internal class LoadingContainer(
             setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             // システムバーの背景もこのウィンドウの責任にして、システムの暗い覆いが敷かれないようにする
             DialogWindowSystemBars.makeSystemBarBackgroundsTransparent(this)
+            // 全画面の器は前面にあるだけでステータスバーの明暗やバーの表示を左右し得るため、
+            // Dialog の器と同じく提示先の画面の指定を引き継ぎ、指定を変えないようにする (core/ADR-0040)
+            DialogWindowSystemBars.inheritSystemBarStateWhenAttached(this) { context.hostActivity()?.window }
         }
         setContentView(layoutHost)
+        markAsKsDialogsContainerWindow()
         if (!playsPresentation && layoutSnapshot.isFrozen) {
             // 固定済みの実効値で載せ直す経路では、レイアウトパスの節目 (固定の瞬間) が
             // もう訪れないため、進行はこの時点から始める

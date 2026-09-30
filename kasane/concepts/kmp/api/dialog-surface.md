@@ -1,9 +1,9 @@
 ---
 type: concept
 title: KMP の Dialog 公開面
-description: KMP の共有コード (commonMain) からダイアログを使うときの公開名と署名 — 既定エントリと show・結果型を省略できないこと・型指定 show と VM factory の登録 (共有 Kotlin コード専用)・View factory の登録は各 OS 側で行うこと・共有コードに添付の面が無いこと・Android / iOS ホスト側の見え方・失敗とキャンセルの届き方と Swift 境界の @Throws
+description: KMP の共有コード (commonMain) からダイアログを使うときの公開名と署名 — 既定エントリと show・結果型を省略できないこと・型指定 show と VM factory の登録 (共有 Kotlin コード専用)・View factory の登録は各 OS 側で行うこと・共有コードに添付の面が無いこと・Android / iOS ホスト側の見え方・失敗とキャンセルの届き方 (出す先の画面が無いときは失敗せず待つ) と Swift 境界の @Throws
 tags: [kmp, dialog, api, surface]
-timestamp: 2026-09-07
+timestamp: 2026-09-29
 ---
 
 # KMP の Dialog 公開面
@@ -88,7 +88,9 @@ Android Native のレジストリにも VM factory のスロットがあるが�
 
 show は `suspend` 関数で、結果は `DialogResult` の sealed interface として返る。構成ミスは結果ではなく `DialogException` で投げられる。共有コードの `DialogException` はサブクラスを持たないので、共有コード側で種別を型で判別することはできない — 原因は説明文 (英語) がメッセージとして届くだけである。各 OS の Native ライブラリで起きた失敗はその説明文が素通しで届き、共有コードの型指定 show の失敗 (VM factory 未登録・型不一致) は共有コードが説明文を組み立てる。コンストラクタは internal なので、利用者は catch はできるが自分で構築はできない (アプリ側の共有コードのテストでは `DialogException` を投げるダブルは書けない)。
 
-呼び出し元のコルーチンをキャンセルしたときは、コルーチン規約どおり `CancellationException` が伝播する (内部の結果は cancelled で確定済み)。これは共有コードから iOS 上で表示した場合も同じである。
+出す先の画面が無いことは構成ミスではなく、`DialogException` にならない。show は各 OS の Native と同じく、画面が現れるのを待ってから表示する。待ちに上限は無いので、画面が現れない場所から呼ぶ show は、呼び出し元のコルーチンをキャンセルして止められるようにする。
+
+呼び出し元のコルーチンをキャンセルしたときは、提示先を待っている間でも表示中でも、コルーチン規約どおり `CancellationException` が伝播する (内部の結果は cancelled で確定済み)。これは共有コードから iOS 上で表示した場合も同じである。
 
 ### Swift 境界の `@Throws`
 

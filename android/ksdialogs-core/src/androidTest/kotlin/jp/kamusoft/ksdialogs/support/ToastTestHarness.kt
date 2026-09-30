@@ -1,6 +1,7 @@
 package jp.kamusoft.ksdialogs.support
 
 import android.content.Context
+import android.os.Looper
 import android.view.View
 import jp.kamusoft.ksdialogs.Loading
 import jp.kamusoft.ksdialogs.LoadingCoordinator
@@ -21,7 +22,7 @@ import jp.kamusoft.ksdialogs.ToastViewRegistry
  * 同じ提示先に載る [Loading] も併せて用意し、Toast からの前面化の依頼もその Loading へつなぐので、
  * 機能間の前後関係もこの器一式で観察できる。
  *
- * @param surface 提示先を供給する面。提示先不在の状況はこの面に null を持たせて再現する
+ * @param surface 提示先と前面の判定を供給する面。提示先不在の状況はこの面に null を持たせて再現する
  */
 internal class ToastTestHarness(val surface: ToastTestPresentationSurface) {
 
@@ -55,27 +56,30 @@ internal class ToastTestHarness(val surface: ToastTestPresentationSurface) {
     )
     val toast: Toast = Toast(coordinator)
 
+    // 以下の読み取り口は UI スレッドの上で読む。coordinator の表示の列は UI スレッドが書き換えるため、
+    // テストのスレッドから走査すると追加・削除と重なって ConcurrentModificationException になり得る
+
     /** 表示中の Toast の枚数 (提示先待ちのものを含む)。 */
     val displayCount: Int
-        get() = coordinator.displayCount
+        get() = readOnMain { coordinator.displayCount }
 
-    /** 取り付け済みの器。並びは起動順 (後ろほど手前)。 */
+    /** 取り付け済みの器。並びは起動順 (後ろほど手前)。返すのは読んだ時点の写し。 */
     val containers: List<ToastContainer>
-        get() = coordinator.presentedContainers
+        get() = readOnMain { coordinator.presentedContainers }
 
-    /** 取り付け済みの器に載っている中身の View。並びは起動順。 */
+    /** 取り付け済みの器に載っている中身の View。並びは起動順。返すのは読んだ時点の写し。 */
     val contentViews: List<View>
-        get() = coordinator.presentedContentViews
+        get() = readOnMain { coordinator.presentedContentViews }
 
-    /** 表示中のデフォルト View。並びは起動順。 */
+    /** 表示中のデフォルト View。並びは起動順。返すのは読んだ時点の写し。 */
     val defaultContentViews: List<ToastDefaultContentView>
-        get() = coordinator.presentedDefaultContentViews
+        get() = readOnMain { coordinator.presentedDefaultContentViews }
 
     /** 何かが取り付いているか。 */
     val isPresenting: Boolean
-        get() = coordinator.isPresenting
+        get() = readOnMain { coordinator.isPresenting }
 
-    /** 指定した枚数の器が取り付くまで待つ。 */
+    /** 指定した枚数の器が取り付くまで待つ。枚数は毎回 UI スレッドで読む。 */
     suspend fun waitUntilPresenting(count: Int = 1): Boolean =
         InstrumentedDialogWaiting.waitUntil { containers.size == count }
 
@@ -86,5 +90,20 @@ internal class ToastTestHarness(val surface: ToastTestPresentationSurface) {
     /** 提示先の入れ替わり (画面の再生成) を起こす。 */
     fun changeHost(newHost: Context?) {
         surface.changeHost(newHost)
+    }
+
+    /** 提示先を失ったまま背面へ下がったことを起こす。 */
+    fun leaveForeground() {
+        surface.leaveForeground()
+    }
+
+    companion object {
+        /**
+         * UI スレッドの上で値を読む。UI スレッドから呼ばれたらその場で読む。
+         *
+         * coordinator を直接読むテストもこれを通して、UI スレッドが書き換える状態をテストのスレッドから走査しない。
+         */
+        fun <T> readOnMain(read: () -> T): T =
+            if (Looper.getMainLooper().isCurrentThread) read() else LoadingLayoutObservation.readOnMain(read)
     }
 }

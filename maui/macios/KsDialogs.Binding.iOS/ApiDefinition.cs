@@ -166,13 +166,34 @@ interface MauiDialogClosure
     NSError Error { get; }
 }
 
-/// <summary>提示したダイアログ 1 枚を閉じるための handle。</summary>
+/// <summary>提示したダイアログ 1 枚を閉じる・打ち切るための handle。</summary>
 [BaseType(typeof(NSObject), Name = "KSDMauiDialogPresentation")]
 interface MauiDialogPresentation
 {
-    /// <summary>提示した 1 枚を閉じる。</summary>
+    /// <summary>提示した 1 枚を閉じる。中身を作る前なら、中身を作らずに提示を止める。</summary>
     [Export("dismiss")]
     void Dismiss();
+
+    /// <summary>この提示を打ち切る。待っている間なら表示せず、表示中なら閉じる。閉鎖の通知は cancelled で届く。</summary>
+    [Export("cancel")]
+    void Cancel();
+}
+
+/// <summary>表示中のページの View を返す口。見つからなければ null を返す。</summary>
+[return: NullAllowed]
+delegate UIView MauiDialogCurrentPageProvider();
+
+/// <summary>基準領域「表示中のページ」のページを MAUI 側から教える口。</summary>
+[BaseType(typeof(NSObject), Name = "KSDMauiDialogCurrentPage")]
+interface MauiDialogCurrentPage
+{
+    /// <summary>
+    /// 表示中のページの View を返す関数を登録する。null を渡すと登録を解除する。
+    /// 差し替えは次の表示から効く。UI スレッドから呼ぶ。
+    /// </summary>
+    [Static]
+    [Export("setProvider:")]
+    void SetProvider([NullAllowed] MauiDialogCurrentPageProvider provider);
 }
 
 /// <summary>既定ローディングの表示テキストを組み立てる口。</summary>

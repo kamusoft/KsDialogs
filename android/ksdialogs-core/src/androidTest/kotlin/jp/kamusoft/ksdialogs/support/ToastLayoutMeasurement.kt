@@ -1,6 +1,8 @@
 package jp.kamusoft.ksdialogs.support
 
+import android.content.Context
 import android.graphics.Rect
+import android.view.View
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import androidx.test.core.app.ActivityScenario
@@ -35,11 +37,14 @@ internal object ToastLayoutMeasurement {
     /**
      * ケースの画面条件で Toast の器を組み立て、その外形を論理単位 (dp) で返す。
      *
-     * @param layoutCase 画面サイズ・システム領域の余白・内容サイズを与えるケース
+     * @param layoutCase 画面サイズ・システム領域の余白・内容サイズを与えるケース。
+     *   表示中ページの矩形を持つケースでは、Activity 側にその位置のページ領域の View を置いて組み立てる
      * @param options 中身の View に添付する静的メタ属性。null なら添付しない
      * @param attachedPlacement 中身の View に添付する動的メタ属性。null なら添付しない
      * @param showPlacement 表示 API の引数に相当する配置。null でなければ添付を置換する
      * @param fallbackPlacement show 引数も添付も無いときに採る配置
+     * @param createContentView 中身の View を作る方法。null ならケースの内容サイズを持つ固定サイズの View を作る。
+     *   与えた場合 [options] と [attachedPlacement] は添付せず、作った View が持つ添付をそのまま使う
      */
     fun measureToastRect(
         scenario: ActivityScenario<DialogLayoutTestActivity>,
@@ -48,21 +53,24 @@ internal object ToastLayoutMeasurement {
         attachedPlacement: DialogPlacement? = null,
         showPlacement: DialogPlacement? = null,
         fallbackPlacement: DialogPlacement = ToastPlacementDefault.placement,
+        createContentView: ((Context) -> View)? = null,
     ): DialogLayoutCase.Rect {
         val measured = AtomicReference<Rect>()
         val density = AtomicReference(1f)
         val laidOut = CountDownLatch(1)
+        val pageView = layoutCase.pageArea?.let { CurrentPageAreaFixture.place(scenario, it) }
 
         scenario.onActivity { activity ->
             val displayDensity = activity.resources.displayMetrics.density
             density.set(displayDensity)
             fun toPixels(value: Double): Float = (value * displayDensity).toFloat()
 
-            val contentView = FixedContentSizeView(
-                context = activity,
-                contentWidth = toPixels(layoutCase.contentSize.w).roundToInt(),
-                contentHeight = toPixels(layoutCase.contentSize.h).roundToInt(),
-            ).attach(options, attachedPlacement)
+            val contentView = createContentView?.invoke(activity)
+                ?: FixedContentSizeView(
+                    context = activity,
+                    contentWidth = toPixels(layoutCase.contentSize.w).roundToInt(),
+                    contentHeight = toPixels(layoutCase.contentSize.h).roundToInt(),
+                ).attach(options, attachedPlacement)
 
             val container = ToastContainer(
                 context = activity,
@@ -82,7 +90,8 @@ internal object ToastLayoutMeasurement {
                     )
                 },
             )
-            val host = container.layoutHost
+            // 器の面は初めて読まれた時点で組み立てられ、そのときの登録内容を捕まえる
+            val host = CurrentPageAreaFixture.registeringPage(pageView) { container.layoutHost }
 
             val observer = activity.hostContainer.viewTreeObserver
             observer.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {

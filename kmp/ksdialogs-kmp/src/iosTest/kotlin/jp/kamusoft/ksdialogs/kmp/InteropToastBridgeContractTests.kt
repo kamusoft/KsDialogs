@@ -5,19 +5,14 @@ import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.interpretObjCPointer
 import kotlinx.cinterop.objcPtr
-import kotlinx.coroutines.delay
 import platform.UIKit.UIView
 import platform.objc.object_getClass
 import swiftPMImport.jp.kamusoft.ksdialogs.kmp.KSDInteropToastBridge
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
-import kotlin.test.assertSame
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.TimeSource
 
 /** 互換面への委譲を確かめるための ViewModel。View factory を登録して使う。 */
 private class RegisteredToastProbeViewModel : ToastViewModel
@@ -29,9 +24,10 @@ private class UnregisteredToastProbeViewModel : ToastViewModel
  * 共有コードからの Toast 呼び出しが、iOS Native ライブラリの互換面を通って
  * 状態の正へ届くかを実測する。
  *
- * 提示先の画面を持たないテストランナーでは器の取り付けまで到達しないが、中身の解決 (型キーによる
- * View factory の引き当てと生成) は提示先の有無によらず行われる — 実際に画面へ出ることは
- * ios/ 側のテストと Sample が担う。
+ * 提示先の画面を持たないテストランナーでは器の取り付けまで到達せず、中身の View も作られない
+ * (中身は提示先を確保してから作る)。ここでは型キーによる View factory の引き当てを、互換面の受理が
+ * 同期に返す結果 (未登録ならエラー、登録済みならエラーなし) で判定する。引き当てた factory から中身が
+ * 作られることと、実際に画面へ出ることは ios/ 側のテストと Sample が担う。
  */
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 class InteropToastBridgeContractTests {
@@ -41,24 +37,24 @@ class InteropToastBridgeContractTests {
     /** factory が生成した View の実体。互換面へ渡した中身を生かしておくために保持する。 */
     private val createdProbeViews = mutableListOf<UIView>()
 
-    /** factory が受け取った ViewModel を呼ばれた順に並べたもの。 */
-    private val resolvedViewModels = mutableListOf<Any?>()
-
     @Test
     fun `TS-KM-02 共有 VM の型キーが OS 側登録の factory を引き当てる`() = runPumpingMainLoop {
         registerProbeViewFactory()
-        val viewModel = RegisteredToastProbeViewModel()
 
-        toast.show(viewModel, durationMs = 50)
+        // 互換面の show は受理の時点で型キーを引き当て、未登録ならその場でエラーを返す。
+        // 中身は提示先を確保してから作られるため、提示先の無いこのテストランナーでは factory は呼ばれない
+        val registeredFailure =
+            bridge.showViewModel(RegisteredToastProbeViewModel(), duration = null, placement = null)
+        val unregisteredFailure =
+            bridge.showViewModel(UnregisteredToastProbeViewModel(), duration = null, placement = null)
 
-        awaitUntil("登録した factory が共有 VM で引き当てられませんでした。") {
-            resolvedViewModels.isNotEmpty()
-        }
-        assertSame(
-            viewModel,
-            resolvedViewModels.single(),
-            "factory へ渡ったのが共有 VM そのものではありません。",
+        assertNull(
+            registeredFailure?.localizedDescription,
+            "登録した factory が共有 VM の型キーで引き当てられませんでした。",
         )
+        assertNotNull(unregisteredFailure, "未登録の共有 VM の受理がエラーになりませんでした。")
+        // 共有コードの入口からも、登録済みの共有 VM は構成エラーにならずに戻る
+        toast.show(RegisteredToastProbeViewModel(), durationMs = 50)
     }
 
     @Test
@@ -87,16 +83,11 @@ class InteropToastBridgeContractTests {
             RegisteredToastProbeViewModel().also { created = it }
         }
 
+        // 生成した VM が Swift 側レジストリで引き当てられなければ、互換面の受理が構成エラーを返して
+        // この呼び出しが DialogException を投げる
         toast.show(RegisteredToastProbeViewModel::class, durationMs = 50)
 
-        awaitUntil("生成した VM が Swift 側レジストリで解決されませんでした。") {
-            resolvedViewModels.isNotEmpty()
-        }
-        assertSame(
-            assertNotNull(created, "登録した ViewModel factory が呼ばれませんでした。"),
-            resolvedViewModels.single(),
-            "factory へ渡ったのが生成した VM そのものではありません。",
-        )
+        assertTrue(created != null, "登録した ViewModel factory が呼ばれませんでした。")
     }
 
     /**
@@ -110,25 +101,11 @@ class InteropToastBridgeContractTests {
     private fun registerProbeViewFactory() {
         bridge.registerViewFactoryForViewModelClass(
             viewModelClass = assertNotNull(object_getClass(RegisteredToastProbeViewModel())),
-            factory = { viewModel ->
-                resolvedViewModels += viewModel
+            factory = { _ ->
                 val view = UIView()
                 createdProbeViews += view
                 interpretObjCPointer(view.objcPtr())
             },
         )
-    }
-
-    /** 受理は UI スレッドへ積まれてから進むため、条件が満たされるまで待つ。 */
-    private suspend fun awaitUntil(
-        message: String,
-        timeout: Duration = 5.seconds,
-        condition: () -> Boolean,
-    ) {
-        val started = TimeSource.Monotonic.markNow()
-        while (!condition() && started.elapsedNow() < timeout) {
-            delay(10.milliseconds)
-        }
-        assertTrue(condition(), message)
     }
 }

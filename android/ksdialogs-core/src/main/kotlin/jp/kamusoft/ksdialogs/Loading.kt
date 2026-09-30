@@ -73,39 +73,43 @@ public class Loading internal constructor(
     override suspend fun <T> start(
         message: String?,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         val token = coordinator.beginUse(LoadingContentRequest.Builtin, message, placement)
-        return runScope(token, action)
+        return runScope(token, actionThread, action)
     }
 
     override suspend fun <T> start(
         viewModel: LoadingViewModel,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         val token = coordinator.beginUse(LoadingContentRequest.Registered(viewModel), null, placement)
-        return runScope(token, action)
+        return runScope(token, actionThread, action)
     }
 
     override suspend fun <VM : LoadingViewModel, T> start(
         viewModel: VM,
         placement: DialogPlacement?,
         factory: Context.(VM) -> View,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         val token = beginInlineUse(viewModel, placement, factory)
-        return runScope(token, action)
+        return runScope(token, actionThread, action)
     }
 
     override suspend fun <VM : LoadingViewModel, T> start(
         viewModelClass: KClass<VM>,
         placement: DialogPlacement?,
         configure: (suspend (VM) -> Unit)?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         val token = beginTypedUse(viewModelClass, placement, configure)
-        return runScope(token, action)
+        return runScope(token, actionThread, action)
     }
 
     /**
@@ -159,20 +163,45 @@ public class Loading internal constructor(
      *
      * 失敗を握り潰さずに伝播させつつ終了を数えるので、例外・キャンセルで表示が閉じ残らない。
      * 取り消された呼び出しでも終了を数え切れるよう、終了の受理は取り消しの対象から外す。
+     *
+     * 処理は呼び出し元の文脈ではなく、指定に応じた dispatcher へ移してから呼ぶ。
+     * 呼び出し元のスレッドに関係なく、処理の最初の文が指定のスレッドで実行されるようにするため
+     * (core/ADR-0037)。UI スレッドから呼ばれた既定の指定では `immediate` により dispatch を省き、
+     * その場で処理を始める。
      */
     private suspend fun <T> runScope(
         token: LoadingUseToken,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         // 報告口は任意スレッドから呼べる。受理は UI スレッド上で呼ばれた順に直列化される
         val report: (Double) -> Unit = { progress -> coordinator.report(progress, token) }
+        val dispatcher = when (actionThread) {
+            LoadingActionThread.MAIN -> Dispatchers.Main.immediate
+            LoadingActionThread.BACKGROUND -> Dispatchers.Default
+        }
         try {
-            val value = action(report)
-            withContext(NonCancellable) { coordinator.endUse(token) }
+            val value = withContext(dispatcher) { action(report) }
+            endUseAfterPendingReports(token)
             return value
         } catch (failure: Throwable) {
-            withContext(NonCancellable) { coordinator.endUse(token) }
+            endUseAfterPendingReports(token)
             throw failure
+        }
+    }
+
+    /**
+     * 処理の中から発行済みの報告の受理を済ませてから、合流1件の終了を受理する。
+     *
+     * 報告は発行したその場で順序付きの列に積まれ、UI スレッド上で順に受理される。
+     * 処理がどのスレッドで完了し、呼び出し元がどこで再開しても、終了はその列の区切りまで
+     * 受理が進むのを待ってから受理するので、最後の報告を追い越さない。
+     * 取り消された呼び出しでも終了を数え切れるよう、取り消しの対象からは外す。
+     */
+    private suspend fun endUseAfterPendingReports(token: LoadingUseToken) {
+        withContext(NonCancellable) {
+            coordinator.awaitAcceptedReports()
+            coordinator.endUse(token)
         }
     }
 

@@ -139,7 +139,7 @@ docs-refresh は差分更新専用のスキルで、skills/ 一式と manifest �
 `ksdialogs-aiforms-migration` 配下のファイル (`SKILL.md` / `references/api-mapping.md`) の `targets` には、**新 API 側の concepts (`core/api/*` のうち対応表が触れるもの + `maui/api/*` の MAUI 公開面 concept — `di-registration.md` と各 `*-surface.md`) だけ**を置く。
 
 - 移植元 (AiForms.Maui.Dialogs) の旧 API 側は concepts に源泉を持たず、**差分検出・要追従判定の対象外**とする。移植元リポジトリが更新されても移行 Skill のファイルは要追従リストに載らない
-- 旧 API 側 (旧メンバー一覧と対応先) の書き起こしは**初期生成時の一度限り**で、移植元のローカル clone を前提とする。clone の在り処は `kasane/concepts/cross/reference/reference-repositories.md` の対応表で解決する
+- 旧 API 側 (旧メンバー一覧と対応先) の書き起こしは**初期生成時の一度限り**で、移植元のローカル clone を前提とする。clone の在り処は移植元の参照規約 `kasane/handbook/cross/aiforms-origin-reference.md` の「参照先と仕様の正の序列」節で解決する
 - 逆向き — 新 API 側の concept が変われば `targets` の逆引きで `ksdialogs-aiforms-migration/...` が en/ja ペアとして要追従に載る — は通常どおり働く。docs-refresh が守るのはこの方向だけである
 
 ### 3. 差分検出
@@ -172,7 +172,7 @@ README 群は concepts ハッシュ逆引きの対象外である (`readmes` は
 
 `targets` / `excluded` に列挙されているがファイルが存在しない concept (削除済み) は、影響する Skill ファイルの扱い (該当記述の除去) をユーザーに提示し、承認後の manifest 書き出しで `targets` / `excluded` から取り除く。
 
-**`excluded` の初期値**は `cross/reference/reference-repositories.md` の 1 本だけ (理由: 開発環境のローカルパス対応表であり利用者向け Skill の対象外)。残る concepts (`core/api/*` と `maui/api/di-registration.md`) はいずれかの Skill の `targets` に載るのが規範である。
+**`excluded` の中身は manifest が正**で、現状は下の既定に沿って理由つきで確定した `architecture/` カテゴリの concept だけが載っている (初期値だった `cross/reference/reference-repositories.md` は handbook へ移設され、concept ではなくなった)。API 系の concepts (`core/api/*` と各 `<platform>/api/*`) と、利用者に効く `architecture/` の concept (`cross/architecture/distribution-artifacts.md`) はいずれかの Skill の `targets` に載るのが規範である。
 
 **`architecture/` カテゴリ (core / cross) の concept は既定で除外候補**として扱う — 利用者が書くコードではなくリポジトリ内部の責務境界・ビルド基盤を述べるものが多いため。ただし**既定は候補であって自動除外ではない**: 網羅検査が未参照・未除外として報告した時点で「architecture カテゴリのため除外候補 (既定)」を添えてユーザーに提示し、理由つきで確定するまで `excluded` にも `targets` にも書かない。利用者に効くもの (例: Compose 分離 module の構成) はユーザーの選択で `targets` へ回す。
 
@@ -197,11 +197,13 @@ concepts ハッシュ差分とは独立に、**コードを正**として次の 
 | ① | AGP / Kotlin / minSdk / compileSdk | `android/gradle/libs.versions.toml` の `[versions]` (`agp` / `kotlin` / `android-minSdk` / `android-compileSdk`) | 該当キーの行を読む。KMP ルートは同じカタログを共有するため Android / KMP 両形態でこの 1 ファイルが単一取得元 | ルート README 群の対応プラットフォーム表・開発環境要件、および該当記載を持つ `ksdialogs-android` / `ksdialogs-kmp` の `SKILL.md` 導入節 |
 | ② | Gradle | `android/gradle/wrapper/gradle-wrapper.properties` と `kmp/gradle/wrapper/gradle-wrapper.properties` の `distributionUrl` (**2 本読む**) | 2 本の `distributionUrl` から版を取り出す。食い違う場合は README 突合とは別に**食い違いそのものを報告する** | 同上 |
 | ③ | Swift tools / iOS Deployment Target | `ios/Package.swift` | 先頭の `// swift-tools-version:` 行と `platforms:` の `.iOS(.vNN)` を読む | ルート README 群の対応プラットフォーム表・開発環境要件、および該当記載を持つ `ksdialogs-ios` / `ksdialogs-kmp` の `SKILL.md` 導入節 |
-| ④ | .NET TFM / 対象 OS 下限 / MAUI 本体下限 | `maui/KsDialogs.Maui/KsDialogs.Maui.csproj` | `<TargetFrameworks>`、ios / android 条件つき `PropertyGroup` の `<SupportedOSPlatformVersion>` (2 つ)、`Microsoft.Maui.Controls` の `PackageReference` の `Version` を読む | ルート README 群の対応プラットフォーム表・開発環境要件、および `ksdialogs-maui/SKILL.md` (en/ja) の導入節 |
+| ④ | .NET TFM / 対象 OS 下限 / MAUI 本体下限 | TFM は `maui/KsDialogs.Maui/KsDialogs.Maui.csproj`、対象 OS 下限は `maui/KsDialogs.Maui/buildTransitive/KsDialogs.Maui.props`、MAUI 本体下限は `maui/Directory.Packages.props` (**3 本読む**) | csproj の `<TargetFrameworks>`、props の `<KsDialogsMinIOSVersion>` / `<KsDialogsMinAndroidApi>`、Directory.Packages.props の `Microsoft.Maui.Controls` の `PackageVersion` の `Version` を読む | ルート README 群の対応プラットフォーム表・開発環境要件、および `ksdialogs-maui/SKILL.md` (en/ja) の導入節 |
 
 > 突合先の読み方: いずれの行も、差分があればまずルート README 群 (`README.md` / `README_ja.md`) を要追従にする。加えて、その値を導入節に書いている Skill があればその Skill の `SKILL.md` を en/ja ペアで要追従にする (例: ④ の `Microsoft.Maui.Controls` の版が食い違えば `ksdialogs-maui/SKILL.md` の en/ja)。README の表に toolchain 版を載せるかどうかは README 側の内容判断で、この手順は読む場所と突合先の対応だけを持つ。
 
 > 取得元の注記: 各 module の `build.gradle.kts` は `libs.versions.android.minSdk` のようにカタログを参照するだけで値を持たないため**取得元にしない**。バージョンの単一宣言元は常に version catalog 側である。
+>
+> 同じ理由で、④ の対象 OS 下限と MAUI 本体下限は csproj を取得元にしない。csproj の ios / android 条件つき `PropertyGroup` の `<SupportedOSPlatformVersion>` は `$(KsDialogsMinIOSVersion)` / `$(KsDialogsMinAndroidApi)` を参照するだけで、`Microsoft.Maui.Controls` の `PackageReference` も Central Package Management のため `Version` を持たない。対象 OS 下限の単一宣言元は `buildTransitive/KsDialogs.Maui.props` (利用者のビルドで走るガード診断 `KSDLG0001` も同じプロパティを読む)、MAUI 本体の版の単一宣言元は `maui/Directory.Packages.props` である。csproj から読むのは `<TargetFrameworks>` だけ。
 
 > 従前の「モジュール一覧」と「Sample デモ画面一覧」の突合は**行わない**。ルート README は利用者の入口に純化しモジュール表を持たず、`samples/` 配下の README は開発者向けで追従対象 (`readmes`) に載せないため。Sample の実ソースにデモ画面が増減しても、この手順は要追従リストに何も追加しない。
 

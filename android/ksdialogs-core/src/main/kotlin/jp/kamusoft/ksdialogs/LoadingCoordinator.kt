@@ -4,12 +4,14 @@ import android.content.Context
 import android.util.Log
 import android.view.View
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicReference
@@ -271,10 +273,60 @@ internal class LoadingCoordinator(
     /**
      * 進捗の報告を受理する。任意のスレッドから呼べる。
      *
-     * 受理は UI スレッド上で呼ばれた順に直列化され、旧世代の報告はそこで捨てられる。
+     * 報告は呼んだその場で順序付きの列に積まれ、UI スレッド上で積まれた順に受理される。
+     * 旧世代の報告は受理の時点で捨てられる。
      */
     fun report(progress: Double, token: LoadingUseToken) {
-        scope.launch { acceptReport(progress, token) }
+        reportQueue.trySend(ReportQueueEntry.Report(progress, token))
+    }
+
+    /**
+     * この呼び出しより前に積まれた報告がすべて受理されるまで待つ。任意のスレッドから呼べる。
+     *
+     * 区切りを報告と同じ列の末尾に積み、そこまで受理が進んだ時点で戻る。呼び出し元のスレッドや、
+     * 呼び出し元が UI スレッドの列を経由して再開したかどうかに関係なく、先に積まれた報告の後ろで戻る。
+     * スコープ形の終了を報告に追い越させないために、終了の受理の直前に呼ぶ。
+     */
+    suspend fun awaitAcceptedReports() {
+        val reached = CompletableDeferred<Unit>()
+        reportQueue.trySend(ReportQueueEntry.Barrier(reached))
+        reached.await()
+    }
+
+    /** 報告の列に積むもの。 */
+    private sealed interface ReportQueueEntry {
+        /** 受理を待つ進捗の報告。 */
+        class Report(val progress: Double, val token: LoadingUseToken) : ReportQueueEntry
+
+        /** ここまでの報告の受理が済んだことを知らせる区切り。 */
+        class Barrier(val reached: CompletableDeferred<Unit>) : ReportQueueEntry
+    }
+
+    /**
+     * 報告と区切りを積まれた順に受理する列。
+     *
+     * 報告が UI スレッドへ移る経路と終了が UI スレッドへ移る経路を分けると、dispatch の省略の有無で
+     * 前後が入れ替わる。報告も区切りも同じ 1 本の列に積み、受理する側を UI スレッド上の 1 つの
+     * コルーチンに限ることで、積んだ順がそのまま受理の順になる。
+     *
+     * 報告 1 件の受理は、[scope] 直下の子コルーチンとしてその場で (dispatch せずに) 実行する。
+     * 受理は中断しないので積まれた順のまま同期的に終わり、利用者の進捗の受け口が投げた失敗は
+     * その子だけを失敗させる。失敗は [scope] の例外の扱い (スレッドの未捕捉例外ハンドラ) で外へ出し、
+     * 列の受理と区切りの待ちは止めない。子を受理ループの子にしないのは、失敗がループを巻き込まないため。
+     */
+    private val reportQueue: Channel<ReportQueueEntry> by lazy {
+        Channel<ReportQueueEntry>(Channel.UNLIMITED).also { queue ->
+            scope.launch {
+                for (entry in queue) {
+                    when (entry) {
+                        is ReportQueueEntry.Report -> scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                            acceptReport(entry.progress, entry.token)
+                        }
+                        is ReportQueueEntry.Barrier -> entry.reached.complete(Unit)
+                    }
+                }
+            }
+        }
     }
 
     private fun acceptReport(progress: Double, token: LoadingUseToken) {
@@ -374,6 +426,8 @@ internal class LoadingCoordinator(
      *
      * Android の回転では Activity が作り直され、器のウィンドウも失われる。合流状態と中身は
      * この coordinator が持ち、器だけを使い捨てにすることで表示を継続させる。
+     * 提示先が無くなっただけで、載っている画面が破棄されていなければ、器は外さない
+     * ([shouldDetachAttachment])。外すのは、画面が破棄されたときと、描画済みの別の提示先が現れたときに限る。
      *
      * 中身は作り直さずに新しい画面のウィンドウへ載せ替えるため、中身が握っている Context は
      * 前の画面のものが残る。表示が閉じるまで前の画面が到達可能なままになり、中身が構成修飾
@@ -384,12 +438,16 @@ internal class LoadingCoordinator(
             return
         }
         val host = presentationSurface.hostContext
-        if (host === attachedHost) {
-            return
+        if (attachedHost != null) {
+            if (!shouldDetachAttachment(attachedHost, host, presentationSurface::retainsAttachment)) {
+                // 載っている画面のまま (背面へ下がった・上に別の画面が開いた間を含む) なら器を付けたままにする。
+                // 外すと、戻った直後の画面に覆いの無いコマが挟まり、その間は下の画面に触れられる
+                return
+            }
+            container?.detachForReattach()
+            container = null
+            attachedHost = null
         }
-        container?.detachForReattach()
-        container = null
-        attachedHost = null
         if (host == null) {
             // 提示先が不在の間は中身を抱えたまま待ち、次の入れ替わりで載せ直す
             return
@@ -398,7 +456,7 @@ internal class LoadingCoordinator(
             // 提示先が無いまま始まった表示。ここで初めて中身を作るので入りの演出から始める。
             // ここは提示先の入れ替わり通知の中であり、既に走り出した処理の途中でもある。
             // 中身の生成の失敗を通知元へ投げ返すと利用者アプリを巻き込むため、この表示は
-            // 中身なしとして諦める (合流状態は残るので、走行中の処理はそのまま完了できる)。
+            // 中身なしとして諦める (合流状態は残るので、走行中の処理はそのまま完了できる。core/ADR-0042)。
             // 諦めるのは中身の作り手が投げる通常の失敗までとし、実行の継続そのものが
             // 成り立たない致命的な失敗 (メモリ枯渇など) は隠さずそのまま伝える
             try {

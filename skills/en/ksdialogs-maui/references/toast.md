@@ -6,11 +6,21 @@ Toast carries neither an overlay color nor an outside-tap option, and Loading st
 
 ## How the duration is decided
 
-`durationMs` is an `int?` in milliseconds and starts when the call is accepted, continuing while the app is in the background. A missing or non-positive value uses a positive `ToastStyle.DefaultDuration`; if that default is also non-positive, `ToastStyle.BuiltinDefaultDuration` supplies the built-in 1500 ms fallback. No upper clamp is applied.
+`durationMs` is an `int?` in milliseconds. A missing or non-positive value uses a positive `ToastStyle.DefaultDuration`; if that default is also non-positive, `ToastStyle.BuiltinDefaultDuration` supplies the built-in 1500 ms fallback (a non-positive value logs a warning rather than throwing). No upper clamp is applied.
+
+The time is consumed in real time and keeps running while the app is in the background. When counting starts depends on the state at the moment the library starts the display.
+
+| State when the display starts | Counting starts |
+|---|---|
+| A screen to present on exists | When the call was accepted |
+| The app is in the background | When the call was accepted |
+| The app is in the foreground but no screen to present on exists yet (right after launch, returning from the background, switching screens, a system permission dialog is up, and so on) | When the Toast is placed on a screen; if the app goes to the background before that, when it went to the background |
+
+This keeps a Toast called right after launch or during an interruption from using up its duration unseen. Once decided, the deadline does not rewind across a screen being recreated or the app returning from the background. Right after launch on Android, counting includes the time until the launch screen finishes leaving, so the visible time is that much shorter.
 
 ## How overlapping behaves
 
-Each Toast coexists on an independent timer and they may overlap at the same placement. The library does not queue, replace, or automatically offset them. A Toast for which no container appears before expiry is discarded without ever being shown.
+Each Toast coexists on an independent timer and they may overlap at the same placement. The library does not queue, replace, or automatically offset them. A Toast for which no screen to present on appears before its deadline is discarded without ever being shown (it is not an error). In that case neither the content view nor the view-model factory and `configure` of a `Show` that takes the view-model type are ever called.
 
 ## Choose a `Show`
 
@@ -66,6 +76,8 @@ Set `Toast.Instance.Style` before showing. The `ToastStyle` record is read at di
 
 The visual properties apply to the built-in message Toast only, while `DefaultDuration` and `DefaultPlacement` apply to custom content as well. A placement passed to `Show` takes precedence over the style default. With neither supplied, the library default placement is bottom-center of the visible area with an upward offset of 80 logical units.
 
+The built-in message Toast carries a `DialogMargin` of 24 on every edge on its own content, and there is no way to change it. That margin applies independently of the placement, so with the library default placement the built-in Toast's bottom edge sits 104 (margin 24 + offset 80) above the bottom of the visible area. A long message also wraps at least 24 inside the left and right edges of the screen.
+
 ```csharp
 using KsDialogs;
 using Microsoft.Extensions.DependencyInjection;
@@ -107,7 +119,7 @@ public static class MauiProgram
 
 `Toast.Instance.Registry` is a `ToastViewRegistry` and is `ToastViewRegistry.Shared`. It is independent of the Dialog and Loading registries, so the same view-model type can be registered in several of them. Register a class-based `IToastViewModel` there with `Register`, or wire the pair from DI with `RegisterForToast<TView, TViewModel>` ([DI registration](di-registration.md)). One entry holds two slots — a view factory and a view-model factory — and `Register` fills the view factory slot. Showing by instance needs that slot alone; showing by view-model type needs both, and `RegisterForToast` fills both in one line.
 
-Toast has neither an overlay nor a built-in ground, so custom content paints its own background. Placement is attached with the same `Dialog` attached properties as for a Dialog, and only the transition, which carries closures, is attached from code-behind ([Layout](layout.md)).
+Toast has neither an overlay nor a built-in ground, so custom content paints its own background. The `DialogMargin` of custom content is 0 on every edge, as for a Dialog, so with no attachment its bottom edge sits 80 above the bottom of the visible area under the library default placement. Attach `Dialog.DialogMargin` when a margin is needed. Placement is attached with the same `Dialog` attached properties as for a Dialog, and only the transition, which carries closures, is attached from code-behind ([Layout](layout.md)).
 
 ### Declare the view model
 
@@ -228,7 +240,7 @@ private void OnConnectedClicked(object? sender, EventArgs e) =>
 
 Passing only the view-model type instead of an instance runs `configure` on the instance built by the registered view-model factory and then shows it. `RegisterForToast` wires that view-model factory too, so a one-line registration costs nothing extra. Written at the low level, `Toast.Instance.Registry.RegisterViewModel` fills the view-model factory slot alone.
 
-`configure` is the synchronous `Action<TViewModel>` only; there is no asynchronous form, because `Show` is a fire-and-forget call that returns synchronously. The order is fixed — create the view model, run `configure` to completion, build the content view, present — so the content factory reads the state `configure` put in place.
+`configure` is the synchronous `Action<TViewModel>` only; there is no asynchronous form, because `Show` is a fire-and-forget call that returns synchronously. The order is fixed — create the view model, run `configure` to completion, build the content view, present — so the content factory reads the state `configure` put in place. The view-model factory and `configure` are called on the UI thread when the Toast is placed on a screen, as the content view is. While no screen to present on exists, they are not called until one appears.
 
 ```csharp
 private void OnSyncedClicked(object? sender, EventArgs e) =>

@@ -9,8 +9,8 @@ import jp.kamusoft.ksdialogs.ToastStyle
  *
  * このソースは `-Pksdialogs.negativeCheck.toastShowStyle` を付けたときだけビルドに加わり、
  * **コンパイルエラーで失敗すること**が期待結果になる。
- * 期待する診断: `None of the following candidates is applicable:` と
- * `No parameter with name 'style' found.` (show がオーバーロードされているため 2 件出る)
+ * 期待する診断: `None of the following candidates is applicable:` の 1 件だけ
+ * (引数名不明の診断は出ない。2026-09-25 実測)
  */
 public object RejectsStyleArgumentOnToastShow {
     public fun TS_AN_04_showStyle(toast: KsToast) {

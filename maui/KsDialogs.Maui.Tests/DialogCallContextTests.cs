@@ -13,7 +13,7 @@ namespace KsDialogs.Maui.Tests;
 /// <remarks>
 /// facade は提示 host の引数を持たず、呼び出しスレッドも選ばない。
 /// 提示処理そのものの UI スレッドへのマーシャリングは委譲面の実装が受け持つため、
-/// ここでは facade 側が呼び出しスレッドに縛られないことと、提示先不在の失敗経路を見る。
+/// ここでは facade 側が呼び出しスレッドに縛られないことと、提示の仕組みを持たない環境の失敗経路を見る。
 /// </remarks>
 [TestFixture]
 public class DialogCallContextTests
@@ -63,10 +63,10 @@ public class DialogCallContextTests
         Assert.That(failure.Message, Is.EqualTo("中身を組み立てられません"));
     }
 
-    /// <summary>提示先が存在しない場合、結果を返さずに失敗し、View も生成されない。</summary>
+    /// <summary>提示の仕組みを持たない素の .NET では、結果を返さずにその場で失敗し、View も生成されない。</summary>
     [Test]
-    [Description("提示 host 不在の show は即失敗する")]
-    public void ShowWithoutPresentationHostFailsImmediately()
+    [Description("[PB-MH-01] 素の .NET では、Dialog の show がその場で失敗する")]
+    public void PB_MH_01_ShowFailsImmediatelyWithoutAPresentationMechanism()
     {
         bool viewCreated = false;
         DialogViewRegistry registry = new();
@@ -80,6 +80,6 @@ public class DialogCallContextTests
         Assert.ThrowsAsync<DialogException.PresentationHostUnavailable>(
             async () => await dialogs.ShowAsync(new BooleanTestDialogViewModel()));
 
-        Assert.That(viewCreated, Is.False, "提示先が無いのに View が生成されました。");
+        Assert.That(viewCreated, Is.False, "提示の仕組みが無いのに View が生成されました。");
     }
 }

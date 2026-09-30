@@ -46,6 +46,17 @@ class MauiDialogLayoutPassthroughTests {
     }
 
     @Test
+    fun `基準領域はどの値も同じ意味の値へ写る`() {
+        assertEquals(DialogLayoutArea.WINDOW, MauiDialogLayoutArea.WINDOW.toDialogLayoutArea())
+        assertEquals(DialogLayoutArea.VISIBLE_AREA, MauiDialogLayoutArea.VISIBLE_AREA.toDialogLayoutArea())
+        assertEquals(DialogLayoutArea.CURRENT_PAGE, MauiDialogLayoutArea.CURRENT_PAGE.toDialogLayoutArea())
+        assertEquals(
+            DialogLayoutArea.CURRENT_PAGE,
+            MauiDialogOptions().apply { layoutArea = MauiDialogLayoutArea.CURRENT_PAGE }.toDialogOptions().layoutArea,
+        )
+    }
+
+    @Test
     fun `指定した置き場所がそのまま DialogPlacement になる`() {
         val placement = MauiDialogPlacement().apply {
             horizontalAlignment = MauiDialogAlignment.END

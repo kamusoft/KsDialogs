@@ -3,7 +3,7 @@ type: concept
 title: KMP 利用者の iOS ホスト統合
 description: KMP 共有モジュールから KsDialogs を使う iOS アプリの依存経路と初回統合手順、および Sample の合成 Swift package 再生成手順
 tags: [kmp, ios, swiftpm, integration, distribution]
-timestamp: 2026-09-10
+timestamp: 2026-09-29
 ---
 
 # KMP 利用者の iOS ホスト統合
@@ -124,7 +124,7 @@ Dialog の型付き入口は、この面に固有の失敗だけを `KsDialogsKm
 | `KsDialogsKmpError.notRegistered(viewModelType:)` | 共有 VM の型に View factory が登録されていない |
 | `KsDialogsKmpError.resultTypeMismatch(expected:actual:)` | 結果値の型が、登録・show で指定した結果型 (省略時は真偽値) と一致しない |
 
-写し替えの対象はこの 2 つで、提示先が無い・報告口が二重に取られたなど**共有コード経路に固有でない失敗は `DialogError` のまま届く**。利用者は必要に応じて両方を捕まえる。
+写し替えの対象はこの 2 つで、報告口が二重に取られた・View factory が ViewModel の型を受け取れないなど**共有コード経路に固有でない失敗は `DialogError` のまま届く**。出す先の画面が無いことは失敗にならず、画面が現れるのを待つ ([iOS の Dialog 公開面](../../ios/api/dialog-surface.md))。利用者は必要に応じて両方を捕まえる。
 
 ### Loading / Toast の Swift 側入口と見た目の設定
 

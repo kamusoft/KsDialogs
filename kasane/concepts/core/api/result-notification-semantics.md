@@ -1,18 +1,18 @@
 ---
 type: concept
 title: 結果通知のルール (show が返すもの)
-description: ダイアログの show 呼び出しが何を返すかの core 契約 — completed(結果) か cancelled をちょうど1回返す。どの操作がキャンセルになるか、結果が確定する時点と呼び出し元へ渡る時点 (ラッチと配送)、移植元の型安全性の弱点をどう解消するかも定める
+description: ダイアログの show 呼び出しが何を返すかの core 契約 — completed(結果) か cancelled をちょうど1回返す。どの操作がキャンセルになるか、出す先の画面が無いときの待ちと終わり方、呼び出し元の打ち切りの形態別の見え方、結果が確定する時点と呼び出し元へ渡る時点 (ラッチと配送)、移植元の型安全性の弱点をどう解消するかも定める
 tags: [dialog, result, contract]
-timestamp: 2026-09-02
+timestamp: 2026-09-30
 ---
 
 # 結果通知のルール (show が返すもの)
 
 この文書は、全形態 (iOS Native / Android Native / MAUI / KMP) 共通の「ダイアログを表示した呼び出し元が、結果をどう受け取るか」のルールを定める。読むと、show の呼び出しが何を返し、「OK で閉じた」と「キャンセルされた」がどう区別され、結果がいつ確定していつ呼び出し元へ届くかが分かる。
 
-本文中の**移植元**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す。参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)、リポジトリの在り処は [参考リポジトリの在り処](../../cross/reference/reference-repositories.md) が定める。
+本文中の**移植元**は AiForms.Maui.Dialogs (本ライブラリの移植元) を指す。参照ルールは [移植元 AiForms.Maui.Dialogs の参照](../../../handbook/cross/aiforms-origin-reference.md)。ローカルでは `../AiForms.Maui.Dialogs` で参照する。
 
-**この文書が正であり、実装はここに合わせる**。根拠決定は [core/ADR-0003](../../../decisions/core/0003-result-notification-async-typed.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」で、「何が成り立つか」の正はこの文書側にある)。
+この文書は、4 形態の実装とテストが満たしている挙動を記述する (一次情報はコードとテスト)。根拠決定は [core/ADR-0003](../../../decisions/core/0003-result-notification-async-typed.md) (accepted 済み。ADR が持つのは「なぜそう決めたか」)。出す先の画面が無いときの待ちは [core/ADR-0041](../../../decisions/core/0041-wait-for-host-appearance.md)、MAUI の打ち切りは [maui/ADR-0006](../../../decisions/maui/0006-dialog-show-caller-cancellation.md) が根拠である。
 
 core は「全形態が共有する契約」の層 (層の区分は [concepts 配置ルール](../../rules.md))。公開名・署名・コード例は各形態の公開面が持つ (末尾の「形態別の公開面」)。
 
@@ -45,11 +45,17 @@ completed と cancelled は `DialogResult` の別々の枝として表現する�
 - **(a) 器の消失** — ダイアログを載せている表示コンテナ (本文では**器**と呼ぶ) だけが消える経路。iOS の画面表示の連鎖 (presenting / presented) や Android の Activity が破棄されたときに起きる
 - **(b) 呼び出し元の打ち切り** — show を待っている呼び出し側が待機をやめた場合。ダイアログも閉じる。これは KMP の共有コードから iOS 上で表示した場合を含めて成り立つ
 
-どちらも未確定なら cancelled で確定する。この手当てがないと show が永久に返らない (宙吊り) ため、ルール3の「ちょうど1回」はこの手当てとセットで成立する。ただし (b) は**呼び出し元から見える形が形態ごとに違い、MAUI にはこの経路自体がない** (後述の「呼び出し元をキャンセルしたときの見え方」)。
+どちらも未確定なら cancelled で確定する。この手当てがないと show が永久に返らない (宙吊り) ため、ルール3の「ちょうど1回」はこの手当てとセットで成立する。ただし (b) は**呼び出し元から見える形が形態ごとに違う** (後述の「呼び出し元をキャンセルしたときの見え方」)。
+
+中身を作ったあとに、OS の提示機構が器を載せられなかった場合も (a) と同じ扱いで、その show は cancelled で確定する。中身を作っている間 (利用者の View factory の中など) に出す先の画面 (**提示先**。後述の「出す先の画面が無いとき」) が消えた場合と、提示機構が提示を受け付けなかった場合がこれに当たる。
+
+たとえば iOS で、提示先があり待っている Dialog も無い (列で待たずに OS へ直接渡る) ときに、閉じる途中の画面の手前へ 2 枚を続けて出すと、1 枚目は閉じ終えてから表示され、2 枚目は提示機構に受け付けられず cancelled で返る。載せられなかった show が、提示先を待つ列から出てきた 1 枚だった場合も、列で次に待っている Dialog はそのまま表示に進む ([多段表示のルール](multi-display-semantics.md) の「提示先を待っている Dialog の出る順番」)。
 
 ### ルール5: 構成ミスは結果ではなく失敗で返す
 
-View factory が未登録の ViewModel 型で show した場合と、ダイアログを出す先の画面が存在しない場合は、cancelled を返さず失敗する。cancelled に化けると「エンドユーザーが閉じた」と区別できず、登録漏れが画面上で観察できないまま素通りする。このとき View は生成も表示もされない。
+View factory が未登録の ViewModel 型で show した場合は、cancelled を返さず失敗する。cancelled に化けると「エンドユーザーが閉じた」と区別できず、登録漏れが画面上で観察できないまま素通りする。このとき View は生成も表示もされない。
+
+提示先が無いことは失敗にならない。show は提示先が現れるのを待つ (後述の「出す先の画面が無いとき」)。例外は、表示の仕組みそのものを持たない実行環境 (Native を持たない MAUI の素の .NET) だけで、待っても画面は現れないため、その場で失敗する。
 
 失敗をどう伝えるか (例外を投げるか、失敗した非同期操作として返すか) と、失敗の型・名前は形態ごとに違う。KMP の共有コードから Swift 側へ失敗が届くときの追加の約束は [KMP の Dialog 公開面](../../kmp/api/dialog-surface.md) が定める。
 
@@ -79,15 +85,39 @@ iOS には戻るボタンに相当するキャンセル経路を設けない (�
 
 ### 呼び出し元をキャンセルしたときの見え方
 
-呼び出し元の待機を打ち切ったときに何が観察されるかは形態ごとに異なる。iOS と Android / KMP はそれぞれの言語の非同期規約に従い、MAUI にはこの経路がない:
+呼び出し元の待機を打ち切ったときに何が観察されるかは形態ごとに異なり、どれもその言語の非同期規約に従う。提示先を待っている間に打ち切った場合も、表示中に打ち切った場合も、見え方は同じである:
 
-| 形態 | 呼び出し元が観察するもの |
+| 形態 | 打ち切りの手段 | 呼び出し元が観察するもの |
+|---|---|---|
+| iOS Native | show を待っている Task のキャンセル | show が結果として cancelled を返す (失敗としては伝わらない) |
+| Android Native / KMP | show を呼んだコルーチンのキャンセル | 言語のキャンセル規約どおりキャンセルの通知が伝播する (内部の結果は cancelled で確定済み) |
+| MAUI | show の末尾に渡すキャンセルトークン | show がキャンセルを表す .NET の例外を投げる (内部の結果は cancelled で確定済み)。呼び出しの時点で打ち切り済みなら、登録の解決も ViewModel の生成もせずに投げる |
+
+Android / KMP でキャンセルの通知を握りつぶして cancelled を返す形にはしない。構造化並行性 (親のキャンセルが子へ伝わる仕組み) を壊すためである。MAUI も同じ理由で、打ち切りを結果の cancelled に変えず、キャンセルトークンを受ける .NET の非同期メソッドの慣習どおり例外で伝える。MAUI の打ち切りはブリッジを通って各 OS の Native の打ち切りへ中継される。キャンセルの通知がどの型で届くか、iOS で返る結果の綴りがどうなるかは、各形態の公開面の「失敗とキャンセルの形」(KMP は「失敗とキャンセルの届き方」) が定める ([iOS](../../ios/api/dialog-surface.md) / [Android](../../android/api/dialog-surface.md) / [MAUI](../../maui/api/dialog-surface.md) / [KMP](../../kmp/api/dialog-surface.md))。なお、ダイアログが表示中のときに待機を打ち切った場合、退出アニメーションは最後まで完遂される。出現アニメーションの途中や退出の途中で打ち切ったときの扱いは [トランジションのルール](transition-semantics.md) が定める。
+
+## 出す先の画面が無いとき
+
+提示先 (iOS は前面でアクティブなシーンの key window、Android は resumed で、かつ描画された Activity — core/ADR-0044) が無いときに呼ばれた show は、失敗せず、提示先が現れるのを待ってから表示する。アプリの起動直後に最初の画面の表示時の処理から呼んだ場合 (iOS ではシーンがまだアクティブでない、Android では画面がまだ描画されていない)、アプリが背面にいる間に呼んだ場合、システムの許可ダイアログが出ている間に呼んだ場合がこれに当たる。
+
+待ちに上限は無い。待ちは次のどれかで終わる:
+
+| 終わり方 | 起きること |
 |---|---|
-| iOS Native | show が結果として cancelled を返す (失敗としては伝わらない) |
-| Android Native / KMP | 言語のキャンセル規約どおりキャンセルの通知が伝播する (内部の結果は cancelled で確定済み) |
-| MAUI | **この経路がない** — show が呼び出し元のキャンセル手段を引数で受け取らない |
+| 提示先が現れた合図が来た | その時点で提示先 (前面でアクティブなシーンの key window / resumed で描画済みの Activity) が本当にあるかを確かめ直す。あれば中身を作って表示し、無ければ待ち続ける (合図が来ても提示先がまだそろっていないことがある) |
+| 呼び出し元が打ち切った | 一度も表示せずに終わる。見え方はルール4 (b) と同じ (前節「呼び出し元をキャンセルしたときの見え方」の表) |
+| 待っている間に結果が確定した | ViewModel が結果報告口で報告した場合。表示せずに、その結果を返す |
 
-Android / KMP でキャンセルの通知を握りつぶして cancelled を返す形にはしない。構造化並行性 (親のキャンセルが子へ伝わる仕組み) を壊すためである。キャンセルの通知がどの型で届くか、iOS で返る結果の綴りがどうなるかは、各形態の公開面の「失敗とキャンセルの形」が定める ([iOS](../../ios/api/dialog-surface.md) / [Android](../../android/api/dialog-surface.md) / [MAUI](../../maui/api/dialog-surface.md) / [KMP](../../kmp/api/dialog-surface.md))。なお、待機を打ち切ったあとでもダイアログの退出アニメーションは最後まで完遂される ([トランジションのルール](transition-semantics.md))。
+提示先が現れる見込みの無い文脈 (画面を持たない拡張やバックグラウンドの処理など、前面に戻る見込みの無い場所) から呼んだ show は返らない。そのような呼び出しには打ち切り (iOS は Task のキャンセル、Android / KMP はコルーチンのキャンセル、MAUI は show に渡すキャンセルトークン) を付ける。長く背面にいたあとに、古い文脈のダイアログが表示されることもある。
+
+待ちの前後の順序は次のとおり。構成ミスは提示先の有無にかかわらず待たずに失敗し、中身は提示先を確保してから作られる。型指定 show と VM factory・configure の決まりは [ViewModel 主導の呼び出しのルール](model-binding-semantics.md) が持つ。
+
+1. 型指定 show のときは、VM factory による ViewModel の生成と configure
+2. View factory の登録を引く (未登録ならここで失敗する。factory を呼んで中身を作るのは 5)
+3. 結果報告口の紐付け (待っている間に同じ ViewModel インスタンスを再び show すると、まだ表示されていなくても、ルール6 の同一インスタンスの並行 show として失敗する)
+4. 提示先の出現を待つ
+5. 中身 (View) を作って提示する
+
+待っている Dialog が複数あるときの出る順番は [多段表示のルール](multi-display-semantics.md) の「提示先を待っている Dialog の出る順番」が定める。挙動は Scenario `PB-HW-01`〜`PB-HW-08` が両 Native 実装の同名テストで固定している。
 
 ## 表示 API の動詞
 
@@ -104,9 +134,14 @@ ViewModel の型を渡す起動モード (型指定 show) は [ViewModel 主導�
 
 したがって **show が返ったときには、ダイアログはもう画面にない**。演出を何も指定していなくても、既定の退出アニメーション (クロスフェード 250 ミリ秒) の分だけ show の完了は遅れる — show が即座に返ることを前提にしたコードは影響を受ける。アニメーションの差し替えと、退出中に何が起きたときにどう配送されるかは [トランジションのルール](transition-semantics.md) が定める。
 
-## まだ決めていないこと (実物と一緒に決める)
+## Loading / Toast の結果の扱い
 
-- **Loading / Toast の結果の扱い**: Loading (移植元は結果を返さない) は Loading 機能の実装時に、Toast (移植元で廃止予定のため新実装) は Toast 再構築時に決める
+この文書の結果通知 (completed / cancelled の確定と配送) は Dialog だけのものである。Loading と Toast はダイアログの結果を持たない:
+
+| 機能 | 呼び出し元へ返るもの | 根拠 |
+|---|---|---|
+| Loading | 表示 (show)・閉鎖 (hide) は結果を返さない。スコープ形 (start) は渡した処理の戻り値をそのまま返す | core/ADR-0022 ([Loading のルール](loading-semantics.md)) |
+| Toast | 何も返さない (fire-and-forget)。表示の終了を待つ手段もない | core/ADR-0031 ([Toast のルール](toast-semantics.md)) |
 
 ## 形態別の公開面
 
@@ -123,6 +158,9 @@ show の戻りの形・結果の枝の綴り・構成ミスの失敗の型・呼
 - [core/ADR-0005](../../../decisions/core/0005-no-view-reuse-mechanism.md) — 決定 (使い捨てモデル)。ルール6 はこのモデルの帰結
 - [core/ADR-0018](../../../decisions/core/0018-notifier-vm-injection-side-table.md) — 決定 (結果報告口のインスタンス同一性紐付け)。ルール6 の「同一インスタンスの並行 show は構成ミス失敗」の根拠
 - [core/ADR-0017](../../../decisions/core/0017-animation-hooks-transition-attachment.md) — 決定 (退出演出の完了を待ってから結果を配送する)。ラッチと配送を分ける規則の根拠
+- [core/ADR-0041](../../../decisions/core/0041-wait-for-host-appearance.md) — 決定 (出す先の画面が無いときは失敗せず、上限なしで待つ)
+- [maui/ADR-0006](../../../decisions/maui/0006-dialog-show-caller-cancellation.md) — 決定 (MAUI の show に呼び出し元の打ち切りを足す)
+- 提示先の出現待ちの実現と実測 (2026-09-27〜29): [wait-for-host-appearance](../../../changes/archive/2026-09-29-wait-for-host-appearance/design.md) (過去の変更の作業記録)
 - 縦串スライス (Dialog 1本の4形態貫通) での実測 (2026-08-15): ルール4・6 と、キーボード表示中の戻るボタンの観察結果。iPhone 17 Simulator (iOS 26.5) と Android Emulator API 35 での実機観測を含む
 - 移植元の挙動調査 (2026-08-14): 下記の調査記録を参照
 

@@ -2,6 +2,7 @@ package jp.kamusoft.ksdialogs.kmp.support
 
 import jp.kamusoft.ksdialogs.kmp.DialogPlacement
 import jp.kamusoft.ksdialogs.kmp.KsLoading
+import jp.kamusoft.ksdialogs.kmp.LoadingActionThread
 import jp.kamusoft.ksdialogs.kmp.LoadingProgressReceiver
 import jp.kamusoft.ksdialogs.kmp.LoadingViewModel
 import jp.kamusoft.ksdialogs.kmp.LoadingViewRegistry
@@ -13,6 +14,7 @@ import kotlin.reflect.KClass
  * 表示そのものは Native 実装の担当なので、共有コード側の検証はこの面で行う。
  * 進捗の報告は表示中のカスタム ViewModel が受け口を実装していれば転送し、
  * Native 側の転送と同じ観察ができるようにする。
+ * 処理を始めるスレッドの指定は記録するだけで、処理は呼び出し元の文脈でそのまま走らせる。
  */
 internal class FakeKsLoading(
     private val fakeRegistry: FakeLoadingViewRegistry = FakeLoadingViewRegistry(),
@@ -28,6 +30,9 @@ internal class FakeKsLoading(
 
     /** 開始された表示のカスタム ViewModel を呼ばれた順に記録したもの。既定ローディングなら null が入る。 */
     val startedViewModels: MutableList<LoadingViewModel?> = mutableListOf()
+
+    /** スコープ形に渡された、処理を始めるスレッドの指定を呼ばれた順に記録したもの。 */
+    val startedActionThreads: MutableList<LoadingActionThread> = mutableListOf()
 
     /** 報告された進捗を呼ばれた順に記録したもの。 */
     val reportedProgress: MutableList<Double> = mutableListOf()
@@ -74,18 +79,22 @@ internal class FakeKsLoading(
     override suspend fun <T> start(
         message: String?,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         begin(null, message, placement)
+        startedActionThreads += actionThread
         return runScope(action)
     }
 
     override suspend fun <T> start(
         viewModel: LoadingViewModel,
         placement: DialogPlacement?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
     ): T {
         begin(viewModel, null, placement)
+        startedActionThreads += actionThread
         return runScope(action)
     }
 
@@ -93,8 +102,9 @@ internal class FakeKsLoading(
         viewModelClass: KClass<VM>,
         placement: DialogPlacement?,
         configure: (suspend (VM) -> Unit)?,
+        actionThread: LoadingActionThread,
         action: suspend ((Double) -> Unit) -> T,
-    ): T = start(configured(viewModelClass, configure), placement, action)
+    ): T = start(configured(viewModelClass, configure), placement, actionThread, action)
 
     /** 登録済みの factory で ViewModel を作り、configure を適用して返す。 */
     private suspend fun <VM : LoadingViewModel> configured(

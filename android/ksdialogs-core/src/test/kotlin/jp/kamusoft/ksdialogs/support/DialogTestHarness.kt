@@ -6,6 +6,8 @@ import jp.kamusoft.ksdialogs.DialogContainer
 import jp.kamusoft.ksdialogs.DialogNotifier
 import jp.kamusoft.ksdialogs.DialogViewModel
 import jp.kamusoft.ksdialogs.DialogViewRegistry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.reflect.KClass
 
 /**
@@ -33,6 +35,18 @@ internal class DialogTestHarness(
     /** 一番手前のダイアログの器。 */
     val topmostContainer: DialogContainer?
         get() = presentationSurface.topmostContainer
+
+    /** 提示先を待つ列に並んだ show の数が指定数になるまで待つ。 */
+    suspend fun waitForWaitingCount(count: Int): Boolean =
+        DialogTestWaiting.waitUntil { presentationSurface.hostWaitQueue.waitingCount == count }
+
+    /** 提示先を用意してから、UI スレッドで提示先の入れ替わりを通知する。 */
+    suspend fun makeHostAppear() {
+        withContext(Dispatchers.Main) {
+            presentationSurface.isPresentationHostAvailable = true
+            presentationSurface.fireHostChange()
+        }
+    }
 
     /** ダイアログが指定枚数提示されるまで待つ。 */
     suspend fun waitForPresentedContainers(count: Int): Boolean =

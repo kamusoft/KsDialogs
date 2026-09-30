@@ -231,7 +231,7 @@ class ToastMultiDisplayTests {
             val loadingContent = requireNotNull(LoadingCoordinator.shared.presentedContentView)
 
             toast.show(STACKED_MESSAGE, durationMs = MEDIUM_DURATION_MILLIS)
-            assertTrue(InstrumentedDialogWaiting.waitUntil { coordinator.isPresenting })
+            assertTrue(InstrumentedDialogWaiting.waitUntil { ToastTestHarness.readOnMain { coordinator.isPresenting } })
             assertTrue(
                 "既定の配線では Loading の器が載せ直されない (前面化が届いていない)",
                 InstrumentedDialogWaiting.waitUntil {
@@ -253,7 +253,7 @@ class ToastMultiDisplayTests {
             loading.hide()
         }
         assertTrue(
-            InstrumentedDialogWaiting.waitUntil { coordinator.displayCount == 0 },
+            InstrumentedDialogWaiting.waitUntil { ToastTestHarness.readOnMain { coordinator.displayCount } == 0 },
         )
     }
 

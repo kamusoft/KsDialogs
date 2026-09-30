@@ -322,8 +322,8 @@ jobs:
           python3 scripts/readme-example-lint.py
 
       # インストール例の契約 (プレースホルダ・`exact:`・最新リリースへの案内・英日の
-      # 同一構成) の検査。リリースは例を書き換えないため、契約が崩れても気づく機会は
-      # ここしかない。
+      # 同一構成、cross/ADR-0027) の検査 (cross/ADR-0029)。リリースは例を書き換えないため、
+      # 契約が崩れても気づく機会はここしかない。
       # 自己テストも回す。検出器が退行して無音で素通りする経路は、規約の歯止めそのものを
       # 無効にするため (同期スクリプトの自己テストと同じ理屈、cross/ADR-0020)。
       - name: Install example lint
@@ -331,7 +331,8 @@ jobs:
           python3 scripts/install-example-lint.py --selftest
           python3 scripts/install-example-lint.py
 
-      # リリース用スクリプトの自己テスト。publish と反映待ちの経路は不可逆な公開の後にしか
+      # リリース用スクリプトの自己テスト (cross/ADR-0026)。scripts/release/ の自己テストは
+      # 本数によらずこの 1 検査として数える。publish と反映待ちの経路は不可逆な公開の後にしか
       # 到達しないため、判定ロジックの誤りをリリース時に初めて知ることがないよう、
       # ネットワークに出ない自己テストを日常の検証で回す (同期スクリプトの自己テストと
       # 同じ理屈、cross/ADR-0020)。
@@ -348,14 +349,15 @@ jobs:
           python3 scripts/release/build-release-notes.py --selftest
 
       # 待ちの上限 (スクリプト側の定数) と job の打ち切り (release workflow の
-      # timeout-minutes) の突き合わせ。片方を延ばしてもう片方が置いていかれても、平時の
-      # 実行は緑のまま進むため、変更のたびにここで突き合わせる。
+      # timeout-minutes) の突き合わせ (cross/ADR-0026)。片方を延ばしてもう片方が置いて
+      # いかれても、平時の実行は緑のまま進むため、変更のたびにここで突き合わせる。
       - name: Release time budget check
         run: |
           python3 scripts/release/check-time-budget.py --selftest
           python3 scripts/release/check-time-budget.py
 
-      # 保留中の deployment の引き継ぎを、publish が他の成果物を取得する前に読む並びの検査。
+      # 保留中の deployment の引き継ぎを、publish が他の成果物を取得する前に読む並びの検査
+      # (cross/ADR-0026)。
       # 順序は step を並べ替えるだけで崩れ、崩れても平時の実行は緑のままになる。
       - name: Publish step order check
         run: |

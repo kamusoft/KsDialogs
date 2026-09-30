@@ -1,9 +1,9 @@
 ---
 type: concept
 title: Android の Loading 公開面
-description: Android Native (Kotlin) で Loading を使うときの公開名と署名 — 契約と既定エントリ・show / hide / setMessage / スコープ形の署名・進捗報告口と進捗受け口・従来 View 系と Compose の登録と表示・型指定 show / start と VM factory 登録・LoadingStyle と器メタ属性・配布モジュールと Context レシーバの注意
+description: Android Native (Kotlin) で Loading を使うときの公開名と署名 — 契約と既定エントリ・show / hide / setMessage / スコープ形の署名・処理を始めるスレッドの指定 (LoadingActionThread)・進捗報告口と進捗受け口・従来 View 系と Compose の登録と表示・型指定 show / start と VM factory 登録・LoadingStyle と器メタ属性・配布モジュールと Context レシーバの注意
 tags: [android, loading, api, surface]
-timestamp: 2026-09-08
+timestamp: 2026-09-26
 ---
 
 # Android の Loading 公開面
@@ -36,17 +36,40 @@ timestamp: 2026-09-08
 | 型指定 show (VM の型を渡す) | `show(viewModelClass, placement, configure)` (configure は `suspend` 可・省略可) |
 | 閉鎖 | `hide()` |
 | メッセージの差し替え | `setMessage(message)` |
-| スコープ形 | `start(message, placement, action)` / `start(viewModel, placement, action)` / `start(viewModel, placement, factory, action)` |
-| 型指定 start | `start(viewModelClass, placement, configure, action)` |
+| スコープ形 | `start(message, placement, actionThread, action)` / `start(viewModel, placement, actionThread, action)` / `start(viewModel, placement, factory, actionThread, action)` |
+| 型指定 start | `start(viewModelClass, placement, configure, actionThread, action)` |
 
 スコープ形の処理に渡る**進捗報告口**は `(Double) -> Unit` の関数で、任意スレッドから呼べる。
+
+## スコープ形の処理が始まるスレッド
+
+処理を始めるスレッドは、`ksdialogs-core` の `enum class LoadingActionThread { MAIN, BACKGROUND }` を `actionThread` 引数で渡して指定する。この引数はスコープ形の `start` 4 本と Compose の `startCompose` にあり、位置は処理 (trailing lambda) の直前、既定値は `LoadingActionThread.MAIN` である。省略すれば UI スレッドで始まる。契約 (呼び出し元に関係なく保証すること・「始まる」の定義・保証の範囲) は [Loading のルール](../../core/api/loading-semantics.md) の「スコープ形の処理が始まるスレッド」が正である。
+
+| 値 | 処理が始まるスレッド |
+|---|---|
+| `MAIN` (既定) | UI スレッド (Main dispatcher)。処理の中から View に直接触れる |
+| `BACKGROUND` | UI スレッド外 (Default dispatcher)。UI に触れない重い処理に使う |
+
+```kotlin
+// 既定: UI スレッドで始まる
+Loading.instance.start { report ->
+    imageView.setImageBitmap(resized)
+}
+
+// UI スレッド外で始める
+Loading.instance.start(actionThread = LoadingActionThread.BACKGROUND) { report ->
+    heavyWork(report)
+}
+```
+
+処理の中で中断した後の再開先は、コルーチンの通常の規則 (処理が動いている dispatcher) に従う。`MAIN` で始まった処理は Main dispatcher で再開する。型指定 start の VM factory と configure は、この指定に関係なく UI スレッドで実行される。
 
 ## 従来 View 系と Compose の呼び分け
 
 | 中身の技術 | 登録 | 登録済みの表示 | インライン表示 (中身を直接渡す) |
 |---|---|---|---|
-| 従来 View 系 (`android.view.View`) | `register(...)` | `show(viewModel, placement)` / `start(viewModel, placement, action)` | `show(viewModel, placement, factory)` / `start(viewModel, placement, factory, action)` |
-| Compose | `registerCompose(...)` | `show(viewModel, placement)` / `start(viewModel, placement, action)` | `showCompose(viewModel, placement, content)` / `startCompose(viewModel, placement, content, action)` |
+| 従来 View 系 (`android.view.View`) | `register(...)` | `show(viewModel, placement)` / `start(viewModel, placement, actionThread, action)` | `show(viewModel, placement, factory)` / `start(viewModel, placement, factory, actionThread, action)` |
+| Compose | `registerCompose(...)` | `show(viewModel, placement)` / `start(viewModel, placement, actionThread, action)` | `showCompose(viewModel, placement, content)` / `startCompose(viewModel, placement, content, actionThread, action)` |
 
 **登録済みの表示はどちらの技術でも同じ `show` / `start`** で、型指定 show / start (`show(VM::class)` / `start(VM::class)`) も `register` / `registerCompose` のどちらで登録した中身にも同じに働く。別名になるのは中身を引数で渡す `registerCompose` / `showCompose` / `startCompose` で、事情は Dialog と同じ (`@Composable` 付きの関数型と通常の関数型を同名で並べると型推論が曖昧になる。中身を関数参照ではなくラムダで書く点も同じ — [Android の Dialog 公開面](dialog-surface.md))。これらは Compose 系の配布物 `jp.kamusoft:ksdialogs` に入っており、これを依存に追加した消費者だけが使える。
 
@@ -106,7 +129,7 @@ Loading.instance.style = Loading.instance.style.copy(defaultMessage = "処理中
 ## framework 固有の注意
 
 - **factory のレシーバは提示先画面の `Context`** (`Context.(VM) -> View`) — View の生成にそのまま使える
-- **`show` / `start` は `suspend`** なので、呼び出し元のコルーチンから任意のディスパッチャで呼べる。内部で UI スレッドへ移して受理順に直列化される
+- **`show` / `start` は `suspend`** なので、呼び出し元のコルーチンから任意のディスパッチャで呼べる。内部で UI スレッドへ移して受理順に直列化される。スコープ形の処理が始まるスレッドは、呼び出し元の dispatcher ではなく `actionThread` で決まる
 - **型指定 show / start は VM factory と View factory の両方を呼び出し時点で解決する** — 欠けているスロットに応じて別の例外で失敗する (下表)
 - **Compose の中身で属性や演出を宣言する位置**は Dialog と同じ注意が要る (初回の組み立てで実行されない場所に書くと効かない — [Android の Dialog 公開面](dialog-surface.md))
 - **カスタム View 版の演出**は中身への `DialogTransition` 添付で差し替える ([Android のトランジション公開面](transition-surface.md))。既定ローディングにはこの口が無い
@@ -120,7 +143,7 @@ Loading.instance.style = Loading.instance.style.copy(defaultMessage = "処理中
 
 ## 関連
 
-- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の正)
+- [Loading のルール](../../core/api/loading-semantics.md) — 合流・世代・器の性質・保証と禁止 (契約の記述はこちら)
 - [ViewModel 主導の呼び出しのルール](../../core/api/model-binding-semantics.md) — 型指定 show の順序保証と VM factory 解決 (3 機能共通の契約)
 - [Android の Dialog 公開面](dialog-surface.md) — 登録・表示の書き方 (Loading と同型の呼び分け)
 - [Android のレイアウト公開面](layout-surface.md) — `DialogOptions` / `DialogPlacement` の型と添付面

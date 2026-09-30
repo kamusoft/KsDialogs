@@ -71,8 +71,10 @@ dependencies {
     // 利用者が @Composable のコンテンツを書くため、runtime も公開面の一部として公開する
     api(libs.androidx.compose.runtime)
 
-    // ホスティングの実装 (ComposeView) と、その動作に要る owner 2種
-    implementation(libs.androidx.compose.ui)
+    // ホスティングの実装 (ComposeView) に使うほか、表示中のページを名乗らせる modifier が公開面に
+    // Modifier を出すため、利用者のコンパイル時の依存にも届くよう api で公開する
+    api(libs.androidx.compose.ui)
+    // ホスティングの動作に要る owner 2種
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.savedstate)
 

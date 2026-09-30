@@ -24,12 +24,28 @@ namespace KsDialogs;
 /// </remarks>
 internal static class PlatformDialogContent
 {
+    /// <summary>
+    /// 提示先の画面の文脈を先に解決してから中身を作り、互換面が受け取る形へ写す。
+    /// </summary>
+    /// <remarks>
+    /// 文脈が取れなければ、中身を作る処理 (利用者の View factory) を走らせずに失敗する。
+    /// Native が提示先を確保した後の中身の供給で、UI スレッドから呼ぶ。
+    /// </remarks>
+    /// <param name="createContent">中身の MAUI View とメタ属性の実効値を作る処理。</param>
+    /// <returns>互換面へ渡す中身と属性の組。</returns>
+    /// <exception cref="InvalidOperationException">提示先の画面の文脈が取れない。</exception>
+    public static MauiDialogContent CreateInPresentationContext(Func<DialogPresentationContent> createContent)
+    {
+        IMauiContext mauiContext = RequirePresentationContext();
+        return Create(createContent(), mauiContext);
+    }
+
     /// <summary>中身とメタ属性を、互換面が受け取る形へ写す。</summary>
     /// <remarks>値の丸めや位置の計算は Native 実装の責務なので、ここでは表現を変えるだけにする。</remarks>
     /// <param name="content">中身の MAUI View とメタ属性の実効値。</param>
     /// <param name="mauiContext">platform view 化に使う文脈。</param>
     /// <returns>互換面へ渡す中身と属性の組。</returns>
-    public static MauiDialogContent Create(DialogPresentationContent content, IMauiContext mauiContext)
+    private static MauiDialogContent Create(DialogPresentationContent content, IMauiContext mauiContext)
     {
         DialogContentView contentView = new(content, content.ContentView.ToPlatform(mauiContext));
         MauiDialogContent bridgeContent = new(
@@ -85,6 +101,7 @@ internal static class PlatformDialogContent
     private static MauiDialogLayoutArea ToBridgeLayoutArea(DialogLayoutArea area) => area switch
     {
         DialogLayoutArea.Window => MauiDialogLayoutArea.Window,
+        DialogLayoutArea.CurrentPage => MauiDialogLayoutArea.CurrentPage,
         _ => MauiDialogLayoutArea.VisibleArea,
     };
 
@@ -106,30 +123,47 @@ internal static class PlatformDialogContent
     }
 
     /// <summary>
-    /// platform view 化に使う文脈を、Native 実装が提示先に選ぶ画面から解決する。
+    /// 中身の供給の時点で、Native の提示先に対応する画面の文脈を取り出す。
+    /// </summary>
+    /// <remarks>Native が提示先を確保した後に、UI スレッドで呼ぶ。</remarks>
+    /// <returns>提示先の画面の文脈。</returns>
+    /// <exception cref="InvalidOperationException">提示先の画面の文脈が取れない。</exception>
+    public static IMauiContext RequirePresentationContext() =>
+        DialogPresentationContext.Require(ResolvePresentationTarget());
+
+    /// <summary>
+    /// Native 実装が提示先に選ぶ画面と、platform view 化に使うその画面の文脈を一組で解決する。
     /// </summary>
     /// <remarks>
     /// Native 実装は前面のシーンの key window から提示先を辿るため、その window を platform view として
-    /// 持つ画面の文脈を使う。見つからない場合だけ、文脈を持つ最初の画面へ落とす。
+    /// 持つ画面を選ぶ。見つからない場合だけ、文脈を持つ最初の画面へ落とす。
     /// アプリ全体の文脈は画面に紐づく情報を持たず、これで作った View は提示に耐えないため使わない。
-    /// 画面の文脈が取れない状態は提示先が無い状態にあたる。
+    /// 文脈を持つ画面が 1 つも無ければ解決できない。
     /// </remarks>
-    /// <returns>解決できた文脈。無ければ <see langword="null"/>。</returns>
-    public static IMauiContext? ResolveMauiContext()
+    /// <returns>解決できた画面と文脈の組。無ければ <see langword="null"/>。</returns>
+    public static DialogPresentationTarget? ResolvePresentationTarget()
     {
         IReadOnlyList<Window> windows = Application.Current?.Windows ?? [];
-        UIWindow? presentationHost = UIApplication.SharedApplication.ConnectedScenes
+        UIWindow? presentationHost = FindPresentationHost();
+
+        Window? hostWindow = windows.FirstOrDefault(window =>
+            window.Handler?.MauiContext is not null
+            && ReferenceEquals(window.Handler.PlatformView, presentationHost));
+        hostWindow ??= windows.FirstOrDefault(window => window.Handler?.MauiContext is not null);
+
+        return hostWindow?.Handler?.MauiContext is IMauiContext context
+            ? new DialogPresentationTarget(hostWindow, context)
+            : null;
+    }
+
+    /// <summary>Native 実装が提示先に選ぶ window (前面アクティブなシーンの key window)。</summary>
+    /// <returns>提示先の window。無ければ <see langword="null"/>。</returns>
+    public static UIWindow? FindPresentationHost() =>
+        UIApplication.SharedApplication.ConnectedScenes
             .OfType<UIWindowScene>()
             .Where(scene => scene.ActivationState == UISceneActivationState.ForegroundActive)
             .SelectMany(scene => scene.Windows)
             .FirstOrDefault(window => window.IsKeyWindow);
-
-        Window? hostWindow = windows
-            .FirstOrDefault(window => ReferenceEquals(window.Handler?.PlatformView, presentationHost));
-
-        return hostWindow?.Handler?.MauiContext
-            ?? windows.Select(window => window.Handler?.MauiContext).FirstOrDefault(context => context is not null);
-    }
 
     /// <summary>
     /// 中身の MAUI View を器のレイアウトに乗せるための入れ物。

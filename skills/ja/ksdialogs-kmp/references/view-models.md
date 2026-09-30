@@ -56,7 +56,7 @@ class ItemListViewModel(
 |---|---|
 | 型 | ViewModel が宣言した結果型の `DialogNotifier<R>` |
 | 読める期間 | 表示中だけ。`show` の前と、結果または例外が呼び出し元へ渡った後は空になる |
-| 紐付けの単位 | ViewModel の instance 1 つにつき 1 本。同じ instance を並行して表示すると構成ミスとして失敗する |
+| 紐付けの単位 | ViewModel の instance 1 つにつき 1 本。同じ instance を並行して表示すると、先の表示が画面を待っている間でも構成ミスとして失敗する |
 | 報告の方法 | `complete(value)` で値を返し、`cancel()` でキャンセルを報告する |
 | 2 回目以降の報告 | 最初の報告だけが有効で、以降は何もしない |
 
@@ -145,11 +145,13 @@ ViewModel factory が未登録のとき、factory が登録キーと違う class
 
 ## 生成から結果までの順序
 
-1. 呼び出し元が ViewModel の instance を作り、`show` に渡す
-2. ライブラリが報告口をその instance へ紐付ける
-3. host の View factory が呼ばれ、content が作られる (この時点で報告口はもう読める)
-4. content が表示され、出現の演出が走る
-5. content が `complete` か `cancel` で結果を報告する。外側タップ・Android の戻るボタンでもキャンセルが確定する
-6. 閉鎖の演出が終わって器が撤去され、`show` が `DialogResult` を返す。報告口の紐付けはここで外れる
+1. 呼び出し元が ViewModel の instance を作り、`show` に渡す (class を渡したときは ViewModel factory が作り、`configure` が走る)
+2. ライブラリが host の View factory の登録を引く。未登録ならここで `DialogException` になる
+3. ライブラリが報告口をその instance へ紐付ける
+4. 出す先の画面がまだ無ければ、現れるのを待つ ([Dialog](dialogs.md))
+5. host の View factory が呼ばれ、content が作られる (この時点で報告口はもう読める)
+6. content が表示され、出現の演出が走る
+7. content が `complete` か `cancel` で結果を報告する。外側タップ・Android の戻るボタンでもキャンセルが確定する
+8. 閉鎖の演出が終わって器が撤去され、`show` が `DialogResult` を返す。報告口の紐付けはここで外れる
 
 報告口の紐付けは、正常な結果配送だけでなく、表示に失敗した経路でも必ず外れる。だから失敗した直後でも同じ instance をもう一度表示できる。

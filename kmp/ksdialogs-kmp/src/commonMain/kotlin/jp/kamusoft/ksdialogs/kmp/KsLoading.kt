@@ -96,13 +96,33 @@ public interface KsLoading {
      * 失敗 (例外・キャンセル) も合流1件の終了として数えたうえで呼び出し元へ伝播する。
      * 合流最後の1件なら器の撤去まで待ってから戻り、そうでなければ処理の完了時点で戻る。
      *
+     * 処理は、呼び出し元のスレッドやコルーチン文脈に関係なく [actionThread] で指定したスレッドで始まる。
+     * 既定は UI スレッドで、処理の中から UI に直接触れる。UI に触れない重い処理は
+     * [LoadingActionThread.BACKGROUND] を指定して UI スレッド外で始める。
+     * ここでの「始まる」は処理の最初の文を実行するスレッドを指し、処理の中で中断した後の再開先は
+     * コルーチンの通常の規則 (処理が動いている dispatcher) に従う。
+     *
+     * ```
+     * Loading.instance.start { report ->
+     *     updateStatusLabel()                         // UI スレッドで始まる
+     * }
+     * Loading.instance.start(actionThread = LoadingActionThread.BACKGROUND) { report ->
+     *     heavyWork(report)                           // UI スレッド外で始まる
+     * }
+     * ```
+     *
+     * Swift から呼ぶ場合は引数の既定値が使えないため、[actionThread] を明示で渡す。
+     *
      * @param message 表示するメッセージ。null なら各 OS 側で設定されたスタイルの既定メッセージ
      * @param placement 配置。null なら契約の既定値
+     * @param actionThread 処理を始めるスレッド。既定の [LoadingActionThread.MAIN] は UI スレッド、
+     *   [LoadingActionThread.BACKGROUND] は UI スレッド外で、呼び出し元の文脈に関係なくそのスレッドで始まる
      * @param action 実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)
      */
     public suspend fun <T> start(
         message: String? = null,
         placement: DialogPlacement? = null,
+        actionThread: LoadingActionThread = LoadingActionThread.MAIN,
         action: suspend ((Double) -> Unit) -> T,
     ): T
 
@@ -112,15 +132,20 @@ public interface KsLoading {
      * 未登録の ViewModel 型は構成ミスとして [DialogException] で失敗し、処理は実行されない (fail-fast)。
      * Swift から呼ぶ場合、この例外は NSError として届く。
      * 報告した進捗は、ViewModel が [LoadingProgressReceiver] を実装していればそこへ転送される。
+     * 処理が始まるスレッドは既定ローディングのスコープ形と同じで、既定は UI スレッドである。
+     * Swift から呼ぶ場合は引数の既定値が使えないため、[actionThread] を明示で渡す。
      *
      * @param viewModel 表示するカスタム Loading の ViewModel
      * @param placement 配置。null なら View への添付、添付もなければ契約の既定値
+     * @param actionThread 処理を始めるスレッド。既定の [LoadingActionThread.MAIN] は UI スレッド、
+     *   [LoadingActionThread.BACKGROUND] は UI スレッド外で、呼び出し元の文脈に関係なくそのスレッドで始まる
      * @param action 実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)
      */
     @Throws(DialogException::class, CancellationException::class)
     public suspend fun <T> start(
         viewModel: LoadingViewModel,
         placement: DialogPlacement? = null,
+        actionThread: LoadingActionThread = LoadingActionThread.MAIN,
         action: suspend ((Double) -> Unit) -> T,
     ): T
 
@@ -134,12 +159,16 @@ public interface KsLoading {
      * ViewModel factory が未登録のとき、および factory が登録キーと違うクラスを返したときは、
      * 構成エラーとして [DialogException] で失敗し、処理は実行されない。
      * ViewModel factory と [configure] が投げた例外も同じく処理を実行せずに呼び出し元へ伝わる。
+     * 処理が始まるスレッドは既定ローディングのスコープ形と同じで、既定は UI スレッドである
+     * (生成と [configure] は指定に関係なく呼び出し元の文脈で実行される)。
      *
      * この呼び出しは共有 Kotlin コード専用で、Swift / Objective-C からは見えない。
      *
      * @param viewModelClass 表示する ViewModel のクラス参照。ViewModel factory の登録キーと同じもの
      * @param placement 配置。省略時の扱いは ViewModel を渡すスコープ形と同じ
      * @param configure 生成した ViewModel を表示前に整える処理。省略すれば生成物をそのまま表示する
+     * @param actionThread 処理を始めるスレッド。既定の [LoadingActionThread.MAIN] は UI スレッド、
+     *   [LoadingActionThread.BACKGROUND] は UI スレッド外で、呼び出し元の文脈に関係なくそのスレッドで始まる
      * @param action 実行する処理。引数の報告口へ 0〜1 の進捗を報告できる (任意スレッド可)
      */
     @OptIn(ExperimentalObjCRefinement::class)
@@ -148,6 +177,7 @@ public interface KsLoading {
         viewModelClass: KClass<VM>,
         placement: DialogPlacement? = null,
         configure: (suspend (VM) -> Unit)? = null,
+        actionThread: LoadingActionThread = LoadingActionThread.MAIN,
         action: suspend ((Double) -> Unit) -> T,
     ): T
 }

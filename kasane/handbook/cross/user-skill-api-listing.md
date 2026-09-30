@@ -6,7 +6,7 @@ applies-when:
   tasks: [docs-refresh の API 名網羅検査の仕分け]
 title: 利用者向け Skill の API 掲載基準
 description: skills/ の利用者向け Agent Skills に公開 API をどこまで載せるかを決める、簡潔でも網羅の方針と意図的な掲載除外の基準
-timestamp: 2026-09-06
+timestamp: 2026-09-30
 ---
 
 # 利用者向け Skill の API 掲載基準
@@ -45,21 +45,37 @@ API 名網羅検査の報告を、オーナーが仕分けた確定済みの除�
 | Android | `LoadingCoordinator` | 内部層・interop 層 | 表示合流を実装する internal coordinator で、利用者は Loading の facade / contract から間接利用する |
 | Android | `AbstractComposeView`、`LazyColumn` | 機械的に導出できる名前 | Android / Compose framework の標準型で、掲載済み公開署名・レシピから一意に分かる |
 | Android | `AccelerateDecelerateInterpolator`、`LayoutParams` | 非 API token | Android framework の標準型で、公開面 concept が既定の補間器・添付時の親指定を説明するために書いているだけの名前 |
+| Android | `DialogCurrentPageLedger`、`DialogCurrentPageMarker` | 内部層・interop 層 | Compose モジュールが表示中のページの印を記録するためのモジュール間の内部口で、public だが `@KsDialogsInternalApi` (opt-in 必須) で保護されている。利用者は `Modifier.markAsDialogCurrentPage()` / `DialogCurrentPage.provider` から間接利用する |
+| Android | `DialogLayoutHost` | 内部層・interop 層 | 器の配置を担う `internal class` で、公開面に無い |
+| Android | `WindowManager.LayoutParams.token`、`boundsInWindow()`、`getLocationOnScreen` | 非 API token | Android framework の標準名と内部口のメンバー名で、公開面 concept が表示中のページの候補と矩形の取り方を説明するために書いているだけの名前 |
 | MAUI | `IMauiInitializeService` | 内部層・interop 層 | `KsDialogsInitializer` が service provider を捕捉する MAUI 起動配線で、利用者は登録 extension から間接利用する |
 | MAUI | `IServiceProvider.GetService` | 機械的に導出できる名前 | ViewModel fallback が使う .NET DI 操作で、`UseViewFallback` の provider 引数から導出できる |
 | MAUI | `TimeSpan.MaxValue` | 機械的に導出できる名前 | .NET 標準型・標準定数で、掲載済み duration / transition 署名から一意に分かる |
 | MAUI | `SetIocConfig`、`ShowResultAsync`、`UseCurrentPageLocation` | 非 API token | 移植元 AiForms.Maui.Dialogs の旧 API 名で、`maui/api/` の「移植元との対応」節にだけ現れる。MAUI 公開面は `AddKsDialogs` / 型付き `ShowAsync` / `Dialog.SetLayoutArea` を使う |
+| MAUI | `MauiDialogLayoutArea`、`KSDMauiDialogLayoutArea` | 内部層・interop 層 | bridge 側の enum と binding 型で、`PlatformDialogContent` の変換からだけ参照される。利用者は `KsDialogs.DialogLayoutArea` を使う |
+| MAUI | `InvalidOperationException` | 非 API token | .NET 標準の例外で、提示先を確保した後に MAUI の文脈が取れない場合などの防御経路でだけ投げられ、通常の利用者コードには届かない |
+| MAUI | `Handler.PlatformView`、`IMauiContext`、`Trace`、`Window.Navigation.ModalStack`、`MainThread` | 非 API token | .NET / MAUI framework の標準名で、公開面 concept が表示中のページの探し方・既定のスレッド・警告の出し先を説明するために書いているだけの名前 |
+| MAUI | `DialogLayoutArea.CURRENT_PAGE`、`DialogLayoutArea.currentPage` | 対象 Skill 外・機械検査由来 | `maui/api/layout-surface.md` が Android / iOS の綴りとの対応を示すために書いている他 platform の名前。MAUI 公開面は `DialogLayoutArea.CurrentPage` を使う |
 | KMP | `LoadingCoordinator` | 内部層・interop 層 | 表示合流を実装する internal coordinator で、利用者は Loading の facade / contract から間接利用する |
 | KMP | `localSwiftPackage` | 内部層・interop 層 | KMP artifact 発行時の SwiftPM metadata 配線用 Gradle DSL で、通常の消費者 API ではない |
 | KMP | `AbstractComposeView` | 機械的に導出できる名前 | Android / Compose framework の標準型で、掲載済み公開署名・レシピから一意に分かる |
 | KMP | `UIView` | 機械的に導出できる名前 | Apple framework の標準型で、掲載済み公開署名・レシピから一意に分かる |
 | KMP | `ConfirmContent`、`SharedConfirmViewModel` | 機械的に導出できる名前 | concept 内で消費者アプリが定義する例示型名であり、登録レシピから任意の利用者型として導出できる |
 | KMP | `LayoutParams`、`suspendCancellableCoroutine` | 非 API token | Android framework / kotlinx.coroutines の標準名で、ホスト側の添付とブリッジ実装を説明するために公開面 concept が書いているだけの名前 |
+| KMP | `DialogCurrentPageLedger`、`DialogCurrentPageMarker`、`DialogLayoutHost` | 内部層・interop 層 | Android では opt-in 必須の内部口と `internal class`、iOS では internal の型で、ホスト側の利用者は `markAsDialogCurrentPage()` / `DialogCurrentPage.provider` から間接利用する |
+| KMP | `ksdialogs.swiftPackageUrl` | 内部層・interop 層 | KMP artifact 発行時に Swift 参照先 URL を差し替える Gradle property で、KMP アプリ側が設定するものではない |
+| KMP | `UIHostingController`、`isHidden`、`safeAreaLayoutGuide.layoutFrame`、`selectedViewController`、`topViewController` | 非 API token | Apple framework の標準名で、iOS ホスト側の既定の探し方を説明するために公開面 concept が書いているだけの名前 |
+| KMP | `Scaffold`、`WindowManager.LayoutParams.token`、`boundsInWindow()`、`getLocationOnScreen` | 非 API token | Android / Compose framework の標準名と内部口のメンバー名で、Android ホスト側の表示中のページの探し方を説明するために公開面 concept が書いているだけの名前 |
+| KMP | `Dispatchers.Default`、`Dispatchers.Main.immediate` | 非 API token | kotlinx.coroutines の標準名で、Loading の処理を始めるスレッドを説明するために公開面 concept が書いているだけの名前 |
 | AiForms migration | `ActivatorUtilities.CreateInstance` | 低頻度の細部 API | 規約 fallback で任意 View を生成する補助経路で、通常の移行は明示登録を使う |
 | AiForms migration | `IMauiInitializeService` | 内部層・interop 層 | MAUI startup で service provider を捕捉する内部配線で、移行者は登録 extension から間接利用する |
 | AiForms migration | `IServiceCollection`、`IServiceProvider`、`IServiceProvider.GetService` | 機械的に導出できる名前 | .NET DI の基盤型と標準操作で、`AddKsDialogs` / `UseViewFallback` の署名から導出できる |
 | AiForms migration | `Easing`、`TimeSpan`、`TimeSpan.MaxValue` | 機械的に導出できる名前 | .NET / MAUI の標準型・標準定数で、掲載済み duration / transition 署名から一意に分かる |
 | AiForms migration | `CancellationToken`、`Easing.CubicInOut` | 非 API token | .NET / MAUI framework の標準型・標準定数で、MAUI 公開面 concept が署名と preset の既定を書くために使っているだけの名前 |
+| AiForms migration | `MauiDialogLayoutArea`、`KSDMauiDialogLayoutArea` | 内部層・interop 層 | bridge 側の enum と binding 型で、`PlatformDialogContent` の変換からだけ参照される。移行者は `KsDialogs.DialogLayoutArea` を使う |
+| AiForms migration | `InvalidOperationException` | 非 API token | .NET 標準の例外で、提示先を確保した後に MAUI の文脈が取れない場合などの防御経路でだけ投げられ、通常の利用者コードには届かない |
+| AiForms migration | `Detail`、`Handler`、`Handler.PlatformView`、`IMauiContext`、`Trace`、`Window.Navigation.ModalStack`、`MainThread` | 非 API token | .NET / MAUI framework の標準名で、MAUI 公開面 concept が表示中のページの探し方・既定のスレッド・警告の出し先を説明するために書いているだけの名前 |
+| AiForms migration | `DialogLayoutArea.CURRENT_PAGE`、`DialogLayoutArea.currentPage` | 対象 Skill 外・機械検査由来 | `maui/api/layout-surface.md` が Android / iOS の綴りとの対応を示すために書いている他 platform の名前。移行先の MAUI 公開面は `DialogLayoutArea.CurrentPage` を使う |
 
 リストの更新は、API 名網羅検査の報告に対してオーナーが掲載または除外を決めたときに行う。除外リストを更新しても検査結果から名前が消えるわけではなく、次回から判断済みとして仕分けられるようになる。
 
