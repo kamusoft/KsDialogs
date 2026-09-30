@@ -1,13 +1,13 @@
 ---
 id: 0045
 title: 接頭辞 ks は OS の View 型に後付けする属性とその SwiftUI の対に限る
-status: proposed
+status: accepted
 date: 2026-09-30
 ---
 
 ## Context
 
-iOS と Android の公開 API には、小文字の `ks` で始まるメンバーがある。ダイアログ・Loading・Toast の中身の View に配置や演出の属性を付けるもの (UIKit の `UIView` と Android の `View` への後付けプロパティ、それと同名の SwiftUI の modifier。例: `ksDialogOptions`) と、基準領域「表示中のページ」のためにアプリのページを名乗らせる印 (SwiftUI と Compose の modifier `ksDialogCurrentPage()`) である。MAUI と KMP の共有層には小文字の `ks` で始まる公開メンバーはない。
+決定の時点で、iOS と Android の公開 API には小文字の `ks` で始まるメンバーが 2 種類あった。ダイアログ・Loading・Toast の中身の View に配置や演出の属性を付けるもの (UIKit の `UIView` と Android の `View` への後付けプロパティ、それと同名の SwiftUI の modifier。例: `ksDialogOptions`) と、基準領域「表示中のページ」のためにアプリのページを名乗らせる印 (SwiftUI と Compose の modifier `ksDialogCurrentPage()`) である。MAUI と KMP の共有層には小文字の `ks` で始まる公開メンバーはない。
 
 この接頭辞は 2026-08-18〜19 の add-layout-spec で UIKit の後付けプロパティ名として初めて現れ、SwiftUI の modifier は同じ名前で core/ADR-0015 に載った。付ける理由を検討した記録は、phase の履歴・change・ADR・レビューのどこにもない。2026-09-06 の rename-swiftui-transition-modifier では、1 つだけ接頭辞のなかった SwiftUI の演出 modifier を、UIKit と綴りを揃えるために `ks` 付きへ改めた。このとき全部の `ks` を外す案は変更規模を理由に候補から外され、付けること自体の是非は問われていない。2026-09-27 に追加された表示中のページの印も、既存の形に合わせて `ks` 付きで入った。
 
@@ -43,4 +43,7 @@ iOS と Android の公開 API には、小文字の `ks` で始まるメンバ�
 
 - 前提 (Context) が崩れたとき
 
-出典: kasane/changes/rename-current-page-marker/exploration.md (探索で確認した現状・`ks` 付きの仲間の扱いの選択肢・決定事項) / kasane/changes/archive/2026-09-06-rename-swiftui-transition-modifier/exploration.md (綴りを揃えた改名と、全部外す案を候補から外した経緯) / kasane/changes/archive/2026-08-19-add-layout-spec/design.md (後付けプロパティ名の初出) / kasane/decisions/core/0015-attribute-supply-content-attachment.md (添付の面)
+出典: kasane/changes/archive/2026-09-30-rename-current-page-marker/exploration.md (探索で確認した現状・`ks` 付きの仲間の扱いの選択肢・決定事項) / kasane/changes/archive/2026-09-06-rename-swiftui-transition-modifier/exploration.md (綴りを揃えた改名と、全部外す案を候補から外した経緯) / kasane/changes/archive/2026-08-19-add-layout-spec/design.md (後付けプロパティ名の初出) / kasane/decisions/core/0015-attribute-supply-content-attachment.md (添付の面)
+関連: 表示中のページの印は、この決定のもとで `ks` を付けない `markAsDialogCurrentPage()` に改名された (kasane/changes/archive/2026-09-30-rename-current-page-marker/)。規則の現在の記述先は kasane/concepts/ios/api/layout-surface.md の「SwiftUI での添付」と kasane/concepts/android/api/layout-surface.md の「従来 View 系での添付」
+
+現行照合: 2026-09-30 確認 (rename-current-page-marker の蒸留時)。`ks` で始まる公開メンバーは、iOS の `UIView` の extension プロパティ 3 個 (`ios/Sources/KsDialogs/Contract/UIViewDialogAttributes.swift`)・SwiftUI の modifier 3 個 (`ios/Sources/KsDialogs/SwiftUI/DialogAttributeAttachment.swift`)・Android の `View` の拡張プロパティ 3 個 (`android/ksdialogs-core/src/main/kotlin/jp/kamusoft/ksdialogs/ViewDialogAttributes.kt`) だけで、どれも中身に属性を付ける面である。表示中のページの印は iOS・Android とも `markAsDialogCurrentPage()`。判定: 維持

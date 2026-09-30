@@ -48,4 +48,4 @@
 | [0042](0042-content-created-after-host-secured.md) | Toast・Loading の中身は全形態で提示先を確保してから作り、提示先が無いまま始まった Loading の生成失敗は表示だけを諦める (0033 の amends — Loading の失敗の合流先を、提示先が無いまま始まった表示に限って置き換え) | accepted | 2026-09-27 |
 | [0043](0043-toast-duration-from-visible-when-accepted-in-foreground-without-host.md) | アプリが前面にいるのに提示先が無い間に受け付けた Toast は、画面が利用者に見えた時点から表示時間を数える (0041 の amends — Toast の寿命を、前面で提示先を待つ間に受け付けた表示に限って置き換え) | accepted | 2026-09-29 |
 | [0044](0044-android-host-is-drawn-resumed-activity.md) | Android の提示先は resumed で、かつ描画された Activity とし、Dialog・Loading・Toast の 3 機能で揃える (載っている Loading・Toast の器は、Activity の破棄か別の提示先の出現まで外さない) | accepted | 2026-09-29 |
-| [0045](0045-ks-prefix-limited-to-view-attachments.md) | 接頭辞 ks は OS の View 型に後付けする属性とその SwiftUI の対に限る | proposed | 2026-09-30 |
+| [0045](0045-ks-prefix-limited-to-view-attachments.md) | 接頭辞 ks は OS の View 型に後付けする属性とその SwiftUI の対に限る | accepted | 2026-09-30 |

@@ -3,7 +3,7 @@ type: concept
 title: Android のレイアウト公開面
 description: Android Native (Kotlin) でダイアログの大きさと位置を指定するときの公開名と署名 — 属性の型とプロパティ・従来 View 系の拡張プロパティと Compose の宣言・show 引数での置き場所指定・表示中のページの教え方 (Compose の modifier・View を返す関数の登録・候補になるウィンドウ)・論理単位と色の表現
 tags: [android, layout, api, surface]
-timestamp: 2026-09-27
+timestamp: 2026-09-30
 ---
 
 # Android のレイアウト公開面
@@ -46,6 +46,8 @@ timestamp: 2026-09-27
 |---|---|
 | `ksDialogOptions` | `DialogOptions?` |
 | `ksDialogPlacement` | `DialogPlacement?` |
+
+拡張プロパティの名前が `ks` で始まるのは、OS の型 (`View`) に後から足す名前を他のライブラリや OS 自身のメンバーとぶつけないためである。OS の型への後付けではない Compose の添付 (`KsDialogAttributes`) と表示中のページの印 (`Modifier.markAsDialogCurrentPage()`) には、この小文字の接頭辞を付けない ([core/ADR-0045](../../../decisions/core/0045-ks-prefix-limited-to-view-attachments.md))。
 
 ```kotlin
 // content は registry へ登録する中身の View (登録の書き方は Dialog 公開面)
@@ -97,12 +99,12 @@ Android は表示中のページを探す既定の仕組みを持たない (「�
 
 | 順 | 取得元 | 書く名前 | 配布物 |
 |---|---|---|---|
-| 1 | Compose の modifier | `Modifier.ksDialogCurrentPage()` (`jp.kamusoft.ksdialogs.compose`) | `jp.kamusoft:ksdialogs` |
+| 1 | Compose の modifier | `Modifier.markAsDialogCurrentPage()` (`jp.kamusoft.ksdialogs.compose`) | `jp.kamusoft:ksdialogs` |
 | 2 | 従来 View 向けの関数の登録 | `DialogCurrentPage.provider` (`(() -> View?)?`) | `jp.kamusoft:ksdialogs-core` |
 
 基準になるのは、教えた composable / View の矩形と可視領域の共通部分である。iOS の safe area にあたるものは使わないので、バーを含む画面全体ではなく**バーの内側の枠** (中身の領域) を教える。
 
-### Compose: `Modifier.ksDialogCurrentPage()`
+### Compose: `Modifier.markAsDialogCurrentPage()`
 
 `Scaffold` を使う画面では、content 枠 (topBar / bottomBar の内側) に 1 回付ける。付けた composable は画面に載っている間だけ候補になり、画面遷移などで組み立てから外れると候補から外れる。
 
@@ -115,7 +117,7 @@ Scaffold(
         modifier = Modifier
             .padding(innerPadding)
             .fillMaxSize()
-            .ksDialogCurrentPage(),   // バーの内側が基準になる
+            .markAsDialogCurrentPage(),   // バーの内側が基準になる
     )
 }
 ```
@@ -155,5 +157,6 @@ Compose の modifier は `:ksdialogs` にあり、台帳の本体は `:ksdialogs
 
 - [レイアウトのルール](../../core/api/layout-semantics.md) — 属性の意味・既定値・優先順位・rect の決まり方 (契約の記述はこちら)
 - [core/ADR-0038](../../../decisions/core/0038-current-page-layout-area-via-registered-provider.md) — 決定 (表示中のページは器が探さず、登録された取得元から得る。Android は既定の探し方を持たない)
+- [core/ADR-0045](../../../decisions/core/0045-ks-prefix-limited-to-view-attachments.md) — 決定 (接頭辞 `ks` は OS の View 型に後付けする属性とその SwiftUI の対に限る)
 - [Android の Dialog 公開面](dialog-surface.md) — 登録・表示・結果の受け取りの公開面
 - [Android のトランジション公開面](transition-surface.md) — 出入りの演出の添付面とフックの型

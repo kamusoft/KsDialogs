@@ -3,7 +3,7 @@ type: concept
 title: iOS のレイアウト公開面
 description: iOS Native (Swift) でダイアログの大きさと位置を指定するときの公開名と署名 — 属性の型とプロパティ・UIKit の添付プロパティと SwiftUI の modifier・show 引数での置き場所指定・表示中のページの教え方 (既定の探し方・関数の登録・SwiftUI の modifier)・論理単位と色型
 tags: [ios, layout, api, surface]
-timestamp: 2026-09-27
+timestamp: 2026-09-30
 ---
 
 # iOS のレイアウト公開面
@@ -79,6 +79,8 @@ Dialog.shared.registry.register(ConfirmViewModel.self) { viewModel, notifier in
 
 添付は View の階層を子から親へ遡って合流するため、入れ子の内側と外側の両方に同じ属性を添付した場合は**外側 (より上位の View) が勝つ**。添付は初回表示までに評価される位置に書く。
 
+中身に属性を付ける名前は、UIKit の extension プロパティも SwiftUI の modifier も `ks` で始まる同じ綴りである。OS の型 (`UIView`) に後から足す名前を他のライブラリや OS 自身のメンバーとぶつけないための接頭辞で、SwiftUI の modifier は UIKit のプロパティと綴りを揃えている。表示中のページの印 (`markAsDialogCurrentPage()`) は中身への添付ではなく、対になる UIKit のプロパティも無いので `ks` を付けない ([core/ADR-0045](../../../decisions/core/0045-ks-prefix-limited-to-view-attachments.md))。
+
 ## show 引数での置き場所指定
 
 `show(_:placement:)` の `placement:` に `DialogPlacement` を渡すと、添付された置き場所をオブジェクトまるごと置換する。静的メタ属性を渡す引数は無い。
@@ -96,7 +98,7 @@ let result = try await Dialog.shared.show(
 
 | 順 | 取得元 | 書く名前 |
 |---|---|---|
-| 1 | SwiftUI の modifier | `View.ksDialogCurrentPage()` |
+| 1 | SwiftUI の modifier | `View.markAsDialogCurrentPage()` |
 | 2 | UIKit 向けの関数の登録 | `DialogCurrentPage.provider` (`(@MainActor () throws -> UIView?)?`) |
 | 3 | 既定の探し方 (内蔵) | なし (登録不要) |
 
@@ -106,7 +108,7 @@ let result = try await Dialog.shared.show(
 
 保証するのは UIKit のコンテナまでである。root が `UIHostingController` の SwiftUI の画面では、`TabView` / `NavigationStack` の内側まで降りず、hosting controller の view がページになる。その safe area は SwiftUI のバーを含んだままなので、modifier を付けずに既定の探し方に任せると、結果はほぼ可視領域と同じになる (タブバーを避けない)。SwiftUI の画面は次の modifier で教える。
 
-### SwiftUI: `ksDialogCurrentPage()`
+### SwiftUI: `markAsDialogCurrentPage()`
 
 `TabView` / `NavigationStack` で組んだ画面では、各画面の中身の枠 (バーの内側) に 1 回付けるのが正規の経路である。付けた View は画面に載っている間だけ候補になり、関数の登録と既定の探し方より優先される。
 
@@ -114,13 +116,13 @@ let result = try await Dialog.shared.show(
 TabView {
     NavigationStack {
         OrdersScreen()
-            .ksDialogCurrentPage()   // ナビゲーションバーとタブバーの内側が基準になる
+            .markAsDialogCurrentPage()   // ナビゲーションバーとタブバーの内側が基準になる
             .navigationTitle("Orders")
     }
     .tabItem { Label("Orders", systemImage: "list.bullet") }
 
     SettingsScreen()
-        .ksDialogCurrentPage()
+        .markAsDialogCurrentPage()
         .tabItem { Label("Settings", systemImage: "gearshape") }
 }
 ```
@@ -155,5 +157,6 @@ DialogCurrentPage.provider = { [weak container] in
 
 - [レイアウトのルール](../../core/api/layout-semantics.md) — 属性の意味・既定値・優先順位・rect の決まり方 (契約の記述はこちら)
 - [core/ADR-0038](../../../decisions/core/0038-current-page-layout-area-via-registered-provider.md) — 決定 (表示中のページは器が探さず、登録された取得元から得る)
+- [core/ADR-0045](../../../decisions/core/0045-ks-prefix-limited-to-view-attachments.md) — 決定 (接頭辞 `ks` は OS の View 型に後付けする属性とその SwiftUI の対に限る)
 - [iOS の Dialog 公開面](dialog-surface.md) — 登録・表示・結果の受け取りの公開面
 - [iOS のトランジション公開面](transition-surface.md) — 出入りの演出の添付面とフックの型

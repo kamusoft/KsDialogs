@@ -111,7 +111,7 @@ Sample は**プラットフォーム間パリティの検証装置**である。
 | `Panel` タブ | OS 標準のナビゲーションバー (ページの外側にある本物のバー) にタイトル・戻る記号 `‹`・`Show` を置く。バーの高さ・タイトルの寄せ・戻るの字形は OS 実装のまま |
 | `Info` タブ | タイトルバーを持たないページ。本文と `Show` を置く |
 | 基準領域の行 | 項目名の下に 3 択のセグメントを全幅で置き、選択肢の幅を等分する (部品は配置のセグメントと同じ) |
-| 表示中のページの名乗り | iOS Native と KMP (iOS) は各タブの中身の枠に SwiftUI の `.ksDialogCurrentPage()`、Android Native と KMP (Android) は各タブの中身の枠 (Scaffold のバーの内側) に Compose の `Modifier.ksDialogCurrentPage()`、MAUI は登録せず MAUI 層の既定の探し方に任せる |
+| 表示中のページの名乗り | iOS Native と KMP (iOS) は各タブの中身の枠に SwiftUI の `.markAsDialogCurrentPage()`、Android Native と KMP (Android) は各タブの中身の枠 (Scaffold のバーの内側) に Compose の `Modifier.markAsDialogCurrentPage()`、MAUI は登録せず MAUI 層の既定の探し方に任せる |
 | 余白の行 | 基準領域の行の下に 1 行で置き、項目名を左・3 択のセグメントを右に置く (配置の行と同じ並びと部品)。全辺そろえの値だけを選び、辺ごとの指定は持たない |
 | タブを切り替えたとき | 配置・移動量・基準領域・余白の設定は保たれる |
 | パネルが出すダイアログの余白 | パネルで選んだ余白を全辺そろえの dialogMargin として添付する (余白は show の引数で渡せない静的メタ属性なので、基準領域と同じく ViewModel から各ルートの `SampleDialogRegistration` の View factory へ流し、Layout Dialog の中身に付ける)。初期値の 0 ではカードが基準領域の端 (タブバーの上端・ナビゲーションバーの下端・ステータスバーの下端) に接し、基準領域どおりに置かれたかを見た目で判定できる。4 ルートとも同じ値を添付するので、並べた画面の差は基準領域の差として読める |
