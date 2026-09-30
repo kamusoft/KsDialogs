@@ -2,6 +2,7 @@ package jp.kamusoft.ksdialogs
 
 import android.app.Activity
 import android.view.View
+import jp.kamusoft.ksdialogs.support.TrackerTestDriver
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
@@ -11,14 +12,15 @@ import org.junit.jupiter.api.Test
 class ActivityDialogPresentationSurfaceTests {
 
     private class PresentationFixture {
-        val tracker = ResumedActivityTracker()
+        val driver = TrackerTestDriver()
+        val tracker = driver.tracker
         val activity = Activity()
         val surface = ActivityDialogPresentationSurface(tracker, tracker)
         val resultChannel = DialogResultChannel()
         val outcomes = mutableListOf<DialogOutcome>()
 
         init {
-            tracker.onActivityResumed(activity)
+            driver.launchAndDraw(activity)
             resultChannel.onSettle { outcomes.add(it) }
         }
 
@@ -79,7 +81,7 @@ class ActivityDialogPresentationSurfaceTests {
 
     @Test
     fun `提示先が得られず器を載せられないと、中身を作らずに cancelled を届ける`() {
-        val tracker = ResumedActivityTracker()
+        val tracker = TrackerTestDriver().tracker
         val surface = ActivityDialogPresentationSurface(tracker, tracker, tracker, DialogHostWaitQueue())
         val resultChannel = DialogResultChannel()
         var contentCreations = 0

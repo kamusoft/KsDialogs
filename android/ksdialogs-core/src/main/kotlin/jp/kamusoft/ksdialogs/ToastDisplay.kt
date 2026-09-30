@@ -40,15 +40,20 @@ internal sealed interface ToastContentRequest {
  * 表示中の Toast 1枚分の状態 (core/ADR-0030 の「1 Toast 1器」)。
  *
  * 器・中身・ViewModel・factory・演出フックへの参照は撤去が完了するまでここが握る
- * (fire-and-forget でも途中で解放しない)。消滅の期限は受理時点で決まった単調時計の時刻で持つので、
+ * (fire-and-forget でも途中で解放しない)。消滅の期限は単調時計の時刻で持ち、一度決めたら動かさないので、
  * 画面の再生成で器を作り直しても巻き戻らない。
+ *
+ * 期限は、表示の開始処理の時点でアプリが前面にいるのに提示先が無ければ未確定 (null) のまま待ち、
+ * 提示先に載った時点か、載る前にアプリが前面を離れた時点から数えて決める (core/ADR-0043)。
+ * それ以外は受理の時点から数えて、開始処理で決める。
  *
  * @param request 表示する中身の指定
  * @param factory カスタム Toast の中身を作る関数。デフォルト View では null
  * @param style この表示に採用されたスタイル
  * @param showPlacement 表示 API の引数で渡された配置
  * @param fallbackPlacement show 引数も添付も無いときに採る配置
- * @param deadlineElapsedRealtime 消滅の期限 (単調時計のミリ秒)
+ * @param acceptedElapsedRealtime 受理の時刻 (単調時計のミリ秒)
+ * @param durationMillis 表示時間 (ミリ秒)
  */
 internal class ToastDisplay(
     val request: ToastContentRequest,
@@ -56,8 +61,24 @@ internal class ToastDisplay(
     val style: ToastStyle,
     val showPlacement: DialogPlacement?,
     val fallbackPlacement: DialogPlacement,
-    val deadlineElapsedRealtime: Long,
+    val acceptedElapsedRealtime: Long,
+    val durationMillis: Long,
 ) {
+    /** 消滅の期限 (単調時計のミリ秒)。数え始める時点がまだ来ていない間は null。 */
+    var deadlineElapsedRealtime: Long? = null
+        private set
+
+    /**
+     * [startElapsedRealtime] から表示時間を数えて期限を決める。決めたときだけ true を返す。
+     *
+     * 既に決まっている期限は動かさない。載せ直しや前面・背面の行き来で残り時間を巻き戻さないため。
+     */
+    fun fixDeadline(startElapsedRealtime: Long): Boolean {
+        if (deadlineElapsedRealtime != null) return false
+        deadlineElapsedRealtime = startElapsedRealtime + durationMillis
+        return true
+    }
+
     /** 解決済みの中身。提示先が現れるまでは null のまま待つ。 */
     var contentView: View? = null
 

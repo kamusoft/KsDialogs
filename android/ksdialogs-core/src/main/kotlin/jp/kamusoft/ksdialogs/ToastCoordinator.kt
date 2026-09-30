@@ -97,23 +97,35 @@ internal class ToastCoordinator(
         val factory = resolveFactory(request)
         val style = settings.style
         val durationMillis = effectiveDuration(duration, style)
-        // 計時は受理時点から始まり、実時間で消費する (アプリが背面にある間も進む)
-        val deadline = SystemClock.elapsedRealtime() + durationMillis
+        // 受理の時刻はここで記録する。そこから数えるかどうかは、UI スレッドの開始処理の時点の状態で決める
         val display = ToastDisplay(
             request = request,
             factory = factory,
             style = style,
             showPlacement = placement,
             fallbackPlacement = style.defaultPlacement ?: ToastPlacementDefault.placement,
-            deadlineElapsedRealtime = deadline,
+            acceptedElapsedRealtime = SystemClock.elapsedRealtime(),
+            durationMillis = durationMillis.toLong(),
         )
         scope.launch { beginDisplay(display) }
     }
 
     // MARK: - 表示の出し入れ
 
-    /** 受理した1枚を表示に載せ、期限を待ち始める。 */
+    /**
+     * 受理した1枚を表示に載せ、期限を待ち始める。
+     *
+     * アプリが前面にいるのに提示先が無ければ (前面の待ち)、期限を決めずに待たせ、提示先に載った時点から
+     * 数える (core/ADR-0043)。起動画面の下や割り込みの最中で表示時間を使い切らないようにするため。
+     * それ以外は受理の時点から実時間で数える (アプリが背面にある間も進む)。
+     * 判定は前面・提示先の状態が変わるのと同じ UI スレッドの手番で行い、判定と載せる処理を食い違わせない。
+     */
     private fun beginDisplay(display: ToastDisplay) {
+        val isForegroundWait =
+            presentationSurface.hostContext == null && presentationSurface.isAppInForeground
+        if (!isForegroundWait) {
+            display.fixDeadline(display.acceptedElapsedRealtime)
+        }
         if (hasReachedDeadline(display)) {
             // 受理から UI スレッドへ届くまでの遅れだけで期限を越えた表示。
             // 表示リストにも載せずに捨てる (満了した表示は表示されない)
@@ -130,18 +142,37 @@ internal class ToastCoordinator(
             // 中身を作れず、載せる前に破棄された表示。期限を待つ意味がない
             return
         }
+        startDeadlineTimer(display)
+    }
+
+    /**
+     * 期限の決まった表示について、期限を待つ仕事を始める。
+     *
+     * 期限が未確定の表示と、既に待ち始めた表示では何もしない。
+     */
+    private fun startDeadlineTimer(display: ToastDisplay) {
+        val deadline = display.deadlineElapsedRealtime ?: return
+        if (display.timerJob != null || display.isFinishing) return
         display.timerJob = scope.launch {
-            delay(display.deadlineElapsedRealtime - SystemClock.elapsedRealtime())
+            delay(deadline - SystemClock.elapsedRealtime())
             finish(display)
+        }
+    }
+
+    /** まだ期限の無い表示について、[startElapsedRealtime] から数えた期限を決め、待ち始める。 */
+    private fun fixDeadlineAndStartTimer(display: ToastDisplay, startElapsedRealtime: Long) {
+        if (display.fixDeadline(startElapsedRealtime)) {
+            startDeadlineTimer(display)
         }
     }
 
     /**
      * 提示先があれば中身と器を組み立てて重ねる。取り付けたかどうかを返す。
      *
-     * 提示先が無いときは表示を保留し、出現を待つ。計時は受理時点から進んでいるため、
+     * 提示先が無いときは表示を保留し、出現を待つ。期限の決まった表示は待つ間も時間が進むため、
      * 現れないまま期限が来た表示は表示されずに破棄される。期限の確認はここでも行う —
      * 提示先の復帰が期限のタイマーより先に走っても、満了した表示を一瞬見せないようにする。
+     * 期限を決めずに待っていた表示は、取り付けた時点から数え始める (core/ADR-0043)。
      */
     private fun attachIfPossible(display: ToastDisplay): Boolean {
         if (display.container != null || display.isFinishing) {
@@ -182,12 +213,16 @@ internal class ToastCoordinator(
             return false
         }
         display.hasPlayedPresentation = true
+        // 画面が利用者に見えた時点から数える。既に期限の決まった表示では何も変わらない
+        fixDeadlineAndStartTimer(display, SystemClock.elapsedRealtime())
         return true
     }
 
-    /** 消滅の期限に達したか。計時は受理時点から単調時計で進む。 */
-    private fun hasReachedDeadline(display: ToastDisplay): Boolean =
-        SystemClock.elapsedRealtime() >= display.deadlineElapsedRealtime
+    /** 消滅の期限に達したか。期限の決まっていない表示は達していない。 */
+    private fun hasReachedDeadline(display: ToastDisplay): Boolean {
+        val deadline = display.deadlineElapsedRealtime ?: return false
+        return SystemClock.elapsedRealtime() >= deadline
+    }
 
     /** その提示先の Context で中身を作り、実効値の供給元を結び付ける。 */
     private fun createContent(display: ToastDisplay, host: Context) {
@@ -270,16 +305,27 @@ internal class ToastCoordinator(
      * Android の回転では Activity が作り直され、器のウィンドウも失われる。表示のリストと中身は
      * この coordinator が持ち、器だけを使い捨てにすることで表示を継続させる。
      * 載せ直しは起動順に行うので、重なり順は入れ替わりの前後で変わらない。
-     * 期限は受理時点から数えているため、載せ直しでは残り時間も巻き戻らない。
+     * 一度決めた期限は動かさないため、載せ直しでは残り時間も巻き戻らない。
+     * 提示先が無くなっただけで、載っている画面が破棄されていなければ、器は外さない
+     * ([shouldDetachAttachment])。外すのは、画面が破棄されたときと、描画済みの別の提示先が現れたときに限る。
+     *
+     * 同じ通知でアプリが前面を離れたことも届く。期限を決めずに待っていた表示は、提示先に載らないまま
+     * 背面へ下がったので、その時点から数え始める (core/ADR-0043)。
      *
      * 中身は作り直さずに新しい画面のウィンドウへ載せ替えるため、中身が握っている Context は
      * 前の画面のものが残る。表示が消えるまで前の画面が到達可能なままになる、という
      * トレードオフを取る (Loading の再取り付けと同じ)。
      */
     private fun onHostChanged() {
+        if (!presentationSurface.isAppInForeground) {
+            val now = SystemClock.elapsedRealtime()
+            displays.toList().forEach { display -> fixDeadlineAndStartTimer(display, now) }
+        }
         val host = presentationSurface.hostContext
         displays.toList().forEach { display ->
-            if (display.attachedHost !== host) {
+            // 載っている画面が破棄されておらず、提示先が無くなっただけなら器を付けたままにする。
+            // 外すと、戻った直後の画面に Toast の無いコマが挟まり、演出なしで現れ直す
+            if (shouldDetachAttachment(display.attachedHost, host, presentationSurface::retainsAttachment)) {
                 display.container?.detachForReattach()
                 display.container = null
                 display.attachedHost = null

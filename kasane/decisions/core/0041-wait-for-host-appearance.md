@@ -3,6 +3,7 @@ id: 0041
 title: 提示先が無いまま呼ばれた Dialog・Loading・Toast は、全形態で失敗せず提示先の出現を待ち、待ちの上限は各機能の寿命に任せる
 status: accepted
 date: 2026-09-27
+amended-by: 0043
 ---
 
 ## Context

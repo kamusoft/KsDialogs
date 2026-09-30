@@ -92,15 +92,7 @@ public partial class SampleMenuPage : ContentPage
 
         // 再生を待機して例外を観測し、失敗をメニュー項目のタップと同じ倒れ方で表面化させる
         // (握り潰すと、自動再生が失敗した画面と定義外の ID を渡した画面が見分けられなくなる)
-#if ANDROID
-        // 提示先が現れるまで待つのはライブラリの役目で、ここで待つのは別の理由による。Toast の表示時間は
-        // 受理の時点から数え、Android の提示先は起動画面が退く前にそろうため、画面の表示時にすぐ受理すると
-        // 起動画面の下で表示時間を使い切ってしまう。そこで再生を UI スレッドの次の周回へ回す。
-        // 提示先が起動画面の退場の後にそろうようになれば、この待ちは要らない (iOS では待たない)
-        await Dispatcher.DispatchAsync(() => PlayAsync(demo));
-#else
         await PlayAsync(demo);
-#endif
     }
 
     /// <summary>メニュー項目のタップハンドラと同じ入口を呼ぶ。</summary>

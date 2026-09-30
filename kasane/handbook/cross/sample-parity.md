@@ -6,7 +6,7 @@ applies-when:
   tasks: [Sample のデモ項目の追加・変更, Sample の文言・色トークンの変更, Sample の OS 操作 (戻る・回転) への反応の変更, Sample の撮影支援の起動引数の変更]
 title: Sample パリティ規約
 description: samples/ の4ルート (ios / android / maui / kmp) が一致させるデモ項目・文言・色トークンと、Sample を検証装置として保つための禁止事項
-timestamp: 2026-09-29
+timestamp: 2026-09-30
 ---
 
 # Sample パリティ規約
@@ -227,7 +227,7 @@ Android 系のルート (android / kmp) では Activity の再生成がダイア
 
 キーの直後に値がない場合、空文字、範囲外、未定義のデモ ID は、そのキーだけを無視して既定動作へ倒す。起動そのものは失敗させない。自動再生はプロセス起動につき 1 回だけで、画面や Activity の再生成では繰り返さない。撮り直すときは、起動中のアプリへ再配達せず終了してから起動し直す。
 
-自動再生は、最初の画面の表示時の処理から呼ぶ。提示先 (iOS は前面でアクティブなシーンの key window、Android は resumed な Activity) の出現を待つのはライブラリの役目なので、Sample 側で提示先の条件を待たない。例外として Android 系 3 ルート (`android` / KMP Android / MAUI Android) は、再生を最初の描画の後 (MAUI Android は UI スレッドの次の周回) へ回す。Toast の表示時間は受理の時点から数え、Android の提示先は起動画面が退く前にそろうため、起動直後の短い Toast が起動画面の下で表示時間を使い切るのを避けるためである。
+自動再生は、4 ルートとも最初の画面の表示時の処理から呼び、再生を最初の描画の後や次の周回へ回さない。提示先 (iOS は前面でアクティブなシーンの key window、Android は resumed で、かつ描画された Activity) の出現を待つのも、起動直後に受け付けた Toast を画面が見えてから数えるのも、ライブラリの役目なので (core/ADR-0043・0044)、Sample 側で提示先の条件をなぞらない。
 
 ### OS ごとの外部表現
 
@@ -281,3 +281,4 @@ Android 系のルート (android / kmp) では Activity の再生成がダイア
 - [cross/ADR-0007](../../decisions/cross/0007-sample-parity-demo-item-unit.md) — 一致の単位をデモ項目とした決定
 - [changes/archive/2026-09-04-fix-sample-android-back-and-rotation](../../changes/archive/2026-09-04-fix-sample-android-back-and-rotation/exploration.md) — OS 操作 (戻る・回転) への反応を一致対象に加えた探索と実機証跡
 - [changes/archive/2026-09-29-align-sample-autoplay-start](../../changes/archive/2026-09-29-align-sample-autoplay-start/deviation.md) — 自動再生を最初の画面の表示時の処理から呼び、Android 系だけ最初の描画の後へ回す理由と実機証跡
+- [changes/archive/2026-09-30-fix-android-startup-toast-under-splash](../../changes/archive/2026-09-30-fix-android-startup-toast-under-splash/deviation.md) — Android 系 3 ルートの待ちを外した経緯と実機での判定

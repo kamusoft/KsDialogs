@@ -78,7 +78,7 @@ internal class MainActivity : ComponentActivity() {
         val options = SampleCaptureOptions.from(intent)
         loadingStepIntervalMilliseconds =
             options.loadingStepIntervalMilliseconds ?: DEFAULT_LOADING_STEP_INTERVAL_MILLISECONDS
-        // 自動再生は最初の画面を組み立てたこの時点で受け付ける (再生を最初の描画の後へ回す理由は autoPlay に書く)
+        // 自動再生は最初の画面を組み立てたこの時点で始める。提示先が現れるまで待つのはライブラリの役目
         if (savedInstanceState == null) {
             autoPlay(options.demo)
         }
@@ -88,18 +88,13 @@ internal class MainActivity : ComponentActivity() {
      * 起動引数で指定されたデモを、メニュー項目のタップと同じ入口で自動再生する。
      *
      * 再生はプロセスの起動につき 1 回だけで、画面の再生成では再生しない。
-     *
-     * 提示先が現れるまで待つのはライブラリの役目で、ここで待つのは別の理由による。Toast の表示時間は
-     * 受理の時点から数え、Android の提示先は起動画面が退く前にそろうため、最初の描画より前に受理すると
-     * 起動画面の下で表示時間を使い切ってしまう。そこで再生を最初の描画の後へ回す。提示先が起動画面の
-     * 退場の後にそろうようになれば、この待ちは要らない。
      */
     private fun autoPlay(demo: SampleDemoId?) {
         if (demo == null || autoPlayConsumed) {
             return
         }
         autoPlayConsumed = true
-        menuView.post { play(demo) }
+        play(demo)
     }
 
     /** メニュー項目のタップハンドラと同じ入口を呼ぶ。 */

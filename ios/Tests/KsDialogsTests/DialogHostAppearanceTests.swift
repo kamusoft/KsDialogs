@@ -9,6 +9,10 @@ import UIKit
 /// 合図は提示先を選ぶ規則を持つ供給元が、window の key 化とシーンのアクティブ化の 2 つの通知から作る。
 /// 合図は「現れたかもしれない」ことだけを知らせ、受け取った側が提示先を読み直して判断する。
 /// 各機能は、待っている表示がある間だけ購読を張る。
+///
+/// 同じ供給元が、アプリが前面にいるかの判定と、前面を離れた合図も持つ (core/ADR-0043)。
+/// 前面は、アクティブでなくてもよい前面のシーンが 1 つ以上あることで、前面を離れた合図は
+/// シーンが背面へ入った通知の時点で前面のシーンが 1 つも無くなっていたときだけ届く。
 @Suite("提示先の出現の合図", .serialized, .awaitsMainActorResponsive)
 @MainActor
 struct DialogHostAppearanceTests {
@@ -153,7 +157,8 @@ struct DialogHostAppearanceTests {
 
     @Test("[PB-HI-03] 待っている表示が無くなると、購読が解除される")
     func PB_HI_03_registrationsAreCancelledWhenNothingWaits() async throws {
-        let toastHarness = ToastTestHarness(hasHost: false)
+        // 背面で受理した Toast は受理の時点から数えるので、提示先が現れないまま期限で表示が無くなる。
+        let toastHarness = ToastTestHarness(hasHost: false, isAppInForeground: false)
         defer { toastHarness.tearDown() }
         let loadingHarness = LoadingTestHarness(hasHost: false)
         defer { loadingHarness.tearDown() }
@@ -174,6 +179,157 @@ struct DialogHostAppearanceTests {
 
         #expect(toastHarness.surface.hostAppearance.activeRegistrationCount == 0, "Toast の購読は解除される")
         #expect(loadingHarness.surface.hostAppearance.activeRegistrationCount == 0, "Loading の購読は解除される")
+    }
+
+    // MARK: - 前面の判定と前面を離れた合図
+
+    @Test("[PB-HI-05] 前面でアクティブでないシーンだけがあるとき、前面の待ちと判定される")
+    func PB_HI_05_foregroundInactiveSceneIsForegroundWithoutHost() throws {
+        let keyWindow = Self.makeKeyWindow()
+        defer { keyWindow.isHidden = true }
+        try #require(keyWindow.isKeyWindow)
+        let scenes = DialogTestSceneStates([])
+        scenes.snapshots = [DialogWindowSceneSnapshot(activationState: .foregroundInactive, windows: [keyWindow])]
+        let provider = scenes.makeProvider()
+
+        #expect(provider.isAppInForeground, "起動の途中・割り込みの最中のシーンは前面にいる")
+        #expect(provider.keyWindow == nil, "前面でアクティブでないシーンの key window は提示先にならない")
+    }
+
+    @Test("[PB-HI-06] 背面のシーンだけがあるとき、またはシーンが無いときは、背面と判定される")
+    func PB_HI_06_backgroundOrNoSceneIsNotForeground() {
+        let keyWindow = Self.makeKeyWindow()
+        defer { keyWindow.isHidden = true }
+        let scenes = DialogTestSceneStates([])
+        let provider = scenes.makeProvider()
+
+        scenes.snapshots = [DialogWindowSceneSnapshot(activationState: .background, windows: [keyWindow])]
+        #expect(provider.isAppInForeground == false, "背面のシーンだけなら背面")
+        #expect(provider.keyWindow == nil)
+
+        scenes.set([.background, .unattached])
+        #expect(provider.isAppInForeground == false, "前面のシーンが 1 つも無ければ背面")
+
+        scenes.set([])
+        #expect(provider.isAppInForeground == false, "シーンが 1 つもつながっていなければ背面")
+    }
+
+    @Test("[PB-HI-07] 唯一の前面のシーンが背面へ入った通知で、前面を離れた合図が届く")
+    func PB_HI_07_lastForegroundSceneEnteringBackgroundDeliversDeparture() async {
+        let scenes = DialogTestSceneStates([.foregroundActive])
+        let provider = scenes.makeProvider()
+        let counter = DialogTestCallCounter()
+        let center = NotificationCenter.default
+
+        let registration = provider.observeForegroundDeparture {
+            #expect(Thread.isMainThread, "合図は UI スレッドで届く")
+            counter.increment()
+        }
+
+        // 提示先の出現の合図とは別の口なので、出現のきっかけの通知では届かない。
+        center.post(name: UIWindow.didBecomeKeyNotification, object: nil)
+        center.post(name: UIScene.didActivateNotification, object: nil)
+        #expect(counter.count == 0, "出現のきっかけの通知では前面を離れた合図は届かない")
+
+        scenes.set([.background])
+        center.post(name: UIScene.didEnterBackgroundNotification, object: nil)
+        #expect(counter.count == 1, "唯一の前面のシーンが背面へ入った通知で合図が 1 回届く")
+        #expect(provider.isAppInForeground == false)
+
+        // UI スレッド以外から送られた通知でも、合図は UI スレッドへ移してから届く。
+        await Task.detached {
+            NotificationCenter.default.post(name: UIScene.didEnterBackgroundNotification, object: nil)
+        }.value
+        #expect(
+            await DialogTestWaiting.waitUntil { counter.count == 2 },
+            "UI スレッド以外からの通知でも合図が届く"
+        )
+
+        registration.cancel()
+        center.post(name: UIScene.didEnterBackgroundNotification, object: nil)
+        #expect(counter.count == 2, "購読を解除したあとは届かない")
+    }
+
+    @Test("[PB-HI-09] 別のシーンが前面に残っていれば、1 つのシーンが背面へ入っても合図は届かない")
+    func PB_HI_09_departureIsNotDeliveredWhileAnotherSceneStaysForeground() {
+        let scenes = DialogTestSceneStates([.foregroundActive, .foregroundActive])
+        let provider = scenes.makeProvider()
+        let counter = DialogTestCallCounter()
+        let center = NotificationCenter.default
+
+        let registration = provider.observeForegroundDeparture {
+            counter.increment()
+        }
+        defer { registration.cancel() }
+
+        scenes.set([.background, .foregroundActive])
+        center.post(name: UIScene.didEnterBackgroundNotification, object: nil)
+        #expect(provider.isAppInForeground, "別のシーンが前面に残っていれば前面のまま")
+        #expect(counter.count == 0, "前面のシーンが残っている間は合図が届かない")
+
+        scenes.set([.background, .background])
+        center.post(name: UIScene.didEnterBackgroundNotification, object: nil)
+        #expect(counter.count == 1, "最後の前面のシーンが背面へ入った時点で合図が届く")
+    }
+
+    @Test("[PB-HI-08] 前面の待ちの Toast が無くなれば、前面を離れた合図の購読を解除する")
+    func PB_HI_08_departureRegistrationIsCancelledWhenNoToastWaitsInForeground() async throws {
+        // 既定の面を供給元の上に組み立てる (本番と同じ中継の経路)。
+        let provider = DialogTestKeyWindowProvider(keyWindow: nil, isAppInForeground: true)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = UIViewController()
+        window.isHidden = false
+        defer { window.isHidden = true }
+        let coordinator = ToastCoordinator(
+            registry: ToastViewRegistry(),
+            settings: ToastSettings(),
+            presentationSurface: KeyWindowToastPresentationSurface(keyWindowProvider: provider),
+            announcer: ToastTestAnnouncer()
+        )
+        defer { coordinator.discardAll() }
+        let toast = Toast(coordinator: coordinator)
+
+        toast.show(message: "前面の待ち", duration: Self.longToastDuration)
+        await coordinator.acceptanceQueue.drain()
+        try #require(coordinator.displayCount == 1)
+        #expect(provider.foregroundDeparture.activeRegistrationCount == 1, "前面の待ちの Toast がある間は購読を張る")
+        #expect(provider.hostAppearance.activeRegistrationCount == 1)
+
+        provider.keyWindow = window
+        provider.fireHostAppearance()
+
+        #expect(coordinator.isPresenting, "提示先の出現で載る")
+        #expect(provider.foregroundDeparture.activeRegistrationCount == 0, "載ったら前面を離れた合図の購読を解除する")
+        #expect(provider.hostAppearance.activeRegistrationCount == 0)
+
+        // 背面で受理した Toast は受理の時点から数えるので、前面を離れた合図を待たない。
+        provider.keyWindow = nil
+        provider.isAppInForeground = false
+        toast.show(message: "背面", duration: Self.longToastDuration)
+        await coordinator.acceptanceQueue.drain()
+        try #require(coordinator.displayCount == 2)
+        #expect(provider.hostAppearance.activeRegistrationCount == 1, "提示先の出現は待つ")
+        #expect(provider.foregroundDeparture.activeRegistrationCount == 0, "背面で受理した Toast では購読を張らない")
+
+        // 前面の待ちのまま背面へ下がった Toast は、その時点で期限が決まるので購読を解除する。
+        provider.isAppInForeground = true
+        toast.show(message: "背面へ下がる", duration: Self.longToastDuration)
+        await coordinator.acceptanceQueue.drain()
+        try #require(coordinator.displayCount == 3)
+        #expect(provider.foregroundDeparture.activeRegistrationCount == 1)
+
+        provider.leaveForeground()
+
+        #expect(provider.foregroundDeparture.activeRegistrationCount == 0, "前面を離れたら購読を解除する")
+        #expect(provider.hostAppearance.activeRegistrationCount == 1, "提示先の出現は期限まで待ち続ける")
+    }
+
+    /// key window として選ばれ得る window を用意する。
+    private static func makeKeyWindow() -> UIWindow {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = UIViewController()
+        window.makeKeyAndVisible()
+        return window
     }
 }
 #endif

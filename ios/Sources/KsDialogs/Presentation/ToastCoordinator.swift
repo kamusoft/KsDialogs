@@ -39,6 +39,9 @@ final class ToastCoordinator {
     /// 取り付け先の出現を待つ間だけ張る、提示先の出現の合図の購読。
     private var hostAppearanceRegistration: DialogHostAppearanceRegistration?
 
+    /// 期限を決めずに待っている表示がある間だけ張る、前面を離れた合図の購読。
+    private var foregroundDepartureRegistration: DialogHostAppearanceRegistration?
+
     nonisolated init(
         registry: ToastViewRegistry = .shared,
         settings: ToastSettings = ToastSettings(),
@@ -53,6 +56,7 @@ final class ToastCoordinator {
 
     isolated deinit {
         hostAppearanceRegistration?.cancel()
+        foregroundDepartureRegistration?.cancel()
     }
 
     // MARK: - 観察 (テストと内部からの読み取り)
@@ -95,8 +99,8 @@ final class ToastCoordinator {
         let request = try resolveFactoryIfNeeded(request)
         let style = settings.style
         let durationMilliseconds = Self.effectiveDuration(duration, style: style)
-        // 計時は受理時点から始まり、実時間で消費する (アプリが背面にある間も進む)。
-        let deadline = ContinuousClock.now.advanced(by: .milliseconds(durationMilliseconds))
+        // 受理の時刻はここで記録する。そこから数えるかどうかは、UI スレッドの開始処理の時点の状態で決める。
+        let acceptedAt = ContinuousClock.now
         let fallbackPlacement = style.defaultPlacement ?? ToastPlacementDefault.placement
         acceptanceQueue.enqueue { [self] in
             beginDisplay(
@@ -104,7 +108,8 @@ final class ToastCoordinator {
                 style: style,
                 placement: placement,
                 fallbackPlacement: fallbackPlacement,
-                deadline: deadline
+                acceptedAt: acceptedAt,
+                duration: .milliseconds(durationMilliseconds)
             )
         }
     }
@@ -126,53 +131,82 @@ final class ToastCoordinator {
     /// 受理した1枚を表示リストに載せ、取り付けと期限の計時を始める。
     ///
     /// 中身はここでは作らず、取り付けの時点で作る (`attachIfPossible`、core/ADR-0042)。
+    ///
+    /// アプリが前面にいるのに取り付け先が無ければ (前面の待ち)、期限を決めずに待たせ、取り付けた時点から
+    /// 数える (core/ADR-0043)。起動の途中や割り込みの最中に表示時間を使い切らないようにするため。
+    /// それ以外は受理の時点から実時間で数える (アプリが背面にある間も進む)。
+    /// 判定は前面・取り付け先の状態が変わるのと同じ UI スレッドの手番で行い、判定と載せる処理を食い違わせない。
     private func beginDisplay(
         _ request: ToastContentRequest,
         style: ToastStyle,
         placement: DialogPlacement?,
         fallbackPlacement: DialogPlacement,
-        deadline: ContinuousClock.Instant
+        acceptedAt: ContinuousClock.Instant,
+        duration: Duration
     ) {
-        guard ContinuousClock.now < deadline else {
-            // 受理から MainActor へ届くまでの遅れだけで期限を越えた表示。
-            // 中身も器も作らずに捨てる (満了した表示は表示されない)。
-            return
-        }
         let display = ToastDisplay(
             request: request,
             style: style,
             showPlacement: placement,
             fallbackPlacement: fallbackPlacement,
-            deadline: deadline
+            acceptedAt: acceptedAt,
+            duration: duration
         )
+        let isForegroundWait = presentationSurface.hostView == nil && presentationSurface.isAppInForeground
+        if !isForegroundWait {
+            display.fixDeadline(startingAt: acceptedAt)
+        }
+        guard !display.hasReachedDeadline() else {
+            // 受理から MainActor へ届くまでの遅れだけで期限を越えた表示。
+            // 中身も器も作らずに捨てる (満了した表示は表示されない)。
+            return
+        }
         displays.append(display)
         attachIfPossible(display)
-        // 取り付けの時点で破棄された表示 (中身の生成の失敗) には、期限を待つ仕事は要らない。
-        guard !display.isFinishing else { return }
+        startDeadlineTimer(display)
+    }
+
+    /// 期限の決まった表示について、期限を待つ仕事を始める。
+    ///
+    /// 期限が未確定の表示・既に待ち始めた表示・破棄された表示 (中身の生成の失敗) では何もしない。
+    private func startDeadlineTimer(_ display: ToastDisplay) {
+        guard let deadline = display.deadline,
+              display.timerTask == nil,
+              !display.isFinishing else { return }
         display.timerTask = Task { @MainActor [weak self] in
             try? await Task.sleep(until: deadline, clock: .continuous)
             await self?.finish(display)
         }
     }
 
+    /// まだ期限の無い表示について、`start` から数えた期限を決め、待ち始める。
+    private func fixDeadlineAndStartTimer(_ display: ToastDisplay, startingAt start: ContinuousClock.Instant) {
+        guard display.fixDeadline(startingAt: start) else { return }
+        startDeadlineTimer(display)
+    }
+
     /// 取り付け先があれば中身と器を作って重ねる。
     ///
     /// 取り付け先が無いときは中身を作らずに表示を保留し、提示先の出現を待つ。
-    /// 計時は受理時点から進んでいるため、現れないまま期限が来た表示は、中身を作らずに破棄される
+    /// 期限の決まった表示は待つ間も時間が進むため、現れないまま期限が来た表示は、中身を作らずに破棄される
     /// (型指定経路の ViewModel の生成と configure も走らない)。
     /// 期限の確認はここでも行う — 取り付け先の復帰が期限のタイマーより先に走っても、
     /// 満了した表示を一瞬見せないようにする。
+    /// 期限を決めずに待っている表示は、前面を離れた合図も待ち、取り付けた時点から数え始める (core/ADR-0043)。
     ///
     /// 中身の実体化に失敗したら、その1枚だけを破棄して資源を解放する。
     /// 他の表示には影響せず、呼び出し元へも返さない (既に戻っているため)。
     private func attachIfPossible(_ display: ToastDisplay) {
         guard display.container == nil, !display.isFinishing else { return }
-        guard ContinuousClock.now < display.deadline else {
+        guard !display.hasReachedDeadline() else {
             discard(display)
             return
         }
         guard let hostView = presentationSurface.hostView else {
             startWaitingForHost()
+            if display.deadline == nil {
+                startWaitingForForegroundDeparture()
+            }
             return
         }
         let resolved: ToastResolvedContent
@@ -194,6 +228,8 @@ final class ToastCoordinator {
         display.container = container
         // Loading が同じ取り付け先に載っているときは、その下へ入れて常に Loading を前面に保つ。
         container.attach(to: hostView, below: Self.lowestLoadingView(in: hostView))
+        // 画面が利用者に見えた時点から数える。既に期限の決まった表示では何も変わらない。
+        fixDeadlineAndStartTimer(display, startingAt: .now)
     }
 
     /// 取り付け先に載っている Loading の器のうち、最も奥にある View。
@@ -210,7 +246,7 @@ final class ToastCoordinator {
         }
         display.releaseResources()
         displays.removeAll { $0 === display }
-        stopWaitingForHostIfSatisfied()
+        stopWaitingIfSatisfied()
     }
 
     /// 表示中のすべての Toast を、演出も期限も待たずに捨てる。
@@ -232,7 +268,7 @@ final class ToastCoordinator {
         display.container?.removeImmediately()
         display.releaseResources()
         displays.removeAll { $0 === display }
-        stopWaitingForHostIfSatisfied()
+        stopWaitingIfSatisfied()
     }
 
     // MARK: - 取り付け先の出現待ち
@@ -252,15 +288,44 @@ final class ToastCoordinator {
         for display in displays where display.container == nil {
             attachIfPossible(display)
         }
-        stopWaitingForHostIfSatisfied()
+        stopWaitingIfSatisfied()
     }
 
-    /// 保留中の表示が無くなったら購読を解除する。
-    private func stopWaitingForHostIfSatisfied() {
-        guard let hostAppearanceRegistration,
-              !displays.contains(where: { $0.container == nil }) else { return }
-        hostAppearanceRegistration.cancel()
-        self.hostAppearanceRegistration = nil
+    /// 前面を離れた合図を待ち始める。既に待っていれば何もしない。
+    private func startWaitingForForegroundDeparture() {
+        guard foregroundDepartureRegistration == nil else { return }
+        foregroundDepartureRegistration = presentationSurface.observeForegroundDeparture { [weak self] in
+            self?.fixDeadlinesOnForegroundDeparture()
+        }
+    }
+
+    /// 期限を決めずに待っていた表示の期限を、前面を離れた時点から数えて決める。
+    ///
+    /// 取り付け先に載らないまま背面へ下がった表示は、背面の表示と同じく実時間で数え始める
+    /// (core/ADR-0043)。その期限の前に取り付け先が現れれば、その期限まで表示する。
+    private func fixDeadlinesOnForegroundDeparture() {
+        let now = ContinuousClock.now
+        for display in displays {
+            fixDeadlineAndStartTimer(display, startingAt: now)
+        }
+        stopWaitingIfSatisfied()
+    }
+
+    /// 待つ理由の無くなった購読を解除する。
+    ///
+    /// 提示先の出現の合図は、取り付け先を待つ表示がある間だけ張る。
+    /// 前面を離れた合図は、期限を決めずに待つ表示がある間だけ張る。
+    private func stopWaitingIfSatisfied() {
+        if let hostAppearanceRegistration,
+           !displays.contains(where: { $0.container == nil }) {
+            hostAppearanceRegistration.cancel()
+            self.hostAppearanceRegistration = nil
+        }
+        if let foregroundDepartureRegistration,
+           !displays.contains(where: { $0.deadline == nil }) {
+            foregroundDepartureRegistration.cancel()
+            self.foregroundDepartureRegistration = nil
+        }
     }
 
     // MARK: - 中身の解決

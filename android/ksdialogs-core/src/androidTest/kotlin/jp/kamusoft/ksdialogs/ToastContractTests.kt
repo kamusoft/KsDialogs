@@ -37,6 +37,9 @@ import java.util.concurrent.atomic.AtomicReference
  * show は戻り値を持たず、消滅の契機は duration の経過だけである。
  * 構成ミス (未登録の ViewModel 型) は受理そのものの失敗として呼び出し元へ返り、
  * 受理より後の失敗は表示1枚の破棄に留まる。
+ *
+ * 表示時間は、背面で受理した表示なら受理の時点から、前面にいるのに提示先が無い間 (前面の待ち) に
+ * 受理した表示なら提示先に載った時点か背面へ下がった時点から数える (core/ADR-0043)。
  */
 @RunWith(AndroidJUnit4::class)
 class ToastContractTests {
@@ -189,6 +192,7 @@ class ToastContractTests {
 
     @Test
     fun TS_CO_08_計時は受理時点から進み入りの途中でも_duration_到達で出へ移る() = runBlocking<Unit> {
+        // 提示先がある状態で受理するので、計時は受理の時点から進む
         val harness = newHarness()
         val probe = DialogTransitionProbe()
         val presentationGate = DialogTransitionGate()
@@ -231,8 +235,8 @@ class ToastContractTests {
     }
 
     @Test
-    fun TS_HW_01_提示先が無いまま受理された_Toast_は_提示先が現れた時点で表示される() = runBlocking<Unit> {
-        val surface = ToastTestPresentationSurface(null)
+    fun TS_HW_01_背面で受理された_Toast_は_提示先が現れた時点で表示され_受理時点から数えた_duration_で消える() = runBlocking<Unit> {
+        val surface = ToastTestPresentationSurface(null, isAppInForeground = false)
         val harness = newHarness(surface)
         val viewFactoryCalls = AtomicInteger(0)
         harness.registry.register(ToastTestViewModel::class) { viewModel ->
@@ -266,7 +270,8 @@ class ToastContractTests {
 
     @Test
     fun TS_HW_02_提示先が現れないまま満了した_Toast_は_中身が作られずに破棄される() = runBlocking<Unit> {
-        val surface = ToastTestPresentationSurface(null)
+        // 背面で受理するので、提示先が無い間も期限へ向けて時間が進む
+        val surface = ToastTestPresentationSurface(null, isAppInForeground = false)
         val harness = newHarness(surface)
         val viewModelFactoryCalls = AtomicInteger(0)
         val configureCalls = AtomicInteger(0)
@@ -297,7 +302,7 @@ class ToastContractTests {
 
     @Test
     fun TS_HW_03_期限を過ぎた保留表示は_提示先の出現が期限の処理より先でも表示されない() = runBlocking<Unit> {
-        val surface = ToastTestPresentationSurface(null)
+        val surface = ToastTestPresentationSurface(null, isAppInForeground = false)
         val harness = newHarness(surface)
         val activity = currentActivity()
         val viewFactoryCalls = AtomicInteger(0)
@@ -325,6 +330,99 @@ class ToastContractTests {
         assertTrue(
             "表示されない Toast の文言が読み上げへ流れている",
             harness.announcer.announcedMessages.isEmpty(),
+        )
+    }
+
+    @Test
+    fun TS_HW_04_前面の待ちの間に受理された_Toast_は_duration_より長く待っても破棄されず_載った時点から数えた_duration_で消える() = runBlocking<Unit> {
+        val surface = ToastTestPresentationSurface(null, isAppInForeground = true)
+        val harness = newHarness(surface)
+        val viewFactoryCalls = AtomicInteger(0)
+        harness.registerImmediateContent(viewFactoryCalls)
+
+        harness.toast.show(ToastTestViewModel("前面の待ち"), durationMs = FOREGROUND_WAIT_DURATION_MILLIS)
+        assertTrue(
+            "提示先が無くても受理は成立する",
+            InstrumentedDialogWaiting.waitUntil { harness.displayCount == 1 },
+        )
+
+        // duration より長く提示先が無いまま置く
+        delay(FOREGROUND_WAIT_DURATION_MILLIS + OVER_DURATION_WAIT_MILLIS)
+        assertEquals("duration より長く待っても破棄されない", 1, harness.displayCount)
+        assertFalse("まだ器は取り付かない", harness.isPresenting)
+        assertEquals("待っている間は View factory が呼ばれない", 0, viewFactoryCalls.get())
+
+        val activity = currentActivity()
+        val appearedAt = SystemClock.uptimeMillis()
+        withContext(Dispatchers.Main) { surface.changeHost(activity) }
+
+        assertTrue("提示先の出現で表示される", harness.waitUntilPresenting())
+        assertEquals("提示先が現れた時点で中身が作られる", 1, viewFactoryCalls.get())
+        assertTrue(harness.waitUntilEmpty())
+        val elapsed = SystemClock.uptimeMillis() - appearedAt
+        assertTrue(
+            "載った時点から数えた duration の到達で消える (載ってから $elapsed ms)",
+            elapsed >= FOREGROUND_WAIT_DURATION_MILLIS &&
+                elapsed < FOREGROUND_WAIT_DURATION_MILLIS + DEADLINE_ALLOWANCE_MILLIS,
+        )
+    }
+
+    @Test
+    fun TS_HW_05_前面の待ちのまま背面へ下がった_Toast_は_下がった時点から数え始める() = runBlocking<Unit> {
+        val surface = ToastTestPresentationSurface(null, isAppInForeground = true)
+        val harness = newHarness(surface)
+        val viewFactoryCalls = AtomicInteger(0)
+        harness.registerImmediateContent(viewFactoryCalls)
+
+        harness.toast.show(ToastTestViewModel("背面へ"), durationMs = FOREGROUND_WAIT_DURATION_MILLIS)
+        assertTrue(InstrumentedDialogWaiting.waitUntil { harness.displayCount == 1 })
+
+        delay(FOREGROUND_WAIT_DURATION_MILLIS + OVER_DURATION_WAIT_MILLIS)
+        assertEquals("背面へ下がるまでは破棄されない", 1, harness.displayCount)
+
+        val leftAt = SystemClock.uptimeMillis()
+        withContext(Dispatchers.Main) { surface.leaveForeground() }
+        assertEquals("下がった直後はまだ破棄されない", 1, harness.displayCount)
+
+        assertTrue(harness.waitUntilEmpty())
+        val elapsed = SystemClock.uptimeMillis() - leftAt
+        assertTrue(
+            "下がった時点から数えた duration の到達で破棄される (下がってから $elapsed ms)",
+            elapsed >= FOREGROUND_WAIT_DURATION_MILLIS &&
+                elapsed < FOREGROUND_WAIT_DURATION_MILLIS + DEADLINE_ALLOWANCE_MILLIS,
+        )
+        assertFalse("一度も表示されない", harness.isPresenting)
+        assertEquals("中身は一度も作られない", 0, viewFactoryCalls.get())
+    }
+
+    @Test
+    fun TS_HW_06_背面へ下がった後_期限の前に提示先が現れたら_下がった時点から数えた期限まで表示される() = runBlocking<Unit> {
+        val surface = ToastTestPresentationSurface(null, isAppInForeground = true)
+        val harness = newHarness(surface)
+        val viewFactoryCalls = AtomicInteger(0)
+        harness.registerImmediateContent(viewFactoryCalls)
+
+        harness.toast.show(ToastTestViewModel("背面から戻る"), durationMs = FOREGROUND_WAIT_DURATION_MILLIS)
+        assertTrue(InstrumentedDialogWaiting.waitUntil { harness.displayCount == 1 })
+        delay(FOREGROUND_WAIT_DURATION_MILLIS + OVER_DURATION_WAIT_MILLIS)
+
+        val leftAt = SystemClock.uptimeMillis()
+        withContext(Dispatchers.Main) { surface.leaveForeground() }
+
+        // 下がってから duration に達する前に、前面へ戻って提示先が現れる
+        delay(BACKGROUND_STAY_MILLIS)
+        val activity = currentActivity()
+        withContext(Dispatchers.Main) { surface.changeHost(activity) }
+
+        assertTrue("提示先が現れた時点で表示される", harness.waitUntilPresenting())
+        assertEquals("提示先が現れた時点で中身が作られる", 1, viewFactoryCalls.get())
+        assertTrue(harness.waitUntilEmpty())
+        val elapsed = SystemClock.uptimeMillis() - leftAt
+        // 載った時点から数え直していれば、下がってから BACKGROUND_STAY_MILLIS + duration より後に消える
+        assertTrue(
+            "背面へ下がった時点から数えた duration の到達で消える (下がってから $elapsed ms)",
+            elapsed >= FOREGROUND_WAIT_DURATION_MILLIS &&
+                elapsed < FOREGROUND_WAIT_DURATION_MILLIS + BACKGROUND_STAY_MILLIS,
         )
     }
 
@@ -357,6 +455,20 @@ class ToastContractTests {
         assertEquals("受理の時点で登録されていた factory で中身が作られる", 1, acceptedFactoryCalls.get())
         assertEquals("受理の後に登録し直した factory は使われない", 0, reregisteredFactoryCalls.get())
         assertTrue(harness.waitUntilEmpty())
+    }
+
+    /**
+     * 出入りの演出を待たずに進む中身を登録し、View factory の呼び出し回数を数える。
+     *
+     * 撤去が期限の到達の直後に終わるので、表示リストが空になった時点を期限の到達として読める。
+     */
+    private fun ToastTestHarness.registerImmediateContent(viewFactoryCalls: AtomicInteger) {
+        registry.register(ToastTestViewModel::class) { viewModel ->
+            viewFactoryCalls.incrementAndGet()
+            newTextContent(viewModel.message).apply {
+                ksDialogTransition = DialogTransition(presentation = {}, dismissal = {})
+            }
+        }
     }
 
     /** 表示テキストを持つカスタム Toast の中身。 */
@@ -392,5 +504,17 @@ class ToastContractTests {
 
         /** 期限を確実に越えたと言える超過分 (ミリ秒)。 */
         const val DEADLINE_OVERSHOOT_MILLIS = 200L
+
+        /** 前面の待ちを確かめる表示時間 (ミリ秒)。 */
+        const val FOREGROUND_WAIT_DURATION_MILLIS = 1_500
+
+        /** 前面の待ちで、duration を明らかに超えたと言えるまで余分に置く時間 (ミリ秒)。 */
+        const val OVER_DURATION_WAIT_MILLIS = 1_000L
+
+        /** 背面へ下がってから提示先を出すまでの時間 (ミリ秒)。duration より短い。 */
+        const val BACKGROUND_STAY_MILLIS = 1_000L
+
+        /** 期限の到達から表示リストが空になるまでの遅れとして許す幅 (ミリ秒)。 */
+        const val DEADLINE_ALLOWANCE_MILLIS = 1_000L
     }
 }

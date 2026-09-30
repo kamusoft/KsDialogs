@@ -426,6 +426,8 @@ internal class LoadingCoordinator(
      *
      * Android の回転では Activity が作り直され、器のウィンドウも失われる。合流状態と中身は
      * この coordinator が持ち、器だけを使い捨てにすることで表示を継続させる。
+     * 提示先が無くなっただけで、載っている画面が破棄されていなければ、器は外さない
+     * ([shouldDetachAttachment])。外すのは、画面が破棄されたときと、描画済みの別の提示先が現れたときに限る。
      *
      * 中身は作り直さずに新しい画面のウィンドウへ載せ替えるため、中身が握っている Context は
      * 前の画面のものが残る。表示が閉じるまで前の画面が到達可能なままになり、中身が構成修飾
@@ -436,12 +438,16 @@ internal class LoadingCoordinator(
             return
         }
         val host = presentationSurface.hostContext
-        if (host === attachedHost) {
-            return
+        if (attachedHost != null) {
+            if (!shouldDetachAttachment(attachedHost, host, presentationSurface::retainsAttachment)) {
+                // 載っている画面のまま (背面へ下がった・上に別の画面が開いた間を含む) なら器を付けたままにする。
+                // 外すと、戻った直後の画面に覆いの無いコマが挟まり、その間は下の画面に触れられる
+                return
+            }
+            container?.detachForReattach()
+            container = null
+            attachedHost = null
         }
-        container?.detachForReattach()
-        container = null
-        attachedHost = null
         if (host == null) {
             // 提示先が不在の間は中身を抱えたまま待ち、次の入れ替わりで載せ直す
             return

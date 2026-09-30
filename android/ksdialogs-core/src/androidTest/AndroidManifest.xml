@@ -33,6 +33,12 @@
             android:name="jp.kamusoft.ksdialogs.support.SystemBarsTestActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+
+        <!-- resumed だが未描画の提示先を作るための画面。最初の描画をテストが解除するまで止める -->
+        <activity
+            android:name="jp.kamusoft.ksdialogs.support.FirstDrawBlockingTestActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
 
 </manifest>

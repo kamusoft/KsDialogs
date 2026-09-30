@@ -9,7 +9,9 @@ import jp.kamusoft.ksdialogs.LoadingPresentationSurface
  *
  * 実装との対応は次のとおり:
  *
- * - [hostContext] は追跡中の resumed な Activity に対応する。null にすると提示先不在を再現できる
+ * - [hostContext] は追跡中の、resumed で描画済みの Activity に対応する。null にすると提示先不在を再現できる
+ * - 提示先を失った画面に載っている器は残さない ([retainsAttachment] は既定のまま)。[changeHost] に null を渡すと、
+ *   画面が破棄されたときと同じく器が外れる
  * - [changeHost] は画面の再生成 (回転) に対応し、提示先が入れ替わったことを購読者へ伝える
  */
 internal class LoadingTestPresentationSurface(
