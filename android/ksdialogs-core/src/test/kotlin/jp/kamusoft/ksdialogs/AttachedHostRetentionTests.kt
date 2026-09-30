@@ -74,8 +74,8 @@ class AttachedHostRetentionTests : DialogUiThreadTest() {
         val coordinator = newToastCoordinator(tracker)
         val activity = withContext(Dispatchers.Main) { driver.launchAndDraw() }
         Toast(coordinator).show(RetentionToastViewModel(), LONG_DURATION_MILLIS, null)
-        assertTrue(DialogTestWaiting.waitUntil { coordinator.presentedContainers.size == 1 })
-        val attached = coordinator.presentedContainers.single()
+        assertTrue(DialogTestWaiting.waitUntilOnMain { coordinator.presentedContainers.size == 1 })
+        val attached = withContext(Dispatchers.Main) { coordinator.presentedContainers.single() }
 
         var detachCount = 0
         withContext(Dispatchers.Main) {
@@ -86,7 +86,11 @@ class AttachedHostRetentionTests : DialogUiThreadTest() {
         }
 
         assertEquals(0, detachCount, "背面の間と戻った直後に器が外れている")
-        assertSame(attached, coordinator.presentedContainers.single(), "戻った後も同じ器が載っている")
+        assertSame(
+            attached,
+            withContext(Dispatchers.Main) { coordinator.presentedContainers.single() },
+            "戻った後も同じ器が載っている",
+        )
         withContext(Dispatchers.Main) { coordinator.discardAll() }
     }
 
@@ -97,8 +101,8 @@ class AttachedHostRetentionTests : DialogUiThreadTest() {
         val coordinator = newToastCoordinator(tracker)
         val previous = withContext(Dispatchers.Main) { driver.launchAndDraw() }
         Toast(coordinator).show(RetentionToastViewModel(), LONG_DURATION_MILLIS, null)
-        assertTrue(DialogTestWaiting.waitUntil { coordinator.presentedContainers.size == 1 })
-        val attached = coordinator.presentedContainers.single()
+        assertTrue(DialogTestWaiting.waitUntilOnMain { coordinator.presentedContainers.size == 1 })
+        val attached = withContext(Dispatchers.Main) { coordinator.presentedContainers.single() }
 
         // 構成の変更による作り直し: 旧画面は破棄され、新しい画面は描画されるまで提示先にならない
         val next = withContext(Dispatchers.Main) {
@@ -107,11 +111,11 @@ class AttachedHostRetentionTests : DialogUiThreadTest() {
             tracker.onActivityDestroyed(previous)
             driver.launch()
         }
-        assertFalse(coordinator.isPresenting, "破棄された画面の器が残っている")
+        assertFalse(withContext(Dispatchers.Main) { coordinator.isPresenting }, "破棄された画面の器が残っている")
 
         withContext(Dispatchers.Main) { driver.drawObserver.draw(next) }
 
-        val reattached = coordinator.presentedContainers.singleOrNull()
+        val reattached = withContext(Dispatchers.Main) { coordinator.presentedContainers.singleOrNull() }
         assertNotNull(reattached, "描画された新しい画面へ載り直さない")
         assertNotSame(attached, reattached)
         withContext(Dispatchers.Main) { coordinator.discardAll() }
@@ -178,21 +182,25 @@ class AttachedHostRetentionTests : DialogUiThreadTest() {
         val coordinator = newToastCoordinator(tracker)
         val previous = withContext(Dispatchers.Main) { driver.launchAndDraw() }
         Toast(coordinator).show(RetentionToastViewModel(), LONG_DURATION_MILLIS, null)
-        assertTrue(DialogTestWaiting.waitUntil { coordinator.presentedContainers.size == 1 })
-        val attached = coordinator.presentedContainers.single()
+        assertTrue(DialogTestWaiting.waitUntilOnMain { coordinator.presentedContainers.size == 1 })
+        val attached = withContext(Dispatchers.Main) { coordinator.presentedContainers.single() }
 
         val next = withContext(Dispatchers.Main) {
             tracker.onActivityPaused(previous)
             driver.launch()
         }
-        assertSame(attached, coordinator.presentedContainers.singleOrNull(), "次の画面の描画の前は前の画面に付けたまま")
+        assertSame(
+            attached,
+            withContext(Dispatchers.Main) { coordinator.presentedContainers.singleOrNull() },
+            "次の画面の描画の前は前の画面に付けたまま",
+        )
 
         withContext(Dispatchers.Main) {
             driver.drawObserver.draw(next)
             tracker.onActivityStopped(previous)
         }
 
-        val moved = coordinator.presentedContainers.singleOrNull()
+        val moved = withContext(Dispatchers.Main) { coordinator.presentedContainers.singleOrNull() }
         assertNotNull(moved, "描画された次の画面へ載らない")
         assertNotSame(attached, moved, "前の画面の器のまま残っている")
         withContext(Dispatchers.Main) { coordinator.discardAll() }

@@ -182,12 +182,13 @@ class DialogCurrentPageTests {
     @Test
     fun 同じ_Activity_のモーダルのウィンドウに載った_View_は原点が違ってもその位置が基準になる() = runBlocking<Unit> {
         val activity = launch()
+        val (modalWidthDp, modalHeightDp) = modalSizeDp(activity)
         val modal = SameActivityModalWindow.show(
             activity,
             leftDp = MODAL_LEFT_DP,
             topDp = MODAL_TOP_DP,
-            widthDp = MODAL_WIDTH_DP,
-            heightDp = MODAL_HEIGHT_DP,
+            widthDp = modalWidthDp,
+            heightDp = modalHeightDp,
         )
         try {
             registerPage { modal.pageView }
@@ -332,6 +333,24 @@ class DialogCurrentPageTests {
         return requireNotNull(activity.get())
     }
 
+    /**
+     * 同じ Activity のモーダルのウィンドウの幅と高さ (dp) を、端末の画面の大きさから決める。
+     *
+     * 画面からはみ出したウィンドウはウィンドウ管理が画面内へ押し戻し、左端・上端のずらしが消える。
+     * そこで画面の幅・高さから、ずらし分と反対側の余白 (ずらしと同じ量) を引いた大きさに収め、
+     * 画面の狭い端末 (320x640dp) でもずらしが保たれるようにする。広い端末では上限の大きさで止める。
+     */
+    private fun modalSizeDp(activity: DialogCurrentPageTestActivity): Pair<Int, Int> {
+        val configuration = onMainSync { activity.resources.configuration }
+        val width = minOf(MODAL_MAX_WIDTH_DP, configuration.screenWidthDp - MODAL_LEFT_DP * 2)
+        val height = minOf(MODAL_MAX_HEIGHT_DP, configuration.screenHeightDp - MODAL_TOP_DP * 2)
+        check(width >= DialogCurrentPageStage.CONTENT_WIDTH_DP && height >= DialogCurrentPageStage.CONTENT_HEIGHT_DP) {
+            "画面 (${configuration.screenWidthDp}x${configuration.screenHeightDp}dp) が狭く、" +
+                "モーダルのページにダイアログの中身が収まらない (${width}x${height}dp)"
+        }
+        return width to height
+    }
+
     private fun registerPage(provider: () -> View?) {
         DialogCurrentPage.provider = provider
     }
@@ -381,11 +400,13 @@ class DialogCurrentPageTests {
         /** 原点差のケースで器のウィンドウの上端から削る高さ (dp)。上部バーより小さくする。 */
         const val WINDOW_TOP_CUT_DP = 80
 
-        /** 同じ Activity のモーダルのウィンドウの位置と大きさ (dp)。上端はステータスバーより下にする。 */
+        /** 同じ Activity のモーダルのウィンドウの位置 (dp)。上端はステータスバーより下にする。 */
         const val MODAL_LEFT_DP = 32
         const val MODAL_TOP_DP = 120
-        const val MODAL_WIDTH_DP = 320
-        const val MODAL_HEIGHT_DP = 400
+
+        /** 同じ Activity のモーダルのウィンドウの大きさの上限 (dp)。実際の大きさは画面から決める (modalSizeDp)。 */
+        const val MODAL_MAX_WIDTH_DP = 320
+        const val MODAL_MAX_HEIGHT_DP = 400
 
         /** 画素の丸めの許容差 (px)。 */
         const val TOLERANCE = DialogCurrentPageStage.TOLERANCE_PIXELS

@@ -9,6 +9,7 @@ import jp.kamusoft.ksdialogs.support.InstrumentedDialogWaiting
 import jp.kamusoft.ksdialogs.support.LoadingTestHarness
 import jp.kamusoft.ksdialogs.support.PlainTestDialogViewModel
 import jp.kamusoft.ksdialogs.support.ToastTestAnnouncer
+import jp.kamusoft.ksdialogs.support.ToastTestHarness.Companion.readOnMain as readToastOnMain
 import jp.kamusoft.ksdialogs.support.ToastTestViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -76,8 +77,8 @@ class DrawnHostPresentationTests {
                     assertEquals("描画は止まっている", 0, activity.drawCount)
                     assertTrue("Dialog の中身は作られない", dialogContexts.isEmpty())
                     assertFalse("Loading は載らない", loadingHarness.isPresenting)
-                    assertFalse("Toast は載らない", toastCoordinator.isPresenting)
-                    assertEquals("Toast は提示先を待っている", 1, toastCoordinator.displayCount)
+                    assertFalse("Toast は載らない", readToastOnMain { toastCoordinator.isPresenting })
+                    assertEquals("Toast は提示先を待っている", 1, readToastOnMain { toastCoordinator.displayCount })
 
                     withContext(Dispatchers.Main) { activity.releaseDraw() }
 
@@ -89,7 +90,7 @@ class DrawnHostPresentationTests {
                     assertTrue("最初の描画の後に Loading が載る", loadingHarness.waitUntilPresenting())
                     assertTrue(
                         "最初の描画の後に Toast が載る",
-                        InstrumentedDialogWaiting.waitUntil { toastCoordinator.isPresenting },
+                        InstrumentedDialogWaiting.waitUntil { readToastOnMain { toastCoordinator.isPresenting } },
                     )
                     assertTrue("描画は起きている", activity.drawCount > 0)
 
@@ -100,7 +101,7 @@ class DrawnHostPresentationTests {
                     assertTrue(
                         "Toast が表示時間で消える",
                         InstrumentedDialogWaiting.waitUntil(CLEANUP_TIMEOUT_MILLIS) {
-                            toastCoordinator.displayCount == 0
+                            readToastOnMain { toastCoordinator.displayCount } == 0
                         },
                     )
                 }
@@ -132,7 +133,7 @@ class DrawnHostPresentationTests {
                 }
                 assertTrue(
                     "提示先を待っている",
-                    InstrumentedDialogWaiting.waitUntil { toastCoordinator.displayCount == 1 },
+                    InstrumentedDialogWaiting.waitUntil { readToastOnMain { toastCoordinator.displayCount } == 1 },
                 )
 
                 // 構成の変更による作り直し。新しい画面も描画を止めたまま、duration より長く置く
@@ -142,24 +143,24 @@ class DrawnHostPresentationTests {
                 assertEquals(
                     "作り直しの間に期限が決まっていれば、ここまでに破棄されている",
                     1,
-                    toastCoordinator.displayCount,
+                    readToastOnMain { toastCoordinator.displayCount },
                 )
-                assertFalse("描画の前は載らない", toastCoordinator.isPresenting)
+                assertFalse("描画の前は載らない", readToastOnMain { toastCoordinator.isPresenting })
 
                 val releasedAt = SystemClock.uptimeMillis()
                 val recreated = activity
                 withContext(Dispatchers.Main) { recreated.releaseDraw() }
 
-                val presented = InstrumentedDialogWaiting.waitUntil { toastCoordinator.isPresenting }
+                val presented = InstrumentedDialogWaiting.waitUntil { readToastOnMain { toastCoordinator.isPresenting } }
                 assertTrue(
                     "新しい画面の描画の後に Toast が載る (描画 ${recreated.drawCount} 回・" +
                         "提示先は新しい画面か ${ResumedActivityTracker.shared.resumedActivity === recreated}・" +
-                        "表示 ${toastCoordinator.displayCount} 枚)",
+                        "表示 ${readToastOnMain { toastCoordinator.displayCount }} 枚)",
                     presented,
                 )
                 assertTrue(
                     InstrumentedDialogWaiting.waitUntil(CLEANUP_TIMEOUT_MILLIS) {
-                        toastCoordinator.displayCount == 0
+                        readToastOnMain { toastCoordinator.displayCount } == 0
                     },
                 )
                 val elapsed = SystemClock.uptimeMillis() - releasedAt
