@@ -1,10 +1,10 @@
 #if canImport(UIKit)
 @testable import KsDialogs
 
-/// テスト用の提示面・供給元が持つ、提示先の出現の合図の発火口。
+/// テスト用の提示面・供給元が持つ、合図 (提示先の出現・前面を離れたこと) の発火口。
 ///
 /// 本番の供給元は OS の通知から合図を作るが、テストでは `fire()` で任意の時点に合図を送る。
-/// 購読の数を数えるので、待っている表示が無くなったときに購読が解除されたかも観察できる。
+/// 購読の数を数えるので、待つ理由の無くなったときに購読が解除されたかも観察できる。
 @MainActor
 final class DialogTestHostAppearanceSignal {
     private var handlers: [Int: DialogHostAppearanceHandler] = [:]

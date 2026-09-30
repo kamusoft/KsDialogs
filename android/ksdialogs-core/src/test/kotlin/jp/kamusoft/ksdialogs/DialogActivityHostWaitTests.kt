@@ -6,6 +6,7 @@ import android.view.View
 import jp.kamusoft.ksdialogs.support.BasicTestDialogViewModel
 import jp.kamusoft.ksdialogs.support.DialogTestWaiting
 import jp.kamusoft.ksdialogs.support.DialogUiThreadTest
+import jp.kamusoft.ksdialogs.support.TrackerTestDriver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -21,10 +22,10 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * Activity を提示先にする面で、提示先の出現を待つ Dialog を確かめる。
  *
- * 提示先の入れ替わりは Activity の resume と破棄で通知される。破棄の通知でも提示先を読み直すが、
- * resumed な Activity が無ければ待ち続ける。
+ * 提示先は resumed で、かつ描画された Activity で、入れ替わりは resume・描画・破棄で通知される。
+ * 通知のたびに提示先を読み直すが、描画された resumed な Activity が無ければ待ち続ける。
  */
-@DisplayName("Activity の resume を待つ Dialog")
+@DisplayName("Activity の resume と描画を待つ Dialog")
 class DialogActivityHostWaitTests : DialogUiThreadTest() {
 
     /** 追跡役の入れ替わりの購読を数える。 */
@@ -46,7 +47,8 @@ class DialogActivityHostWaitTests : DialogUiThreadTest() {
     }
 
     private class Fixture {
-        val tracker = ResumedActivityTracker()
+        val driver = TrackerTestDriver()
+        val tracker = driver.tracker
         val changeObserver = CountingChangeObserver(tracker)
         val surface = ActivityDialogPresentationSurface(
             activityProvider = tracker,
@@ -75,7 +77,7 @@ class DialogActivityHostWaitTests : DialogUiThreadTest() {
     }
 
     @Test
-    fun `PB-HA-01 Activity が resume した時点で、待っていた Dialog が表示される`() = runBlocking {
+    fun `PB-HA-01 Activity が resume して描画された時点で、待っていた Dialog が表示される`() = runBlocking {
         val fixture = Fixture()
 
         val showTask = async { fixture.dialogs.show(BasicTestDialogViewModel("resume を待つ")) }
@@ -88,10 +90,16 @@ class DialogActivityHostWaitTests : DialogUiThreadTest() {
         assertTrue(fixture.factoryContexts.isEmpty())
 
         val activity = Activity()
-        fixture.onUiThread { fixture.tracker.onActivityResumed(activity) }
+        fixture.onUiThread { fixture.driver.launch(activity) }
+        fixture.onUiThread { }
 
-        assertTrue(DialogTestWaiting.waitUntil { fixture.factoryContexts.size == 1 }, "resume で表示される")
-        assertSame(activity, fixture.factoryContexts.single(), "resume した Activity に表示される")
+        assertTrue(fixture.factoryContexts.isEmpty(), "resume の時点では表示されない")
+        assertEquals(1, fixture.surface.hostWaitQueue.waitingCount, "描画を待つ")
+
+        fixture.onUiThread { fixture.driver.drawObserver.draw(activity) }
+
+        assertTrue(DialogTestWaiting.waitUntil { fixture.factoryContexts.size == 1 }, "描画された時点で表示される")
+        assertSame(activity, fixture.factoryContexts.single(), "描画された Activity に表示される")
         assertEquals(0, fixture.surface.hostWaitQueue.waitingCount)
         assertEquals(0, fixture.changeObserver.activeCount, "待ちの購読は解除されている")
 
@@ -99,12 +107,13 @@ class DialogActivityHostWaitTests : DialogUiThreadTest() {
     }
 
     @Test
-    fun `PB-HA-02 Activity が破棄されただけでは表示されず、次の Activity の resume で表示される`() = runBlocking {
+    fun `PB-HA-02 Activity が破棄されただけでは表示されず、次の Activity が resume して描画された時点で表示される`() = runBlocking {
         val fixture = Fixture()
         val previous = Activity()
         fixture.onUiThread {
-            fixture.tracker.onActivityResumed(previous)
+            fixture.driver.launchAndDraw(previous)
             fixture.tracker.onActivityPaused(previous)
+            fixture.tracker.onActivityStopped(previous)
         }
 
         val showTask = async { fixture.dialogs.show(BasicTestDialogViewModel("次の画面を待つ")) }
@@ -118,9 +127,13 @@ class DialogActivityHostWaitTests : DialogUiThreadTest() {
         assertEquals(1, fixture.surface.hostWaitQueue.waitingCount, "待ちは続く")
 
         val next = Activity()
-        fixture.onUiThread { fixture.tracker.onActivityResumed(next) }
+        fixture.onUiThread { fixture.driver.launch(next) }
+        fixture.onUiThread { }
+        assertTrue(fixture.factoryContexts.isEmpty(), "次の Activity の resume の時点では表示されない")
 
-        assertTrue(DialogTestWaiting.waitUntil { fixture.factoryContexts.size == 1 }, "次の resume で表示される")
+        fixture.onUiThread { fixture.driver.drawObserver.draw(next) }
+
+        assertTrue(DialogTestWaiting.waitUntil { fixture.factoryContexts.size == 1 }, "次の Activity の描画で表示される")
         assertSame(next, fixture.factoryContexts.single())
         assertEquals(0, fixture.changeObserver.activeCount)
 
@@ -145,7 +158,8 @@ class DialogActivityHostWaitTests : DialogUiThreadTest() {
 
     @Test
     fun `列から明けた show の器を載せられないと、その show は cancelled で終わり、次の show が明ける`() = runBlocking {
-        val tracker = ResumedActivityTracker()
+        val driver = TrackerTestDriver()
+        val tracker = driver.tracker
         val placing = ActivityDialogPresentationSurface(
             activityProvider = MissingOnceActivityProvider(tracker),
             destroyObserver = tracker,
@@ -171,7 +185,7 @@ class DialogActivityHostWaitTests : DialogUiThreadTest() {
         val showB = async { dialogs.show(BasicTestDialogViewModel("B")) }
         assertTrue(DialogTestWaiting.waitUntil { surface.hostWaitQueue.waitingCount == 2 })
 
-        withContext(Dispatchers.Main) { tracker.onActivityResumed(Activity()) }
+        withContext(Dispatchers.Main) { driver.launchAndDraw() }
 
         assertEquals(DialogResult.Cancelled, showA.await(), "載せられなかった A は cancelled で終わる")
         assertEquals(null, viewModelA.notifier, "A の報告口の紐付けは解除されている")

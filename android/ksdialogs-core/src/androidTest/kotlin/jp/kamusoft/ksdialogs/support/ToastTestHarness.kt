@@ -21,7 +21,7 @@ import jp.kamusoft.ksdialogs.ToastViewRegistry
  * 同じ提示先に載る [Loading] も併せて用意し、Toast からの前面化の依頼もその Loading へつなぐので、
  * 機能間の前後関係もこの器一式で観察できる。
  *
- * @param surface 提示先を供給する面。提示先不在の状況はこの面に null を持たせて再現する
+ * @param surface 提示先と前面の判定を供給する面。提示先不在の状況はこの面に null を持たせて再現する
  */
 internal class ToastTestHarness(val surface: ToastTestPresentationSurface) {
 
@@ -86,5 +86,10 @@ internal class ToastTestHarness(val surface: ToastTestPresentationSurface) {
     /** 提示先の入れ替わり (画面の再生成) を起こす。 */
     fun changeHost(newHost: Context?) {
         surface.changeHost(newHost)
+    }
+
+    /** 提示先を失ったまま背面へ下がったことを起こす。 */
+    fun leaveForeground() {
+        surface.leaveForeground()
     }
 }

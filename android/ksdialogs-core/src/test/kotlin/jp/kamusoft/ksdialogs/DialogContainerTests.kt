@@ -1,12 +1,12 @@
 package jp.kamusoft.ksdialogs
 
-import android.app.Activity
 import android.content.ContextWrapper
 import android.view.View
 import jp.kamusoft.ksdialogs.support.BasicTestDialogViewModel
 import jp.kamusoft.ksdialogs.support.DialogTestHarness
 import jp.kamusoft.ksdialogs.support.DialogTestRecorder
 import jp.kamusoft.ksdialogs.support.DialogUiThreadTest
+import jp.kamusoft.ksdialogs.support.TrackerTestDriver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -60,9 +60,9 @@ class DialogContainerTests : DialogUiThreadTest() {
     @Test
     fun `提示先の画面が破棄された show は cancelled で完了する`() = runBlocking {
         // 器の出し入れは差し替えず、提示面・画面の追跡役・器の実装をつないだ状態で確かめる
-        val tracker = ResumedActivityTracker()
-        val activity = Activity()
-        tracker.onActivityResumed(activity)
+        val driver = TrackerTestDriver()
+        val tracker = driver.tracker
+        val activity = driver.launchAndDraw()
         val registry = DialogViewRegistry()
         val recorder = DialogTestRecorder<Boolean>()
         registry.register(BasicTestDialogViewModel::class) { _, notifier ->

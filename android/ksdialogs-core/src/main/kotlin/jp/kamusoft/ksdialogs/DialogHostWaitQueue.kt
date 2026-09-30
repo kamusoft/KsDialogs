@@ -180,7 +180,7 @@ internal class DialogHostWaitQueue {
     }
 
     companion object {
-        /** アプリケーションの提示先 (resumed な Activity) を使う show が並ぶ列。 */
+        /** アプリケーションの提示先 (resumed で描画済みの Activity) を使う show が並ぶ列。 */
         val application: DialogHostWaitQueue = DialogHostWaitQueue()
     }
 }
