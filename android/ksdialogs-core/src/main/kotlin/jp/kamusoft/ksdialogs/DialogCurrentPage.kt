@@ -21,7 +21,8 @@ public object DialogCurrentPage {
      * 返す View は、ダイアログを出す画面 (Activity) のウィンドウか、同じ Activity で出したモーダル・
      * ダイアログのウィンドウに載っていればよい (KsDialogs 自身のダイアログ・Loading・Toast の中は除く)。
      * 関数が `null` を返したとき・例外を投げたとき・返した View がそれらのウィンドウに載っていないとき・
-     * 矩形が空のときは、ページが得られなかった扱いになり、
+     * 矩形が空のとき・矩形がダイアログを出す画面のメインウィンドウと重ならないときは、
+     * ページが得られなかった扱いになり、
      * 基準は [DialogLayoutArea.VISIBLE_AREA] と同じになる (その理由は警告ログに出る)。
      */
     @Volatile

@@ -26,7 +26,8 @@ public static class DialogCurrentPage
     /// </summary>
     /// <remarks>
     /// 関数が <see langword="null"/> を返したとき・例外を投げたとき・返した要素がまだ画面に描画されていないとき・
-    /// ダイアログを出すウィンドウに載っていないときは、既定の探し方で得たページを使う。
+    /// ダイアログを出すウィンドウに載っていないとき・基準にする矩形が空のとき・その矩形がウィンドウの外にあるときは、
+    /// 既定の探し方で得たページを使う。
     /// 登録は UI スレッドで行うことを推奨する。
     /// </remarks>
     public static Func<VisualElement?>? Provider

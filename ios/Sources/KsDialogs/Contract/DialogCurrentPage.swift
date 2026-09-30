@@ -16,7 +16,8 @@ public enum DialogCurrentPage {
     /// 表示中のページの View を返す関数。`nil` を代入すると既定の探し方に戻る。
     ///
     /// 関数が `nil` を返したとき・エラーを投げたとき・返した View がダイアログを出すウィンドウに
-    /// 載っていないとき・safe area の内側が空のときは、既定の探し方で得たページを使う。
+    /// 載っていないとき・safe area の内側が空のとき・その内側がウィンドウの外にあるときは、
+    /// 既定の探し方で得たページを使う。
     /// 基準になるのは返した View の safe area の内側 (`safeAreaLayoutGuide.layoutFrame`)。
     public static var provider: (@MainActor () throws -> UIView?)?
 }
