@@ -32,16 +32,16 @@ import jp.kamusoft.ksdialogs.KsDialogsInternalApi
  * 候補が無いときは `DialogCurrentPage.provider` に登録した関数が返す View を使い、
  * それも無ければ基準は可視領域と同じになる。
  */
-public fun Modifier.ksDialogCurrentPage(): Modifier = this then DialogCurrentPageElement
+public fun Modifier.markAsDialogCurrentPage(): Modifier = this then DialogCurrentPageElement
 
-/** [ksDialogCurrentPage] が付ける要素。状態を持たないので 1 つを使い回す。 */
+/** [markAsDialogCurrentPage] が付ける要素。状態を持たないので 1 つを使い回す。 */
 private data object DialogCurrentPageElement : ModifierNodeElement<DialogCurrentPageNode>() {
     override fun create(): DialogCurrentPageNode = DialogCurrentPageNode()
 
     override fun update(node: DialogCurrentPageNode): Unit = Unit
 
     override fun InspectorInfo.inspectableProperties() {
-        name = "ksDialogCurrentPage"
+        name = "markAsDialogCurrentPage"
     }
 }
 

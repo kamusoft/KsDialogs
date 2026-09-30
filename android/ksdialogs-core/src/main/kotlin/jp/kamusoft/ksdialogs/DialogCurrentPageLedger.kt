@@ -88,7 +88,7 @@ internal class DialogCurrentPageMarkerLedger : DialogCurrentPageSource {
         }
         val chosen = chooseCurrentPage(candidates, windowRect)
             ?: return DialogCurrentPageLookup.NotFound(
-                "No view marked with ksDialogCurrentPage() is placed in a window of the activity presenting the dialog.",
+                "No view marked with markAsDialogCurrentPage() is placed in a window of the activity presenting the dialog.",
             )
         return DialogCurrentPageLookup.Found(chosen)
     }

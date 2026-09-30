@@ -5,7 +5,7 @@ import UIKit
 
 @testable import KsDialogs
 
-/// SwiftUI の `ksDialogCurrentPage()` を通した「表示中のページ」を確かめる。
+/// SwiftUI の `markAsDialogCurrentPage()` を通した「表示中のページ」を確かめる。
 ///
 /// modifier は付けた View が画面に載ったときに台帳へ載る。SwiftUI の描画は非同期に進むため、
 /// 台帳にこのウィンドウの候補が現れるまで待ってから器を重ねる。

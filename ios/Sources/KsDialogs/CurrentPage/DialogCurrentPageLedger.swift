@@ -19,7 +19,7 @@ final class DialogCurrentPageLedger: DialogCurrentPageSource {
     /// modifier が既定で書き込む台帳。
     static let shared = DialogCurrentPageLedger()
 
-    private static let origin = "a view marked with ksDialogCurrentPage()"
+    private static let origin = "a view marked with markAsDialogCurrentPage()"
 
     /// 台帳の 1 行。View は弱参照で持ち、解放された行は次の操作で掃除する。
     private struct Entry {
@@ -64,7 +64,7 @@ final class DialogCurrentPageLedger: DialogCurrentPageSource {
             }
         }
         guard let chosen = innermost.max(by: { $0.order < $1.order }) else {
-            return .notFound(reason: "No view marked with ksDialogCurrentPage() is placed in the window presenting the dialog.")
+            return .notFound(reason: "No view marked with markAsDialogCurrentPage() is placed in the window presenting the dialog.")
         }
         return .found(chosen.rect)
     }

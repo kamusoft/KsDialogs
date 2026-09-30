@@ -7,7 +7,7 @@ import android.view.View
  *
  * Android には表示中のページを表す OS 共通の仕組みが無いため、ライブラリは自分ではページを探さない。
  * 従来の View で画面を組んでいるアプリは、表示中のページの View を返す関数をここに一度登録する。
- * Compose で組んだ画面では、各画面の中身の枠に `Modifier.ksDialogCurrentPage()` を付ける方法を使う
+ * Compose で組んだ画面では、各画面の中身の枠に `Modifier.markAsDialogCurrentPage()` を付ける方法を使う
  * (付けた composable が配置されている間は、そちらが登録した関数より優先される)。
  *
  * 登録した関数は UI スレッドで、各表示の開始時と、表示中にウィンドウの寸法やシステムバーの幅が

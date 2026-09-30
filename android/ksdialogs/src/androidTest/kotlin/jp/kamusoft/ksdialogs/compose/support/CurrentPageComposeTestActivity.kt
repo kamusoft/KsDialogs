@@ -32,7 +32,7 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import jp.kamusoft.ksdialogs.compose.ksDialogCurrentPage
+import jp.kamusoft.ksdialogs.compose.markAsDialogCurrentPage
 
 /**
  * 表示中のページを Compose の modifier で名乗らせる画面。下部ナビゲーションを持つ `Scaffold` を模す。
@@ -167,21 +167,21 @@ private fun CurrentPageScreenContent(
     Column(Modifier.fillMaxSize()) {
         val contentFrame = Modifier.weight(1f).fillMaxWidth()
         when (screen) {
-            CurrentPageTestScreen.MARKED -> Box(contentFrame.ksDialogCurrentPage())
+            CurrentPageTestScreen.MARKED -> Box(contentFrame.markAsDialogCurrentPage())
             CurrentPageTestScreen.UNMARKED -> Box(contentFrame)
             CurrentPageTestScreen.NESTED -> Box(
-                contentFrame.then(if (marksOuterFrame) Modifier.ksDialogCurrentPage() else Modifier),
+                contentFrame.then(if (marksOuterFrame) Modifier.markAsDialogCurrentPage() else Modifier),
             ) {
                 Box(
                     Modifier
                         .fillMaxSize()
                         .padding(vertical = CurrentPageComposeTestActivity.NESTED_INSET_DP.dp)
-                        .ksDialogCurrentPage(),
+                        .markAsDialogCurrentPage(),
                 )
             }
 
             CurrentPageTestScreen.WITH_MODAL -> {
-                Box(contentFrame.ksDialogCurrentPage())
+                Box(contentFrame.markAsDialogCurrentPage())
                 Dialog(
                     onDismissRequest = {},
                     properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -194,19 +194,19 @@ private fun CurrentPageScreenContent(
                                 width = CurrentPageComposeTestActivity.MODAL_WIDTH_DP.dp,
                                 height = CurrentPageComposeTestActivity.MODAL_HEIGHT_DP.dp,
                             )
-                            .ksDialogCurrentPage(),
+                            .markAsDialogCurrentPage(),
                     )
                 }
                 DisposableEffect(Unit) { onDispose { onModalFrameView(null) } }
             }
 
             CurrentPageTestScreen.WITH_OUTSIDE_FRAME -> Box(contentFrame) {
-                Box(Modifier.fillMaxSize().ksDialogCurrentPage())
+                Box(Modifier.fillMaxSize().markAsDialogCurrentPage())
                 Box(
                     Modifier
                         .fillMaxSize()
                         .offset(x = CurrentPageComposeTestActivity.OUTSIDE_OFFSET_DP.dp)
-                        .ksDialogCurrentPage(),
+                        .markAsDialogCurrentPage(),
                 )
             }
         }

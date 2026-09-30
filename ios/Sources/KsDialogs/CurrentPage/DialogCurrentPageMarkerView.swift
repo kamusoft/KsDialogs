@@ -1,7 +1,7 @@
 #if canImport(UIKit)
 import UIKit
 
-/// `ksDialogCurrentPage()` が名乗らせた枠と同じ矩形に敷く、見えない UIKit の View。
+/// `markAsDialogCurrentPage()` が名乗らせた枠と同じ矩形に敷く、見えない UIKit の View。
 ///
 /// ウィンドウへの出入りをそのまま台帳への出入りにする。入力もアクセシビリティも持たない。
 final class DialogCurrentPageMarkerView: UIView {

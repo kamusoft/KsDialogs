@@ -39,7 +39,7 @@ enum DialogCurrentPageCompileChecks {
     static func marksSwiftUIViewAsCurrentPage() -> some View {
         NavigationStack {
             Text("Page")
-                .ksDialogCurrentPage()
+                .markAsDialogCurrentPage()
         }
     }
 }

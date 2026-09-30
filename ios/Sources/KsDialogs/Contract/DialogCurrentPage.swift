@@ -7,7 +7,7 @@ import UIKit
 /// (present された画面・`UINavigationController` の先頭・`UITabBarController` の選択中のタブ)。
 /// 独自のコンテナで画面を切り替えているなど、その辿り方で届かないアプリは、
 /// 表示中のページの View を返す関数をここに一度登録する。SwiftUI の画面では
-/// View に `ksDialogCurrentPage()` を付ける方法を使う。
+/// View に `markAsDialogCurrentPage()` を付ける方法を使う。
 ///
 /// 登録した関数は各表示の開始時と、表示中にウィンドウの寸法や safe area が変わったときに呼ばれる。
 /// 登録の差し替えは次の表示から効き、表示中のダイアログには影響しない。

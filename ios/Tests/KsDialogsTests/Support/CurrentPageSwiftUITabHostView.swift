@@ -2,13 +2,13 @@
 import KsDialogs
 import SwiftUI
 
-/// SwiftUI の `TabView` の中の `NavigationStack` に載せた画面。中身の枠に `ksDialogCurrentPage()` を付ける。
+/// SwiftUI の `TabView` の中の `NavigationStack` に載せた画面。中身の枠に `markAsDialogCurrentPage()` を付ける。
 struct CurrentPageSwiftUITabHostView: View {
     var body: some View {
         TabView {
             NavigationStack {
                 Color.clear
-                    .ksDialogCurrentPage()
+                    .markAsDialogCurrentPage()
                     .navigationTitle("Panel")
                     .navigationBarTitleDisplayMode(.inline)
             }

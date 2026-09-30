@@ -41,7 +41,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Compose の `Modifier.ksDialogCurrentPage()` が、実際の配置と離脱に追随して表示中のページを名乗ることを確かめる。
+ * Compose の `Modifier.markAsDialogCurrentPage()` が、実際の配置と離脱に追随して表示中のページを名乗ることを確かめる。
  *
  * 画面は `Scaffold` の content 枠と下部バーを模した縦並び ([CurrentPageComposeTestActivity])。
  * ダイアログは従来 View の中身で出し、基準領域だけを表示中のページにする。観察はすべて画面座標で行い、

@@ -20,7 +20,7 @@ struct SampleLayoutPanelScreen: View {
         TabView(selection: $selectedTab) {
             NavigationStack {
                 SampleLayoutPanelForm(model: model)
-                    .ksDialogCurrentPage()
+                    .markAsDialogCurrentPage()
                     .background { SampleTheme.surface.ignoresSafeArea() }
                     .navigationTitle(SampleText.shared.LAYOUT_DIALOG_ITEM)
                     .navigationBarTitleDisplayMode(.inline)
@@ -35,7 +35,7 @@ struct SampleLayoutPanelScreen: View {
             .tag(SampleLayoutPanelTab.panel)
 
             SampleLayoutInfoPage(onShow: { Task { await showLayoutDialog() } })
-                .ksDialogCurrentPage()
+                .markAsDialogCurrentPage()
                 .background { SampleTheme.surface.ignoresSafeArea() }
                 .tabItem { Label(SampleText.shared.INFO_TAB, systemImage: "info.circle") }
                 .tag(SampleLayoutPanelTab.info)

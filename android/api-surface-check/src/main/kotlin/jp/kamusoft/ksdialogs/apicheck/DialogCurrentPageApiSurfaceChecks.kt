@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import jp.kamusoft.ksdialogs.DialogCurrentPage
 import jp.kamusoft.ksdialogs.DialogLayoutArea
 import jp.kamusoft.ksdialogs.DialogOptions
-import jp.kamusoft.ksdialogs.compose.ksDialogCurrentPage
+import jp.kamusoft.ksdialogs.compose.markAsDialogCurrentPage
 import jp.kamusoft.ksdialogs.ksDialogOptions
 
 /**
@@ -41,5 +41,5 @@ public object DialogCurrentPageApiSurfaceChecks {
      * 依存に届いていることも、この連結がコンパイルできることで示される。
      */
     public fun acceptsCurrentPageModifier(frame: Modifier): Modifier =
-        frame.ksDialogCurrentPage().then(Modifier.ksDialogCurrentPage())
+        frame.markAsDialogCurrentPage().then(Modifier.markAsDialogCurrentPage())
 }

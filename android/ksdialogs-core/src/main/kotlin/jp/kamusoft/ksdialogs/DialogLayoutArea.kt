@@ -18,7 +18,7 @@ public enum class DialogLayoutArea {
      * 下部のナビゲーションバーやタブを持つ画面では、それらを除いたページの領域が基準になる。
      * 表示中のページは次の順で探し、見つかった最初のものを使う。
      *
-     * 1. Compose の `Modifier.ksDialogCurrentPage()` を付けた composable のうち、画面に配置されているもの
+     * 1. Compose の `Modifier.markAsDialogCurrentPage()` を付けた composable のうち、画面に配置されているもの
      * 2. [DialogCurrentPage.provider] に登録した関数が返す View
      *
      * どちらからもページが得られないときは [VISIBLE_AREA] と同じ結果になる。

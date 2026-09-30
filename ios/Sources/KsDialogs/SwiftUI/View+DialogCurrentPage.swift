@@ -16,7 +16,7 @@ public extension View {
     ///
     /// 基準になるのは付けた View の矩形のうち safe area の内側。候補が無いときは
     /// `DialogCurrentPage.provider` に登録した関数、それも無ければ既定の探し方で得たページを使う。
-    func ksDialogCurrentPage() -> some View {
+    func markAsDialogCurrentPage() -> some View {
         background(DialogCurrentPageMarker())
     }
 }

@@ -13,7 +13,7 @@ import UIKit
 ///
 /// という状態になる。テストのウィンドウはシーンに属さず `TabView` の切り替えが進まないため、
 /// 同じ形を 2 つの `UIHostingController` を重ねて作る。どちらのタブも中身の枠に
-/// `ksDialogCurrentPage()` を付けており、去るタブの枠は来るタブの枠の内側にある (入れ子)。
+/// `markAsDialogCurrentPage()` を付けており、去るタブの枠は来るタブの枠の内側にある (入れ子)。
 @MainActor
 final class CurrentPageSwiftUITabSwitchHost: UIViewController {
     /// 去るタブ。`NavigationStack` の中身の枠に modifier を付ける。

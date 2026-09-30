@@ -10,7 +10,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import jp.kamusoft.ksdialogs.compose.ksDialogCurrentPage
+import jp.kamusoft.ksdialogs.compose.markAsDialogCurrentPage
 
 /**
  * レイアウト属性を調整してからダイアログを表示する画面。
@@ -37,7 +37,7 @@ internal fun SampleLayoutPanelScreen(state: SampleLayoutPanelState, onBack: () -
                     modifier = Modifier
                         .padding(tabBarPadding)
                         .fillMaxSize()
-                        .ksDialogCurrentPage(),
+                        .markAsDialogCurrentPage(),
                 )
             }
         }
@@ -69,7 +69,7 @@ private fun PanelTab(
             modifier = Modifier
                 .padding(topBarPadding)
                 .fillMaxSize()
-                .ksDialogCurrentPage(),
+                .markAsDialogCurrentPage(),
         )
     }
 }
