@@ -21,6 +21,8 @@ The published metadata pins that Swift package to the exact version of the Maven
 
 Step 2 is a one-time integration. After that, ordinary Gradle builds refresh the generated package when the dependencies change. Keep the directory in version control — Xcode references it, so it is needed right after a clone.
 
+Building the Swift package import with Xcode 27.0 requires the consumer's Kotlin Gradle Plugin to be 2.4.20 or later. On 2.4.10 the import task fails with `clang: error: unknown argument`. After raising the Kotlin version, run `integrateLinkagePackage` again and commit the files it adds to the generated package as well; from Kotlin 2.4.20 on, `include/module.modulemap` is added.
+
 ## Register host content
 
 Shared view models do not conform to the iOS Native view-model contract, so registration goes through the KMP entry: `Dialog.shared.kmp`, `Loading.shared.kmp`, and `Toast.shared.kmp`. They write into the same registries as pure-native registration. Import the generated shared framework by its module name; `Shared` is used below as an example.

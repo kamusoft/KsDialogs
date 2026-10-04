@@ -39,7 +39,7 @@ Add the `KsDialogs.Maui` package from nuget.org to a .NET 10 MAUI project. That 
 
 | Requirement | What to satisfy |
 |---|---|
-| MAUI | `Microsoft.Maui.Controls` 10.0.20 or later. That is the version bundled with the .NET workload set this library is built and tested against, so a project on the same workload set can leave the version unwritten. Pinning an older one (below 10.0.20) makes restore report NU1605, the NuGet package-downgrade error |
+| MAUI | `Microsoft.Maui.Controls` 10.0.20 or later. A project that does not write a MAUI version uses the one bundled with its installed .NET workload set, and needs nothing more when that bundled version is 10.0.20 or later. A version below 10.0.20, whether pinned explicitly or bundled with an older workload set, makes restore report NU1605, the NuGet package-downgrade error; write 10.0.20 or later, or update the workload set |
 | .NET SDK | .NET 10 with the iOS and Android MAUI workloads installed |
 | Minimum OS | iOS 17.0 and Android 7.0 (API 24). A `SupportedOSPlatformVersion` below that, including one left unset where the SDK default is lower, stops the build with error `KSDLG0001`, which names the required version and the current value. The check ships inside the package and runs during the consuming build, on the iOS and Android inner builds only |
 

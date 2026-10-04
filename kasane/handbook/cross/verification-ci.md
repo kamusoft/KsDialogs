@@ -5,7 +5,7 @@ applies-when:
   tasks: [CI の検証範囲の確認, CI の失敗の切り分け, workflow の変更, 変更の完了判定]
 title: 検証 CI の範囲と実行条件
 description: 検証 CI (`.github/workflows/ci.yml` と platform 別 reusable workflow 5 本・消費者検証 4 本) が回す範囲と手元に残る範囲、各 job が回すテストルートと実行件数の検査、CI の Swift テストをスイート直列で回す理由と、待ち不足・期限切れの破棄との見分け方、android-instrumented job の IME 系テストの既知の落ち方 2 型。決定の記録は cross/ADR-0017 (構成と保証範囲) / cross/ADR-0018 (toolchain の固定) / cross/ADR-0026・0029 (lint の 12 検査)
-timestamp: 2026-09-29
+timestamp: 2026-10-04
 ---
 
 # 検証 CI の範囲と実行条件
@@ -54,7 +54,7 @@ CI に載らない検証は**手元の完了判定に残る**。変更の完了�
 
 ## CI の Swift テストはスイートを直列で回す
 
-CI で `xcodebuild test` を回す job (ios と、maui job の iOS 橋渡し) は `-parallel-testing-enabled NO` を付け、スイート同士の並列実行を止めて回す。GitHub のランナー (`macos-26-arm64`) は CPU が少なく、並列に走るスイートが提示・待ち合わせのために MainActor を取り合って、提示待ちのテストが時間切れになる。**手元の実行条件は変えない** (並列のまま)。この差は実行機の容量差であってテストや実装の欠陥ではないため、待ち時間の延長や観測点の変更で吸収しない。
+CI で `xcodebuild test` を回す job (ios と、maui job の iOS 橋渡し) は `-parallel-testing-enabled NO` を付け、スイート同士の並列実行を止めて回す。GitHub のランナー (直列化を決めた時点は `macos-26-arm64`。現在は `xcode-27` イメージ) は CPU が少なく、並列に走るスイートが提示・待ち合わせのために MainActor を取り合って、提示待ちのテストが時間切れになる。**手元の実行条件は変えない** (並列のまま)。この差は実行機の容量差であってテストや実装の欠陥ではないため、待ち時間の延長や観測点の変更で吸収しない。
 
 手元 (12 論理 CPU 級) の既定の並列で全件が安定して通るのは、実時間の期限を持つ Toast のスイートに、要求の前に MainActor の混み合いが引くのを待つ trait (`.awaitsMainActorResponsive`) を付けてからである (並列で 6 回連続して全件成功)。付ける前は、並列実行の立ち上がりで Toast のスイートの先頭のテストが 4 回中 2 回落ちていた (下表の「期限切れの破棄」。実測は `kasane/changes/archive/2026-09-29-wait-for-host-appearance/evidence/ios-parallel-toast-flake.md`)。
 
@@ -81,6 +81,15 @@ IME の出し入れを観測するテストが落ちたときは、job の成果
 | 最初の show が潰される | Activity 起動に伴う server 起源の `onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW` がテスト最初の show と交差し、show が `PHASE_WM_ABORT_SHOW_IME_POST_LAYOUT` で中止される。IME は一度も出ず、枠 (`bottom`) は 0 のまま | 起動直後の要求の交差。テスト最初の要求の前に、この画面が入力の宛先になった状態の落ち着き待ちを置く |
 
 どちらも Toast の器 (ウィンドウ) は引き金ではない。Toast のウィンドウ追加が誘発する `CONTROLS_CHANGED` の show 要求は成功回にも現れ、要求可視性が非表示なら `PHASE_CLIENT_ON_CONTROLS_CHANGED` で取り消される。
+
+## macOS job のランナーと Xcode
+
+macOS で走る job (ios・kmp・maui と消費者検証の ios・kmp・maui、release の package-android・package-maui・publish) は、すべて `xcode-27` イメージで Xcode 27.0 を選ぶ。JDK は Temurin 21。値の正は各 workflow の定義である。
+
+- `global.json` が固定する workload set 10.0.401.1 は Xcode 27.0 が必須で、`macos-26` イメージには Xcode 27.0 が無い。開発機と同じ Xcode で落ち方を再現できるよう、iOS Native と KMP の job も同じ Xcode に揃えている
+- Xcode 26 でのビルドは CI では確かめていない
+- `xcode-27` イメージは public preview で、検証もリリースもこのイメージに依存する
+- KMP の Swift パッケージ取り込みは、Kotlin 2.4.20 以上でないと Xcode 27.0 でビルドできない ([KMP 利用者の iOS ホスト統合](../../concepts/kmp/api/ios-host-integration.md))
 
 ## 関連
 

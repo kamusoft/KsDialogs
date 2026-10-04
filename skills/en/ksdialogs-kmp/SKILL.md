@@ -40,7 +40,7 @@ Content registration lives in the hosts because the content type differs per OS.
 
 ## Setup
 
-The current artifact is built with Kotlin 2.4.10 and Gradle 9.7.0. The Android target requires API 24 or later; the iOS target requires iOS 17 or later and Swift tools 6.3. A consumer Kotlin Gradle Plugin on the same minor line (2.4.x) is supported, and 2.4.10 is the verified version. The SwiftPM import that carries the iOS linkage is an Alpha feature of Kotlin 2.4, so no wider range is promised.
+The current artifact is built with Kotlin 2.4.20 and Gradle 9.7.0. The Android target requires API 24 or later; the iOS target requires iOS 17 or later and Swift tools 6.3. A consumer Kotlin Gradle Plugin on the same minor line (2.4.x) is supported, and 2.4.20 is the verified version. The SwiftPM import that carries the iOS linkage is an Alpha feature of Kotlin 2.4, so no wider range is promised. Building the iOS side with Xcode 27.0 requires Kotlin 2.4.20 or later.
 
 `jp.kamusoft:ksdialogs-kmp` is published to Maven Central, and the Swift package that the iOS host links is published in the distribution repository `https://github.com/kamusoft/KsDialogs-SPM` (package identity `KsDialogs-SPM`, product `KsDialogs`). Both go out under one and the same version string, so the Maven dependency in the shared module and the package entry in Xcode state the same version.
 

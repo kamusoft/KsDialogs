@@ -5,7 +5,7 @@ plugins {
     // バージョンは共有バージョンカタログの agp と一致させる (プラグイン宣言ではカタログを参照できないため直書き)
     id("com.android.application") version "9.3.0"
     // 宣言的 UI (Jetpack Compose) で中身を書くために要る。バージョンは共有バージョンカタログの kotlin と一致させる
-    id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.20"
 }
 
 android {

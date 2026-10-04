@@ -21,6 +21,8 @@ Maven 依存は発行 metadata に Swift package の参照を持ち、生成さ�
 
 手順2は初回だけ行う integration である。その後は通常の Gradle build が依存の変更を生成済み package へ反映する。Xcode が参照する統合物なので clone 直後にも必要になり、VCS に含める。
 
+Xcode 27.0 で Swift package の取り込みをビルドするには、利用側の Kotlin Gradle Plugin が 2.4.20 以上である必要がある。2.4.10 では取り込みのタスクが `clang: error: unknown argument` で失敗する。Kotlin の版を上げたあとは `integrateLinkagePackage` をもう一度実行し、生成 package に増えたファイルも commit する。Kotlin 2.4.20 からは `include/module.modulemap` が加わる。
+
 ## ホストコンテンツを登録する
 
 共有 ViewModel は iOS Native の ViewModel 契約に準拠しないため、登録は KMP 入口の `Dialog.shared.kmp`・`Loading.shared.kmp`・`Toast.shared.kmp` を通る。書き込み先は純 Native の登録と同じレジストリである。生成された共有 framework は module 名で import する。次の例では `Shared` としている。

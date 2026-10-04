@@ -31,7 +31,7 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 
 ## セットアップ
 
-この artifact は Maven Central の group `jp.kamusoft` で公開している。ビルドに使っている Kotlin は 2.4.10 で、利用者側の Kotlin Gradle Plugin も同じ minor 系列 (2.4.x) を前提とする。最低対象 OS は Android 7.0 (API 24)。`jp.kamusoft:ksdialogs-core` は Android View 系の API を持ち Compose には依存せず、`jp.kamusoft:ksdialogs` は Jetpack Compose 系の API を持ち基本 artifact に同版で依存するため、基本 artifact は推移で届く。release version は `X.Y.Z`、prerelease は `X.Y.Z-{alpha|beta|rc}.N` の形である。
+この artifact は Maven Central の group `jp.kamusoft` で公開している。ビルドに使っている Kotlin は 2.4.20 で、利用者側の Kotlin Gradle Plugin も同じ minor 系列 (2.4.x) を前提とする。最低対象 OS は Android 7.0 (API 24)。`jp.kamusoft:ksdialogs-core` は Android View 系の API を持ち Compose には依存せず、`jp.kamusoft:ksdialogs` は Jetpack Compose 系の API を持ち基本 artifact に同版で依存するため、基本 artifact は推移で届く。release version は `X.Y.Z`、prerelease は `X.Y.Z-{alpha|beta|rc}.N` の形である。
 
 以下の例の `{version}` はプレースホルダで、使う version に置き換える (そのままでは依存解決に失敗する)。現在の version は、常に最新のリリースへ解決される [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) のページで確認できる。
 
@@ -57,11 +57,11 @@ dependencies {
 }
 ```
 
-Compose content を含むモジュールでは Compose を有効化し、Kotlin と同じバージョンの Compose compiler plugin を適用する。Kotlin 2.4.10 の場合、該当するビルド設定は次のとおりである。
+Compose content を含むモジュールでは Compose を有効化し、Kotlin と同じバージョンの Compose compiler plugin を適用する。Kotlin 2.4.20 の場合、該当するビルド設定は次のとおりである。
 
 ```kotlin
 plugins {
-    id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.20"
 }
 
 android {

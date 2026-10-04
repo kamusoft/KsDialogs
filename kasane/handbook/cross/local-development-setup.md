@@ -5,7 +5,7 @@ applies-when:
   tasks: [環境構築, worktree での作業開始, Gradle ルートのビルド・テスト, Sample のビルドと実行, MAUI iOS の Sample ビルド, .NET SDK の解決, 消費者検証を手元で回す, リリース用スクリプトの自己テスト]
 title: ローカル開発環境の準備
 description: Android SDK と Xcode のローカル環境を整え、repo 直下の global.json が固定する .NET SDK / workload set を確認し、4 形態の Sample が参照するライブラリとビルド・起動手順を確認するためのガイド。Gradle build root は本体・Sample の 5 つと消費者検証の 2 つ。消費者検証 (`verification/`) と `scripts/release/` の自己テストを手元で回す手順を含む
-timestamp: 2026-09-10
+timestamp: 2026-10-04
 ---
 
 # ローカル開発環境の準備
@@ -46,6 +46,8 @@ sdk.dir=<Android SDK の絶対パス>
 
 Android Studio が自動生成するのは開いた root 側だけで、included build 側は生成しない。`SDK location not found` のエラーは不足している root のパスを指すので、そのディレクトリへ置く。
 
+`sdk.dir` は `ANDROID_HOME` より先に読まれる。開発機を替えたあとに古い場所を指す `sdk.dir` が残っていると、`ANDROID_HOME` が正しくてもビルドが失敗する。`ANDROID_HOME` を使う環境では `sdk.dir` の行を消す。
+
 ## git worktree で作業するとき
 
 `local.properties` は VCS 管理外 (`.gitignore`) のため、**worktree には引き継がれない**。`ANDROID_HOME` を使っていない環境では、worktree で Gradle ルートを動かす前に、動かす root と included build の `local.properties` を元の checkout から複製する。
@@ -68,32 +70,34 @@ repo 直下の `global.json` が .NET SDK と workload set の版を固定する
 ```json
 {
   "sdk": {
-    "version": "10.0.300",
+    "version": "10.0.401",
     "rollForward": "disable",
-    "workloadVersion": "10.0.300.3"
+    "workloadVersion": "10.0.401.1"
   }
 }
 ```
 
-- 解決できていることは `dotnet --version` が `10.0.300` を返し、`dotnet workload list` が repo の `global.json` の workload set を使う旨を表示することで確認する
+- 解決できていることは `dotnet --version` が `10.0.401` を返し、`dotnet workload list` が repo の `global.json` の workload set を使う旨を表示することで確認する
 - `rollForward` を `disable` にしているため、指定した SDK が手元に無ければ**ロールフォワードせずに失敗する** (近い patch を黙って拾うことはない)。表示された版を導入して揃える
-- workload set を固定すると .NET for iOS の版も固定される (`10.0.300.3` は .NET for iOS 26.5)。ワークロード自体の導入は `dotnet workload install maui`
-- **workload set を上げるときは、`maui/Directory.Packages.props` の `Microsoft.Maui.Controls` と Sample の `MauiVersion` を同梱版に合わせる**
-- 同梱版は `$(MauiVersion)` の既定値。版を書いていないプロジェクトで評価して確かめる (`dotnet msbuild maui/KsDialogs.Maui/KsDialogs.Maui.csproj -getProperty:MauiVersion -p:TargetFramework=net10.0`。2026-09-08 の実測は `10.0.20`)
-- 揃えると下限・ビルド版・版を書かない利用者の既定値が一致し、CI が下限を常時検証する
+- workload set を固定すると .NET for iOS の版も固定される (`10.0.401.1` は .NET for iOS 27.0 で、Xcode 27.0 が必須)。ワークロード自体の導入は `dotnet workload install maui`
+- **workload set を上げても、`maui/Directory.Packages.props` の `Microsoft.Maui.Controls` と Sample の `MauiVersion` は据え置く** (maui/ADR-0007)。同梱版に合わせて上げると、古い workload set の利用者が復元エラー (NU1605) で止まる
+- 据え置いた版で新しい workload set のビルド・テストが通らないときは、版を上げる前に止めてオーナーの判断を仰ぐ
+- 同梱版は `$(MauiVersion)` の既定値。版を書いていないプロジェクトで評価して確かめる (`dotnet msbuild maui/KsDialogs.Maui/KsDialogs.Maui.csproj -getProperty:MauiVersion -p:TargetFramework=net10.0`)
+- workload set 10.0.300.3 の同梱版は `10.0.20`、10.0.401.1 は `10.0.110`。下限は 10.0.20 のまま
+- ライブラリは下限の版でビルド・テストし、CI が下限そのものを検証する。版を書かない利用者の既定値 (同梱版) との組み合わせは、消費者検証アプリ (`verification/maui/VerificationApp.csproj`) のビルドが確かめる
 - Sample (`samples/maui/KsDialogs.Sample.Maui/KsDialogs.Sample.Maui.csproj`) は CI の検証対象ではないため、ずれても検査で気づけない
 
 ## MAUI iOS ビルドの Xcode 版数
 
-MAUI ワークロードが解決する .NET for iOS SDK が要求する Xcode と、iOS Native の Swift パッケージ (`ios/Package.swift` の swift-tools 版数) が要求する Xcode は独立に決まり、食い違うことがある。現行の固定ではどちらも Xcode 26.5 を要求して一致しているため、**`DEVELOPER_DIR` の付け替えも版数検査の opt-out も既定では要らない**。
+MAUI ワークロードが解決する .NET for iOS SDK が要求する Xcode と、iOS Native の Swift パッケージ (`ios/Package.swift` の swift-tools 版数) が要求する Xcode は独立に決まり、食い違うことがある。現行の固定ではどちらも Xcode 27.0 で通り、一致しているため、**`DEVELOPER_DIR` の付け替えも版数検査の opt-out も既定では要らない**。
 
 ```bash
 dotnet build samples/maui/KsDialogs.Sample.Maui/KsDialogs.Sample.Maui.csproj \
   -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64
 ```
 
-- 手元の既定の Xcode が 26.5 であることは `xcodebuild -version` で確認する。異なる版が選択されていれば `xcode-select` で切り替える
-- 2026-09-08 の実測: 上のコマンドと facade の `net10.0-ios` ビルドが、既定の Xcode 26.5 のまま opt-out なしで成功する
+- 手元の既定の Xcode が 27.0 であることは `xcodebuild -version` で確認する。異なる版が選択されていれば `xcode-select` で切り替える
+- 2026-10-04 の実測: 上のコマンドと facade の `net10.0-ios` ビルドが、既定の Xcode 27.0 のまま opt-out なしで成功する
 
 ### 版が食い違ったとき
 

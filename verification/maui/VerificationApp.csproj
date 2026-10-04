@@ -47,7 +47,7 @@
   <!--
     MAUI アプリの必須参照。UseMaui は NuGet 参照を自動で含めない。
     版を書かず $(MauiVersion) のままにすることで、利用者と同じ「workload set 同梱版を使う」
-    形になる (maui/ADR-0004)。
+    形になる。ライブラリの下限は同梱版より古いことがある (maui/ADR-0007)。
   -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />

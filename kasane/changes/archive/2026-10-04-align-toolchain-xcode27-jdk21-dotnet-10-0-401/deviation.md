@@ -1,0 +1,10 @@
+# Deviation: align-toolchain-xcode27-jdk21-dotnet-10-0-401
+
+- [付随修正] `kmp/.swiftpm-locks/default/swiftImport/` と `samples/kmp/iosApp/KotlinMultiplatformLinkedPackage/` の合成 Swift package: Kotlin 2.4.20 が新しく生成する空の `module.modulemap` 6 件を追跡に含めた。理由: 同じ package の他のファイルは追跡済みで、含めないと clone 直後の `samples/kmp/iosApp` の 1 回目のビルドが止まる (オーナーが同梱を選択、2026-10-04)
+- 蒸留時に反映: handbook `kasane/handbook/cross/test-execution.md` (iOS の節) — SwiftUI の NavigationStack では、中身の safe area が決まった直後でもナビゲーションバー自身の枠がレイアウト待ちで古いことがある (Xcode 27.0 / iOS 27.0 の実測: inline 表示で落ち着いた高さ 54 に対し、台帳に候補が載った直後は 106。次のレイアウトパス 1 回で 54 になる)。バーの枠を読むテストは枠が落ち着くまで待つ。iOS 26 でも同じ途中枠が出るかは未確認
+- 蒸留時に反映: concepts `kasane/concepts/kmp/api/ios-host-integration.md` (合成 Swift package の再生成手順) — Kotlin 2.4.20 以降は合成 package に `module.modulemap` が加わる。Kotlin を上げた後は Sample の合成 package を再生成する。無い状態だと `samples/kmp/iosApp` の 1 回目のビルドが「Synthetic project regenerated」で止まり、2 回目は通る (2026-10-04 実測)
+- 蒸留時に反映: handbook `kasane/handbook/cross/test-execution.md` (android の節) — 「SDK の場所は `local.properties` の `sdk.dir` で指定する。未作成だとビルドが失敗する」の記述を、`ANDROID_HOME` でも解決できる現状に合わせる
+- 蒸留時に反映: docs-refresh の対象 — README 2 枚の Kotlin 2.4.10 と「workload set 同梱版と同じ」の記述が古くなった (本変更では README に触れない)。`skills/{en,ja}/ksdialogs-android/SKILL.md` と `skills/{en,ja}/ksdialogs-kmp/SKILL.md` の Kotlin 2.4.10 も同じ
+- 蒸留時に反映: handbook `kasane/handbook/cross/test-execution.md` (負のコンパイル検証の表) — Kotlin 2.4.20 での診断文言が表と 2 点違う (kmp の `Unresolved reference` 系 5 本に `on receiver of type '<型>'` が付く / android の `toastShowResult` は 2 件出る)。2.4.10 でも同じだったかは未確認で、検査自体は有効 (review-001.md の指摘 5)
+- 完了条件「テストが全件通る」: Android の instrumented テスト (`android/` の `connectedDebugAndroidTest`) は手元で回していない。Kotlin 2.4.20 は `androidTest` を作るコンパイラも替えるため、develop への push 後に CI の android-instrumented (API 36) の結果で確かめる。理由: 探索メモの完了条件に instrumented を挙げておらず、CI の本体検証が同じ内容を回すため (2026-10-04)
+- 完了条件「自 assembly 用 aar の除去が効いている」: 探索メモでは除去が効くことを確かめる → 実際は、SDK 10.0.401 でも自 assembly 用 aar が生成されず、除去の後処理が動く機会が無かった (nupkg の aar は束縛対象の 2 件だけで、変更前と同じ)。理由: 除去を直接には確かめられないため、状態が変更前と同じであることの確認に留めた (2026-10-04)
