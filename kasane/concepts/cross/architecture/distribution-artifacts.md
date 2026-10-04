@@ -3,7 +3,7 @@ type: concept
 title: 配布物の構成 (4 形態)
 description: 4 形態 (SwiftPM 配信リポジトリ / Android Maven 2 座標 / MAUI NuGet 3 パッケージ / KMP Maven 5 publication) の配布物が何を含み、version がどこで決まって注入され、開発版が公開レジストリへ流れないためのガードがどこにあるか
 tags: [cross, distribution, swiftpm, maven, nuget, kmp, version]
-timestamp: 2026-09-13
+timestamp: 2026-10-04
 ---
 
 # 配布物の構成 (4 形態)
@@ -100,7 +100,7 @@ facade 1 件と binding 2 件の 3 パッケージで、利用者が参照する
 
 ### MAUI 本体の版と TFM
 
-facade は `Microsoft.Maui.Controls` に下限 10.0.20 で依存する。この値は repo 直下の `global.json` が固定する workload set が同梱する版そのものなので、同じ SDK の利用者はプロジェクトに MAUI の版を書かずに導入できる。それより古い版を明示すると NuGet がダウングレードを拒む (NU1605)。ライブラリの CI はこの下限で常にビルド・テストする ([maui/ADR-0004](../../../decisions/maui/0004-nuget-three-package-structure.md))。
+facade は `Microsoft.Maui.Controls` に下限 10.0.20 で依存する。この下限は `global.json` の workload set を上げても据え置く ([maui/ADR-0007](../../../decisions/maui/0007-maui-controls-floor-held-on-workload-set-update.md))。現在の workload set 10.0.401.1 が同梱する版は 10.0.110 で、下限より新しい。workload set の同梱版が 10.0.20 以上の利用者は、プロジェクトに MAUI の版を書かずに導入できる。下限より古い版を明示すると NuGet がダウングレードを拒む (NU1605)。ライブラリの CI はこの下限で常にビルド・テストし、版を書かない利用者の既定値との組み合わせは消費者検証がビルドで確かめる ([maui/ADR-0004](../../../decisions/maui/0004-nuget-three-package-structure.md))。
 
 nupkg 内の platform TFM は SDK 既定の API 版付き (`net10.0-android36.0` / `net10.0-ios26.0`) をそのまま受け入れている。この名前は SDK 更新で変わるため、利用者向け文書には書かない。利用者側の TFM の API 版がこれより低いと、警告なく platform 中立のアセットにフォールバックして native の binding が入らない。消費者検証がこの取り違えを検査する ([消費者検証](consumer-verification.md))。
 

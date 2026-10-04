@@ -5,7 +5,7 @@ applies-when:
   tasks: [テストの実行, テスト結果の報告, 変更の完了判定, 提示先のシステムバーを隠す Android の instrumented テストを書く, 位置と大きさを指定してウィンドウ・View を置く Android の instrumented テストを書く]
 title: テスト実行規約
 description: 全ビルドルート (ios / android / android instrumented / kmp / maui / MAUI 互換面の Android・iOS) のテストの正しい実行コマンドと件数の得方、黙って空振りする範囲 (kmp の `test` 曖昧エラー・Swift Testing と XCTest の件数2系統・単体指定の `()`・実機がないと1件も走らない instrumented と API レベル別 skip・JVM / KMP / MAUI では実提示まで見ないテスト・ホストアプリなしの iOS テスト標的では提示先が得られない・フラグなしでは走らない負のコンパイル検証)・システムバーを隠す instrumented テストでの全画面表示の確認の抑止・テストが置くウィンドウの寸法を端末の画面から決めること、MAUI の実配置テストホスト (dotnet test 対象外のアプリとして両 OS で走らせる位置と大きさの検証)、Android 本体の Compose 非依存を固定する依存グラフ検査、仕様の Scenario ID とテスト名の網羅検査 (CI が回す範囲は verification-ci.md)
-timestamp: 2026-09-29
+timestamp: 2026-10-04
 ---
 
 # テスト実行規約
@@ -48,6 +48,8 @@ xcodebuild test -scheme KsDialogs -destination 'platform=iOS Simulator,name=<機
 - scheme は `KsDialogs` (パッケージ全体)。`<機種名>` は `xcrun simctl list devices available` から選ぶ
 - `swift test` は macOS 上での実行になる。ダイアログ実装は `#if canImport(UIKit)` でガードされており、**そのガード下のテストは失敗ではなく最初から存在しないものとして扱われる** (先例 KsSettingsView の実測では `swift test` 88件 / Simulator 全件 338件)。**完了判定は Simulator 実行を使う**
 - Swift Testing のテストを単体指定するときは**関数名に `()` を付ける** (`-only-testing:KsDialogsTests/<Suite>/<func>()`)。付けないと filter が空振りして「0 tests / TEST SUCCEEDED」になる (偽の green)。絞り込み実行のあとは件数が 1 以上であることを見る
+- Xcode 27.0 はテストが失敗すると、Simulator からの診断収集を約 10 分待つ。失敗を見込む実行 (改変して落ちることの確認など) には `-collect-test-diagnostics never` を付ける。CI の `xcodebuild test` はこの指定を付けて回す
+- SwiftUI の `NavigationStack` では、中身の safe area が決まった直後でも、ナビゲーションバー自身の枠がレイアウト待ちで古いことがある。バーの枠を読むテストは、枠が落ち着くまで待ってから読む (例: `DialogCurrentPageSwiftUITests` の `settledBarFrames`)
 
 **件数は2系統ある**: Swift Testing のテストは `Test run with N tests ... passed` 行、XCTest のテストは `Executed N tests, with M failures` 行に出る。現在のテストはすべて Swift Testing 製のため XCTest 側は `Executed 0 tests` と表示される — **`Executed` 行だけ見ると全件が 0 件に見える**。両方の行を確認して合算する
 
@@ -62,7 +64,7 @@ cd android
 - Gradle は up-to-date なテストタスクをスキップするため、**差分なしの再実行は「テスト 0 件で BUILD SUCCESSFUL」になり得る**。全件を確実に回し直すときは `--rerun-tasks` を付ける
 - 件数はコンソールに出ない。`ksdialogs-core/build/test-results/testDebugUnitTest/TEST-*.xml` の `tests` / `failures` 属性で確認する (unit test は `:ksdialogs-core` にだけあり、`:ksdialogs` と `:api-surface-check` は `NO-SOURCE`)
 - この実行には、本体の Compose 非依存の検査 `:ksdialogs-core:verifyNoDeclarativeUiDependency` も乗る (後述の「本体の Compose 非依存の検証」)
-- SDK の場所は `android/local.properties` の `sdk.dir` で指定する (VCS 管理外)。未作成だと `SDK location not found` でビルド自体が失敗する
+- SDK の場所は `ANDROID_HOME`、または `android/local.properties` の `sdk.dir` (VCS 管理外) で指定する。どちらも無いと `SDK location not found` でビルド自体が失敗する ([ローカル開発環境の準備](local-development-setup.md))
 
 ## android/ (instrumented)
 
@@ -260,7 +262,7 @@ dotnet build KsDialogs.Maui.ApiSurfaceCheck -p:<フラグ>=true
 | android/ | `ksdialogs.negativeCheck.loadingShowStyle` | `None of the following candidates is applicable:` (候補の一覧に `style` を取る `show` が無いことが示され、`No parameter with name 'style' found.` は出ない。2026-09-25 実測) |
 | android/ | `ksdialogs.negativeCheck.loadingShowOptions` | `None of the following candidates is applicable:` (候補の一覧に `options` を取る `show` が無いことが示され、`No parameter with name 'options' found.` は出ない。2026-09-25 実測) |
 | android/ | `ksdialogs.negativeCheck.toastHide` | `Unresolved reference 'hide'.` |
-| android/ | `ksdialogs.negativeCheck.toastShowResult` | `Initializer type mismatch: expected 'String', actual 'Unit'.` |
+| android/ | `ksdialogs.negativeCheck.toastShowResult` | `Initializer type mismatch: expected 'String', actual 'Unit'.` (2 件出る。2026-10-04 実測) |
 | android/ | `ksdialogs.negativeCheck.toastShowStyle` | `None of the following candidates is applicable:` (候補の一覧に `style` を取る `show` が無いことが示され、`No parameter with name 'style' found.` は出ない。2026-09-25 実測) |
 | android/ | `ksdialogs.negativeCheck.toastOptions` | `Unresolved reference 'options'.` |
 | android/ | `ksdialogs.negativeCheck.toastComposeFromCore` | `Unresolved reference 'showCompose'.` (import と呼び出しの 2 件出る) |
@@ -296,6 +298,8 @@ dotnet build KsDialogs.Maui.ApiSurfaceCheck -p:<フラグ>=true
 | maui/ | `KsDialogsNegativeCheckToastShowReturn` | CS0029 (void を object に変換できない) |
 | maui/ | `KsDialogsNegativeCheckToastShowStyle` | CS1739 (`style` という名前のパラメーターがない) |
 | maui/ | `KsDialogsNegativeCheckLegacyContractName` | CS0246 (型または名前空間の名前 `IKsDialogs` が見つからない) |
+
+Kotlin 2.4.20 では、kmp/ の `Unresolved reference` 系の診断のうち 5 本に `on receiver of type '<型>'` が続く (2026-10-04 実測。2.4.10 で同じだったかは未確認)。上表の文言が先頭に出ていれば一致とみなす。
 
 **成功したら検証は失敗**である。判定を誤らないよう、出た診断が上表と一致するところまで確認する。フラグ名の一覧の正は各検査モジュールのビルド定義 (`android/api-surface-check/build.gradle.kts` / `kmp/api-surface-check/build.gradle.kts` / `maui/KsDialogs.Maui.ApiSurfaceCheck/KsDialogs.Maui.ApiSurfaceCheck.csproj`) と、ios は検査ファイル冒頭の doc comment にある。
 

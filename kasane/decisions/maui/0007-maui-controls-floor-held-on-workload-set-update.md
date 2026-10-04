@@ -1,7 +1,7 @@
 ---
 id: 0007
 title: MAUI 本体の下限版は workload set を上げても据え置き、同梱版には合わせない (0004 を一部改訂)
-status: proposed
+status: accepted
 date: 2026-10-04
 amends: 0004
 ---
@@ -45,5 +45,5 @@ MAUI 本体の下限版は、`global.json` の workload set を上げても据�
 - 前提 (Context) が崩れたとき
 
 ---
-出典: kasane/changes/align-toolchain-xcode27-jdk21-dotnet-10-0-401/exploration.md (論点 3: MAUI 本体の下限 — 検討した選択肢・決定事項) / ../KsSettingsView/kasane/changes/archive/2026-10-04-align-toolchain-xcode27-jdk21-dotnet-10-0-401/exploration.md (論点 3: `Microsoft.Maui.Controls` の下限の据え置き)
+出典: kasane/changes/archive/2026-10-04-align-toolchain-xcode27-jdk21-dotnet-10-0-401/exploration.md (論点 3: MAUI 本体の下限 — 検討した選択肢・決定事項) / ../KsSettingsView/kasane/changes/archive/2026-10-04-align-toolchain-xcode27-jdk21-dotnet-10-0-401/exploration.md (論点 3: `Microsoft.Maui.Controls` の下限の据え置き)
 関連: maui/ADR-0004 (MAUI NuGet の 3 パッケージ構成。本決定は下限版の決め方だけを置き換える) / cross/ADR-0023 (toolchain 固定境界の MAUI 本体の行を maui/ADR-0004 に委ねる。委ね先の決め方が本決定で変わる)

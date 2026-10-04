@@ -3,6 +3,7 @@ id: 0004
 title: MAUI NuGet は facade + 輸送層 binding 2件の3パッケージ構成とし、SDK 標準の pack 経路で native 成果物を同梱する
 status: accepted
 date: 2026-09-08
+amended-by: [0007]
 ---
 
 ## Context

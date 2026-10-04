@@ -64,3 +64,19 @@ error:   + subpackages/_ksdialogs_kmp/Sources/_ksdialogs_kmp/include/module.modu
 - develop への push での lint と 5 形態の本体検証 (`xcode-27` イメージでの Xcode 選択を含む)
 - 消費者検証とリリースの CI 経路 (`main` 宛ての pull request とリリースの dry-run でしか走らない)
 - Android の instrumented テスト、負のコンパイル検証、Sample と実配置テストホストの起動確認
+
+## develop への push での CI (2026-10-04)
+
+コミット `4449c6a` を develop へ push した CI (https://github.com/kamusoft/KsDialogs/actions/runs/37167099986) の結果。
+
+| job | 結果 |
+|---|---|
+| lint | 成功 |
+| ios / verify | 成功。`xcode-27` イメージで Xcode 27.0 (27A266a) が選ばれ、372 tests in 61 suites passed |
+| android / verify | 成功 |
+| android-instrumented / verify | 成功 (API 36。手元では回していなかった分) |
+| kmp / verify | 成功。Xcode 27.0 (27A266a)。新規 checkout で Swift パッケージの取り込みが通った |
+| maui / verify | 成功。Xcode 27.0 (27A266a)。iOS 橋渡しは 17 tests in 7 suites passed |
+| consumer-ios / consumer-android / consumer-maui / consumer-kmp | skipped (pull request でだけ走る) |
+
+消費者検証とリリースの経路は、`main` 宛ての pull request とリリースの dry-run まで未検証のまま。

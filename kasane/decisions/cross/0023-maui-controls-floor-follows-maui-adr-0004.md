@@ -37,3 +37,4 @@ cross/ADR-0018 の決定のうち固定境界の表の「MAUI 本体 (`Microsoft
 ---
 出典: kasane/changes/archive/2026-09-10-add-consumer-verification/design.md (ADR 候補: 既存 ADR 間の衝突) / 同 second-opinion-spec-001.md (#1 と突き合わせ結果) / 同 proposal.md (Impact) / kasane/decisions/maui/0004-nuget-three-package-structure.md (MAUI 本体の下限版は workload set 同梱の版)
 関連: cross/ADR-0018 (toolchain の固定境界。本決定は MAUI 本体の行だけを置き換える) / maui/ADR-0004 (MAUI 本体の下限版の決め方)
+関連: maui/ADR-0007 (委ね先 maui/ADR-0004 の下限版の決め方を一部改訂。MAUI 本体の下限は workload set を上げても据え置く)

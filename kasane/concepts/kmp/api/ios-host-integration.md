@@ -3,7 +3,7 @@ type: concept
 title: KMP 利用者の iOS ホスト統合
 description: KMP 共有モジュールから KsDialogs を使う iOS アプリの依存経路と初回統合手順、および Sample の合成 Swift package 再生成手順
 tags: [kmp, ios, swiftpm, integration, distribution]
-timestamp: 2026-09-29
+timestamp: 2026-10-04
 ---
 
 # KMP 利用者の iOS ホスト統合
@@ -66,6 +66,8 @@ KMP artifact の発行 metadata に載る Swift package 参照は、`kmp/ksdialo
 SNAPSHOT のまま Maven local へ発行した成果物には発行者の絶対パスが載り、同一マシンでしか解決できない。SNAPSHOT の消費はリポジトリ内 Sample の composite build が担い、リポジトリ外での検証はリリース版の version を注入して行う。
 
 消費者側の Kotlin Gradle Plugin は本ライブラリと同じ minor (2.4.x) をサポートし、動作確認済みの版はリポジトリのバージョンカタログ (`android/gradle/libs.versions.toml` の `kotlin`) が固定する値である。SwiftPM import は Alpha 機能で消費側の最低版と metadata 形式の互換に公式の記述が無いため、これより広い範囲は約束しない。
+
+Xcode 27.0 で Swift パッケージの取り込みをビルドするには、Kotlin 2.4.20 以上が要る。2.4.10 では取り込みのタスク (`convertSyntheticImportProjectIntoDefFile…`) が `clang: error: unknown argument` で落ちる (上流の不具合 KT-87196。2.4.20 で修正)。2.4.20 で作った klib の `abi_version` は 2.4.0 で、2.4.10 のときと同じである (2026-10-04 実測)。
 
 ## Swift 側で登録するもの
 
@@ -147,6 +149,8 @@ XCODEPROJ_PATH="$PWD/samples/kmp/iosApp/KsDialogsSampleKmp.xcodeproj" \
 ```
 
 生成先は `samples/kmp/iosApp/KotlinMultiplatformLinkedPackage/` であり、Xcode project の参照先なので VCS に含める。
+
+Kotlin の版を上げたあとは合成 package を作り直し、増えたファイルも commit する。Kotlin 2.4.20 からは `include/module.modulemap` が加わった。これが無い checkout では、Sample の iOS の 1 回目のビルドが「Synthetic project regenerated」で止まり、2 回目は通る (2026-10-04 実測)。`kmp/.swiftpm-locks/default/swiftImport/` 配下の合成 package も同じ扱いにする。
 
 ## 保証すること
 

@@ -60,3 +60,4 @@ cross/ADR-0004 の決定のうち「リポジトリルートには共通ビル�
 ---
 出典: kasane/roadmaps/package-distribution/phases/phase-4-verification-ci/agenda.md (決定事項: MAUI job の toolchain 固定) / kasane/changes/archive/2026-09-08-add-verification-ci/proposal.md / 同 specs/verification-ci/spec.md (Requirement: ツールチェーンの再現性) / 同 deviation.md (Sample の `MauiVersion` 明示) / 同 review-001.md (`maui/nuget.config` の欠落) / 同 second-opinion-code-001.md (#2 `rollForward`)
 関連: cross/ADR-0004 (4 形態のビルドルート分離。本決定はルートの `global.json` に限って一部改訂) / cross/ADR-0017 (検証 CI の構成)
+現行照合: 2026-10-04 確認。固定の方針・粒度・置き場は現行の workflow と `global.json` に一致。表の値は align-toolchain-xcode27-jdk21-dotnet-10-0-401 で更新された (ランナー `xcode-27` / Xcode 27.0 / Temurin 21 / SDK 10.0.401・workload set 10.0.401.1)。現在の値は workflow・`global.json`・handbook cross/verification-ci.md が持つ。判定: 維持
