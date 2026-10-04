@@ -26,11 +26,11 @@ The public API may introduce breaking changes while the version remains 0.x.
 | Form | Minimum OS | Toolchain used to build the library |
 |---|---|---|
 | iOS Native | iOS 17 | Swift 6.3 |
-| Android Native | Android 7.0 (API 24) | Kotlin 2.4.10, AGP 9.3.0, Gradle 9.7.0 |
+| Android Native | Android 7.0 (API 24) | Kotlin 2.4.20, AGP 9.3.0, Gradle 9.7.0 |
 | .NET MAUI | iOS 17 / Android 7.0 (API 24) | .NET 10 (`net10.0`), Microsoft.Maui.Controls 10.0.20 |
-| Kotlin Multiplatform | iOS 17 / Android 7.0 (API 24) | Kotlin 2.4.10, AGP 9.3.0, Gradle 9.7.0, Swift 6.3 |
+| Kotlin Multiplatform | iOS 17 / Android 7.0 (API 24) | Kotlin 2.4.20, AGP 9.3.0, Gradle 9.7.0, Swift 6.3 |
 
-The Android targets use minSdk 24 and compileSdk 36. Android Native and Kotlin Multiplatform support a Kotlin Gradle Plugin from the same minor series, Kotlin 2.4.x; 2.4.10 is the version the consumer builds are verified against. The versions in the table are used to build the library; they are not consumer minimums. SwiftPM linkage on the Kotlin side of the KMP integration is Alpha.
+The Android targets use minSdk 24 and compileSdk 36. Android Native and Kotlin Multiplatform support a Kotlin Gradle Plugin from the same minor series, Kotlin 2.4.x; 2.4.20 is the version the consumer builds are verified against. The versions in the table are used to build the library; they are not consumer minimums. SwiftPM linkage on the Kotlin side of the KMP integration is Alpha.
 
 ## Installation
 
@@ -83,7 +83,7 @@ A prerelease is written as the same version string in the `Version` attribute.
 
 The native binding packages arrive transitively for the iOS and Android target frameworks; an application does not reference them directly.
 
-Microsoft.Maui.Controls 10.0.20 or later is required. That is the version bundled with the .NET workload set this repository pins, so an application on the same workload set does not have to state a MAUI version of its own; pinning a version below 10.0.20 makes the build fail with the NuGet downgrade error NU1605.
+Microsoft.Maui.Controls 10.0.20 or later is required. A project that does not write a MAUI version uses the one bundled with its installed .NET workload set, and needs nothing more when that bundled version is 10.0.20 or later. A version below 10.0.20, whether pinned explicitly or bundled with an older workload set, makes restore fail with the NuGet package-downgrade error NU1605; write 10.0.20 or later, or update the workload set.
 
 The package targets `net10.0`, `net10.0-ios`, and `net10.0-android`, so the .NET 10 SDK with the iOS and Android MAUI workloads is required. The minimum OS versions are iOS 17 and Android 7.0 (API 24); an application whose `SupportedOSPlatformVersion` is lower than that — or left unset — stops at build time with the guard diagnostic `KSDLG0001`.
 

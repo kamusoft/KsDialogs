@@ -31,7 +31,7 @@ Calling through a default entry and calling through an injected contract reach t
 
 ## Setup
 
-The artifacts are published to Maven Central under the group `jp.kamusoft`. They are built with Kotlin 2.4.10 and expect a consumer-side Kotlin Gradle Plugin on the same minor line (2.4.x); the minimum supported OS is Android 7.0 (API 24). `jp.kamusoft:ksdialogs-core` carries the Android View API and does not depend on Compose, while `jp.kamusoft:ksdialogs` carries the Jetpack Compose API and depends on the core artifact at the same version, so the core arrives transitively. A release version looks like `X.Y.Z` and a prerelease like `X.Y.Z-{alpha|beta|rc}.N`.
+The artifacts are published to Maven Central under the group `jp.kamusoft`. They are built with Kotlin 2.4.20 and expect a consumer-side Kotlin Gradle Plugin on the same minor line (2.4.x); the minimum supported OS is Android 7.0 (API 24). `jp.kamusoft:ksdialogs-core` carries the Android View API and does not depend on Compose, while `jp.kamusoft:ksdialogs` carries the Jetpack Compose API and depends on the core artifact at the same version, so the core arrives transitively. A release version looks like `X.Y.Z` and a prerelease like `X.Y.Z-{alpha|beta|rc}.N`.
 
 `{version}` in the examples below is a placeholder: replace it with the version you want to use, or resolution fails. To find the current version, open the [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) page, which always resolves to the most recent release.
 
@@ -57,11 +57,11 @@ dependencies {
 }
 ```
 
-For a module containing Compose content, enable Compose and apply the Compose compiler plugin with the same version as Kotlin. With Kotlin 2.4.10, the relevant build configuration is:
+For a module containing Compose content, enable Compose and apply the Compose compiler plugin with the same version as Kotlin. With Kotlin 2.4.20, the relevant build configuration is:
 
 ```kotlin
 plugins {
-    id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.20"
 }
 
 android {

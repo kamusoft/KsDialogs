@@ -56,7 +56,7 @@ KsDialogs.Maui は AiForms.Maui.Dialogs を、Dialog の結果型・factory に�
 
 `{version}` はプレースホルダで、使う version に置き換える (そのままでは復元に失敗する)。現在の version は、常に最新のリリースへ解決される [latest release](https://github.com/kamusoft/KsDialogs/releases/latest) のページで確認できる。
 
-project には `Microsoft.Maui.Controls` 10.0.20 以降も要る。これはライブラリ側がビルドとテストに使う .NET workload set 同梱の version なので、同じ workload set の project なら version を書かなくてよい。それより古い version (10.0.20 未満) を明示すると restore が NU1605 (NuGet の package ダウングレードのエラー) を報告する。.NET SDK は iOS / Android の MAUI workload を入れた .NET 10 を使う。KsDialogs.Maui は iOS 17.0 以降と Android 7.0 (API 24) 以降に対応し、これを下回る `SupportedOSPlatformVersion` は、SDK の既定値が下回る未設定の場合も含めて、ビルドを `KSDLG0001` のエラーで止める。
+project には `Microsoft.Maui.Controls` 10.0.20 以降も要る。project に MAUI の version を書かなければ、入っている .NET workload set に同梱の version が使われ、それが 10.0.20 以降ならそのまま導入できる。10.0.20 未満の version は、明示した場合も、古い workload set の同梱版がそうである場合も、restore が NU1605 (NuGet の package ダウングレードのエラー) を報告する。そのときは 10.0.20 以降を明示するか、workload set を更新する。.NET SDK は iOS / Android の MAUI workload を入れた .NET 10 を使う。KsDialogs.Maui は iOS 17.0 以降と Android 7.0 (API 24) 以降に対応し、これを下回る `SupportedOSPlatformVersion` は、SDK の既定値が下回る未設定の場合も含めて、ビルドを `KSDLG0001` のエラーで止める。
 
 ## 最小移行
 

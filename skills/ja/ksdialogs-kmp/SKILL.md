@@ -40,7 +40,7 @@ content の型が OS ごとに違うため、content の登録は host 側にあ
 
 ## セットアップ
 
-現行 artifact のビルド環境は Kotlin 2.4.10 と Gradle 9.7.0。Android target は API 24 以降、iOS target は iOS 17 以降と Swift tools 6.3 が必要になる。利用側の Kotlin Gradle Plugin は同じ minor 系列 (2.4.x) をサポートし、動作確認済みの版は 2.4.10 である。iOS のリンク情報を運ぶ SwiftPM import は Kotlin 2.4 の Alpha 機能なので、これより広い範囲は約束しない。
+現行 artifact のビルド環境は Kotlin 2.4.20 と Gradle 9.7.0。Android target は API 24 以降、iOS target は iOS 17 以降と Swift tools 6.3 が必要になる。利用側の Kotlin Gradle Plugin は同じ minor 系列 (2.4.x) をサポートし、動作確認済みの版は 2.4.20 である。iOS のリンク情報を運ぶ SwiftPM import は Kotlin 2.4 の Alpha 機能なので、これより広い範囲は約束しない。Xcode 27.0 で iOS 側をビルドするには Kotlin 2.4.20 以上が要る。
 
 `jp.kamusoft:ksdialogs-kmp` は Maven Central へ公開されており、iOS host がリンクする Swift package は配信リポジトリ `https://github.com/kamusoft/KsDialogs-SPM` (package identity は `KsDialogs-SPM`、product は `KsDialogs`) に公開されている。どちらも同じ 1 つの version 文字列で出るため、共有 module の Maven 依存と Xcode の package 参照には同じ version を書く。
 

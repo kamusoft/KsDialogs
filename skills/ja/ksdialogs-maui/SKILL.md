@@ -39,7 +39,7 @@ KsDialogs は、アプリのどこからでも Dialog を呼び出せる UI ラ�
 
 | 要件 | 満たすもの |
 |---|---|
-| MAUI | `Microsoft.Maui.Controls` 10.0.20 以降。これはライブラリ側がビルドとテストに使う .NET workload set 同梱の version なので、同じ workload set の project なら version を書かなくてよい。それより古い version (10.0.20 未満) を明示すると restore が NU1605 (NuGet の package ダウングレードのエラー) を報告する |
+| MAUI | `Microsoft.Maui.Controls` 10.0.20 以降。project に MAUI の version を書かなければ、入っている .NET workload set に同梱の version が使われ、それが 10.0.20 以降ならそのまま導入できる。10.0.20 未満の version は、明示した場合も、古い workload set の同梱版がそうである場合も、restore が NU1605 (NuGet の package ダウングレードのエラー) を報告する。そのときは 10.0.20 以降を明示するか、workload set を更新する |
 | .NET SDK | iOS / Android の MAUI workload を入れた .NET 10 |
 | 最低 OS 版 | iOS 17.0 と Android 7.0 (API 24)。これを下回る `SupportedOSPlatformVersion` は、SDK の既定値が下回る未設定の場合も含めて、ビルドを `KSDLG0001` のエラーで止める。エラーには必要な version と現在の値が出る。検査は package に同梱されていて利用者のビルドで走り、対象は iOS・Android の inner build だけである |
 

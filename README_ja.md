@@ -26,11 +26,11 @@ version 0.x の間は、公開 API に破壊的変更が入る可能性があり
 | 形態 | 最小 OS | ライブラリのビルドに使った toolchain |
 |---|---|---|
 | iOS Native | iOS 17 | Swift 6.3 |
-| Android Native | Android 7.0 (API 24) | Kotlin 2.4.10, AGP 9.3.0, Gradle 9.7.0 |
+| Android Native | Android 7.0 (API 24) | Kotlin 2.4.20, AGP 9.3.0, Gradle 9.7.0 |
 | .NET MAUI | iOS 17 / Android 7.0 (API 24) | .NET 10 (`net10.0`), Microsoft.Maui.Controls 10.0.20 |
-| Kotlin Multiplatform | iOS 17 / Android 7.0 (API 24) | Kotlin 2.4.10, AGP 9.3.0, Gradle 9.7.0, Swift 6.3 |
+| Kotlin Multiplatform | iOS 17 / Android 7.0 (API 24) | Kotlin 2.4.20, AGP 9.3.0, Gradle 9.7.0, Swift 6.3 |
 
-Android target は minSdk 24、compileSdk 36 です。Android Native と Kotlin Multiplatform は同じ minor 系列の Kotlin Gradle Plugin (Kotlin 2.4.x) に対応し、利用側ビルドで動作を確認しているのは 2.4.10 です。表の version はライブラリのビルドに使ったものであり、利用側の最小 version ではありません。KMP 統合における Kotlin 側の SwiftPM 連携は Alpha です。
+Android target は minSdk 24、compileSdk 36 です。Android Native と Kotlin Multiplatform は同じ minor 系列の Kotlin Gradle Plugin (Kotlin 2.4.x) に対応し、利用側ビルドで動作を確認しているのは 2.4.20 です。表の version はライブラリのビルドに使ったものであり、利用側の最小 version ではありません。KMP 統合における Kotlin 側の SwiftPM 連携は Alpha です。
 
 ## インストール
 
@@ -83,7 +83,7 @@ prerelease も同じ version 文字列を `Version` 属性にそのまま書き�
 
 Native の binding package は iOS / Android の target framework へ推移依存で届きます。アプリ側から直接参照する必要はありません。
 
-Microsoft.Maui.Controls は 10.0.20 以上が必要です。これはこのリポジトリが固定する .NET workload set に同梱される version と同じなので、同じ workload set を使うアプリでは MAUI 本体の version を書く必要はありません。10.0.20 未満を明示すると、NuGet のダウングレードエラー NU1605 でビルドが失敗します。
+Microsoft.Maui.Controls は 10.0.20 以上が必要です。project に MAUI 本体の version を書かなければ、入っている .NET workload set に同梱の version が使われ、それが 10.0.20 以上ならそのまま導入できます。10.0.20 未満の version は、明示した場合も、古い workload set の同梱版がそうである場合も、restore が NuGet の package ダウングレードエラー NU1605 で失敗します。そのときは 10.0.20 以上を明示するか、workload set を更新してください。
 
 package の target は `net10.0`、`net10.0-ios`、`net10.0-android` で、iOS / Android の MAUI workload を入れた .NET 10 SDK が必要です。最低 OS 版は iOS 17 / Android 7.0 (API 24) で、`SupportedOSPlatformVersion` がそれ未満のアプリ (未設定の場合を含む) はビルド時にガード診断 `KSDLG0001` で停止します。
 
