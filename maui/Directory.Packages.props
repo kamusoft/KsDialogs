@@ -10,9 +10,10 @@
 
   <ItemGroup>
     <!--
-      MAUI 本体。repo 直下の global.json が固定する workload set 10.0.300.3 が同梱する版
-      ($(MauiVersion) の既定値) に合わせる。下限・ビルド版・同じ SDK の利用者の既定値が一致し、
-      版を書かない利用者がそのまま導入できる。workload set を上げるときは同梱版へ合わせ直す (maui/ADR-0004)。
+      MAUI 本体。この版が利用者に求める下限で、ライブラリをビルド・テストする版でもある (maui/ADR-0004)。
+      repo 直下の global.json が固定する workload set を上げても、この版は同梱版 ($(MauiVersion) の既定値)
+      へ合わせず据え置く。上げると、古い workload set の利用者が版を明記しない限り復元で止まる (NU1605)。
+      この版で workload set のビルド・テストが通らないときは、上げる前にオーナーの判断を仰ぐ (maui/ADR-0007)。
     -->
     <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.20" />
   </ItemGroup>

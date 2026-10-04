@@ -3,7 +3,7 @@
 [versions]
 # 技術セットは cross/ADR-0002 に従う
 agp = "9.3.0"
-kotlin = "2.4.10"
+kotlin = "2.4.20"
 # 最低対象 OS は Android 7.0 (API 24) (cross/ADR-0002)
 android-minSdk = "24"
 android-compileSdk = "36"
