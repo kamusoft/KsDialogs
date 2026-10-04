@@ -10,3 +10,4 @@
 | [0004](0004-nuget-three-package-structure.md) | MAUI NuGet は facade + 輸送層 binding 2件の3パッケージ構成とし、SDK 標準の pack 経路で native 成果物を同梱する — MAUI 本体の下限は workload 同梱版、最低 OS 版は facade 同梱の buildTransitive ガード `KSDLG0001`、自 assembly 用 aar の除去だけが自作 MSBuild の意図的な例外 | accepted | 2026-09-08 |
 | [0005](0005-fallback-resolver-sugar.md) | 一括解決糖衣は static 関数ペアではなくレジストリの fallback resolver とし、解決順序を仕様で規定する | accepted | 2026-08-24 |
 | [0006](0006-dialog-show-caller-cancellation.md) | MAUI の Dialog の show に呼び出し元の打ち切りを足し、待っている Dialog と表示中の Dialog をコードから止められるようにする | accepted | 2026-09-27 |
+| [0007](0007-maui-controls-floor-held-on-workload-set-update.md) | MAUI 本体の下限版は workload set を上げても据え置き、同梱版には合わせない (0004 を一部改訂) | proposed | 2026-10-04 |
