@@ -71,3 +71,15 @@ IR-KM-01〜07 は `ios/Tests/KsDialogsTests/KsDialogsKmpKotlinIntegerResultTests
 | maui/macios/native/ (ios/ のパッケージを取り込む) | 17 tests / 7 suites passed、`** TEST SUCCEEDED **` |
 
 実行していないルート: android/・android/ (instrumented)・maui/ (`dotnet test`)・maui/android/native/。どれもこの change のファイル (ios/Sources/KsDialogs/Kmp/・ios/Tests/) をコンパイルしない。
+
+## 統合ブランチ取り込み後の全件実行 (2026-10-20)
+
+統合ブランチ (phase-1 の実装 `ios/Sources/KsDialogs/SwiftUI/`・`Layout/` を含む) を取り込んだあと、フェーズ担当が同じ Simulator (`<udid>`) で回した。衝突は無く、この change のファイルは変わっていない。
+
+| ルート | 結果 |
+|---|---|
+| ios/ | Swift Testing 402 tests / 67 suites passed、XCTest `Executed 0 tests`、`** TEST SUCCEEDED **` |
+| kmp/ (`allTests --rerun-tasks`) | BUILD SUCCESSFUL。iosSimulatorArm64Test 20 ファイル・86 tests、testAndroidHostTest 18 ファイル・83 tests、failures・errors・skipped は 0 |
+| `scripts/scenario-id-coverage.py` | `IR-KM 7/7`・未網羅なし (合計 360/402、除外 42 件) |
+
+この文面の deprecation 警告は、取り込み後も `ios/Tests/KsDialogsTests/KsDialogsKmpKotlinIntegerResultTests.swift` の直接呼び出しの行 (22 か所) にだけ出ている。
