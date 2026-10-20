@@ -1,6 +1,6 @@
 # 委任状: ios-safe-area-and-kmp-int-result
 
-承認: 2026-10-20 オーナー
+承認: 2026-10-20 オーナー (2026-10-20 phase-2 の保留の判断で承認を取り直した)
 
 ## 種類
 機能追加 (既存の挙動と公開面の修正)
@@ -13,8 +13,8 @@
 | 3 | 統合ブランチで kmp/ の全件テストが通る | `cd kmp && ./gradlew allTests --rerun-tasks` が成功し、`ksdialogs-kmp/build/test-results/` の件数が 0 でない |
 | 4 | 仕様の Scenario ID がテスト名に網羅されている | `python3 scripts/scenario-id-coverage.py` が成功する |
 | 5 | 窓全体基準で端に付けた SwiftUI の中身 (Dialog・Loading・Toast) から見える安全領域が、器と安全領域の重なりに等しく、既定の可視領域では 0 である | phase-1 の change で足したテストが 2 の結果に現れて通っている。Simulator での実測の記録が phase-1 の change の `evidence/` にある |
-| 6 | Dialog の KMP 向け Swift 面で結果型に `Int` を指定すると、`Int32` / `Int64` を案内する診断でコンパイルエラーになる | phase-2 の change の `evidence/` に、負のコンパイル検査 (`build-for-testing` と検査フラグ) が期待した診断で失敗した記録がある。検査フラグが `kasane/handbook/cross/test-execution.md` の表にある |
-| 7 | concepts が新しい挙動と型の対応を記述している | `kasane/concepts/ios/api/` に器の中の SwiftUI の中身から見える安全領域の記述があり、`kasane/concepts/kmp/api/ios-host-integration.md` に `Int32` / `Int64` の対応と、共有コードからの show では結果型の食い違いが検出されないことの記述がある |
+| 6 | Dialog の KMP 向け Swift 面 (`result:` を取る入口 6 つ) で結果型に `Int` / `UInt` を指定すると、コンパイル時に `Int32` / `Int64` (`UInt` なら `UInt32` / `UInt64`) を案内する英語の警告 (deprecated) が出て、show すると `KsDialogsKmpError` の型付きの失敗になる | phase-2 の change の `evidence/` に、ビルドのログに期待した警告文が出た記録がある。実行時の失敗を確かめるテストが 2 の結果に現れて通っている |
+| 7 | concepts が新しい挙動と型の対応を記述している | `kasane/concepts/ios/api/` に器の中の SwiftUI の中身から見える安全領域の記述があり、`kasane/concepts/kmp/api/ios-host-integration.md` に `Int32` / `Int64` (と `UInt32` / `UInt64`) の対応と、共有コードからの show では結果型の食い違いが検出されないことの記述がある |
 | 8 | ios/ADR-0002 が実装と一致している | ADR が `accepted` で、本文が採った方向 (標準の安全領域として届ける) と一致している |
 
 ## 見た目の基準 (UI に触れるフェーズがあるときのみ)
@@ -32,7 +32,7 @@
 
 方針:
 - phase-1 の方向は ios/ADR-0002 (proposed だがオーナーが採用済み)。窓全体基準で端に付けた SwiftUI の中身の見た目が変わることは承認済みの挙動変更として扱う
-- phase-2 の、結果型に `Int` を指定するとコンパイルエラーになる変更は、承認済みの公開 API の破壊的変更として扱う (任せない判断の「公開 API の破壊的変更」に当てない)。PR の `## Changes` に書く `- breaking:` の英文の案を、phase-2 の change に残す
+- phase-2 の、結果型に `Int` / `UInt` を指定すると警告が出て show が型付きの失敗になる変更は、承認済みの公開 API の破壊的変更として扱う (任せない判断の「公開 API の破壊的変更」に当てない)。PR の `## Changes` に書く `- breaking:` の英文の案を、phase-2 の change に残す
 - 診断・エラー文は英語で書く (`kasane/handbook/cross/diagnostic-message-language.md`)
 - テストの結果は実行件数まで確かめ、件数を change の `evidence/` に残す (`kasane/handbook/cross/test-execution.md`)
 
@@ -66,3 +66,10 @@ worktree の準備: メインのチェックアウトの `android/local.properti
 - `samples/`・`android/`・`maui/` を変更しない (ロードマップの非ゴール)
 - `kasane/config.yaml` の `lint.ci-skip.allow` に項目を足さない (オーナーだけが足す)
 - `main` へのマージ・push、タグの作成、リリースの起動をしない
+
+## 保留の判断
+| 日付 | フェーズ | 保留になった点 | オーナーの判断 |
+|---|---|---|---|
+| 2026-10-20 | phase-2-kmp-swift-int-result-guard | `Int` を案内付きのコンパイルエラーにする仕組みが Swift に無い (使用不可の `Int` 専用オーバーロードはジェネリック版より選ばれない)。案 A〜D | 案 A: 使用不可ではなく deprecated の `Int` 専用オーバーロードで `Int32` / `Int64` を案内する英語の警告を出し、ジェネリック経路を含めて show の時点で `KsDialogsKmpError` の型付きの失敗 (結果型の食い違い相当) を投げる。`register` は throw しないまま。登録時の異常終了はしない |
+| 2026-10-20 | phase-2-kmp-swift-int-result-guard | 完了条件 6 の書き直しと確かめ方 | 完了条件 6 を「警告 + show 時の型付きの失敗」に書き直す。負のコンパイル検査と `test-execution.md` の表への追記は使わない。警告文はビルドのログの記録を `evidence/` に残し、実行時の失敗はテストで確かめる |
+| 2026-10-20 | phase-2-kmp-swift-int-result-guard | Swift の `UInt` (申し送り) | `UInt` も同じ扱いにする (警告で `UInt32` / `UInt64` を案内し、show 時に型付きの失敗)。ロードマップのゴールと完了条件 6・7 に足す |
