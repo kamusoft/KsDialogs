@@ -40,3 +40,4 @@
 - 2026-10-20 phase-1-ios-swiftui-content-safe-area [観測] レイアウト系で「変更前のコードで通り、変更後に落ちる」比較が修正のたびの退行を毎回見つけた (scope: code-review、success) — 根拠: — / 覆すコスト: — / 記録: このログ
 - 2026-10-20 phase-1-ios-swiftui-content-safe-area [観測] worktree の隔離のガードで `cd ... && xcodebuild ... > file` の一部の形や `git -C` が拒否された。`cd ios && xcodebuild ... > <絶対パス>` は通った — 根拠: — / 覆すコスト: — / 記録: このログ
 - 2026-10-20 phase-1-ios-swiftui-content-safe-area [申し送り] 宛先: ロードマップ (蒸留)。ios/ADR-0002 の範囲と Consequences を、窓全体基準の端の軸だけに渡し要求サイズに重なりを入れない形に書き直し、出典をこの change に直して accepted にする。concepts/ios/api/layout-surface.md に、受け取る条件・端に付けた中身の使える大きさの減少と避け方・収まらない固定サイズの注意・素の Text の GeometryProxy.safeAreaInsets が 0 に見えること・要求サイズの規則を書く — 根拠: — / 覆すコスト: — / 記録: proposal.md・deviation.md
+- 2026-10-20 phase-1-ios-swiftui-content-safe-area [点検] 統合確認 OK 841671b (ビルド成功・ios 395 件・kmp allTests 169 件・scenario-id-coverage 未網羅なし) — 根拠: — / 覆すコスト: — / 記録: autopilot-state.md
