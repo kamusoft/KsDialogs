@@ -31,12 +31,14 @@ content の型が OS ごとに違うため、content の登録は host 側にあ
 | 1 回の呼び出しだけ配置を上書きする | `DialogPlacement`, `DialogAlignment` | [レイアウト](references/layout.md) |
 | 大きさ・覆い・外側タップの option を content に添付する | host の `DialogOptions`, `ksDialogOptions`, `KsDialogAttributes` | [レイアウト](references/layout.md) |
 | 表示中のページ (バーの内側) を基準に配置する | host の `DialogLayoutArea.CURRENT_PAGE` / `.currentPage`, `Modifier.markAsDialogCurrentPage()`, `markAsDialogCurrentPage()`, `DialogCurrentPage.provider` | [レイアウト](references/layout.md) |
+| iOS の SwiftUI の中身をシステムのバーの下まで広げる / バーの内側に収める | `.ignoresSafeArea(.container)`, `GeometryReader`, `GeometryProxy.safeAreaInsets` | [レイアウト](references/layout.md) |
 | 出入りの演出を content に添付する | host の `DialogTransition`, `ksDialogTransition` | [トランジション](references/transitions.md) |
 | 共有処理の実行中に操作をブロックする | `Loading.instance`, `LoadingViewModel`, `LoadingProgressReceiver` | [Loading](references/loading.md) |
 | Loading の処理を UI スレッド外で始める | `actionThread`, `LoadingActionThread.BACKGROUND` | [Loading](references/loading.md) |
 | 非対話の通知を表示する | `Toast.instance`, `ToastViewModel` | [Toast](references/toast.md) |
 | Android View / Compose の content を登録する | `Dialog.instance.registry`, `registerCompose` | [Android host](references/android-host.md) |
 | UIKit / SwiftUI の content を登録する | `Dialog.shared.kmp`, `Loading.shared.kmp`, `Toast.shared.kmp` | [iOS host](references/ios-host.md) |
+| Kotlin の整数型の結果を Swift で受け取る | `result: Int32.self` / `Int64.self` / `UInt32.self` / `UInt64.self` (`Int` / `UInt` は使わない) | [iOS host](references/ios-host.md) |
 
 ## セットアップ
 
@@ -107,9 +109,9 @@ suspend fun showConfirmation(message: String): DialogResult<Boolean> =
 |---|---|
 | 型付き結果・失敗・キャンセル・多段表示・画面が出る前の呼び出し | [Dialog](references/dialogs.md) |
 | 契約の注入・ViewModel factory の登録・host 側の結果報告 | [ViewModel](references/view-models.md) |
-| 呼び出しごとの配置・host 側の option 添付・表示中のページ基準の配置 | [レイアウト](references/layout.md) |
+| 呼び出しごとの配置・host 側の option 添付・表示中のページ基準の配置・iOS の SwiftUI の中身の安全領域 | [レイアウト](references/layout.md) |
 | 演出の選択を host へ運ぶ方法 | [トランジション](references/transitions.md) |
 | 命令形・スコープ形の Loading・進捗・処理を始めるスレッド | [Loading](references/loading.md) |
 | message 経路と登録済みカスタム経路 | [Toast](references/toast.md) |
 | Android の Dialog / Loading / Toast の登録と表示中のページの教え方 | [Android host](references/android-host.md) |
-| iOS の登録・結果型・表示中のページの教え方・Swift への例外変換 | [iOS host](references/ios-host.md) |
+| iOS の登録・結果型 (Kotlin の整数型を含む)・表示中のページの教え方・Swift への例外変換 | [iOS host](references/ios-host.md) |

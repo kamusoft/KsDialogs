@@ -179,6 +179,77 @@ Dialog.shared.kmp.register(DeleteViewModel.self) { viewModel, notifier in
 
 Complete recipes for naming the page are in [Android host](android-host.md) and [iOS host](ios-host.md). Loading and Toast content accept the same value and resolve the page by the same rules as a Dialog, but nothing beyond that is settled (such as how it fits with the Toast app-default placement).
 
+## Receive the safe area in iOS SwiftUI content
+
+On iOS, SwiftUI content for a Dialog, Loading, or Toast is hosted inside the library's container by a `UIHostingController`, and content registered through `Dialog.shared.kmp` goes through the same hosting. The content receives, as the standard SwiftUI safe area, the part of the container that overlaps the system area (the bands outside the window's safe area, such as the status bar and the home indicator), on the axes in the table below only. Whether the content avoids it (the default) or ignores it with `.ignoresSafeArea(.container)` is written in ordinary SwiftUI.
+
+| Reference area | Alignment on that axis | Safe area received on that axis's edges |
+|---|---|---|
+| `.window` | Edge: `.start` / `.end`, or `.fill` without `proportionalWidth` / `proportionalHeight` | The overlap between the container and the system area |
+| `.window` | Center: `.center`, or `.fill` with a proportion | 0 |
+| `.visibleArea` (default) / `.currentPage` | Any, even when an offset pushes the container into the system area | 0 |
+
+- Only the system area is passed; the keyboard area is not included
+- When the window size or the window's safe area changes while showing, the received value follows the new overlap
+- For example, in a portrait 393 × 852 window whose safe area is 59 at the top and 34 at the bottom, content with `.window` and vertical `.start` (horizontal left at `.center`) receives 59 at the top and 0 on the other edges; with `.fill` on both axes it receives 59 at the top and 34 at the bottom
+
+UIKit content (`UIView`) receives the overlap as its safe area through UIKit regardless of the alignment and the reference area. The two kinds of content see different values when centered content under `.window` overlaps the system area, and when an offset pushes `.visibleArea` / `.currentPage` content into it.
+
+### Cover the whole window and keep the text inside the safe area
+
+With `.fill` on both axes under `.window`, write it the way you write a SwiftUI screen: extend only the background to the window edges and keep the body inside the safe area. `WelcomeViewModel` here is a shared `DialogViewModel<Boolean>` with a `title` property.
+
+```swift
+Dialog.shared.kmp.register(WelcomeViewModel.self) { viewModel, notifier in
+    VStack(spacing: 16) {
+        Text(viewModel.title)
+        Button("Continue") { notifier.complete(true) }
+    }
+    .foregroundStyle(.white)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color.black.ignoresSafeArea())
+    .ksDialogOptions(DialogOptions(layoutArea: .window))
+    .ksDialogPlacement(DialogPlacement(horizontalAlignment: .fill, verticalAlignment: .fill))
+}
+```
+
+### Read the overlap with `GeometryReader`
+
+The `GeometryProxy.safeAreaInsets` that a `GeometryReader` reads inside the content depends on where the reading view sits. A view the size of a plain `Text` placed inside the safe area reads 0. To read the overlap, read it from a view that fills the container, such as an outermost `GeometryReader`. The following keeps a bottom gap only when nothing overlaps the bottom edge, such as on a device without a home indicator.
+
+```swift
+Dialog.shared.kmp.register(WelcomeViewModel.self) { viewModel, notifier in
+    GeometryReader { proxy in
+        VStack(spacing: 16) {
+            Text(viewModel.title)
+            Button("Continue") { notifier.complete(true) }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.bottom, proxy.safeAreaInsets.bottom > 0 ? 0 : 24)
+    }
+    .foregroundStyle(.white)
+    .background(Color.black.ignoresSafeArea())
+    .ksDialogOptions(DialogOptions(layoutArea: .window))
+    .ksDialogPlacement(DialogPlacement(horizontalAlignment: .fill, verticalAlignment: .fill))
+}
+```
+
+### Give edge-attached content enough room
+
+The received safe area does not enlarge the container. The container asks for the content's ideal size, the same as when no safe area is received, so its size and position stay unchanged and edge-attached content avoids the safe area inside the container; the usable size shrinks by the overlap. In the example window, top-attached content with an ideal height of 100 keeps its container at y 0 with height 100, while the content is placed from y 59 with height 41. Long wrapping text likewise loses 59 of height and no longer fits. Pick one of these:
+
+| Remedy | Result |
+|---|---|
+| Keep the default reference area `.visibleArea` | The container sits inside the safe area, the overlap is 0, and the content uses the whole container |
+| Apply `.ignoresSafeArea(.container)` to the outermost view of the content | The content fills the container rect; avoiding the system area becomes the content's job |
+| Move the container away from the window edge with `dialogMargin` | The overlap, and so the received value, shrinks by the margin |
+
+When the container is placed at a width different from the one it asked for (capped by the reference area minus the margin, or stretched by `.fill`), the height is recomputed for the placed width. When the content's ideal size changes while showing (such as its text), the container follows the new size.
+
+Content whose size is fixed with `.frame(width:height:)` and that does not fit inside the safe area is arranged by `UIHostingController`, which KsDialogs does not define or guarantee; the container rect stays the same. Flexible-size content is not affected.
+
+As a current limitation unrelated to the safe area, under `.window` an axis with neither a proportion nor `.fill` (its size left to the content) may not stretch to the window width, because the first layout is measured against the visible area and is not measured again after the reference grows to the whole window.
+
 ## When an attachment takes effect
 
 - Write the attachment where it is evaluated before the first display

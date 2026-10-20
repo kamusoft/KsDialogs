@@ -61,20 +61,20 @@ enum DialogHostRegistration {
 }
 ```
 
-`DialogHostRegistration.register()` は、共有コードが何かを表示するより前に main actor のアプリ起動経路から1回呼ぶ。同じ class を登録し直すと factory が置き換わり、factory は表示のたびに呼ばれる。UIKit と SwiftUI の factory は同名で戻り値の型だけが違い、呼び出し側から観察できる挙動はどちらも同じである。
+`DialogHostRegistration.register()` は、共有コードが何かを表示するより前に main actor のアプリ起動経路から1回呼ぶ。同じ class を登録し直すと factory が置き換わり、factory は表示のたびに呼ばれる。UIKit と SwiftUI の factory は同名で戻り値の型だけが違う。どちらにも、ViewModel と報告口を受け取る 2 引数の factory と、ViewModel だけを受け取る 1 引数の factory がある。どちらで書いても表示・結果・失敗の挙動は同じで、違うのは中身から見える安全領域だけである ([レイアウト](layout.md))。
 
 この Swift 向けの入口に、ViewModel の class を渡す表示は無い。共有コードの class を渡す `show` と `registerViewModel` は共有 Kotlin コード専用で、生成される framework の ObjC ヘッダにも現れない ([ViewModel](view-models.md))。Swift から共有 ViewModel を出すときは、Kotlin の ViewModel を Swift 側で作って instance を渡す `show` を呼ぶ。
 
 ## 結果型を指定して notifier を読む
 
-共有 ViewModel は結果型を Kotlin 側で宣言していて Swift からは見えないため、この入口は結果型を引数で受け取り、省略すると `Bool` になる。共有の `DialogViewModel<R>` が宣言しているのと同じ型を渡す。食い違いは結果を復元する時点で型付きの失敗として現れる。
+共有 ViewModel は結果型を Kotlin 側で宣言していて Swift からは見えないため、この入口は結果型を引数で受け取り、省略すると `Bool` になる。共有の `DialogViewModel<R>` が宣言しているのと同じ型を渡す。Swift から show したときは、食い違いは報告された結果値を `result:` の型として取り出す時点で型付きの失敗として現れる。共有コードから始めた show では確かめない ([Kotlin の整数型を結果型にする](#kotlin-の整数型を結果型にする))。
 
 | 書き方 | 意味 |
 |---|---|
 | `register(DeleteViewModel.self) { viewModel, notifier in … }` | 結果型は `Bool` |
 | `register(ChoiceViewModel.self, result: String.self) { … }` | 結果型を明示する |
-| `show(viewModel, placement:)` / `show(viewModel, result:placement:)` | Swift から表示する。`result:` の省略時は `Bool` |
-| `notifier(for:)` / `notifier(for:result:)` | 表示中の共有 ViewModel から結果報告口を取り出す |
+| `show(viewModel, placement:)` / `show(viewModel, result:placement:)` | Swift から表示する (`async throws`。閉じるまで待って結果型の `DialogResult` を返す)。`result:` の省略時は `Bool` |
+| `notifier(for:)` / `notifier(for:result:)` | 表示中の共有 ViewModel から結果報告口を取り出す。報告口を受け取らない 1 引数 factory で書いた中身が結果を返すときに使う |
 
 1引数 factory は自分で報告口を読む。
 
@@ -98,7 +98,73 @@ Dialog.shared.kmp.register(ChoiceViewModel.self, result: String.self) { viewMode
 }
 ```
 
-`notifier(for:result:)` は表示していないとき `nil` を返し、指定した結果型が登録時と違うときは throw する。「表示していない」と「型を取り違えている」を混同しないためである。`try?` はその失敗を `nil` に潰すため、型が食い違うとこの button は結果を報告できなくなる。表示中の判定に使う結果型は、その show を始めた時点の登録で固定される。
+`notifier(for:result:)` は表示していないとき `nil` を返し、指定した結果型が登録時と違うときは throw する。「表示していない」と「型を取り違えている」を混同しないためである。`try?` はその失敗を `nil` に潰すため、型が食い違うとこの button は結果を報告できなくなる。表示中に同じ class を別の結果型で登録し直しても、判定に使う結果型は、その show を始めた時点の登録で固定される。
+
+## Kotlin の整数型を結果型にする
+
+共有 ViewModel が Kotlin の整数型を結果型にしているとき、Swift から見えるのは幅の決まった整数型なので、`result:` にはその型を渡す。
+
+| 共有 ViewModel の結果型 (Kotlin) | `result:` に渡す型 (Swift) |
+|---|---|
+| `Int` | `Int32` |
+| `Long` | `Int64` |
+| `UInt` | `UInt32` |
+| `ULong` | `UInt64` |
+
+結果を Kotlin の `Int` にした共有 ViewModel:
+
+```kotlin
+package com.example.shared
+
+import jp.kamusoft.ksdialogs.kmp.DialogViewModel
+
+class QuantityViewModel(val itemName: String) : DialogViewModel<Int>
+```
+
+Swift の host では `Int32` で登録して表示する。
+
+```swift
+import KsDialogs
+import Shared
+import SwiftUI
+
+@MainActor
+func registerQuantityPicker() {
+    Dialog.shared.kmp.register(QuantityViewModel.self, result: Int32.self) { viewModel, notifier in
+        VStack(spacing: 12) {
+            Text("How many \(viewModel.itemName)?")
+            HStack {
+                ForEach([Int32(1), 2, 3], id: \.self) { quantity in
+                    Button("\(quantity)") { notifier.complete(quantity) }
+                }
+            }
+        }
+        .padding()
+    }
+}
+
+@MainActor
+func pickQuantity(itemName: String) async throws -> Int32? {
+    switch try await Dialog.shared.kmp.show(QuantityViewModel(itemName: itemName), result: Int32.self) {
+    case .completed(let quantity):
+        return quantity
+    case .cancelled:
+        return nil
+    }
+}
+```
+
+Swift の `Int` / `UInt` はどの Kotlin の整数型とも対応しない。`result:` を取る入口 (`register` の各オーバーロード・`show(_:result:placement:)`・`notifier(for:result:)`) に `Int.self` / `UInt.self` を渡すとコンパイルは通るが、使うべき型 (`Int` なら `Int32` / `Int64`、`UInt` なら `UInt32` / `UInt64`) を案内する英語の deprecated 警告が出る。警告に加えて、実行時には次のように失敗する。
+
+| 入口 | `Int` / `UInt` を使ったときの実行時の挙動 |
+|---|---|
+| `register(_:result:…)` | 失敗せずに登録する |
+| `show(_:result:placement:)` (`result:` を省いた `show(_:placement:)` を含む) | 指定した結果型か、show を呼んだ時点でその共有 ViewModel の class に登録されている結果型が `Int` / `UInt` なら、表示せず (content の factory を呼ばず) に `KsDialogsKmpError.resultTypeMismatch` を throw する。両方が当たると指定した結果型の失敗になる |
+| `notifier(for:result:)` | 指定した結果型が `Int` / `UInt` なら、表示中かどうかや登録の結果型を見るより先に `KsDialogsKmpError.resultTypeMismatch` を throw する (show 外でも `nil` にならない) |
+
+失敗の `expected` には使うべき型 (`"Int32 or Int64"` / `"UInt32 or UInt64"`)、`actual` には当たった型 (`"Int"` / `"UInt"`) が入るので、エラー文がそのまま直し方になる。結果型を型引数で受け取る自前のジェネリックな関数越しに呼ぶと警告は出ないが、実行時の判定は同じに掛かる。
+
+この判定が掛かるのは Swift 側の入口だけである。共有コードからの show (`Dialog.instance.show(...)`) では、Swift で登録した結果型を確かめない。共有コードは報告された値をそのまま ViewModel の結果型として受け取るため、食い違いは共有コードが値を Kotlin の型として使う時点の `ClassCastException` で初めて表に出る。Swift の `Int` で登録した ViewModel もこの経路では表示まで進み、同じ `ClassCastException` で失敗する。共有コードからしか表示しない Dialog でも、Swift の登録は共有の宣言に合わせる。
 
 ## Swift 側の表示が投げる失敗を見分ける
 
@@ -107,7 +173,7 @@ KMP 入口の表示は Swift の throwing なので、構成ミスは結果に�
 | 失敗 | 投げる入口 | 原因と対処 |
 |---|---|---|
 | `KsDialogsKmpError.notRegistered(viewModelType:)` | `Dialog.shared.kmp.show` | 共有 ViewModel の class に content を登録していない。起動経路の登録を先に走らせる |
-| `KsDialogsKmpError.resultTypeMismatch(expected:actual:)` | `Dialog.shared.kmp.show`, `notifier(for:result:)` | 指定した結果型が登録時のものと食い違う。`result:` を共有 `DialogViewModel<R>` の型に合わせる |
+| `KsDialogsKmpError.resultTypeMismatch(expected:actual:)` | `Dialog.shared.kmp.show`, `notifier(for:result:)` | 指定した結果型が登録時のものと食い違う。または、指定した結果型か登録した結果型が Swift の `Int` / `UInt` である (このとき `show` は表示する前に失敗する)。`result:` を共有 `DialogViewModel<R>` の型に合わせ、Kotlin の整数型には幅の決まった型を使う |
 | `DialogError.viewFactoryNotRegistered(viewModelType:)` | `Loading.shared.kmp.show`, `Toast.shared.kmp.show` | 共有 ViewModel の class に content を登録していない。Loading と Toast の入口はこの失敗を写し替えず、そのまま投げる |
 | `DialogError.viewModelAlreadyShowing(viewModelType:)` | `Dialog.shared.kmp.show` | 表示中と同じ ViewModel インスタンスを重ねて show した。呼び出しごとに新しいインスタンスを作る。先に出ているダイアログは影響を受けない |
 
@@ -318,6 +384,6 @@ class RecordingKsToast : KsToast {
 
 ## 機能別レシピへ進む
 
-- 返した content に添付する option と placement、表示中のページを基準にする配置は [レイアウト](layout.md)。
+- 返した content に添付する option と placement、表示中のページを基準にする配置、SwiftUI の中身が受け取る安全領域は [レイアウト](layout.md)。
 - 出入りの演出は [トランジション](transitions.md)。
 - 共有コード側は [Dialog](dialogs.md)・[Loading](loading.md)・[Toast](toast.md)。

@@ -31,12 +31,14 @@ Content registration lives in the hosts because the content type differs per OS.
 | Override the placement of one call | `DialogPlacement`, `DialogAlignment` | [Layout](references/layout.md) |
 | Attach size, overlay, and outside-tap options to content | host `DialogOptions`, `ksDialogOptions`, `KsDialogAttributes` | [Layout](references/layout.md) |
 | Place against the current page (inside its bars) | host `DialogLayoutArea.CURRENT_PAGE` / `.currentPage`, `Modifier.markAsDialogCurrentPage()`, `markAsDialogCurrentPage()`, `DialogCurrentPage.provider` | [Layout](references/layout.md) |
+| Extend iOS SwiftUI content under the system bars, or keep it inside them | `.ignoresSafeArea(.container)`, `GeometryReader`, `GeometryProxy.safeAreaInsets` | [Layout](references/layout.md) |
 | Attach an enter and exit animation to content | host `DialogTransition`, `ksDialogTransition` | [Transitions](references/transitions.md) |
 | Block interaction while shared work runs | `Loading.instance`, `LoadingViewModel`, `LoadingProgressReceiver` | [Loading](references/loading.md) |
 | Start a Loading action off the UI thread | `actionThread`, `LoadingActionThread.BACKGROUND` | [Loading](references/loading.md) |
 | Show non-interactive notifications | `Toast.instance`, `ToastViewModel` | [Toast](references/toast.md) |
 | Register Android View or Compose content | `Dialog.instance.registry`, `registerCompose` | [Android host](references/android-host.md) |
 | Register UIKit or SwiftUI content | `Dialog.shared.kmp`, `Loading.shared.kmp`, `Toast.shared.kmp` | [iOS host](references/ios-host.md) |
+| Receive a Kotlin integer result in Swift | `result: Int32.self` / `Int64.self` / `UInt32.self` / `UInt64.self` (not `Int` / `UInt`) | [iOS host](references/ios-host.md) |
 
 ## Setup
 
@@ -107,9 +109,9 @@ Shared code has no boolean shorthand (the alias of the view model that omits the
 |---|---|
 | Typed results, failures, cancellation, stacked displays, calls made before a screen exists | [Dialog](references/dialogs.md) |
 | Contract injection, view-model factory registration, host-owned result reporting | [View models](references/view-models.md) |
-| Per-call placement, host-side option attachment, placement against the current page | [Layout](references/layout.md) |
+| Per-call placement, host-side option attachment, placement against the current page, the safe area of iOS SwiftUI content | [Layout](references/layout.md) |
 | Carrying an animation choice to the hosts | [Transitions](references/transitions.md) |
 | Imperative and scoped Loading, progress, and the thread the action starts on | [Loading](references/loading.md) |
 | The message route and the registered custom route | [Toast](references/toast.md) |
 | Android Dialog / Loading / Toast registration and naming the current page | [Android host](references/android-host.md) |
-| iOS registration, result types, naming the current page, Swift exception bridging | [iOS host](references/ios-host.md) |
+| iOS registration, result types (including Kotlin integers), naming the current page, Swift exception bridging | [iOS host](references/ios-host.md) |

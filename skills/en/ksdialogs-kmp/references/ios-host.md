@@ -61,20 +61,20 @@ enum DialogHostRegistration {
 }
 ```
 
-Call `DialogHostRegistration.register()` once from a main-actor startup path, before shared code shows anything. Re-registering the same class replaces its factory, and the factory runs on every show. UIKit and SwiftUI factories share the same method name and differ only in return type, and both behave identically from the caller's side.
+Call `DialogHostRegistration.register()` once from a main-actor startup path, before shared code shows anything. Re-registering the same class replaces its factory, and the factory runs on every show. UIKit and SwiftUI factories share the same method name and differ only in return type. Each comes as a two-argument factory that receives the view model and the notifier, and as a one-argument factory that receives the view model only. Showing, results, and failures behave the same whichever you write; only the safe area that the content sees differs ([Layout](layout.md)).
 
 This Swift-facing entry has no display that takes a view-model class. The class-based `show` and `registerViewModel` of shared code are for shared Kotlin code only and do not appear in the generated framework's Objective-C header either ([View models](view-models.md)). To show a shared view model from Swift, build the Kotlin view model in Swift and call the instance-based `show`.
 
 ## Declare the result type and read the notifier
 
-A shared view model declares its result type in Kotlin, where Swift cannot see it, so this entry takes the result type as an argument and falls back to `Bool` when it is omitted. Pass the same type the shared `DialogViewModel<R>` declares; a mismatch surfaces as a typed failure when the result is restored.
+A shared view model declares its result type in Kotlin, where Swift cannot see it, so this entry takes the result type as an argument and falls back to `Bool` when it is omitted. Pass the same type the shared `DialogViewModel<R>` declares. When Swift shows the view model, a mismatch surfaces as a typed failure at the moment the reported value is taken out as the `result:` type. A show started from shared code does not check it ([Use a Kotlin integer as the result type](#use-a-kotlin-integer-as-the-result-type)).
 
 | Form | What it means |
 |---|---|
 | `register(DeleteViewModel.self) { viewModel, notifier in … }` | Result type is `Bool` |
 | `register(ChoiceViewModel.self, result: String.self) { … }` | Result type stated explicitly |
-| `show(viewModel, placement:)` / `show(viewModel, result:placement:)` | Show from Swift; `result:` defaults to `Bool` |
-| `notifier(for:)` / `notifier(for:result:)` | Read the reporting handle of a shared view model that is currently showing |
+| `show(viewModel, placement:)` / `show(viewModel, result:placement:)` | Show from Swift (`async throws`; waits until the Dialog closes and returns `DialogResult` of the result type). `result:` defaults to `Bool` |
+| `notifier(for:)` / `notifier(for:result:)` | Read the reporting handle of a shared view model that is currently showing. Content built by a one-argument factory, which receives no notifier, uses it to report a result |
 
 A one-argument factory reads the handle itself:
 
@@ -98,7 +98,73 @@ Dialog.shared.kmp.register(ChoiceViewModel.self, result: String.self) { viewMode
 }
 ```
 
-`notifier(for:result:)` returns `nil` outside a show and throws when the requested result type disagrees with the registration, so "not showing" is never confused with "wrong type"; `try?` collapses that failure into `nil`, so a type mismatch leaves this button unable to report. The result type used while showing is fixed by the registration in force when that show started.
+`notifier(for:result:)` returns `nil` outside a show and throws when the requested result type disagrees with the registration, so "not showing" is never confused with "wrong type"; `try?` collapses that failure into `nil`, so a type mismatch leaves this button unable to report. The result type used while showing is fixed by the registration in force when that show started, even if the same class is registered again with another result type while it shows.
+
+## Use a Kotlin integer as the result type
+
+When a shared view model declares a Kotlin integer type as its result type, Swift sees a fixed-width integer, so pass that type to `result:`.
+
+| Result type of the shared view model (Kotlin) | Type to pass to `result:` (Swift) |
+|---|---|
+| `Int` | `Int32` |
+| `Long` | `Int64` |
+| `UInt` | `UInt32` |
+| `ULong` | `UInt64` |
+
+A shared view model whose result is a Kotlin `Int`:
+
+```kotlin
+package com.example.shared
+
+import jp.kamusoft.ksdialogs.kmp.DialogViewModel
+
+class QuantityViewModel(val itemName: String) : DialogViewModel<Int>
+```
+
+The Swift host registers and shows it with `Int32`:
+
+```swift
+import KsDialogs
+import Shared
+import SwiftUI
+
+@MainActor
+func registerQuantityPicker() {
+    Dialog.shared.kmp.register(QuantityViewModel.self, result: Int32.self) { viewModel, notifier in
+        VStack(spacing: 12) {
+            Text("How many \(viewModel.itemName)?")
+            HStack {
+                ForEach([Int32(1), 2, 3], id: \.self) { quantity in
+                    Button("\(quantity)") { notifier.complete(quantity) }
+                }
+            }
+        }
+        .padding()
+    }
+}
+
+@MainActor
+func pickQuantity(itemName: String) async throws -> Int32? {
+    switch try await Dialog.shared.kmp.show(QuantityViewModel(itemName: itemName), result: Int32.self) {
+    case .completed(let quantity):
+        return quantity
+    case .cancelled:
+        return nil
+    }
+}
+```
+
+Swift `Int` and `UInt` correspond to no Kotlin integer type. Passing `Int.self` or `UInt.self` to an entry that takes `result:` — the `register` overloads, `show(_:result:placement:)`, and `notifier(for:result:)` — compiles, but raises an English deprecation warning that names the type to use (`Int32` / `Int64` for `Int`, `UInt32` / `UInt64` for `UInt`). The warning is backed by a failure at run time:
+
+| Entry | What happens at run time with `Int` / `UInt` |
+|---|---|
+| `register(_:result:…)` | Registers without failing |
+| `show(_:result:placement:)`, including `show(_:placement:)` without `result:` | When the requested result type, or the result type registered for that shared view-model class at the moment `show` is called, is `Int` / `UInt`, it throws `KsDialogsKmpError.resultTypeMismatch` without presenting anything (the content factory is not called). When both are, the failure reports the requested type |
+| `notifier(for:result:)` | When the requested result type is `Int` / `UInt`, it throws `KsDialogsKmpError.resultTypeMismatch` before checking whether the view model is showing or what was registered, so it throws even outside a show instead of returning `nil` |
+
+The failure's `expected` holds the type to use (`"Int32 or Int64"` or `"UInt32 or UInt64"`) and `actual` holds the offending type (`"Int"` or `"UInt"`), so the error text itself names the fix. Calling through your own generic function that takes the result type as a type parameter hides the warning, but the run-time check still applies.
+
+These checks cover only the Swift-side entries. When shared code shows the view model (`Dialog.instance.show(...)`), the result type registered in Swift is not checked: shared code receives the reported value as the view model's result type as it is, so a mismatch first surfaces as a `ClassCastException` when shared code uses the value as its Kotlin type. A view model registered with Swift `Int` is also presented on this route and fails with the same `ClassCastException`. Match the Swift registration to the shared declaration even when only shared code shows the Dialog.
 
 ## Tell the failures of a Swift-side show apart
 
@@ -107,7 +173,7 @@ Showing through a KMP entry is a Swift throwing call, so a misconfiguration reac
 | Failure | Entry that throws it | Cause and remedy |
 |---|---|---|
 | `KsDialogsKmpError.notRegistered(viewModelType:)` | `Dialog.shared.kmp.show` | No content is registered for that shared view-model class. Run the startup registration first |
-| `KsDialogsKmpError.resultTypeMismatch(expected:actual:)` | `Dialog.shared.kmp.show`, `notifier(for:result:)` | The requested result type disagrees with the registration. Match `result:` to the type of the shared `DialogViewModel<R>` |
+| `KsDialogsKmpError.resultTypeMismatch(expected:actual:)` | `Dialog.shared.kmp.show`, `notifier(for:result:)` | The requested result type disagrees with the registration, or the requested or registered result type is Swift `Int` / `UInt` (then `show` fails before presenting). Match `result:` to the type of the shared `DialogViewModel<R>`, using the fixed-width types for Kotlin integers |
 | `DialogError.viewFactoryNotRegistered(viewModelType:)` | `Loading.shared.kmp.show`, `Toast.shared.kmp.show` | No content is registered for that shared view-model class. The Loading and Toast entries throw this failure as it is instead of mapping it |
 | `DialogError.viewModelAlreadyShowing(viewModelType:)` | `Dialog.shared.kmp.show` | The same view-model instance is shown again while it is showing. Create a new instance per call; the dialog already on screen is unaffected |
 
@@ -318,6 +384,6 @@ class RecordingKsToast : KsToast {
 
 ## Continue with feature recipes
 
-- [Layout](layout.md) for the options and placement you attach to the returned content, including placement against the current page.
+- [Layout](layout.md) for the options and placement you attach to the returned content, including placement against the current page and the safe area that SwiftUI content receives.
 - [Transitions](transitions.md) for the enter and exit animation.
 - [Dialog](dialogs.md), [Loading](loading.md), and [Toast](toast.md) for the shared-code side.
