@@ -5,4 +5,4 @@
 | フェーズ | 状態 | ブランチ | マージの SHA | 備考 |
 |---|---|---|---|---|
 | phase-1-ios-swiftui-content-safe-area | 担当中 | autopilot/ios-safe-area-and-kmp-int-result--phase-1-ios-swiftui-content-safe-area | — | |
-| phase-2-kmp-swift-int-result-guard | 保留 | autopilot/ios-safe-area-and-kmp-int-result--phase-2-kmp-swift-int-result-guard | — | 議論の段階で保留 (Int を案内付きのコンパイルエラーにする仕組みが Swift に無い。先頭 ba9b00f) |
+| phase-2-kmp-swift-int-result-guard | 未着手 | autopilot/ios-safe-area-and-kmp-int-result--phase-2-kmp-swift-int-result-guard | — | 保留の判断 (2026-10-20) の後に再開 |
