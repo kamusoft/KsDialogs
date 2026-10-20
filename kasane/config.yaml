@@ -94,6 +94,8 @@ second-opinion:
   code-review: [m, l]            # 実装レビューに相方レビューを並走させる級 (空リストで無効)
   spec-review: [m, l]            # 全 platform の土台となるライブラリのため M 級から実施
   counterpart: auto              # auto = ホストの逆 (Claude Code → codex / codex → claude)
+  fallback: true                 # 相方がレート制限・利用上限・過負荷で応答できないとき、ホスト側 CLI で代役の器 (<器名>-fallback) を立てる
+                                 # (ksn-counterpart「相方が応答できないとき」。代役の器が無いホストでは立てずにユーザーに確認する)
 
 drift:
   timestamp-threshold-days: 90   # timestamp 鮮度の閾値
@@ -105,6 +107,12 @@ distill:
 orchestrator:
   max-review-cycles: 3           # レビュー↔修正サイクルの上限 (収束シグナルが先なら早期停止)
   parallel: false                # L 級で独立タスクグループの並列実装を許可するか
+
+sweep:
+  max-changes: 6                 # ksn-sweep が 1 回の実行で処理する change の上限
+
+autopilot:
+  lanes: 2                       # ksn-autopilot が同時に走らせるフェーズ担当の数の既定 (委任状の並列数で上書き)
 
 ui:
   mock-variants: 2               # ksn-propose が生成するモック案数の目安
