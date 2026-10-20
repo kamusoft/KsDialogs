@@ -4,5 +4,5 @@
 
 | フェーズ | 状態 | ブランチ | マージの SHA | 備考 |
 |---|---|---|---|---|
-| phase-1-ios-swiftui-content-safe-area | 蒸留中 | autopilot/ios-safe-area-and-kmp-int-result--phase-1-ios-swiftui-content-safe-area | 841671b | 統合確認 OK (ios 395 件・kmp 169 件) |
+| phase-1-ios-swiftui-content-safe-area | 完了 | autopilot/ios-safe-area-and-kmp-int-result--phase-1-ios-swiftui-content-safe-area | 841671b | 蒸留済み (6950a85、ios/ADR-0002 accepted) |
 | phase-2-kmp-swift-int-result-guard | 担当中 | autopilot/ios-safe-area-and-kmp-int-result--phase-2-kmp-swift-int-result-guard | — | 保留の判断 (2026-10-20) の後に再開 |
