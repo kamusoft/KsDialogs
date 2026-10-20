@@ -1,14 +1,14 @@
 ---
 type: concept
 title: iOS のレイアウト公開面
-description: iOS Native (Swift) でダイアログの大きさと位置を指定するときの公開名と署名 — 属性の型とプロパティ・UIKit の添付プロパティと SwiftUI の modifier・show 引数での置き場所指定・表示中のページの教え方 (既定の探し方・関数の登録・SwiftUI の modifier)・論理単位と色型
+description: iOS Native (Swift) でダイアログの大きさと位置を指定するときの公開名と署名 — 属性の型とプロパティ・UIKit の添付プロパティと SwiftUI の modifier・show 引数での置き場所指定・表示中のページの教え方 (既定の探し方・関数の登録・SwiftUI の modifier)・SwiftUI の中身から見える安全領域・論理単位と色型
 tags: [ios, layout, api, surface]
-timestamp: 2026-09-30
+timestamp: 2026-10-20
 ---
 
 # iOS のレイアウト公開面
 
-この文書を読むと、iOS Native (Swift) でダイアログの大きさ・位置・背後の覆い・外側タップの扱いを指定するときに書く型名とプロパティ名、UIKit / SwiftUI での添付の書き方、基準領域「表示中のページ」のページをライブラリへ教える方法、コード例が分かる。
+この文書を読むと、iOS Native (Swift) でダイアログの大きさ・位置・背後の覆い・外側タップの扱いを指定するときに書く型名とプロパティ名、UIKit / SwiftUI での添付の書き方、基準領域「表示中のページ」のページをライブラリへ教える方法、器に載せた SwiftUI の中身から安全領域がどう見えるか、コード例が分かる。
 
 **この文書は iOS の公開面 (名前・署名・コード例・framework 固有の注意) だけを扱い、挙動の契約は core が正である。** 対応する契約は [レイアウトのルール](../../core/api/layout-semantics.md) で、属性の意味・既定値・優先順位・rect の決まり方はそちらを読む。
 
@@ -141,6 +141,67 @@ DialogCurrentPage.provider = { [weak container] in
 
 関数が `nil` を返す・エラーを投げる・返した View がダイアログを出す window に載っていない・返した View の safe area の内側が空・window の外にある、のいずれかなら、既定の探し方の結果を使う。
 
+## SwiftUI の中身から見える安全領域
+
+器 (Dialog・Loading・Toast の中身を載せて表示する、ライブラリのコンテナ) に載せた SwiftUI の中身は、決まった条件の軸でだけ、器とシステムの領域の重なりを SwiftUI 標準の安全領域として受け取る ([ios/ADR-0002](../../../decisions/ios/0002-swiftui-content-receives-standard-safe-area.md))。システムの領域は window の safe area の外側 (ステータスバー・ホームインジケータ等が占める帯) で、重なりは器の矩形がそこへはみ出している幅を辺ごとに測ったものである。中身は器の中で `UIHostingController` に載せて表示され、KMP から Swift 側の登録口で登録した SwiftUI の中身も同じ載せ方を通る。安全領域を避ける (既定) か `.ignoresSafeArea(.container)` で無視するかは、SwiftUI の標準の書き方で選ぶ。
+
+### 受け取る条件
+
+軸ごとに、基準領域と、その軸の位置の決まり方で決まる。
+
+| 基準領域 | その軸の位置 (配置) | その軸の辺で受け取る安全領域 |
+|---|---|---|
+| `.window` | 端 — `.start` / `.end`、比率 (`proportionalWidth` / `proportionalHeight`) を伴わない `.fill` | 器とシステムの領域の重なり |
+| `.window` | 中央 — `.center`、比率を伴う `.fill` | 0 |
+| `.visibleArea` (既定)・`.currentPage` | どれでも (移動量でシステムの領域に重なっても) | 0 |
+
+- 届くのはシステムの領域 (UIKit の safe area にあたるもの) だけで、キーボードの領域は含まない
+- 表示中に window の寸法や window の safe area が変わると、受け取る値も新しい重なりになる
+- 例: 縦長の window 393 × 852 (safe area は上 59・下 34・左右 0) で、基準領域を `.window`、垂直の配置を `.start` (水平は既定の `.center`) にした中身は、上 59・下 0・左右 0 を受け取る。両軸を `.fill` にした中身は上 59・下 34 を受け取る
+
+UIView で書いた中身は UIKit の伝播で、配置や基準領域を問わず器とシステムの領域の重なりを safe area として受け取る。SwiftUI の中身との差が出るのは、`.window` で中央に置いた中身がシステムの領域に重なるときと、`.visibleArea`・`.currentPage` で移動量によりシステムの領域に重ねたときである。中央の軸に渡さないのは、渡すと中央に置いた中身が安全領域を避けて器の中でずれるためで、ios/ADR-0002 で退けた案にあたる。
+
+### 器の大きさは安全領域で変わらない
+
+器へ伝える要求サイズは、中身が安全領域を受け取らないときと同じ値 (中身の理想の大きさ) で、受け取った重なりは器の大きさに入らない。そのため器の大きさと位置はどの配置でも安全領域の受け渡しで変わらず、端に付けた中身は器の内側で安全領域を避ける。器が要求サイズと違う幅で置いた (基準領域から余白を除いた有効領域の幅で頭打ちにした・`.fill` で広げた) ときは、置かれた幅で折り返した高さを求め直す。表示中に中身の理想の大きさ (文言など) が変わると、器はその新しい大きさに追従する。
+
+今の挙動の制約として、`.window` でも、比率も `.fill` も指定しない軸 (大きさを中身に委ねた軸) の幅は、window の幅まで広がらないことがある。最初の配置を可視領域の大きさで測り、表示後に基準領域が window 全体へ広がっても測り直さないためである。安全領域の受け渡しとは別の、以前からの挙動で、修正は簡易起票 `fix-swiftui-window-area-first-layout-width` で扱う。
+
+### 端に付けた中身の使える大きさ
+
+端に付けた中身は器を大きくせずに安全領域を避けるので、使える大きさは重なりの分だけ減る。393 × 852 の例の window で上端に付けた理想の高さ 100 の中身は、器が y 0・高さ 100 のまま、中身は y 59 から高さ 41 に置かれる (座標は window 基準)。window の幅を超える長い本文 (折り返す `Text`) も同じで、器の高さは安全領域を受け取らないときと同じまま、本文に使える高さだけが 59 減るので、本文全体は収まらない。避け方は次のどれかである。
+
+| 避け方 | 結果 |
+|---|---|
+| 基準領域を既定の `.visibleArea` にする | 器が safe area の内側に置かれ、重なりは 0。中身は器いっぱいを使える |
+| 中身の一番外側に `.ignoresSafeArea(.container)` を付ける | 中身は器の矩形いっぱいに置かれる。システムの領域を避けるのは中身の責任になる |
+| `dialogMargin` で器を window の端から離す | 器とシステムの領域の重なりが離した分だけ減り、受け取る値も減る |
+
+window 全体を覆う中身 (両軸 `.fill`) では、SwiftUI の画面と同じ書き方で、地色だけを window の端まで広げ、本文を安全領域の内側に置ける (`ExtractViewModel` / `ExtractContent` は利用側の型)。
+
+```swift
+Dialog.shared.registry.register(ExtractViewModel.self) { viewModel, notifier in
+    ExtractContent(viewModel: viewModel, notifier: notifier)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)   // 本文は安全領域の内側いっぱい
+        .background(Color.black.ignoresSafeArea())          // 地色だけ window の端まで
+        .ksDialogOptions(DialogOptions(layoutArea: .window))
+        .ksDialogPlacement(DialogPlacement(horizontalAlignment: .fill, verticalAlignment: .fill))
+}
+```
+
+### 固定サイズの中身の注意
+
+`.frame(width:height:)` で大きさを固定した中身が、器の内側の安全領域に収まらないときの並び方は、KsDialogs が決めて保証するものではなく、`UIHostingController` の並べ方に従う。器の矩形は変わらない。393 × 852 の例の window で実測した並び方は次のとおりで、大きさが可変の中身ではどちらも起きない。
+
+| 中身 | 上端に付けたとき | 下端に付けたとき |
+|---|---|---|
+| 固定の高さ 100・安全領域を無視しない | 安全領域の内側の中央に寄る (y 29.5)。はみ出した分は器の外へ描かれる | 同じく内側の中央に寄る (y 735) |
+| 固定の高さ 100・一番外側で安全領域を無視する | 動かない (y 0) | 重なり 34 の半分の 17 だけ上へ動く (y 735) |
+
+### `GeometryReader` で読む値
+
+中身の中で `GeometryReader` から読む `GeometryProxy.safeAreaInsets` は、読む View の位置で決まる。安全領域の内側に置かれた素の `Text` の大きさの View から読むと 0 になる。重なりを読みたいときは、器いっぱいに広がる View (一番外側の `GeometryReader` など) から読む。
+
 ## framework 固有の注意
 
 - **覆いの色は `UIColor`** で渡す。既定は黒 40% (`UIColor(white: 0, alpha: 0.4)` に相当)
@@ -158,5 +219,6 @@ DialogCurrentPage.provider = { [weak container] in
 - [レイアウトのルール](../../core/api/layout-semantics.md) — 属性の意味・既定値・優先順位・rect の決まり方 (契約の記述はこちら)
 - [core/ADR-0038](../../../decisions/core/0038-current-page-layout-area-via-registered-provider.md) — 決定 (表示中のページは器が探さず、登録された取得元から得る)
 - [core/ADR-0045](../../../decisions/core/0045-ks-prefix-limited-to-view-attachments.md) — 決定 (接頭辞 `ks` は OS の View 型に後付けする属性とその SwiftUI の対に限る)
+- [ios/ADR-0002](../../../decisions/ios/0002-swiftui-content-receives-standard-safe-area.md) — 決定 (SwiftUI の中身には、窓全体基準で端に付けた軸の安全領域との重なりを、器の大きさを変えずに標準の安全領域として届ける)
 - [iOS の Dialog 公開面](dialog-surface.md) — 登録・表示・結果の受け取りの公開面
 - [iOS のトランジション公開面](transition-surface.md) — 出入りの演出の添付面とフックの型
