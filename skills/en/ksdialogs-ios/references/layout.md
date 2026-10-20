@@ -314,3 +314,103 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 ```
 
 The function runs on the main thread when a Dialog starts showing and again when the window size or the window safe area changes while it is shown. A Dialog keeps using the function that was registered when it started, so a replacement takes effect from the next show. Assign `nil` to go back to the built-in lookup. When the function returns `nil`, throws, or returns a view that is not in the window showing the Dialog, has an empty safe area, or lies outside the window, the built-in lookup is used instead.
+
+## Keep SwiftUI content clear of system areas
+
+SwiftUI content of a Dialog, Loading, or Toast receives, on some axes only, the part of its container that overlaps the system areas as the standard SwiftUI safe area. The system areas are the bands outside the window safe area (status bar, home indicator, and so on), and the overlap is measured per edge as how far the container's rect reaches into them. Whether the content avoids that safe area (the SwiftUI default) or ignores it with `.ignoresSafeArea(.container)` is chosen the standard SwiftUI way.
+
+| `layoutArea` | Alignment on that axis | Safe area received on that axis's edges |
+|---|---|---|
+| `.window` | `.start` / `.end`, or `.fill` without `proportionalWidth` / `proportionalHeight` | The overlap between the container and the system areas |
+| `.window` | `.center`, or `.fill` with a proportional size | 0 |
+| `.visibleArea` (default) / `.currentPage` | Any, even when an offset pushes the container over a system area | 0 |
+
+- Only the system areas are delivered. The keyboard area is not included
+- When the window size or the window safe area changes while the content is shown, the received value follows the new overlap
+- Example: in a 393 × 852 portrait window whose safe area is 59 at the top and 34 at the bottom, content with `.window` and a vertical `.start` receives 59 at the top and 0 elsewhere. With `.fill` on both axes it receives 59 at the top and 34 at the bottom
+
+Content written as a `UIView` receives the overlap as its UIKit safe area through normal UIKit propagation, whatever the alignment or reference area.
+
+The container's size does not change because of the safe area: it stays the content's ideal size, and content stuck to an edge avoids the safe area inside the container. Its usable size therefore shrinks by the overlap. In the window above, content with an ideal height of 100 stuck to the top keeps a container at y 0 with height 100, and the content itself is placed from y 59 with height 41, so long wrapping text no longer fits. Pick one of the following when that is a problem.
+
+| Remedy | Result |
+|---|---|
+| Keep the default `layoutArea: .visibleArea` | The container is placed inside the safe area, the overlap is 0, and the content uses the whole container |
+| Add `.ignoresSafeArea(.container)` to the outermost view of the content | The content fills the container's rect, and avoiding the system areas becomes the content's job |
+| Move the container away from the window edge with `dialogMargin` | The overlap, and the value received, shrinks by the margin |
+
+Content with a fixed size (`.frame(width:height:)`) that does not fit inside the safe area of its container is arranged by `UIHostingController`, not by KsDialogs, and part of it can be drawn outside the container. Let the size on an edge-stuck axis be flexible.
+
+With `.window`, an axis that has neither a proportional size nor `.fill` (its size left to the content) may not widen up to the window width.
+
+### Cover the whole window and keep the text inside the safe area
+
+With `.fill` on both axes, write it as you would a SwiftUI screen: extend only the background to the window edges and keep the body inside the safe area.
+
+```swift
+import SwiftUI
+import KsDialogs
+
+final class NoticeViewModel: DialogViewModel {
+    let message: String
+
+    init(message: String) {
+        self.message = message
+    }
+}
+
+struct FullScreenNoticeView: View {
+    let viewModel: NoticeViewModel
+    let notifier: DialogNotifier<Bool>
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Text(viewModel.message)
+                .foregroundStyle(.white)
+            Button("Close") { notifier.complete(true) }
+                .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.ignoresSafeArea())
+        .ksDialogOptions(DialogOptions(layoutArea: .window))
+        .ksDialogPlacement(DialogPlacement(horizontalAlignment: .fill, verticalAlignment: .fill))
+    }
+}
+```
+
+Register it like any other content.
+
+```swift
+Dialog.shared.registry.register(NoticeViewModel.self) { viewModel, notifier in
+    FullScreenNoticeView(viewModel: viewModel, notifier: notifier)
+}
+```
+
+### Read the overlap with `GeometryReader`
+
+`GeometryProxy.safeAreaInsets` read through `GeometryReader` depends on where the reading view sits. A view sized to plain `Text` inside the safe area reads 0. To read the overlap, read it from a view that spans the whole container, such as an outermost `GeometryReader`.
+
+```swift
+import SwiftUI
+import KsDialogs
+
+struct InsetAwareNoticeView: View {
+    let viewModel: NoticeViewModel
+    let notifier: DialogNotifier<Bool>
+
+    var body: some View {
+        GeometryReader { proxy in
+            VStack(spacing: 16) {
+                Text(viewModel.message)
+                Text("Top \(Int(proxy.safeAreaInsets.top)) pt / Bottom \(Int(proxy.safeAreaInsets.bottom)) pt")
+                    .font(.footnote)
+                Button("Close") { notifier.complete(true) }
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
+        .ksDialogOptions(DialogOptions(layoutArea: .window))
+        .ksDialogPlacement(DialogPlacement(horizontalAlignment: .fill, verticalAlignment: .fill))
+    }
+}
+```

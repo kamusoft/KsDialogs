@@ -179,6 +179,77 @@ Dialog.shared.kmp.register(DeleteViewModel.self) { viewModel, notifier in
 
 ページの教え方の完動レシピは [Android host](android-host.md) と [iOS host](ios-host.md) にある。Loading と Toast の content にも同じ値を添付でき、Dialog と同じ規則でページを解決するが、それ以上の挙動 (Toast のアプリ既定配置との整合など) は決まっていない。
 
+## iOS の SwiftUI の中身で安全領域を受け取る
+
+iOS では、Dialog・Loading・Toast の SwiftUI の中身はライブラリの器の中で `UIHostingController` に載せて表示され、`Dialog.shared.kmp` で登録した中身も同じ載せ方を通る。中身は、器とシステムの領域 (window の safe area の外側で、ステータスバー・ホームインジケータ等が占める帯) の重なりを、SwiftUI 標準の安全領域として受け取る。受け取るのは次の表の軸だけである。安全領域を避ける (既定) か `.ignoresSafeArea(.container)` で無視するかは、SwiftUI の標準の書き方で選ぶ。
+
+| 基準領域 | その軸の配置 | その軸の辺で受け取る安全領域 |
+|---|---|---|
+| `.window` | 端 — `.start` / `.end`、または `proportionalWidth` / `proportionalHeight` を伴わない `.fill` | 器とシステムの領域の重なり |
+| `.window` | 中央 — `.center`、または比率を伴う `.fill` | 0 |
+| `.visibleArea` (既定)・`.currentPage` | どれでも (移動量でシステムの領域に重ねても) | 0 |
+
+- 届くのはシステムの領域だけで、キーボードの領域は含まない
+- 表示中に window の寸法や window の safe area が変わると、受け取る値も新しい重なりに追従する
+- 例: 縦長の 393 × 852 の window (safe area は上 59・下 34) で、基準領域を `.window`、垂直の配置を `.start` (水平は既定の `.center`) にした中身は、上 59 を受け取り、ほかの辺は 0 になる。両軸を `.fill` にすると上 59・下 34 を受け取る
+
+UIKit の中身 (`UIView`) は UIKit の伝播で、配置や基準領域を問わず重なりを safe area として受け取る。両者の見え方が分かれるのは、`.window` で中央に置いた中身がシステムの領域に重なるときと、`.visibleArea`・`.currentPage` の中身を移動量でシステムの領域へ重ねたときである。
+
+### window 全体を覆い、本文は安全領域の内側に置く
+
+`.window` で両軸を `.fill` にした中身は、SwiftUI の画面と同じ書き方で、地色だけを window の端まで広げ、本文を安全領域の内側に置ける。ここでの `WelcomeViewModel` は、`title` プロパティを持つ共有の `DialogViewModel<Boolean>` である。
+
+```swift
+Dialog.shared.kmp.register(WelcomeViewModel.self) { viewModel, notifier in
+    VStack(spacing: 16) {
+        Text(viewModel.title)
+        Button("Continue") { notifier.complete(true) }
+    }
+    .foregroundStyle(.white)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color.black.ignoresSafeArea())
+    .ksDialogOptions(DialogOptions(layoutArea: .window))
+    .ksDialogPlacement(DialogPlacement(horizontalAlignment: .fill, verticalAlignment: .fill))
+}
+```
+
+### `GeometryReader` で重なりを読む
+
+中身の中で `GeometryReader` から読む `GeometryProxy.safeAreaInsets` は、読む View の位置で決まる。安全領域の内側に置かれた素の `Text` の大きさの View から読むと 0 になる。重なりを読みたいときは、器いっぱいに広がる View (一番外側の `GeometryReader` など) から読む。次の例は、ホームインジケータの無い端末のように下端に何も重ならないときだけ、下に余白を取る。
+
+```swift
+Dialog.shared.kmp.register(WelcomeViewModel.self) { viewModel, notifier in
+    GeometryReader { proxy in
+        VStack(spacing: 16) {
+            Text(viewModel.title)
+            Button("Continue") { notifier.complete(true) }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.bottom, proxy.safeAreaInsets.bottom > 0 ? 0 : 24)
+    }
+    .foregroundStyle(.white)
+    .background(Color.black.ignoresSafeArea())
+    .ksDialogOptions(DialogOptions(layoutArea: .window))
+    .ksDialogPlacement(DialogPlacement(horizontalAlignment: .fill, verticalAlignment: .fill))
+}
+```
+
+### 端に付けた中身の大きさを確保する
+
+受け取った安全領域で器は大きくならない。器が求める大きさは、安全領域を受け取らないときと同じ中身の理想の大きさなので、器の大きさと位置は変わらず、端に付けた中身は器の内側で安全領域を避ける。そのぶん使える大きさは重なりの分だけ減る。例の window で上端に付けた理想の高さ 100 の中身は、器が y 0・高さ 100 のまま、中身は y 59 から高さ 41 に置かれる。折り返す長い本文も同じく高さが 59 減り、収まらなくなる。次のどれかで避ける。
+
+| 避け方 | 結果 |
+|---|---|
+| 基準領域を既定の `.visibleArea` のままにする | 器が safe area の内側に置かれて重なりは 0 になり、中身は器いっぱいを使える |
+| 中身の一番外側に `.ignoresSafeArea(.container)` を付ける | 中身は器の矩形いっぱいに置かれる。システムの領域を避けるのは中身の責任になる |
+| `dialogMargin` で器を window の端から離す | 離した分だけ重なりが減り、受け取る値も減る |
+
+器が求めた大きさと違う幅で置かれた (基準領域から余白を除いた幅で頭打ちになった・`.fill` で広げた) ときは、置かれた幅で折り返した高さを求め直す。表示中に中身の理想の大きさ (文言など) が変わると、器はその新しい大きさに追従する。
+
+`.frame(width:height:)` で大きさを固定した中身が安全領域の内側に収まらないときの並び方は `UIHostingController` に従い、KsDialogs が決めて保証するものではない。器の矩形は変わらない。大きさが可変の中身では起きない。
+
+安全領域とは別の現時点の制約として、`.window` でも、比率も `.fill` も指定しない軸 (大きさを中身に委ねた軸) の幅は window の幅まで広がらないことがある。最初の配置を可視領域の大きさで測り、基準が window 全体へ広がったあとに測り直さないためである。
+
 ## 添付が効く時点
 
 - 添付は初回表示までに評価される場所に書く

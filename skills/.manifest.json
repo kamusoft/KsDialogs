@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "generatedAt": "2026-10-04T04:44:15Z",
+  "generatedAt": "2026-10-20T08:54:30Z",
   "concepts": {
     "android/api/dialog-surface.md": "e923a382b6d138c0d899449bfb58eeca64fd5ea1445ac99f6732c84bd7e11ee8",
     "android/api/layout-surface.md": "a5164ca6326b69677ba02237031ba904c786233dd9fe4f2707a2c0d4553e4a44",
@@ -20,12 +20,12 @@
     "cross/architecture/distribution-artifacts.md": "9482dbc7e8a30e3ae4c0351da3bed3e363a593b5bfc040e320da65dfd4c42ea8",
     "cross/architecture/release-workflow.md": "f07d371ebf99c75d6cf084f8c62d7e51f829b75f3db977953e6d7c4340ca88da",
     "ios/api/dialog-surface.md": "79c8ac92175a3b9169b7c82be995b9206a832ba72f38871aff21292742944523",
-    "ios/api/layout-surface.md": "cff59a8dfdb7c46023c4bce9c69395603ac705f8260c12e64fa4901f40aa72a0",
+    "ios/api/layout-surface.md": "787b42ce7513a15434e724286bc5421a85122285190a64113764bd3364fd954a",
     "ios/api/loading-surface.md": "cdfd159a06d5219950f196443d4b0be0a082843f61813c064e76f12371d9f993",
     "ios/api/toast-surface.md": "f16d67b8706b562404e205618ccdf5bb29d788830d819f1aea43aa09e4086663",
     "ios/api/transition-surface.md": "e2982def138f8ce04ba54632e7d6bc488cdae69869ebd38a960890dd80a8d917",
     "kmp/api/dialog-surface.md": "5384d73eef90b623654817436436127968902559e07e0535c9e4032a478aaf6c",
-    "kmp/api/ios-host-integration.md": "effa8597c703950ac68e3e562509ce0aa0ed7032a5232ac36066d505a1707831",
+    "kmp/api/ios-host-integration.md": "0ed768822f14fbc57ee1e0cae4d153d2bea3cda2484b07ccf283770c2e15e389",
     "kmp/api/loading-surface.md": "f5dfd184d8378f7615ae8aa60ab01d9d3b30d2135510ef8619ff93130b3fa26d",
     "kmp/api/toast-surface.md": "eeefcb8d16aaafefbf5a0dd79081cc1dafad22e14046bae6ce3e191c443c9e69",
     "maui/api/di-registration.md": "4e1ae92f4ce0c074af309f4c66640c26747d40520307eaf2d1ebfde3af623c7d",
@@ -285,17 +285,15 @@
     "README_ja.md"
   ],
   "lastUpdatedFiles": [
-    "README.md",
-    "README_ja.md",
-    "skills/en/ksdialogs-aiforms-migration/SKILL.md",
-    "skills/en/ksdialogs-android/SKILL.md",
+    "skills/en/ksdialogs-ios/SKILL.md",
+    "skills/ja/ksdialogs-ios/SKILL.md",
+    "skills/en/ksdialogs-ios/references/layout.md",
+    "skills/ja/ksdialogs-ios/references/layout.md",
     "skills/en/ksdialogs-kmp/SKILL.md",
-    "skills/en/ksdialogs-kmp/references/ios-host.md",
-    "skills/en/ksdialogs-maui/SKILL.md",
-    "skills/ja/ksdialogs-aiforms-migration/SKILL.md",
-    "skills/ja/ksdialogs-android/SKILL.md",
     "skills/ja/ksdialogs-kmp/SKILL.md",
+    "skills/en/ksdialogs-kmp/references/ios-host.md",
     "skills/ja/ksdialogs-kmp/references/ios-host.md",
-    "skills/ja/ksdialogs-maui/SKILL.md"
+    "skills/en/ksdialogs-kmp/references/layout.md",
+    "skills/ja/ksdialogs-kmp/references/layout.md"
   ]
 }

@@ -314,3 +314,103 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 ```
 
 関数はメインスレッドで、Dialog の表示の開始時と、表示中に window の寸法や window の safe area が変わったときに呼ばれる。Dialog は表示を始めた時点で登録されていた関数を使い続けるので、差し替えは次の `show` から効く。`nil` を代入すると既定の探し方に戻る。関数が `nil` を返す・エラーを投げる・返した View が Dialog を出す window に載っていない・safe area の内側が空・window の外にある、のいずれかなら、既定の探し方の結果を使う。
+
+## SwiftUI content にシステムの領域を避けさせる
+
+Dialog・Loading・Toast の SwiftUI content は、決まった条件の軸でだけ、器 (content を載せて表示するライブラリのコンテナ) とシステムの領域の重なりを SwiftUI 標準の safe area として受け取る。システムの領域は window の safe area の外側 (ステータスバー・ホームインジケータ等が占める帯) で、重なりは器の矩形がそこへはみ出している幅を辺ごとに測ったものである。safe area を避ける (SwiftUI の既定) か `.ignoresSafeArea(.container)` で無視するかは、SwiftUI の標準の書き方で選ぶ。
+
+| `layoutArea` | その軸の配置 | その軸の辺で受け取る safe area |
+|---|---|---|
+| `.window` | `.start` / `.end`、または `proportionalWidth` / `proportionalHeight` を伴わない `.fill` | 器とシステムの領域の重なり |
+| `.window` | `.center`、または比率を伴う `.fill` | 0 |
+| `.visibleArea` (既定) / `.currentPage` | どれでも (offset で器がシステムの領域に重なっても) | 0 |
+
+- 届くのはシステムの領域だけで、キーボードの領域は含まない
+- 表示中に window の寸法や window の safe area が変わると、受け取る値も新しい重なりになる
+- 例: safe area が上 59・下 34 の縦長の window 393 × 852 で、`.window` と垂直の `.start` を指定した content は上 59・それ以外 0 を受け取る。両軸を `.fill` にすると上 59・下 34 を受け取る
+
+`UIView` で書いた content は UIKit の伝播で、配置や基準領域を問わず重なりを UIKit の safe area として受け取る。
+
+器の大きさは safe area で変わらない。器は content の理想の大きさのままで、端に付けた content は器の内側で safe area を避ける。そのため使える大きさは重なりの分だけ減る。上の window で理想の高さ 100 の content を上端に付けると、器は y 0・高さ 100 のまま、content は y 59 から高さ 41 に置かれ、折り返す長い本文は収まらなくなる。困るときは次のどれかを選ぶ。
+
+| 避け方 | 結果 |
+|---|---|
+| `layoutArea` を既定の `.visibleArea` のままにする | 器が safe area の内側に置かれ、重なりは 0。content は器いっぱいを使える |
+| content の一番外側の View に `.ignoresSafeArea(.container)` を付ける | content は器の矩形いっぱいに置かれる。システムの領域を避けるのは content の責任になる |
+| `dialogMargin` で器を window の端から離す | 重なりが離した分だけ減り、受け取る値も減る |
+
+`.frame(width:height:)` で大きさを固定した content が器の内側の safe area に収まらないときの並び方は KsDialogs ではなく `UIHostingController` が決め、一部が器の外へ描かれることがある。端に付ける軸の大きさは可変にしておく。
+
+`.window` でも、比率も `.fill` も指定しない軸 (大きさを content に委ねた軸) は、window の幅まで広がらないことがある。
+
+### window 全体を覆い、本文は safe area の内側に置く
+
+両軸を `.fill` にした content では、SwiftUI の画面と同じ書き方で、地色だけを window の端まで広げ、本文を safe area の内側に置ける。
+
+```swift
+import SwiftUI
+import KsDialogs
+
+final class NoticeViewModel: DialogViewModel {
+    let message: String
+
+    init(message: String) {
+        self.message = message
+    }
+}
+
+struct FullScreenNoticeView: View {
+    let viewModel: NoticeViewModel
+    let notifier: DialogNotifier<Bool>
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Text(viewModel.message)
+                .foregroundStyle(.white)
+            Button("Close") { notifier.complete(true) }
+                .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.ignoresSafeArea())
+        .ksDialogOptions(DialogOptions(layoutArea: .window))
+        .ksDialogPlacement(DialogPlacement(horizontalAlignment: .fill, verticalAlignment: .fill))
+    }
+}
+```
+
+登録はほかの content と同じである。
+
+```swift
+Dialog.shared.registry.register(NoticeViewModel.self) { viewModel, notifier in
+    FullScreenNoticeView(viewModel: viewModel, notifier: notifier)
+}
+```
+
+### `GeometryReader` で重なりを読む
+
+`GeometryReader` から読む `GeometryProxy.safeAreaInsets` は、読む View の位置で決まる。safe area の内側に置かれた素の `Text` の大きさの View から読むと 0 になる。重なりを読みたいときは、一番外側の `GeometryReader` のように器いっぱいに広がる View から読む。
+
+```swift
+import SwiftUI
+import KsDialogs
+
+struct InsetAwareNoticeView: View {
+    let viewModel: NoticeViewModel
+    let notifier: DialogNotifier<Bool>
+
+    var body: some View {
+        GeometryReader { proxy in
+            VStack(spacing: 16) {
+                Text(viewModel.message)
+                Text("Top \(Int(proxy.safeAreaInsets.top)) pt / Bottom \(Int(proxy.safeAreaInsets.bottom)) pt")
+                    .font(.footnote)
+                Button("Close") { notifier.complete(true) }
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
+        .ksDialogOptions(DialogOptions(layoutArea: .window))
+        .ksDialogPlacement(DialogPlacement(horizontalAlignment: .fill, verticalAlignment: .fill))
+    }
+}
+```
