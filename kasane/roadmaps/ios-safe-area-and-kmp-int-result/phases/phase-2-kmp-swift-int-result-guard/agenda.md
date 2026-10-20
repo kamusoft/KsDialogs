@@ -65,3 +65,11 @@ show では指定した結果型を先に判定し、登録された結果型は
 ## TODO
 - [x] 論点の解消 (2026-10-20 オーナー判断で解消)
 - [x] ksn-propose で変更提案を起こす (`kasane/changes/guard-kmp-swift-int-result-type/`)
+
+## 実装結果 (2026-10-20 反映)
+
+`kasane/changes/archive/2026-10-20-guard-kmp-swift-int-result-type/` (M 級、review-002 APPROVED・verify-002 VALID)。決定事項どおり、`result:` を取る 6 入口に `Int` 用・`UInt` 用の deprecated のオーバーロード 12 個を置き、show と `notifier(for:result:)` を `resultTypeMismatch` の失敗にした。共有コードからの show は変えていない。deviation は 2 件で、phase-1 由来の「UIView と SwiftUI で観察できる挙動は同じ」の注記 (蒸留で `kasane/concepts/kmp/api/ios-host-integration.md` に反映済み) と、proposal.md の Impact の互換の主張を実証した範囲に絞った書き換え。`main` に入れる PR の `- breaking:` の英文の案は archive 先の proposal.md の Impact にある。ios/Sources の公開 doc コメントに残る ADR ID は、実装中に `kasane/changes/strip-adr-ids-from-ios-public-docs/` へ簡易起票した。
+
+申し送り:
+- review-002 の任意の Suggestion (deprecated の 12 入口が public のままであることを、非 `@testable` の検査ファイルで押さえる) — 見送り: 既定のビルドに deprecation 警告が恒常的に増える代償があり、今の 12 個は `public` と明記されている (フェーズ担当の判断、蒸留担当も同じ判断で閉じる)
+- `skills/` と README への追従 — 見送り: このロードマップの非ゴール (roadmap.md「非ゴール」。蒸留の後に docs-refresh で追従する)
