@@ -55,3 +55,4 @@
 - 2026-10-20 phase-2-kmp-swift-int-result-guard [観測] 提案の自己レビューが 2 周とも見逃した穴 3 件を相方の提案レビューが見つけた (scope: spec-review) — 根拠: — / 覆すコスト: — / 記録: このログ
 - 2026-10-20 phase-2-kmp-swift-int-result-guard [観測] 足場の小さな書き換えを提案のコミットに含めずに実装へ渡し、レビューで未記録の書き換えと判定された (scope: process) — 根拠: — / 覆すコスト: — / 記録: このログ
 - 2026-10-20 phase-2-kmp-swift-int-result-guard [申し送り] 宛先: ロードマップ (蒸留)。proposal.md の「蒸留時に反映」2 行と deviation.md の蒸留送り 1 行 (phase-1 由来の「UIView と SwiftUI で観察できる挙動は同じ」の注記) を concepts/kmp/api/ios-host-integration.md に反映する (完了条件 7)。`- breaking:` の英文の案は proposal.md の Impact。review-002 の任意 Suggestion (deprecated の 12 入口の public の検査) は見送り — 根拠: — / 覆すコスト: — / 記録: proposal.md・deviation.md
+- 2026-10-20 phase-2-kmp-swift-int-result-guard [点検] 統合確認 OK 1e95c38 (ビルド成功・ios 402 件・kmp allTests 169 件・scenario-id-coverage 未網羅なし) — 根拠: — / 覆すコスト: — / 記録: autopilot-state.md

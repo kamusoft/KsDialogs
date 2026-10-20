@@ -37,4 +37,4 @@ flowchart LR
 | ID | 状態 | 種別 | フェーズ詳細 | Change |
 |---|---|---|---|---|
 | phase-1-ios-swiftui-content-safe-area | completed | change | [agenda](phases/phase-1-ios-swiftui-content-safe-area/agenda.md) | [deliver-swiftui-content-safe-area-ios](../../changes/archive/2026-10-20-deliver-swiftui-content-safe-area-ios/) |
-| phase-2-kmp-swift-int-result-guard | in-progress | change | [agenda](phases/phase-2-kmp-swift-int-result-guard/agenda.md) | — |
+| phase-2-kmp-swift-int-result-guard | in-progress | change | [agenda](phases/phase-2-kmp-swift-int-result-guard/agenda.md) | [guard-kmp-swift-int-result-type](../../changes/guard-kmp-swift-int-result-type/) |
