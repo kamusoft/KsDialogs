@@ -30,4 +30,4 @@ iOS の器に載せた SwiftUI の中身 (Dialog・Loading・Toast) に、器と
 
 ## TODO
 - [x] 論点の解消
-- [ ] ksn-propose で変更提案を起こす
+- [x] ksn-propose で変更提案を起こす (change: deliver-swiftui-content-safe-area-ios)
