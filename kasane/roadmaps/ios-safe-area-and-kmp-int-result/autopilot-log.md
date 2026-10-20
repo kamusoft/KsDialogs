@@ -22,3 +22,4 @@
 - 2026-10-20 phase-2-kmp-swift-int-result-guard [観測] agenda の論点が「使用不可の Int 専用オーバーロードがジェネリック版より選ばれる」前提に立っていた。委任の準備で小さな実験をしていればこの保留は前倒しできた (scope: spec-review の候補) — 根拠: — / 覆すコスト: — / 記録: このログ
 - 2026-10-20 phase-2-kmp-swift-int-result-guard [申し送り] 宛先: ロードマップ。Kotlin の `UInt` / `ULong` は Swift では `UInt32` / `UInt64` になるので、Swift の `UInt` も同じ取り違えを起こす (このフェーズの対象外)。オーナーが案 A か D を選んだら、完了条件 6 (D なら 7 の後半も) の書き換えが要る — 根拠: — / 覆すコスト: — / 記録: このログ
 - 2026-10-20 phase-2-kmp-swift-int-result-guard [改訂] オーナーとの対話で phase-2 の保留を判断した (案 A: deprecated の警告 + show 時の型付きの失敗、`UInt` も同じ扱い)。委任状の完了条件 6・7・方針と「保留の判断」、ロードマップのゴールと前提を改め、委任状の承認を取り直した。phase-2 を未着手に戻す (ブランチは残す) — 根拠: オーナーの判断 (委任状「保留の判断」) / 覆すコスト: 中 (完了条件と公開 API の挙動に及ぶがオーナー承認済み) / 記録: charter.md・roadmap.md・history.md
+- 2026-10-20 phase-2-kmp-swift-int-result-guard [起動] フェーズ担当を lane-2 で「再開」として起動する (既存のブランチの先頭 ba9b00f から) — 根拠: — / 覆すコスト: — / 記録: autopilot-state.md
