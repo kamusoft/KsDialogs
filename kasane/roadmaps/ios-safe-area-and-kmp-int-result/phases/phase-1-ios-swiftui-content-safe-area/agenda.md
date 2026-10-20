@@ -4,11 +4,9 @@ iOS の器に載せた SwiftUI の中身 (Dialog・Loading・Toast) に、器と
 
 ## 論点
 - サイズ計算の実測: 端に付く配置 (fill・start / end) × 窓全体基準 × Dialog・Loading・Toast で、中身の要求サイズと最終の大きさが安定するか (膨らみすぎ・行ったり来たりが無いか)。崩れたら B 案 (安全領域は 0 のまま、重なりを独自の値で渡す) に倒し、ios/ADR-0002 を書き直す
-- 届ける領域の範囲: キーボードの領域も含めるか、システムの領域 (ステータスバー・ホームインジケータ) だけに限るか
-- UIView の中身に、器と安全領域の重なりが実際に届いているかの実測 (core/ADR-0011 との一致の確認)
-- テストの測り方: テスト用の窓 (`ios/Tests/KsDialogsTests/Support/DialogLayoutTestWindow.swift`) は安全領域を getter の上書きで擬似的に作っている。これがホストの中まで届くか。届かなければ、ノッチのある機種の Simulator の実際の窓で測る
-- 共通ケース表 (`core/layout-spec/cases.json`) に SwiftUI の中身のケースを足すか、iOS 固有のテストに留めるか
-- Android の器の中の Compose の中身から、システムバーの insets がどう見えるかの調査 (変更はしない。差があれば起票に留める)
+  - 実測 (2026-10-20、`kasane/changes/deliver-swiftui-content-safe-area-ios/evidence/safe-area-sizing-probe.md`): 行ったり来たりは無い。ホストは、中身が安全領域を無視するかどうかに関係なく要求サイズに重なりを足す
+  - そのため上端・下端の器は重なりの分だけ大きくなり、中央に置いて安全領域に重なる中身は窓の高さまで膨らむ
+  - B 案に倒すかどうかは委任状の「任せない判断」に当たるため、オーナーの判断待ち
 
 ## 決定事項
 - 方向は ios/ADR-0002 (proposed): 器と安全領域の重なりを SwiftUI 標準の安全領域として届ける。UIView の中身の扱いと、器の配置・サイズの規則は変えない
@@ -16,7 +14,12 @@ iOS の器に載せた SwiftUI の中身 (Dialog・Loading・Toast) に、器と
 - Sample へのデモの追加はしない (ロードマップの非ゴール)。自動テストと Simulator での実測で確かめる
 - 蒸留時に反映: `kasane/concepts/ios/api/` (レイアウトの公開面) — 器の中の SwiftUI の中身から見える安全領域の意味
 - 蒸留時に反映: ios/ADR-0002 の出典の行を、このフェーズの change に直す
+- 自律決定 (ksn-autopilot、根拠: 1・委任状の見た目の基準、2・core/ADR-0011): 届けるのはシステムの領域 (ステータスバー・ホームインジケータ等) だけで、キーボードの領域は含めない。含めると既定の可視領域でもキーボードを避けて中身が動き、UIView の中身とも揃わない
+- 自律決定 (ksn-autopilot、根拠: 2・core/ADR-0011): UIView の中身には器と安全領域の重なりがすでに届いていることを実測で確かめた (上端 59・下端 34・中央 0)。UIView の中身の扱いは変えず、SwiftUI の中身をこれに揃える
+- 自律決定 (ksn-autopilot、根拠: 4): テストはテスト用の窓 (安全領域の上書き) で測る。上書きした値がホストの View まで届くことを実測で確かめたため、実際の機種の安全領域には頼らない
+- 自律決定 (ksn-autopilot、根拠: 1・委任状の禁止事項、4): 共通ケース表 (`core/layout-spec/cases.json`) には足さず、iOS 固有のテストに留める。表に足すと android/・maui/ の読み手にも手が入る
+- 自律決定 (ksn-autopilot、根拠: 1・ロードマップの非ゴール): Android の中身にはウィンドウ全体の insets が位置に関係なく届くとコードから読めた (iOS は重なり)。差は簡易起票 `align-android-content-insets-meaning` に留める
 
 ## TODO
-- [ ] 論点の解消
+- [ ] 論点の解消 (残り: サイズ計算の実測の結果を受けた方向の判断)
 - [ ] ksn-propose で変更提案を起こす
