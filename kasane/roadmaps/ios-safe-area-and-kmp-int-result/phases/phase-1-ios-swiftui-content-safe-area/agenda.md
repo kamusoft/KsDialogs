@@ -31,3 +31,17 @@ iOS の器に載せた SwiftUI の中身 (Dialog・Loading・Toast) に、器と
 ## TODO
 - [x] 論点の解消
 - [x] ksn-propose で変更提案を起こす (change: deliver-swiftui-content-safe-area-ios)
+
+## 実装結果 (2026-10-20 反映)
+
+change `deliver-swiftui-content-safe-area-ios` (`kasane/changes/archive/2026-10-20-deliver-swiftui-content-safe-area-ios/`) で、決定事項「器の大きさの決め方」の形のまま実装した。ios/ADR-0002 は範囲と Consequences をこの形に書き直して accepted にし、`kasane/concepts/ios/api/layout-surface.md` に節「SwiftUI の中身から見える安全領域」を足した。仕様との違いは [PB-IS-15] の THEN の幅 (852 ではなく、安全領域を受け取らないときと同じ値) の 1 件で、change の deviation.md に記録してある。
+
+申し送り:
+
+| 事柄 | 受け皿 |
+|---|---|
+| Android の中身には位置に関係なく window 全体の insets が届き、iOS と意味が違う | 簡易起票 `align-android-content-insets-meaning` (ロードマップの非ゴール。独立した change で扱う) |
+| 窓全体基準の SwiftUI の中身は最初の配置を可視領域で測り、幅が窓まで広がらない (変更前からの挙動) | 簡易起票 `fix-swiftui-window-area-first-layout-width` (独立した change で扱う) |
+| review-003 の任意の Suggestion (窓全体・上端の長い本文で窓を変える回帰テスト) | 見送り (自律決定、根拠: 4。今のコードは変更前と同じ値で、期待値が上の起票の修正で変わる見込みがある) |
+| `kasane/concepts/kmp/api/ios-host-integration.md` の「UIView と SwiftUI のどちらでも観察できる挙動は同じ」は、中央の軸と窓全体以外の基準領域の安全領域では成り立たない | → phase-2-kmp-swift-int-result-guard の担当へ渡す (ksn-autopilot)。同じ文書を phase-2 の蒸留が書き直すため、この蒸留では触らない |
+| 利用者向けの `skills/` と README の追従 | 見送り (ロードマップの非ゴール。蒸留の後に docs-refresh で追従する) |

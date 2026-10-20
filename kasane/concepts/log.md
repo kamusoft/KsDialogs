@@ -111,3 +111,6 @@
 
 ## 2026-10-04
 - distilled: align-toolchain-xcode27-jdk21-dotnet-10-0-401 (S 級・review-001 APPROVED・maui/ADR-0007 起票 (maui/ADR-0004 を一部改訂)・cross/architecture/distribution-artifacts.md と kmp/api/ios-host-integration.md 更新・handbook cross/local-development-setup.md / test-execution.md / verification-ci.md 更新・cross/ADR-0018 / 0002 / 0023 の footer 追記)
+
+## 2026-10-20
+- distilled: deliver-swiftui-content-safe-area-ios (M 級・ksn-autopilot ios-safe-area-and-kmp-int-result の蒸留担当・review-001 / 002 CHANGES_REQUESTED → review-003 APPROVED・verify-003 VALID・second-opinion-spec-001 / code-001〜003 (codex)・deviation 3 件 ([PB-IS-15] の幅の読み替えと修正サイクルの記録)。ADR — ios/ADR-0002 を、窓全体基準で端に付けた軸だけに重なりを渡し要求サイズに重なりを入れない形に書き直して accepted (自動承認、オーナー未確認)。却下案に「そのまま渡す」「中央にも渡す」「基準領域を問わず渡す」を追加し、出典を archive 後のパスへ。core/ADR-0011 の footer に関連行 / concepts — ios/api/layout-surface.md に節「SwiftUI の中身から見える安全領域」(受け取る条件の表・UIView の中身との差・器の大きさは安全領域で変わらない要求サイズの規則・端に付けた中身の使える大きさの減少と避け方の表と window 全体を覆う中身の例・固定サイズの中身の並び方の実測・`GeometryReader` で読む値)。初見可読性レビューを反映。ios/index.md の 1 行説明を追随 (timestamp 2026-10-20) / handbook — 変更なし / lessons — inbox に新規 2 件 (review-compare-against-pre-change-code-for-layout-regressions・worktree-guard-command-forms)、spec-exact-geometry-needs-per-platform-sizing-check を count 2 に。閾値到達なし / 媒体 — 0 件 / `kasane/changes/archive/2026-10-20-deliver-swiftui-content-safe-area-ios/` へ移動済み)

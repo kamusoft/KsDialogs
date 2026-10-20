@@ -34,3 +34,5 @@ core/ADR-0010 がコンテンツ View 技術の両対応 (Compose / SwiftUI 必�
 - 負: Kotlin の言語都合により Android だけ Compose 系が別名 (`registerCompose` / `showCompose`) となり、iOS (同名オーバーロード) と公開面の対称性が崩れる
 
 出典: kasane/roadmaps/library-foundation/phases/phase-5-2-api-surface/history.md (2026-08-17: コンテンツ View 技術両対応の登録 API の見せ方) / artifacts/scout-registration-api-and-kssettingsview.md
+
+関連: ios/ADR-0002 (iOS の器の SwiftUI の中身には、窓全体基準で端に付けた軸だけ安全領域との重なりを届ける。中央に固定される軸と窓全体以外の基準領域では、UIView の中身との安全領域の見え方の差が残る)
