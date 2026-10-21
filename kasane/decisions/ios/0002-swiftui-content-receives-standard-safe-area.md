@@ -54,6 +54,8 @@ iOS の器に載せた SwiftUI の中身には、基準領域が窓全体で、�
 
 関連: core/ADR-0011 (両対応の登録 API は内部で単一の型消去表現に収束する。本決定は、窓全体基準で端に付けた SwiftUI の中身のシステムの領域の見え方を UIView の中身に揃える)
 
+関連: ios/ADR-0003 (端に付けた SwiftUI の中身が安全領域の内側に収まらないときは、器の内側の辺にそろえて器いっぱいに置く。本決定の Consequences「無視する指定の中身の見た目は変わらない」が縮まない中身で成り立っていなかった分を補う)
+
 現行照合: 2026-10-20 確認。`ios/Sources/KsDialogs/SwiftUI/DialogSwiftUIHost.swift` (ホストの `safeAreaRegions = .container`、渡さない軸の辺をルートで `ignoresSafeArea(.container, edges:)`)・`ios/Sources/KsDialogs/Layout/DialogLayoutApplier.swift` の `relaySafeArea` (基準領域が `.window` で位置が `.leadingEdge` / `.trailingEdge` の軸だけ渡す)・`ios/Sources/KsDialogs/SwiftUI/DialogSwiftUIContentView.swift` の `fittingSize` (ホストの答えから safe area を引き戻した値を要求サイズにする)。テスト `ios/Tests/KsDialogsTests/` の `DialogSwiftUISafeAreaTests.swift`・`LoadingSwiftUISafeAreaTests.swift`・`ToastSwiftUISafeAreaTests.swift` (PB-IS-01〜19)。判定: 維持
 
 自動承認: ksn-autopilot ios-safe-area-and-kmp-int-result (2026-10-20、2026-10-20 オーナー確認済み)
