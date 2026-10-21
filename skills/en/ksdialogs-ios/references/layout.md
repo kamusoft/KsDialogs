@@ -39,6 +39,7 @@ How you attach depends on the kind of content.
 - **Reference area** — what `.visibleArea` subtracts is the UIKit safe area insets. `.currentPage` uses the page on screen (see "Place relative to the current page" below)
 - **Content constraints** — the library applies the computed rect with Auto Layout constraints. The upper bound and the position are required constraints, so the content cannot break them. A size decided by a ratio or `.fill` has priority 999: it beats the content's intrinsic size, but a required (1000) width or height constraint on the content wins. Assigning `frame` directly is overwritten by Auto Layout
 - **Re-layout** — on screen rotation, window resizing, and system bars appearing or disappearing, the position is recomputed from the same effective values. It does not move for the software keyboard
+- **Axes left to the content** — an axis that has neither a proportional size nor `.fill` (its size left to the content) widens up to the content's ideal size when the area left after `dialogMargin` grows while shown, and is capped by the new area when it shrinks. SwiftUI and `UIView` content behave the same. Example: content with an ideal width of 600 that was capped at 393 in portrait becomes 600 in landscape and returns to 393 in portrait
 
 ## Attach to SwiftUI content
 
@@ -339,9 +340,9 @@ The container's size does not change because of the safe area: it stays the cont
 | Add `.ignoresSafeArea(.container)` to the outermost view of the content | The content fills the container's rect, and avoiding the system areas becomes the content's job |
 | Move the container away from the window edge with `dialogMargin` | The overlap, and the value received, shrinks by the margin |
 
-Content with a fixed size (`.frame(width:height:)`) that does not fit inside the safe area of its container is arranged by `UIHostingController`, not by KsDialogs, and part of it can be drawn outside the container. Let the size on an edge-stuck axis be flexible.
+On an axis stuck to one edge with `.window` (`.start` / `.end`, with or without a proportional size), content that cannot fit inside the safe area of its container even when shrunk as far as it can go (a fixed size from `.frame(width:height:)`, or a `VStack` of text and buttons that does not shrink, for example) is aligned to the side opposite the edge the container is stuck to and fills the container. That is the top side when stuck to the bottom, the bottom side when stuck to the top, the right side when stuck to the left, and the left side when stuck to the right, and the sides stay the same in right-to-left languages. On the aligned axis the content receives no safe area. In the window above, content with a non-shrinking height of 100 stuck to the bottom fills the container at y 752 with height 100 and overlaps the home indicator band. To keep such content clear of the system areas, let its size on the edge-stuck axis shrink.
 
-With `.window`, an axis that has neither a proportional size nor `.fill` (its size left to the content) may not widen up to the window width.
+Whether the content fits is re-evaluated while it is shown. With `.fill` on both axes, on a `.center` axis, with a reference area other than `.window`, and for `UIView` content, no such alignment happens, and SwiftUI content that does not fit is centered inside the safe area as SwiftUI does by default.
 
 ### Cover the whole window and keep the text inside the safe area
 
@@ -388,7 +389,7 @@ Dialog.shared.registry.register(NoticeViewModel.self) { viewModel, notifier in
 
 ### Read the overlap with `GeometryReader`
 
-`GeometryProxy.safeAreaInsets` read through `GeometryReader` depends on where the reading view sits. A view sized to plain `Text` inside the safe area reads 0. To read the overlap, read it from a view that spans the whole container, such as an outermost `GeometryReader`.
+`GeometryProxy.safeAreaInsets` read through `GeometryReader` depends on where the reading view sits. A `Text` sized to its content inside the safe area reads 0. To read the overlap, read it from a view that spans the whole container, such as an outermost `GeometryReader`. While the library is re-evaluating whether content that does not fit should be aligned to the inner side, one intermediate position and size that is never drawn on screen can arrive, so use the last value received.
 
 ```swift
 import SwiftUI

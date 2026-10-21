@@ -2,10 +2,11 @@
 scope: spec-review
 kind: pain
 severity: normal
-count: 2
+count: 3
 first-seen: 2026-08-25
-last-seen: 2026-09-02
+last-seen: 2026-10-21
 evidence:
+  - fix-ios-swiftui-edge-content-placement (ios-native spec の Requirement「…収まらないときは、内側の辺にそろって器いっぱいに置かれる」は本文で無条件にそろうと約束しながら、表示中の切り替わりの箇条がきっかけを「中身の理想の大きさ、または中身が受け取る安全領域の変化」と列挙し、tasks 1.3 も判定をやり直す入力を器・理想の大きさ・安全領域・付いた辺に限った。列挙外の「理想の大きさが同じまま縮められる範囲だけが変わる」(表示中に最小の高さを足す) で判定がやり直されず、直したかった半分のずれが残った。実装レビューでホスト側 (再現あり) と相方が独立に検出し、オーナー決定で全変化に追従する形へ直した)
   - add-model-binding-di (android-native spec が「value class の VM は登録および型指定 show の時点で拒否する」と拒否点を2つに列挙し、列挙外のインライン show・インスタンス渡し show が検査なしで提示まで到達する抜け穴になった (相方レビューが Major で検出)。maui-binding spec も「ジェネリック制約に class を含めコンパイル時に拒否する」と強制手段を限定して書き、class 制約が書けない interface 受けのインスタンス渡し show + View fallback 構成の経路を数え落とした。どちらも修正は全 show 経路が通る共通提示入口での検査への統一で、spec が最初から「全 show 経路で拒否する (強制手段は形態別)」と不変条件として書いていれば列挙漏れは構造的に起きなかった)
   - add-maui-ios-bridge-verification (maui-binding spec の Loading Scenario BV-MA-02 が「開始を要求する」とだけ書き、tasks も 1 本しか置いていなかったため、互換面の 2 入口 (`showContent:completion:` = beginUse / `startContent:action:completion:` = runScope) のどちらを固定するかが未定で、片方だけの検証で Scenario を満たした扱いにできた。相方 spec-review が Major で検出し、BV-MA-02 (表示形) と新設 BV-MA-07 (スコープ形) に分割して両入口を固定)
 ---
@@ -16,5 +17,6 @@ evidence:
 
 ## 経緯
 
+- 2026-10-21 fix-ios-swiftui-edge-content-placement: 入口ではなく「状態が変わるきっかけ」の列挙で同じ型が起きた。不変条件 (収まらなければそろう) の適用範囲を、観測された変わり方の列挙で書くと、列挙外の変わり方が抜ける。提案段階で「中身の何が変わると収まる / 収まらないが変わるか」(理想の大きさ・最小の大きさ・器・安全領域) を数え上げていれば防げた
 - 2026-09-02 add-maui-ios-bridge-verification: 列挙が過剰だった前回とは逆に、入口を 1 つも名指ししない書き方で経路を数え落とした。どちらも「公開面の全経路を数え上げて Scenario と突き合わせる」を提案段階で行っていれば防げた同型 (蒸留時に照合して count 2)
 - 2026-08-25 add-model-binding-di: VM 契約の参照型限定 (core/ADR-0018) は契約全体に及ぶ不変条件なのに、Android / MAUI の両 spec が拒否点・強制手段の列挙として書いたため、列挙外の経路が抜け穴として実装に残った。実装フェーズで相方レビュー→姉妹面照合→オーナー裁定の3段を経て全経路検査へ収束したが、spec の書き方の問題として提案フェーズで防げた

@@ -1,6 +1,6 @@
 ---
 scope: spec-review
-timestamp: 2026-10-20
+timestamp: 2026-10-21
 ---
 
 # lessons: spec-review
@@ -9,3 +9,4 @@ timestamp: 2026-10-20
 - [L-002] デルタスペック・design が「存在する」と前提にする API (遮断や区別の対象となる報告経路、移行対応表の移植元 API、全形態に同綴りで存在するとする名前) は、契約を確定する前に、対象となる各形態の公開面 (ソースの public 宣言、移植元の README と公開ソース) で実在を確かめる。実在しない主体や名前を持つ契約は、経路を足すか、契約から落とすか、「実装時に確定する」と条件付けしてから確定する。守れたかは、design / spec の当該箇所に確認先 (ファイル・宣言) が添えてあることから判定する。([経緯](details/spec-contract-references-nonexistent-api-path.md)) (昇格: 2026-09-06、出典: add-loading / rollout-user-docs / split-concepts-platform-surface)
 - [L-003] 姉妹プロジェクトの文書を翻案する提案・design・tasks が、翻案元の規範 (「〜を置かない」「〜は禁止」) や翻案元の実測に基づく前提 (「SDK が〜を生成する」「〜が失敗する」) を翻案先にも書かせるとき、(1) 規範ならその根拠となる決定が翻案先の decisions / agenda 決定事項に実在するか、(2) 規範・前提とも翻案先の現状 (該当ファイルの実在・config からの参照・ビルド出力) と矛盾しないかを、`ls` / `grep` / 1 回のビルドの最小確認で確かめてから採録する。根拠が無い・現状と矛盾する規範は翻案先の記述から落とす (追従対象の範囲だけを述べる) か論点として agenda に立ててから書き、翻案先で成立が確認できない前提に基づく機構は「翻案先で観測してから足す」を既定にする。未成立の決定 (「phase-N で決まる予定」) を根拠に規範を書かない。守れたかは、design / tasks の当該箇所に翻案先での確認手段 (コマンド・ファイル) が添えてあることから判定する。 ([経緯](details/translated-norm-needs-local-basis-and-fact-check.md)) (昇格: 2026-09-08、出典: adopt-docs-refresh / add-verification-ci / add-maui-nuget-distribution)
 - [L-004] 探索・提案の Decision (と、ksn-autopilot の委任状の完了条件・agenda の決定事項) が外部ツール・CLI 手段・撮影/操作手段の存在や、SDK 設定・コンパイラ・言語機能の挙動を前提にするとき、その手段が実行環境から実際に呼び出せることを最小プローブ (コマンドの存在とヘルプ・当該サブコマンドの受理確認) で確かめてから Decision に固定する。エージェント専用ツール (MCP) はスクリプト・CI から呼べない前提で数える。確かめられない手段に依存する部分は Decision に入れず、proposal の Open Questions か Non-Goals に置く。 ([経緯](details/tool-premise-decision-needs-existence-probe.md)) (昇格: 2026-10-20、出典: add-sample-capture-automation / add-release-workflow / guard-kmp-swift-int-result-type)
+- [L-005] デルタスペックの Requirement が「〜な入力を拒否する」「〜なら〜に置く」のような常に守る約束を、特定の入口・強制手段・状態が変わるきっかけ (登録と型指定 show で / コンパイル時に / 理想の大きさか安全領域が変わったとき) の列挙で書いていたら、レビューは約束が依存するもの — 公開面の全経路 (インライン show・インスタンス渡し show・fallback 構成・ブリッジ経由) と、約束の成否を変える全入力 (大きさ・最小の大きさ・領域・向き) — を数え上げて列挙と突き合わせ、漏れがあれば「全経路・全入力に適用し、強制手段・きっかけは経路ごと・入力ごとに定める」形へ書き直させる。約束の適用範囲と、強制手段・きっかけの列挙は別のものとして書く。守れたかは、spec の当該 Requirement に、列挙と突き合わせた経路・入力の一覧か「すべての〜で」の形の範囲が書いてあることから判定する。 ([経緯](details/spec-invariant-written-as-entry-list.md)) (昇格: 2026-10-21、出典: add-model-binding-di / add-maui-ios-bridge-verification / fix-ios-swiftui-edge-content-placement)

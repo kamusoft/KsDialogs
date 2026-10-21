@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "generatedAt": "2026-10-20T08:54:30Z",
+  "generatedAt": "2026-10-21T05:29:30Z",
   "concepts": {
     "android/api/dialog-surface.md": "e923a382b6d138c0d899449bfb58eeca64fd5ea1445ac99f6732c84bd7e11ee8",
     "android/api/layout-surface.md": "a5164ca6326b69677ba02237031ba904c786233dd9fe4f2707a2c0d4553e4a44",
@@ -20,7 +20,7 @@
     "cross/architecture/distribution-artifacts.md": "9482dbc7e8a30e3ae4c0351da3bed3e363a593b5bfc040e320da65dfd4c42ea8",
     "cross/architecture/release-workflow.md": "f07d371ebf99c75d6cf084f8c62d7e51f829b75f3db977953e6d7c4340ca88da",
     "ios/api/dialog-surface.md": "79c8ac92175a3b9169b7c82be995b9206a832ba72f38871aff21292742944523",
-    "ios/api/layout-surface.md": "787b42ce7513a15434e724286bc5421a85122285190a64113764bd3364fd954a",
+    "ios/api/layout-surface.md": "61bedc95010ba5c97b6188984f0ca7648a3659764c22d1fa1dc1fcee3000714d",
     "ios/api/loading-surface.md": "cdfd159a06d5219950f196443d4b0be0a082843f61813c064e76f12371d9f993",
     "ios/api/toast-surface.md": "f16d67b8706b562404e205618ccdf5bb29d788830d819f1aea43aa09e4086663",
     "ios/api/transition-surface.md": "e2982def138f8ce04ba54632e7d6bc488cdae69869ebd38a960890dd80a8d917",
@@ -285,14 +285,8 @@
     "README_ja.md"
   ],
   "lastUpdatedFiles": [
-    "skills/en/ksdialogs-ios/SKILL.md",
-    "skills/ja/ksdialogs-ios/SKILL.md",
     "skills/en/ksdialogs-ios/references/layout.md",
     "skills/ja/ksdialogs-ios/references/layout.md",
-    "skills/en/ksdialogs-kmp/SKILL.md",
-    "skills/ja/ksdialogs-kmp/SKILL.md",
-    "skills/en/ksdialogs-kmp/references/ios-host.md",
-    "skills/ja/ksdialogs-kmp/references/ios-host.md",
     "skills/en/ksdialogs-kmp/references/layout.md",
     "skills/ja/ksdialogs-kmp/references/layout.md"
   ]
