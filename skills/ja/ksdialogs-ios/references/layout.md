@@ -39,6 +39,7 @@ Dialog の大きさ・位置・背後の覆い・外側タップの扱いは、c
 - **基準領域** — `.visibleArea` が控除するのは UIKit の safe area insets である。`.currentPage` は画面に出ているページを基準にする (後述の「表示中のページを基準に配置する」)
 - **content 側の制約** — 計算した rect は Auto Layout の制約で反映する。上限と位置の制約は必須なので、content の側で何をしても守られる。比率・`.fill` で決めたサイズの制約は優先度 999 で、content の固有サイズには勝つが、content が必須 (1000) の幅・高さ制約を持つとそちらが勝つ。`frame` を直接代入しても Auto Layout に上書きされる
 - **再配置** — 画面の回転・ウィンドウのリサイズ・システムバーの出入りでは同じ実効値のまま位置を計算し直す。ソフトキーボードでは動かない
+- **content に委ねた軸の追従** — 比率も `.fill` も指定しない軸 (大きさを content に委ねた軸) は、表示中に `dialogMargin` を控除した領域が広がると content の理想の大きさまで広がり、狭まると新しい領域で頭打ちになる。SwiftUI と `UIView` のどちらの content でも同じである。例: 縦長で幅 393 に頭打ちになっていた理想の幅 600 の content は、横長にすると 600 になり、縦長に戻すと 393 に戻る
 
 ## SwiftUI content に添付する
 
@@ -339,9 +340,9 @@ Dialog・Loading・Toast の SwiftUI content は、決まった条件の軸で�
 | content の一番外側の View に `.ignoresSafeArea(.container)` を付ける | content は器の矩形いっぱいに置かれる。システムの領域を避けるのは content の責任になる |
 | `dialogMargin` で器を window の端から離す | 重なりが離した分だけ減り、受け取る値も減る |
 
-`.frame(width:height:)` で大きさを固定した content が器の内側の safe area に収まらないときの並び方は KsDialogs ではなく `UIHostingController` が決め、一部が器の外へ描かれることがある。端に付ける軸の大きさは可変にしておく。
+`.window` で片側の端に付けた軸 (`.start` / `.end`。比率の有無を問わない) では、縮められる限り縮めても器の中の safe area の内側に収まらない content (`.frame(width:height:)` で大きさを固定したものや、文言とボタンを並べた縮まない `VStack` など) は、器が付いた端と反対側の辺にそろえて器いっぱいに置かれる。下端に付けたなら上の辺、上端なら下の辺、左端なら右の辺、右端なら左の辺で、右から左に書く言語でも同じ辺になる。そろえた軸では content は safe area を受け取らない。上の window で縮まない高さ 100 の content を下端に付けると、y 752・高さ 100 の器いっぱいに置かれ、ホームインジケータの帯に重なる。システムの領域を避けさせたいときは、端に付ける軸の大きさを縮められるようにしておく。
 
-`.window` でも、比率も `.fill` も指定しない軸 (大きさを content に委ねた軸) は、window の幅まで広がらないことがある。
+収まるかどうかは表示中も判定し直される。両軸 `.fill`・`.center` の軸・`.window` 以外の基準領域と、`UIView` の content ではこのそろえは行われず、収まらない SwiftUI content は SwiftUI の標準どおり safe area の内側の中央に置かれる。
 
 ### window 全体を覆い、本文は safe area の内側に置く
 
@@ -388,7 +389,7 @@ Dialog.shared.registry.register(NoticeViewModel.self) { viewModel, notifier in
 
 ### `GeometryReader` で重なりを読む
 
-`GeometryReader` から読む `GeometryProxy.safeAreaInsets` は、読む View の位置で決まる。safe area の内側に置かれた素の `Text` の大きさの View から読むと 0 になる。重なりを読みたいときは、一番外側の `GeometryReader` のように器いっぱいに広がる View から読む。
+`GeometryReader` から読む `GeometryProxy.safeAreaInsets` は、読む View の位置で決まる。safe area の内側に置かれた、大きさを中身に合わせた `Text` から読むと 0 になる。重なりを読みたいときは、一番外側の `GeometryReader` のように器いっぱいに広がる View から読む。収まらない content を内側の辺へそろえるかを判定し直している途中では、画面に描かれない途中の位置と大きさが 1 回届くことがあるので、最後に届いた値を使う。
 
 ```swift
 import SwiftUI

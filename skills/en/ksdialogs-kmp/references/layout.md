@@ -215,7 +215,7 @@ Dialog.shared.kmp.register(WelcomeViewModel.self) { viewModel, notifier in
 
 ### Read the overlap with `GeometryReader`
 
-The `GeometryProxy.safeAreaInsets` that a `GeometryReader` reads inside the content depends on where the reading view sits. A view the size of a plain `Text` placed inside the safe area reads 0. To read the overlap, read it from a view that fills the container, such as an outermost `GeometryReader`. The following keeps a bottom gap only when nothing overlaps the bottom edge, such as on a device without a home indicator.
+The `GeometryProxy.safeAreaInsets` that a `GeometryReader` reads inside the content depends on where the reading view sits. A `Text` sized to its own content and placed inside the safe area reads 0. To read the overlap, read it from a view that fills the container, such as an outermost `GeometryReader`. The position and size you read match where the content is drawn once the layout settles. While the alignment of content that does not fit (described below) is being re-evaluated, one intermediate position that is never drawn on screen may arrive, so use the last value that arrives. The following keeps a bottom gap only when nothing overlaps the bottom edge, such as on a device without a home indicator.
 
 ```swift
 Dialog.shared.kmp.register(WelcomeViewModel.self) { viewModel, notifier in
@@ -236,7 +236,7 @@ Dialog.shared.kmp.register(WelcomeViewModel.self) { viewModel, notifier in
 
 ### Give edge-attached content enough room
 
-The received safe area does not enlarge the container. The container asks for the content's ideal size, the same as when no safe area is received, so its size and position stay unchanged and edge-attached content avoids the safe area inside the container; the usable size shrinks by the overlap. In the example window, top-attached content with an ideal height of 100 keeps its container at y 0 with height 100, while the content is placed from y 59 with height 41. Long wrapping text likewise loses 59 of height and no longer fits. Pick one of these:
+The received safe area does not enlarge the container. The container asks for the content's ideal size, the same as when no safe area is received, so its size and position stay unchanged and edge-attached content avoids the safe area inside the container; the usable size shrinks by the overlap. In the example window, top-attached shrinkable content (content that shrinks to the proposed size) with an ideal height of 100 keeps its container at y 0 with height 100, while the content is placed from y 59 with height 41. Long wrapping text is shrinkable content too, so it likewise loses 59 of usable height and cannot show all of its text. Pick one of these:
 
 | Remedy | Result |
 |---|---|
@@ -246,9 +246,21 @@ The received safe area does not enlarge the container. The container asks for th
 
 When the container is placed at a width different from the one it asked for (capped by the reference area minus the margin, or stretched by `.fill`), the height is recomputed for the placed width. When the content's ideal size changes while showing (such as its text), the container follows the new size.
 
-Content whose size is fixed with `.frame(width:height:)` and that does not fit inside the safe area is arranged by `UIHostingController`, which KsDialogs does not define or guarantee; the container rect stays the same. Flexible-size content is not affected.
+On an axis with neither a proportion nor `.fill` (its size left to the content), when the width of the reference area minus the margin grows while showing, the size is recomputed from the content's ideal size and grows up to the new limit; when it narrows, the size is capped at the new width. It grows on window rotation, on a change of the window size, and when a `.window` attached to SwiftUI content arrives after the first layout so that the reference grows from the visible area to the whole window. SwiftUI and `UIView` content behave the same. For example, content with an ideal width of 600 that was capped at 393 in portrait becomes 600 in landscape and returns to 393 in portrait. When the container is laid out again while that width stays the same (such as a re-layout in a window of the same size), the size is not recomputed.
 
-As a current limitation unrelated to the safe area, under `.window` an axis with neither a proportion nor `.fill` (its size left to the content) may not stretch to the window width, because the first layout is measured against the visible area and is not measured again after the reference grows to the whole window.
+### Where content that does not fit inside the safe area goes
+
+On an axis attached to one edge under `.window` (`.start` / `.end`, with or without a proportion), content that does not fit inside the safe area within the container is aligned on that axis to the side opposite the edge the container is attached to (the inner edge: the top side when attached to the bottom, the bottom side when attached to the top, the right side when attached to the left, the left side when attached to the right), and it receives no safe area (0) on that axis. Content that does not fit is content that, shrunk as far as it can, still does not fit inside the safe area: a fixed size such as `.frame(width:height:)`, a stack of parts that cannot shrink such as a `VStack` of text and buttons, and content whose minimum size is larger than the inside of the safe area. The container rect stays the same. In the example window it is placed as follows.
+
+| Content | Attached to the top | Attached to the bottom |
+|---|---|---|
+| Non-shrinking height 100 (with or without `.ignoresSafeArea`) | Fills the container (y 0, height 100) | Fills the container (y 752, height 100) |
+| Ideal height 100, minimum height 80 | Shrinks and aligns to the bottom side (y 20, height 80) | Shrinks and aligns to the top side (y 752, height 80) |
+| Non-shrinking height 1000 (the container is capped at the window height 852) | Aligns to the bottom side and overflows the window's top edge by 148 (y -148) | Aligns to the top side and overflows the window's bottom edge by 148 (y 0) |
+
+- Left and right are physical directions and stay the same in right-to-left languages
+- With `.fill` on both axes, on a centered axis, and with a reference area other than `.window`, the arrangement is not changed and content that does not fit is centered inside the safe area as standard SwiftUI does. UIKit content (`UIView`) is not covered either
+- Whether the content fits is re-evaluated while showing. When the container size, the content's ideal or minimum size, or the window's safe area changes, the container and the content settle into positions for the new state
 
 ## When an attachment takes effect
 
