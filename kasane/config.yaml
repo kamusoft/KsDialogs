@@ -60,22 +60,9 @@ skills:
 
 # ドメイン別スキルオーバーレイ (用途キー解決時に共通 skills へ結合される)
 domain-skills:
-  ios:
-    impl: [swift-ui-impl-skill]
-    ui-impl: [swift-ui-impl-skill]
-    code-review: [swift-ui-impl-skill]
-  android:
-    impl: [kotlin-impl-skill, jetpack-compose-impl-skill]
-    ui-impl: [jetpack-compose-impl-skill]
-    code-review: [kotlin-impl-skill]
   maui:
-    impl: [csharp-impl-skill, maui-skill, maui-native-binding-skill]
-    ui-impl: [maui-skill]
+    impl: [maui-native-binding-skill]
     test: [dotnet-test-skill]
-  kmp:
-    impl: [kotlin-impl-skill]
-    test: [kotlin-impl-skill]
-    code-review: [kotlin-impl-skill]
   # core: 契約層でコードを持たないため domain-skills の割り当てなし (phase-3 で確定)
 
 # ワーカーの起動先 (ksn-core references/worker-dispatch.md)。host = このセッションのサブエージェント / counterpart = 相方 CLI
