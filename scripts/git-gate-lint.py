@@ -21,7 +21,8 @@ push 検査は範囲内の各コミット時点の blob を見る (途中のコ�
   - コマンドに `git commit` を含む → ステージ blob を検査。同じコマンドに `git add` も含むなら、
     add で入りうる worktree の変更ファイル (未追跡・未ステージ) も検査する (hook は add の実行前に走るため)
   - コマンドに `git push` を含む → まだどのリモートにも無いコミット (`HEAD --not --remotes`) を検査
-  - `--no-verify` / commit の `-n` / `core.hooksPath` の上書きを含む → 検査の迂回として deny
+  - `--no-verify` / commit の `-n` / `core.hooksPath` の上書き (`git -c core.hooksPath=...`、`git config` での設定・削除) を
+    含む → 検査の迂回として deny。値を読むだけの呼び出し (`git config core.hooksPath`、`--get` 等) は迂回扱いしない
     (代わりの動き: 違反行を log-sanitize.py かプレースホルダで直してから commit / push する)
   - 判定はコマンドのオプション部分だけに掛ける。ヒアドキュメントの本体・`-m` / `-F` / `--message` / `--file` の値・
     空白を含む引用文字列はコミットメッセージ本文とみなして判定前に取り除く (hook について書いたメッセージが
@@ -51,7 +52,13 @@ RE_PUSH = re.compile(GIT_CMD + r"push\b")
 RE_ADD = re.compile(GIT_CMD + r"add\b")
 RE_NO_VERIFY = re.compile(r"--no-verify\b")
 RE_COMMIT_N = re.compile(GIT_CMD + r"commit\b[^|;&\n]*\s-[a-zA-Z]*n[a-zA-Z]*\b")  # commit -n / -an は --no-verify
-RE_HOOKSPATH = re.compile(r"core\.hooksPath", re.IGNORECASE)
+# core.hooksPath の上書き。-c / --config-env の値として渡す形 (git config の設定・削除は _overrides_hookspath が判定)
+RE_HOOKSPATH_C = re.compile(r"""(?:(?<=\s)-c\s*|--config-env[=\s]\s*)['"]?core\.hooksPath\s*=""", re.IGNORECASE)
+RE_GIT_CONFIG = re.compile(GIT_CMD + r"config\b([^|;&\n]*)")
+CONFIG_WRITE_OPTS = {"--unset", "--unset-all", "--add", "--replace-all"}
+CONFIG_WRITE_SUBCMDS = {"set", "unset"}
+CONFIG_READ_SUBCMDS = {"get", "list"}
+RE_REDIRECT = re.compile(r"^\d*[<>]")
 
 # メッセージ本文の除去 (--bash-hook)。判定はコマンドのオプション部分だけに掛ける
 RE_HEREDOC_OP = re.compile(r"<<-?\s*(['\"]?)(\w+)\1")
@@ -91,6 +98,24 @@ def _strip_message_text(command: str) -> str:
     out = _strip_heredocs(command)
     out = RE_MSG_OPT.sub(lambda m: m.group(0).split("=")[0].split()[0] + " ''", out)
     return RE_QUOTED.sub(lambda m: m.group(0) if not re.search(r"\s", m.group(0)) else "''", out)
+
+
+def _overrides_hookspath(command: str) -> bool:
+    """core.hooksPath を上書きする呼び出しを含むか。値を読むだけの `git config` は含めない。"""
+    if RE_HOOKSPATH_C.search(command):
+        return True
+    for m in RE_GIT_CONFIG.finditer(command):
+        tokens = [t.strip("'\"()") for t in m.group(1).split() if not RE_REDIRECT.match(t)]
+        keys = [i for i, t in enumerate(tokens) if t.lower() == "core.hookspath"]
+        if not keys:
+            continue
+        if tokens[0] in CONFIG_WRITE_SUBCMDS or any(t in CONFIG_WRITE_OPTS for t in tokens):
+            return True
+        if tokens[0] in CONFIG_READ_SUBCMDS or any(t.startswith("--get") or t in ("-l", "--list") for t in tokens):
+            continue
+        if any(t and not t.startswith("-") for t in tokens[keys[0] + 1:]):
+            return True  # `git config [--global] core.hooksPath <値>` は設定
+    return False
 
 
 def _load(name: str):
@@ -272,7 +297,7 @@ def bash_hook_decision(root: str, command: str) -> str | None:
     is_push = bool(RE_PUSH.search(command))
     if not (is_commit or is_push):
         return None
-    if RE_NO_VERIFY.search(command) or RE_HOOKSPATH.search(command) or (is_commit and RE_COMMIT_N.search(command)):
+    if RE_NO_VERIFY.search(command) or _overrides_hookspath(command) or (is_commit and RE_COMMIT_N.search(command)):
         return ("git hook の迂回 (`--no-verify` / `-n` / core.hooksPath の上書き) はブロックします。"
                 "pre-commit / pre-push の検査で止まった行を直してから、迂回オプション無しで実行してください。\n" + GUIDE)
     hits: list[str] = []
@@ -345,6 +370,17 @@ def selftest() -> int:
     check(bool(RE_COMMIT_N.search("git commit -n -m x")), "commit -n は迂回")
     check(bool(RE_COMMIT_N.search("git commit -anm x")), "commit -anm は迂回")
     check(not RE_COMMIT_N.search("git commit -m x && git push -n"), "push -n (dry-run) は迂回ではない")
+    for cmd in ("git -c core.hooksPath=/dev/null commit -m x", "git --config-env=core.hooksPath=H push",
+                "git config core.hooksPath /dev/null && git commit -m x", "git config --local core.hooksPath x; git push",
+                "git config --unset core.hooksPath && git commit -m x", "git config unset core.hooksPath; git push",
+                "git config set core.hooksPath x && git push",
+                "git config core.hooksPath || git config core.hooksPath .githooks"):
+        check(_overrides_hookspath(cmd), f"core.hooksPath の上書き: {cmd}")
+    for cmd in ("git config core.hooksPath && git commit -m x", "git config --get core.hooksPath; git push",
+                "git config get core.hooksPath && git push", "git config --show-origin --get core.hooksPath; git push",
+                "git config core.hooksPath 2>/dev/null || true; git push", "echo $(git config core.hooksPath) && git push",
+                "git config -l | grep core.hooksPath; git push"):
+        check(not _overrides_hookspath(cmd), f"core.hooksPath の読み取りは上書きではない: {cmd}")
 
     print("[一時リポジトリでの疎通]")
     with tempfile.TemporaryDirectory() as tmp:
@@ -400,6 +436,11 @@ def selftest() -> int:
         check(hook(root, 'git commit -m "core.hooksPath" --no-verify') is not None
               and "迂回" in hook(root, 'git commit -m "core.hooksPath" --no-verify'),
               "--bash-hook: メッセージ本文を除いた後の --no-verify は deny")
+        reading = "git config core.hooksPath && git commit -m x"
+        check("迂回" not in (hook(root, reading) or ""),
+              "--bash-hook: core.hooksPath を読むだけのコマンドと commit を続けても迂回扱いしない (commit 側の検査は受ける)")
+        check("迂回" in (hook(root, "git config core.hooksPath /dev/null && git commit -m x") or ""),
+              "--bash-hook: git config で core.hooksPath を設定して commit すると deny")
         check(hook(root, "git status") is None, "--bash-hook: commit / push 以外は素通し")
 
         hooks_dir = os.path.join(root, ".githooks")
