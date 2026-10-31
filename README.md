@@ -1,5 +1,7 @@
 # KsDialogs
 
+[日本語](https://github.com/kamusoft/KsDialogs/blob/main/README_ja.md)
+
 ## Overview and highlights
 
 KsDialogs is a dialog UI library that can present UI from anywhere in an application without wiring it into the current view hierarchy. Native iOS and Android implementations provide the foundation, with thin wrappers for .NET MAUI and Kotlin Multiplatform.

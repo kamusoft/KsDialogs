@@ -1,5 +1,7 @@
 # KsDialogs
 
+[English](https://github.com/kamusoft/KsDialogs/blob/main/README.md)
+
 ## 概要と主な特徴
 
 KsDialogs は、現在の View 階層へ組み込まずにアプリケーションのどこからでも UI を表示できるダイアログライブラリです。iOS と Android の Native 実装を土台とし、.NET MAUI と Kotlin Multiplatform には薄い wrapper を提供します。
