@@ -14,7 +14,7 @@ enum ShowcaseScene: String, CaseIterable {
     case dialog
     /// 進捗リング付きのカスタムローディング。
     case loading
-    /// 上部の通知風トーストと下部の完了トースト。
+    /// 下部の完了トースト 1 つ。
     case toast
     /// 何も出さない背景の画面だけ。比較用・合成用。
     case background
@@ -49,26 +49,13 @@ enum ShowcaseScene: String, CaseIterable {
                 }
             case .toast:
                 try Toast.shared.show(
-                    ShowcaseReminderToastViewModel(),
-                    duration: Self.toastDurationMilliseconds,
-                    placement: DialogPlacement(
-                        horizontalAlignment: .center,
-                        verticalAlignment: .start,
-                        offsetX: 0,
-                        // 大見出しに重ならないよう、可視領域の上端 (ナビゲーションバーの行) に置く
-                        offsetY: 0
-                    )
-                ) { _ in
-                    ShowcaseReminderToastCard()
-                }
-                try Toast.shared.show(
                     ShowcaseSavedToastViewModel(),
                     duration: Self.toastDurationMilliseconds,
                     placement: DialogPlacement(
                         horizontalAlignment: .center,
                         verticalAlignment: .end,
                         offsetX: 0,
-                        offsetY: -96
+                        offsetY: -120
                     )
                 ) { _ in
                     ShowcaseSavedToastCard()

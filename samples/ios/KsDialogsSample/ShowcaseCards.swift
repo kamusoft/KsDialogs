@@ -118,35 +118,6 @@ struct ShowcaseUploadLoadingCard: View {
 
 // MARK: - トースト
 
-/// 上部に出す通知風トーストの ViewModel。
-final class ShowcaseReminderToastViewModel: ToastViewModel {}
-
-/// 上部に出す通知風トーストの中身。トーストには覆いが無いので、中身が自分で地と影を描く。
-struct ShowcaseReminderToastCard: View {
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "bell.badge.fill")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(ShowcasePalette.accent, in: .rect(cornerRadius: 10))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("リマインダー")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(SampleTheme.onSurface)
-                Text("21:30「買い物リスト」を確認する時間です")
-                    .font(.system(size: 13))
-                    .foregroundStyle(SampleTheme.onSurfaceMuted)
-            }
-        }
-        .padding(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 18))
-        .frame(width: 330, alignment: .leading)
-        .background(SampleTheme.surface, in: .rect(cornerRadius: 18))
-        .shadow(color: .black.opacity(0.16), radius: 18, y: 6)
-    }
-}
-
 /// 下部に出す完了トーストの ViewModel。
 final class ShowcaseSavedToastViewModel: ToastViewModel {}
 
@@ -155,13 +126,13 @@ struct ShowcaseSavedToastCard: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 20))
+                .font(.system(size: 24))
                 .foregroundStyle(ShowcasePalette.success)
             Text("ノートを保存しました")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.white)
         }
-        .padding(EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 22))
+        .padding(EdgeInsets(top: 16, leading: 22, bottom: 16, trailing: 26))
         .background(ShowcasePalette.toastBackground, in: .capsule)
         .shadow(color: .black.opacity(0.2), radius: 12, y: 4)
     }
@@ -176,8 +147,5 @@ struct ShowcaseSavedToastCard: View {
 }
 
 #Preview("Toast") {
-    VStack(spacing: 24) {
-        ShowcaseReminderToastCard()
-        ShowcaseSavedToastCard()
-    }
+    ShowcaseSavedToastCard()
 }
