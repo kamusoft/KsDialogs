@@ -128,7 +128,7 @@ struct ShowcaseReminderToastCard: View {
             Image(systemName: "bell.badge.fill")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 40, height: 40)
+                .frame(width: 36, height: 36)
                 .background(ShowcasePalette.accent, in: .rect(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 2) {
@@ -140,7 +140,7 @@ struct ShowcaseReminderToastCard: View {
                     .foregroundStyle(SampleTheme.onSurfaceMuted)
             }
         }
-        .padding(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 18))
+        .padding(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 18))
         .frame(width: 330, alignment: .leading)
         .background(SampleTheme.surface, in: .rect(cornerRadius: 18))
         .shadow(color: .black.opacity(0.16), radius: 18, y: 6)
