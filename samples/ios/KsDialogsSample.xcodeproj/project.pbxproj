@@ -70,6 +70,9 @@
 		B1000001000000000000A036 /* InlineToastViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A036 /* InlineToastViewModel.swift */; };
 		B1000001000000000000A037 /* InlineToastCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A037 /* InlineToastCard.swift */; };
 		B1000001000000000000A038 /* SampleToastRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A038 /* SampleToastRegistration.swift */; };
+		B1000001000000000000A060 /* ShowcaseScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A060 /* ShowcaseScene.swift */; };
+		B1000001000000000000A061 /* ShowcaseCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A061 /* ShowcaseCards.swift */; };
+		B1000001000000000000A062 /* ShowcaseNotesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002000000000000A062 /* ShowcaseNotesScreen.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -136,6 +139,9 @@
 		B1000002000000000000A036 /* InlineToastViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineToastViewModel.swift; sourceTree = "<group>"; };
 		B1000002000000000000A037 /* InlineToastCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineToastCard.swift; sourceTree = "<group>"; };
 		B1000002000000000000A038 /* SampleToastRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleToastRegistration.swift; sourceTree = "<group>"; };
+		B1000002000000000000A060 /* ShowcaseScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowcaseScene.swift; sourceTree = "<group>"; };
+		B1000002000000000000A061 /* ShowcaseCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowcaseCards.swift; sourceTree = "<group>"; };
+		B1000002000000000000A062 /* ShowcaseNotesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowcaseNotesScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -223,6 +229,9 @@
 				B1000002000000000000A036 /* InlineToastViewModel.swift */,
 				B1000002000000000000A037 /* InlineToastCard.swift */,
 				B1000002000000000000A038 /* SampleToastRegistration.swift */,
+				B1000002000000000000A060 /* ShowcaseScene.swift */,
+				B1000002000000000000A061 /* ShowcaseCards.swift */,
+				B1000002000000000000A062 /* ShowcaseNotesScreen.swift */,
 			);
 			path = KsDialogsSample;
 			sourceTree = "<group>";
@@ -372,6 +381,9 @@
 				B1000001000000000000A036 /* InlineToastViewModel.swift in Sources */,
 				B1000001000000000000A037 /* InlineToastCard.swift in Sources */,
 				B1000001000000000000A038 /* SampleToastRegistration.swift in Sources */,
+				B1000001000000000000A060 /* ShowcaseScene.swift in Sources */,
+				B1000001000000000000A061 /* ShowcaseCards.swift in Sources */,
+				B1000001000000000000A062 /* ShowcaseNotesScreen.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
