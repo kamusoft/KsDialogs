@@ -11,7 +11,12 @@ struct KsDialogsSampleApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SampleMenuScreen()
+            // 起動引数 `--showcase <場面>` があれば撮影用の場面を出す (ShowcaseScene.swift)
+            if let scene = ShowcaseScene.launchTarget {
+                ShowcaseScreen(scene: scene)
+            } else {
+                SampleMenuScreen()
+            }
         }
     }
 }
