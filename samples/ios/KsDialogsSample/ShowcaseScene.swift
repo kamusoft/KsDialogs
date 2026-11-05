@@ -55,7 +55,8 @@ enum ShowcaseScene: String, CaseIterable {
                         horizontalAlignment: .center,
                         verticalAlignment: .start,
                         offsetX: 0,
-                        offsetY: 64
+                        // 大見出しに重ならないよう、可視領域の上端 (ナビゲーションバーの行) に置く
+                        offsetY: 0
                     )
                 ) { _ in
                     ShowcaseReminderToastCard()
